@@ -1,0 +1,194 @@
+=========================================================
+  ENDPOINTS: Maestro Mandos - Cargadores
+  Tabla:     sol_articulos_mandos_cargadores
+  Stack:     Node.js + Express + SQL Server / MySQL
+=========================================================
+
+
+-- CAMBIOS EN LA BD --
+
+  Crear la tabla si no existe:
+
+  --- SQL Server ---
+  CREATE TABLE sol_articulos_mandos_cargadores (
+    idrow       INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    id_marca    INT           NULL,
+    descripcion VARCHAR(100)  NULL,
+    pvp         DECIMAL(10,2) NULL,
+    c1          VARCHAR(11)   NULL,
+    codigo_48   VARCHAR(50)   NULL
+  );
+
+  --- MySQL ---
+  -- CREATE TABLE sol_articulos_mandos_cargadores (
+  --   idrow       INT           NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  --   id_marca    INT           NULL,
+  --   descripcion VARCHAR(100)  NULL,
+  --   pvp         DECIMAL(10,2) NULL,
+  --   c1          VARCHAR(11)   NULL,
+  --   codigo_48   VARCHAR(50)   NULL
+  -- );
+
+
+-- CÓDIGO DE LOS ENDPOINTS --
+
+  Añadir en el fichero de rutas /sm (donde estén el resto de rutas /sm):
+
+--------------------------------------------------------------
+
+// ─── GET /sm/mandos_cargadores ───────────────────────────────────────────────
+// Devuelve todos los cargadores con la descripción de su marca
+router.get('/mandos_cargadores', async (req, res) => {
+  try {
+
+    // --- SQL Server ---
+    const result = await pool.request().query(`
+      SELECT
+        mc.idrow,
+        mc.id_marca,
+        cm.descripcion  AS marca_descripcion,
+        mc.descripcion,
+        mc.pvp,
+        mc.c1,
+        mc.codigo_48
+      FROM  sol_articulos_mandos_cargadores mc
+      LEFT  JOIN sol_articulos_colores_marcas cm
+             ON  cm.idrow = mc.id_marca
+      ORDER BY mc.idrow
+    `);
+    return res.json({ Table: result.recordset });
+
+    // --- MySQL ---
+    // const [rows] = await db.query(`
+    //   SELECT
+    //     mc.idrow,
+    //     mc.id_marca,
+    //     cm.descripcion  AS marca_descripcion,
+    //     mc.descripcion,
+    //     mc.pvp,
+    //     mc.c1,
+    //     mc.codigo_48
+    //   FROM  sol_articulos_mandos_cargadores mc
+    //   LEFT  JOIN sol_articulos_colores_marcas cm
+    //          ON  cm.idrow = mc.id_marca
+    //   ORDER BY mc.idrow
+    // `);
+    // return res.json({ Table: rows });
+
+  } catch (err) {
+    console.error('[GET /sm/mandos_cargadores]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+
+// ─── POST /mandos_cargador ────────────────────────────────────────────────────
+// Crea un nuevo cargador
+router.post('/mandos_cargador', async (req, res) => {
+  try {
+    const { id_marca, descripcion, pvp, c1, codigo_48 } = req.body;
+
+    // --- SQL Server ---
+    await pool.request()
+      .input('id_marca',    sql.Int,           id_marca    || null)
+      .input('descripcion', sql.VarChar(100),  descripcion || null)
+      .input('pvp',         sql.Decimal(10,2), pvp         || null)
+      .input('c1',          sql.VarChar(11),   c1          || null)
+      .input('codigo_48',   sql.VarChar(50),   codigo_48   || null)
+      .query(`
+        INSERT INTO sol_articulos_mandos_cargadores
+          (id_marca, descripcion, pvp, c1, codigo_48)
+        VALUES
+          (@id_marca, @descripcion, @pvp, @c1, @codigo_48)
+      `);
+
+    // --- MySQL ---
+    // await db.query(
+    //   `INSERT INTO sol_articulos_mandos_cargadores
+    //     (id_marca, descripcion, pvp, c1, codigo_48)
+    //    VALUES (?, ?, ?, ?, ?)`,
+    //   [id_marca || null, descripcion || null, pvp || null, c1 || null, codigo_48 || null]
+    // );
+
+    return res.json({ message: 'OK' });
+
+  } catch (err) {
+    console.error('[POST /mandos_cargador]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+
+// ─── DELETE /sm/mandos_cargador/:id ──────────────────────────────────────────
+// Elimina un cargador por su idrow
+router.delete('/mandos_cargador/:id', async (req, res) => {
+  try {
+    const idrow = parseInt(req.params.id, 10);
+
+    // --- SQL Server ---
+    await pool.request()
+      .input('idrow', sql.Int, idrow)
+      .query(`
+        DELETE FROM sol_articulos_mandos_cargadores
+        WHERE  idrow = @idrow
+      `);
+
+    // --- MySQL ---
+    // await db.query(
+    //   'DELETE FROM sol_articulos_mandos_cargadores WHERE idrow = ?',
+    //   [idrow]
+    // );
+
+    return res.json({ message: 'OK' });
+
+  } catch (err) {
+    console.error('[DELETE /sm/mandos_cargador/:id]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+--------------------------------------------------------------
+
+
+-- NOTA: EDICIÓN DE CAMPOS --
+
+  El frontend usa el endpoint genérico ya existente:
+
+    POST /update_table
+
+  con body:
+    {
+      "table":  "sol_articulos_mandos_cargadores",
+      "column": "idrow",
+      "id":     <idrow>,
+      "field":  "<campo>",
+      "value":  "<valor>"
+    }
+
+  No se necesita ningún endpoint adicional para editar.
+
+
+-- NOTA: DROPDOWN DE MARCAS --
+
+  El frontend carga el dropdown de marcas desde el endpoint
+  ya existente:
+
+    GET /sm/accionamientos_marcas_form
+
+  Devuelve: [{ idrow, descripcion }]
+  No se necesita ningún endpoint adicional para el dropdown.
+
+
+=========================================================
+  RESUMEN DE CAMBIOS
+=========================================================
+
+  1. BD:     CREATE TABLE sol_articulos_mandos_cargadores (ver arriba)
+  2. RUTAS:  Añadir los 3 endpoints al router /sm:
+               GET    /sm/mandos_cargadores
+               POST   /mandos_cargador
+               DELETE /sm/mandos_cargador/:id
+  3. EDICIÓN y DROPDOWN: usan endpoints ya existentes (/update_table
+             y /sm/accionamientos_marcas_form)
+
+=========================================================

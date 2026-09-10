@@ -1,0 +1,98 @@
+.panel-box {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.panel-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.875rem;
+}
+
+
+.table-scroll {
+  height: 520px;
+  overflow-y: auto;
+}
+
+.table-scroll-sm {
+  height: 320px;
+}
+
+.table-scroll thead th,
+.table-scroll-sm thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8f9fa;
+  border-top: none;
+}
+
+.filter-row th {
+  top: 37px;
+  padding: 4px 6px;
+}
+
+.filter-row input {
+  font-size: 0.78rem;
+}
+
+.tejido-row {
+  cursor: pointer;
+}
+
+.selected-row td {
+  background-color: #cfe2ff !important;
+  font-weight: 500;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #6c757d;
+}
+
+.detail-form {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.form-label-sm {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.color-cell {
+  cursor: default;
+}
+
+.color-cell .edit-hint {
+  opacity: 0;
+  font-size: 0.7rem;
+  color: #6c757d;
+  transition: opacity 0.15s;
+}
+
+.color-cell:hover .edit-hint {
+  opacity: 1;
+}
+
+.btn-xs {
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}

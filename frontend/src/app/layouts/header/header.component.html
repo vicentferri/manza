@@ -1,0 +1,26 @@
+<header [ngClass]="setHeader()">
+
+  <a class="navbar-brand" href="#"></a>
+  <ul class="nav navbar-nav d-md-down-none">
+
+    <li class="nav-item px-3">
+      <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master']">Configuración</a>
+    </li>
+  </ul>
+
+  <ul class="nav navbar-nav ml-auto">
+    <li class="nav-item dropdown" dropdown placement="bottom right">
+      <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
+        aria-expanded="false" dropdownToggle style="margin-right: 10px;">
+        <span class="d-md-down-none">{{username}}</span>
+      </a>
+      <div class="dropdown-menu dropdown-menu-right" *dropdownMenu aria-labelledby="simple-dropdown">
+        <a class="dropdown-item" href="#"><i class="fa fa-user"></i>&nbsp;Perfil</a>
+        <div class="divider"></div>
+        <a class="dropdown-item" (click)="logout();"><i class="fa fa-lock"></i>&nbsp;Logout</a>
+      </div>
+    </li>
+
+  </ul>
+
+</header>

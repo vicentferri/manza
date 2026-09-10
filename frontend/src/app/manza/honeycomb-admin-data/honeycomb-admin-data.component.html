@@ -1,0 +1,761 @@
+<!-- honeycomb-admin-data.component.html -->
+<div class="container mt-4">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h5>Gestión de Datos - Honeycomb</h5>
+      <p class="text-muted">Administra tipos de tejido, colores, perfiles y accionamientos</p>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div class="row mb-3" *ngIf="mensaje">
+    <div class="col-12">
+      <div class="alert alert-dismissible fade show" [ngClass]="{
+        'alert-success': mensaje.tipo === 'success',
+        'alert-danger': mensaje.tipo === 'error',
+        'alert-info': mensaje.tipo === 'info',
+        'alert-warning': mensaje.tipo === 'warning'
+      }" role="alert">
+        {{ mensaje.texto }}
+        <button type="button" class="btn-close" (click)="mensaje = null"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            [class.active]="tabSeleccionado === 'tipostejido'"
+            (click)="cambiarTab('tipostejido')"
+            type="button">
+            <i class="fas fa-th-large me-2"></i>
+            Tipos de Tejido
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            [class.active]="tabSeleccionado === 'colorestejido'"
+            (click)="cambiarTab('colorestejido')"
+            type="button">
+            <i class="fas fa-palette me-2"></i>
+            Colores de Tejido
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            [class.active]="tabSeleccionado === 'coloresperfil'"
+            (click)="cambiarTab('coloresperfil')"
+            type="button">
+            <i class="fas fa-paint-brush me-2"></i>
+            Colores de Perfil
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            [class.active]="tabSeleccionado === 'tiposaccionamiento'"
+            (click)="cambiarTab('tiposaccionamiento')"
+            type="button">
+            <i class="fas fa-cogs me-2"></i>
+            Tipos de Accionamiento
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            [class.active]="tabSeleccionado === 'tarifas'"
+            (click)="cambiarTab('tarifas')"
+            type="button">
+            <i class="fas fa-euro-sign me-2"></i>
+            Tarifas
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body">
+
+      <!-- Toolbar -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="btn-group" role="group" *ngIf="tabSeleccionado !== 'tarifas'">
+            <button
+              class="btn btn-primary"
+              (click)="tabSeleccionado === 'tipostejido' ? nuevoTipoTejido() :
+                       tabSeleccionado === 'colorestejido' ? nuevoColorTejido() :
+                       tabSeleccionado === 'tiposaccionamiento' ? nuevoTipoAccionamiento() :
+                       nuevoColorPerfil()"
+              [disabled]="guardando || cargando">
+              <i class="fas fa-plus me-2"></i>
+              Nuevo
+            </button>
+            <button
+              class="btn btn-success"
+              (click)="exportarExcel()"
+              [disabled]="guardando || cargando">
+              <i class="fas fa-file-excel me-2"></i>
+              Exportar Excel
+            </button>
+            <button
+              class="btn btn-info"
+              (click)="triggerFileInput()"
+              [disabled]="guardando || cargando">
+              <i class="fas fa-file-import me-2"></i>
+              Importar Excel
+            </button>
+          </div>
+          <input
+            type="file"
+            id="fileInput"
+            accept=".xlsx, .xls"
+            (change)="onFileSelected($event)"
+            style="display: none;">
+        </div>
+
+        <!-- Filtro para colores de tejido -->
+        <div class="col-md-6" *ngIf="tabSeleccionado === 'colorestejido'">
+          <div class="d-flex justify-content-end align-items-center">
+            <label class="me-2 mb-0">Filtrar por tipo:</label>
+            <select
+              class="form-control form-select w-auto"
+              [(ngModel)]="filtroTipoTejido">
+              <option [ngValue]="0">Todos</option>
+              <option
+                *ngFor="let tipo of tiposTejidoLookup"
+                [ngValue]="tipo.idTipoTejido">
+                {{ tipo.TipoTejido }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="row" *ngIf="cargando">
+        <div class="col-12 text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-3 text-muted">Cargando datos...</p>
+        </div>
+      </div>
+
+      <!-- ============================================= -->
+      <!-- TAB: TIPOS DE TEJIDO -->
+      <!-- ============================================= -->
+      <div *ngIf="tabSeleccionado === 'tipostejido' && !cargando">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 80px;">ID</th>
+                <th>Tipo de Tejido</th>
+                <th style="width: 140px;">Incremento (€)</th>
+                <th style="width: 150px;" class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tipo of tiposTejido">
+                <td>{{ tipo.idTipoTejido || '-' }}</td>
+                <td>
+                  <input
+                    *ngIf="tipo.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="tipo.TipoTejido"
+                    [disabled]="guardando">
+                  <span *ngIf="!tipo.editando">{{ tipo.TipoTejido }}</span>
+                </td>
+                <td>
+                  <input
+                    *ngIf="tipo.editando"
+                    type="number"
+                    step="0.01"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="tipo.Incremento"
+                    [disabled]="guardando">
+                  <span *ngIf="!tipo.editando">{{ (tipo.Incremento || 0) | number:'1.2-2' }} €</span>
+                </td>
+                <td class="text-center">
+                  <!-- Modo edición -->
+                  <div *ngIf="tipo.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-success"
+                      (click)="guardarTipoTejido(tipo)"
+                      [disabled]="guardando"
+                      title="Guardar">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      class="btn btn-secondary"
+                      (click)="cancelarTipoTejido(tipo)"
+                      [disabled]="guardando"
+                      title="Cancelar">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+
+                  <!-- Modo vista -->
+                  <div *ngIf="!tipo.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-primary"
+                      (click)="editarTipoTejido(tipo)"
+                      [disabled]="guardando"
+                      title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn btn-danger"
+                      (click)="eliminarTipoTejido(tipo)"
+                      [disabled]="guardando"
+                      title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="tiposTejido.length === 0">
+                <td colspan="4" class="text-center text-muted py-4">
+                  No hay tipos de tejido registrados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============================================= -->
+      <!-- TAB: COLORES DE TEJIDO -->
+      <!-- ============================================= -->
+      <div *ngIf="tabSeleccionado === 'colorestejido' && !cargando">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 60px;">ID</th>
+                <th>Color</th>
+                <th>Tipo de Tejido</th>
+                <th style="width: 120px;">Referencia</th>
+                <th style="width: 100px;">Código Color</th>
+                <th style="width: 60px;">Muestra</th>
+                <th style="width: 130px;">Incremento (€)</th>
+                <th style="width: 150px;" class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let color of coloresTejidoFiltrados">
+                <td>{{ color.idColorTejido || '-' }}</td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.ColorTejido"
+                    [disabled]="guardando">
+                  <span *ngIf="!color.editando">{{ color.ColorTejido }}</span>
+                </td>
+                <td>
+                  <select
+                    *ngIf="color.editando"
+                    class="form-select form-select-sm"
+                    [(ngModel)]="color.idTipoTejido"
+                    [disabled]="guardando">
+                    <option
+                      *ngFor="let tipo of tiposTejidoLookup"
+                      [value]="tipo.idTipoTejido">
+                      {{ tipo.TipoTejido }}
+                    </option>
+                  </select>
+                  <span *ngIf="!color.editando">{{ color.TipoTejido }}</span>
+                </td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.Referencia"
+                    [disabled]="guardando"
+                    placeholder="Ej: BG-001">
+                  <span *ngIf="!color.editando">{{ color.Referencia || '-' }}</span>
+                </td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.CodigoColor"
+                    [disabled]="guardando"
+                    placeholder="#FFFFFF">
+                  <span *ngIf="!color.editando">{{ color.CodigoColor || '-' }}</span>
+                </td>
+                <td>
+                  <div
+                    *ngIf="color.CodigoColor"
+                    class="color-swatch"
+                    [style.background-color]="color.CodigoColor">
+                  </div>
+                </td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="number"
+                    step="0.01"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.Incremento"
+                    [disabled]="guardando">
+                  <span *ngIf="!color.editando">{{ (color.Incremento || 0) | number:'1.2-2' }} €</span>
+                </td>
+                <td class="text-center">
+                  <!-- Modo edición -->
+                  <div *ngIf="color.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-success"
+                      (click)="guardarColorTejido(color)"
+                      [disabled]="guardando"
+                      title="Guardar">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      class="btn btn-secondary"
+                      (click)="cancelarColorTejido(color)"
+                      [disabled]="guardando"
+                      title="Cancelar">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+
+                  <!-- Modo vista -->
+                  <div *ngIf="!color.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-primary"
+                      (click)="editarColorTejido(color)"
+                      [disabled]="guardando"
+                      title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn btn-danger"
+                      (click)="eliminarColorTejido(color)"
+                      [disabled]="guardando"
+                      title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="coloresTejidoFiltrados.length === 0">
+                <td colspan="8" class="text-center text-muted py-4">
+                  No hay colores de tejido registrados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============================================= -->
+      <!-- TAB: COLORES DE PERFIL -->
+      <!-- ============================================= -->
+      <div *ngIf="tabSeleccionado === 'coloresperfil' && !cargando">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 60px;">ID</th>
+                <th>Color de Perfil</th>
+                <th style="width: 120px;">Referencia</th>
+                <th style="width: 100px;">Código Color</th>
+                <th style="width: 60px;">Muestra</th>
+                <th style="width: 130px;">Incremento (€)</th>
+                <th style="width: 150px;" class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let color of coloresPerfil">
+                <td>{{ color.idColorPerfil || '-' }}</td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.ColorPerfil"
+                    [disabled]="guardando">
+                  <span *ngIf="!color.editando">{{ color.ColorPerfil }}</span>
+                </td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.Referencia"
+                    [disabled]="guardando"
+                    placeholder="Ej: PRF-001">
+                  <span *ngIf="!color.editando">{{ color.Referencia || '-' }}</span>
+                </td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.CodigoColor"
+                    [disabled]="guardando"
+                    placeholder="#000000">
+                  <span *ngIf="!color.editando">{{ color.CodigoColor || '-' }}</span>
+                </td>
+                <td>
+                  <div
+                    *ngIf="color.CodigoColor"
+                    class="color-swatch"
+                    [style.background-color]="color.CodigoColor">
+                  </div>
+                </td>
+                <td>
+                  <input
+                    *ngIf="color.editando"
+                    type="number"
+                    step="0.01"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="color.Incremento"
+                    [disabled]="guardando">
+                  <span *ngIf="!color.editando">{{ (color.Incremento || 0) | number:'1.2-2' }} €</span>
+                </td>
+                <td class="text-center">
+                  <!-- Modo edición -->
+                  <div *ngIf="color.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-success"
+                      (click)="guardarColorPerfil(color)"
+                      [disabled]="guardando"
+                      title="Guardar">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      class="btn btn-secondary"
+                      (click)="cancelarColorPerfil(color)"
+                      [disabled]="guardando"
+                      title="Cancelar">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+
+                  <!-- Modo vista -->
+                  <div *ngIf="!color.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-primary"
+                      (click)="editarColorPerfil(color)"
+                      [disabled]="guardando"
+                      title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn btn-danger"
+                      (click)="eliminarColorPerfil(color)"
+                      [disabled]="guardando"
+                      title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="coloresPerfil.length === 0">
+                <td colspan="7" class="text-center text-muted py-4">
+                  No hay colores de perfil registrados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============================================= -->
+      <!-- TAB: TIPOS DE ACCIONAMIENTO -->
+      <!-- ============================================= -->
+      <div *ngIf="tabSeleccionado === 'tiposaccionamiento' && !cargando">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 80px;">ID</th>
+                <th>Tipo de Accionamiento</th>
+                <th style="width: 140px;">Incremento (€)</th>
+                <th style="width: 150px;" class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tipo of tiposAccionamiento">
+                <td>{{ tipo.idTipoAccionamiento || '-' }}</td>
+                <td>
+                  <input
+                    *ngIf="tipo.editando"
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="tipo.TipoAccionamiento"
+                    [disabled]="guardando">
+                  <span *ngIf="!tipo.editando">{{ tipo.TipoAccionamiento }}</span>
+                </td>
+                <td>
+                  <input
+                    *ngIf="tipo.editando"
+                    type="number"
+                    step="0.01"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="tipo.Incremento"
+                    [disabled]="guardando">
+                  <span *ngIf="!tipo.editando">{{ (tipo.Incremento || 0) | number:'1.2-2' }} €</span>
+                </td>
+                <td class="text-center">
+                  <!-- Modo edición -->
+                  <div *ngIf="tipo.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-success"
+                      (click)="guardarTipoAccionamiento(tipo)"
+                      [disabled]="guardando"
+                      title="Guardar">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      class="btn btn-secondary"
+                      (click)="cancelarTipoAccionamiento(tipo)"
+                      [disabled]="guardando"
+                      title="Cancelar">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+
+                  <!-- Modo vista -->
+                  <div *ngIf="!tipo.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-primary"
+                      (click)="editarTipoAccionamiento(tipo)"
+                      [disabled]="guardando"
+                      title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn btn-danger"
+                      (click)="eliminarTipoAccionamiento(tipo)"
+                      [disabled]="guardando"
+                      title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="tiposAccionamiento.length === 0">
+                <td colspan="4" class="text-center text-muted py-4">
+                  No hay tipos de accionamiento registrados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============================================= -->
+      <!-- TAB: TARIFAS -->
+      <!-- ============================================= -->
+      <div *ngIf="tabSeleccionado === 'tarifas' && !cargando">
+
+        <!-- Toolbar para tarifas -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="d-flex align-items-center">
+              <label class="me-2 mb-0 fw-semibold">Tipo de Tejido:</label>
+              <select
+                class="form-control form-select w-auto"
+                [(ngModel)]="tipoTejidoTarifa"
+                (change)="cambiarTipoTejidoTarifa()">
+                <option [value]="1">Tipo 1</option>
+                <option [value]="2">Tipo 2</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="btn-group float-end" role="group">
+              <button
+                class="btn btn-success"
+                (click)="guardarTodasTarifas()"
+                [disabled]="guardando || cargando">
+                <i class="fas fa-save me-2"></i>
+                Guardar Todas
+              </button>
+              <button
+                class="btn btn-primary"
+                (click)="exportarTarifasExcel()"
+                [disabled]="guardando || cargando">
+                <i class="fas fa-file-excel me-2"></i>
+                Exportar
+              </button>
+              <button
+                class="btn btn-info"
+                (click)="fileInputTarifas.click()"
+                [disabled]="guardando || cargando">
+                <i class="fas fa-file-import me-2"></i>
+                Importar
+              </button>
+            </div>
+            <input
+              #fileInputTarifas
+              type="file"
+              accept=".xlsx, .xls"
+              (change)="importarTarifasExcel($event)"
+              style="display: none;">
+          </div>
+        </div>
+
+        <!-- Tabla de tarifas con scroll horizontal -->
+        <div class="table-responsive tarifa-table-container">
+          <table class="table table-bordered table-hover table-sm tarifa-table">
+            <thead class="table-dark sticky-header">
+              <tr>
+                <th class="sticky-column" style="min-width: 100px;">
+                  Fila<br>(Alto m)
+                </th>
+                <th
+                  *ngFor="let col of columnasAncho"
+                  class="text-center"
+                  style="min-width: 80px;">
+                  {{ col.label }}<br>
+                  <small class="text-muted">(Ancho m)</small>
+                </th>
+                <th class="text-center sticky-actions" style="min-width: 120px;">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tarifa of tarifas">
+                <!-- Columna Fila (Alto) -->
+                <td class="sticky-column fw-bold bg-light">
+                  {{ tarifa.Fila }}
+                </td>
+
+                <!-- Columnas de precios -->
+                <td *ngFor="let col of columnasAncho" class="text-center p-1">
+                  <input
+                    *ngIf="tarifa.editando"
+                    type="number"
+                    step="0.01"
+                    class="form-control form-control-sm text-end"
+                    [(ngModel)]="tarifa[col.key]"
+                    [disabled]="guardando"
+                    style="width: 75px; margin: 0 auto;">
+                  <span *ngIf="!tarifa.editando" class="precio-cell">
+                    {{ tarifa[col.key] | number:'1.2-2' }}€
+                  </span>
+                </td>
+
+                <!-- Acciones -->
+                <td class="text-center sticky-actions">
+                  <!-- Modo edición -->
+                  <div *ngIf="tarifa.editando" class="btn-group btn-group-sm">
+                    <button
+                      class="btn btn-success"
+                      (click)="guardarTarifa(tarifa)"
+                      [disabled]="guardando"
+                      title="Guardar">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      class="btn btn-secondary"
+                      (click)="cancelarTarifa(tarifa)"
+                      [disabled]="guardando"
+                      title="Cancelar">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+
+                  <!-- Modo vista -->
+                  <div *ngIf="!tarifa.editando">
+                    <button
+                      class="btn btn-primary btn-sm"
+                      (click)="editarTarifa(tarifa)"
+                      [disabled]="guardando"
+                      title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="tarifas.length === 0">
+                <td [attr.colspan]="columnasAncho.length + 2" class="text-center text-muted py-4">
+                  No hay tarifas registradas para este tipo de tejido
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Info helper -->
+        <div class="alert alert-info mt-3">
+          <i class="fas fa-info-circle me-2"></i>
+          <strong>Nota:</strong> Las filas representan alturas (en metros) y las columnas representan anchos (en metros).
+          Los precios están en euros (€).
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Información de ayuda -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">
+        <i class="fas fa-info-circle me-2"></i>
+        Ayuda - Importar Excel
+      </h5>
+      <div class="row">
+        <div class="col-md-3">
+          <h6>Tipos de Tejido</h6>
+          <p class="small mb-0">Columnas requeridas:</p>
+          <ul class="small">
+            <li><code>Tipo de Tejido</code></li>
+            <li><code>Incremento</code> (opcional)</li>
+          </ul>
+        </div>
+        <div class="col-md-3">
+          <h6>Colores de Tejido</h6>
+          <p class="small mb-0">Columnas requeridas:</p>
+          <ul class="small">
+            <li><code>Color</code></li>
+            <li><code>ID Tipo Tejido</code></li>
+            <li><code>Referencia</code> (opcional)</li>
+            <li><code>Código Color</code> (opcional)</li>
+            <li><code>Incremento</code> (opcional)</li>
+          </ul>
+        </div>
+        <div class="col-md-3">
+          <h6>Colores de Perfil</h6>
+          <p class="small mb-0">Columnas requeridas:</p>
+          <ul class="small">
+            <li><code>Color</code></li>
+            <li><code>Referencia</code> (opcional)</li>
+            <li><code>Código Color</code> (opcional)</li>
+            <li><code>Incremento</code> (opcional)</li>
+          </ul>
+        </div>
+        <div class="col-md-3">
+          <h6>Tipos de Accionamiento</h6>
+          <p class="small mb-0">Columnas requeridas:</p>
+          <ul class="small">
+            <li><code>Tipo de Accionamiento</code></li>
+            <li><code>Incremento</code> (opcional)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="alert alert-info mt-3 mb-0">
+        <i class="fas fa-lightbulb me-2"></i>
+        <strong>Tip:</strong> Exporta primero los datos actuales para ver el formato correcto del Excel.
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,54 @@
+.artc-table-container {
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.artc-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+}
+
+.artc-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.artc-sortable:hover {
+    background-color: #e9ecef;
+}
+
+.artc-fila {
+    cursor: pointer;
+}
+
+.artc-fila-sel td {
+    background-color: #fff3cd !important;
+    font-weight: 600;
+}
+
+.artc-td-truncate {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artc-th-sm { width: 70px; }
+.artc-th-md { width: 120px; }
+
+.artc-filter-row th {
+    padding: 2px 4px;
+    background-color: #f8f9fa;
+}
+
+.artc-filter-input {
+    width: 100%;
+    font-size: 11px;
+    padding: 1px 4px;
+    border: 1px solid #ced4da;
+    border-radius: 3px;
+    height: 22px;
+}

@@ -1,0 +1,137 @@
+.honeycomb-articulos-container {
+
+   .page-header {
+      margin-bottom: 1.5rem;
+
+      h2 {
+         font-size: 1.4rem;
+         font-weight: 600;
+         color: #343a40;
+
+         i {
+            margin-right: 8px;
+            color: #6c757d;
+         }
+      }
+   }
+
+   // ─── TABS ────────────────────────────────────────────────────
+   .nav-tabs .nav-link {
+      cursor: pointer;
+      color: #6c757d;
+      background-color: #e8f0fe;
+
+      &.active {
+         font-weight: 600;
+         color: #343a40;
+         background-color: #5486f3;
+      }
+
+      i {
+         margin-right: 5px;
+      }
+   }
+
+   // ─── CARDS ───────────────────────────────────────────────────
+   .card {
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+      .card-header {
+         background-color: #f8f9fa;
+         padding: 0.6rem 1rem;
+         font-size: 0.9rem;
+         border-bottom: 1px solid #dee2e6;
+      }
+   }
+
+   // ─── LISTA DE TIPOS ──────────────────────────────────────────
+   .list-group-item {
+      font-size: 0.85rem;
+      padding: 0.6rem 0.8rem;
+
+      &.active {
+         background-color: #e8f0fe;
+         border-color: #c5d5f8;
+         color: #1a56db;
+
+         strong {
+            color: #1a56db;
+         }
+
+         small {
+            color: #4a72c4;
+         }
+      }
+
+      strong {
+         font-size: 0.88rem;
+      }
+
+      small {
+         font-size: 0.75rem;
+      }
+   }
+
+   // ─── TABLAS ──────────────────────────────────────────────────
+   .table {
+      font-size: 0.84rem;
+      margin-bottom: 0;
+
+      thead th {
+         font-size: 0.78rem;
+         font-weight: 600;
+         text-transform: uppercase;
+         letter-spacing: 0.03em;
+         color: #6c757d;
+         border-top: none;
+         padding: 0.5rem 0.75rem;
+      }
+
+      tbody tr:hover {
+         background-color: #f8f9fa;
+      }
+
+      td {
+         padding: 0.45rem 0.75rem;
+         vertical-align: middle;
+      }
+   }
+
+   // ─── BOTONES XS ──────────────────────────────────────────────
+   .btn-xs {
+      padding: 2px 7px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      border-radius: 3px;
+   }
+
+   // ─── BADGES ──────────────────────────────────────────────────
+   .badge {
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 3px 7px;
+   }
+
+   // ─── FILTROS ─────────────────────────────────────────────────
+   .form-control-sm {
+      font-size: 0.83rem;
+   }
+
+   // ─── FORMULARIO DINÁMICO DE VALORES ──────────────────────────
+   .form-group {
+      label {
+         font-size: 0.82rem;
+         font-weight: 600;
+         color: #495057;
+         margin-bottom: 3px;
+      }
+   }
+
+   // ─── SELECCIÓN MASIVA ────────────────────────────────────────
+   .badge.badge-primary {
+      font-size: 0.8rem;
+      padding: 5px 10px;
+   }
+}

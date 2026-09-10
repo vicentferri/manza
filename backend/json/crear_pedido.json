@@ -1,0 +1,27 @@
+[
+		{"header" : 
+		[
+			{"cif":"52714363L"},
+			{"nomfiscal":"Vicent Ferri"},
+			{"dirfiscal":"Apartat de Correus 596"},
+			{"cpfiscal" : "46870"},
+			{"pobfiscal" : "Ontinyent"},
+			{"provfiscal" : "Valencia"},
+			{"telefono1" : "654332411"},
+			{"email" : "info@neueharu.com"},
+			{"paisfiscal" : "1"},
+			{"observaciones" : "Enviar al apartado de correos"},
+			{"nombrentrega" : "Vicent Ferri - Apartat"},
+			{"domentrega" : "Apartat de Correus 596"},
+			{"cpentrega" : "46870"},
+			{"pobentrega" : "Ontinyent"},
+			{"proventrega" : "Valencia"},
+			{"paisentrega" : "1"}
+		]},
+		{"lines" : 
+		[
+			{"article":"10","desc":"Artículo Número 1","cant":"10","ud":"1","ref":"ref 1.0","obs":"observaciones","pre":"1","dto":"0","tiva":"1","iva":"21"},
+			{"article":"11","desc":"Artículo Número 1","cant":"11","ud":"1","ref":"ref 1.1","obs":"observaciones","pre":"1","dto":"0","tiva":"1","iva":"21"},
+			{"article":"12","desc":"Artículo Número 1","cant":"12","ud":"1","ref":"ref 1.2","obs":"observaciones","pre":"1","dto":"0","tiva":"1","iva":"21"}
+		] }
+	]

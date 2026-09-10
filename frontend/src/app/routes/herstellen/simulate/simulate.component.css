@@ -1,0 +1,32 @@
+.sim_panel {
+
+    height: 550px;
+    overflow-y : auto;
+}
+.sim_sheet {
+
+    width:322px;
+    display : flex;
+    flex-direction:  row;
+    flex-wrap: wrap;
+    color : white;
+    border : 1px solid silver;
+    min-width: 320px;
+    position: relative;
+    overflow-y: hidden;
+
+}
+
+.sim_pill {
+   
+     background-color: red;
+    border : 1px solid black;
+
+}
+
+.sim_pill_rest {
+   
+    background-color: gray;
+   border : 1px solid black;
+
+}

@@ -1,0 +1,107 @@
+<div bsModal #modalSelector="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Impresión Digital — {{ paso === 1 ? 'Seleccionar Imagen' : 'Personalizar' }}</h5>
+                <button type="button" class="close" (click)="cerrar()"><span>&times;</span></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- PASO 1: SELECCIÓN -->
+                <div *ngIf="paso === 1">
+                    <div class="form-group">
+                        <label class="mb-0 mr-2">Colección</label>
+                        <select class="form-control form-control-sm d-inline-block" style="width: auto;"
+                            [(ngModel)]="coleccionFiltro" [ngModelOptions]="{ standalone: true }" (change)="onFiltroChange()">
+                            <option [ngValue]="-1">Todas</option>
+                            <option *ngFor="let c of colecciones" [ngValue]="c.idrow">{{ c.nombre }}</option>
+                        </select>
+                    </div>
+
+                    <div class="ids-grid">
+                        <div class="ids-card" *ngFor="let img of imagenes" (click)="elegirImagen(img)">
+                            <div class="ids-card-img">
+                                <img [src]="getImagenUrl(img.archivo_web)" [alt]="img.nombre" />
+                                <span class="badge badge-info ids-badge" *ngIf="img.personalizable">Personalizable</span>
+                            </div>
+                            <div class="ids-card-body">
+                                <div class="ids-card-nombre">{{ img.nombre }}</div>
+                                <div class="text-muted small">{{ img.precio | number:'1.2-2' }} €</div>
+                            </div>
+                        </div>
+                        <div class="text-muted py-4 text-center w-100" *ngIf="imagenes.length === 0">
+                            No hay imágenes disponibles
+                        </div>
+                    </div>
+
+                    <div class="row mt-2 align-items-center" *ngIf="totalPaginas > 1">
+                        <div class="col-auto">
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item" [ngClass]="{ 'disabled': pagina === 1 }">
+                                        <a class="page-link" (click)="irPagina(pagina - 1)">&laquo;</a>
+                                    </li>
+                                    <li class="page-item" *ngFor="let p of paginas" [ngClass]="{ 'active': p === pagina }">
+                                        <a class="page-link" (click)="irPagina(p)">{{ p }}</a>
+                                    </li>
+                                    <li class="page-item" [ngClass]="{ 'disabled': pagina === totalPaginas }">
+                                        <a class="page-link" (click)="irPagina(pagina + 1)">&raquo;</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: PERSONALIZACIÓN -->
+                <div *ngIf="paso === 2">
+                    <div class="row">
+                        <div class="col-md-8 text-center">
+                            <canvas #canvasPersonalizacion></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Texto</label>
+                                <input type="text" class="form-control form-control-sm" maxlength="60"
+                                    (input)="actualizarTextoCanvas($event.target.value)" placeholder="Nombre a imprimir" />
+                            </div>
+                            <div class="form-group">
+                                <label>Tamaño de letra</label>
+                                <input type="range" min="12" max="80" value="28" class="form-control-range"
+                                    (input)="actualizarTamanoCanvas($event.target.value)" />
+                            </div>
+                            <div class="form-group">
+                                <label>Fuente</label>
+                                <select class="form-control form-control-sm" [(ngModel)]="fontFamily"
+                                    [ngModelOptions]="{ standalone: true }" (change)="actualizarFuenteCanvas()">
+                                    <option value="Arial">Arial</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Color</label>
+                                <input type="color" class="form-control form-control-sm" style="height: 34px;"
+                                    [(ngModel)]="color" [ngModelOptions]="{ standalone: true }" (change)="actualizarFuenteCanvas()" />
+                            </div>
+                            <p class="text-muted small">Arrastra el texto sobre la imagen y usa los tiradores laterales para ajustar el ancho.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" *ngIf="paso === 2" (click)="volverAlPaso1()">
+                    <i class="fa fa-arrow-left"></i> Volver
+                </button>
+                <button type="button" class="btn btn-success btn-sm" *ngIf="paso === 2" [disabled]="guardando" (click)="confirmarPersonalizacion()">
+                    <i class="fa fa-check"></i> {{ guardando ? 'Guardando...' : 'Confirmar' }}
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="cerrar()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>

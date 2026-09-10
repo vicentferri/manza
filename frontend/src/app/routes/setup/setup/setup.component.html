@@ -1,0 +1,523 @@
+<div class="container-fluid py-2">
+
+  <!-- USUARIOS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-dark text-white d-flex align-items-center">
+      <i class="fa fa-users mr-2"></i>
+      <span class="sm-section-title">Usuarios</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/usuarios']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-users fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Usuarios</strong>
+            <small class="text-muted">Gestión de usuarios y permisos de producto</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMOCIONES -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-danger text-white d-flex align-items-center">
+      <i class="fa fa-tag mr-2"></i>
+      <span class="sm-section-title">Promociones</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/promociones-clientes']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-percent fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Promociones</strong>
+            <small class="text-muted">Gestión de promociones de clientes</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/promociones-monitor']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-line-chart fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Monitor</strong>
+            <small class="text-muted">Promociones activas y pedidos asociados</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLORES Y MARCAS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-success text-white d-flex align-items-center">
+      <i class="fa fa-paint-brush mr-2"></i>
+      <span class="sm-section-title">Colores y Marcas</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/colores-marcas']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-paint-brush fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Colores y Marcas</strong>
+            <small class="text-muted">Tipos de Colores y Marcas</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/mandos-cargadores']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-plug fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Cargadores</strong>
+            <small class="text-muted">Cargadores asociados a cada Marca</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCIONAMIENTOS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+      <i class="fa fa-cog mr-2"></i>
+      <span class="sm-section-title">Accionamientos</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/201']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-cog fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tipos</strong>
+            <small class="text-muted">Tipos de Accionamientos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/218']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-list fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Modelos</strong>
+            <small class="text-muted">Modelos de Accionamientos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/217']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-book fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Diccionario</strong>
+            <small class="text-muted">Traducción de los Accionamientos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/216']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-lock fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Permisos</strong>
+            <small class="text-muted">Accionamientos Permitidos a Clientes</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/accionamientos-mapa']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-map fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Mapa Completo</strong>
+            <small class="text-muted">Mapa Completo de los Accionamientos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/902']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-eur fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tarifas Clientes</strong>
+            <small class="text-muted">Precios Accionamientos Clientes</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/accionamientos-radio-tipo']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-wifi fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Radio Tipo</strong>
+            <small class="text-muted">Radio Tipo para Modelos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/accionamientos-radio-tipo-cliente']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-users fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Radio Tipo Clientes</strong>
+            <small class="text-muted">Tarifas Radio Tipo Clientes</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/912']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-object-group fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Grupo Modelo</strong>
+            <small class="text-muted">Grupos Modelos</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEJIDOS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-info text-white d-flex align-items-center">
+      <i class="fa fa-th mr-2"></i>
+      <span class="sm-section-title">Tejidos</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/tejidos']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-th fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tipos de Tejido</strong>
+            <small class="text-muted">Registro de los tipos de Tejidos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/229']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-user fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tejidos Cliente</strong>
+            <small class="text-muted">Tejidos Agregados al Cliente por Producto</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/212']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-book fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Diccionario</strong>
+            <small class="text-muted">Traducciones de Tejidos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/tejidos-colores']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-paint-brush fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Colores Tejidos</strong>
+            <small class="text-muted">Asignación de Colores a Tejidos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/215']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-exchange fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Traducción Colores</strong>
+            <small class="text-muted">Combinación Tejidos-Colores</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/herstellen/stoffesgruppe']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-object-group fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Grupos de Tejidos</strong>
+            <small class="text-muted">Registro de Grupos de Tejidos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/impresion-digital']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-picture-o fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Impresión Digital</strong>
+            <small class="text-muted">Colecciones e Imágenes para Personalización</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/906']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-arrows-v fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tarifa Vertical</strong>
+            <small class="text-muted">Precios Tejido Vertical</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/913']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-tags fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Atributos</strong>
+            <small class="text-muted">Configuración de atributos del tejido</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRAPESOS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-secondary text-white d-flex align-items-center">
+      <i class="fa fa-balance-scale mr-2"></i>
+      <span class="sm-section-title">Contrapesos</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/203']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-balance-scale fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Contrapesos</strong>
+            <small class="text-muted">Registro de Tipos de Contrapesos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/221']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-building fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Empresa</strong>
+            <small class="text-muted">Catálogo de Contrapesos por Empresa</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/222']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-paint-brush fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Color Contrapesos</strong>
+            <small class="text-muted">Combinación Contrapesos-Colores</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/905']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-eur fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tarifas Clientes</strong>
+            <small class="text-muted">Precios Contrapesos Clientes</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOPORTES -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-warning text-dark d-flex align-items-center">
+      <i class="fa fa-columns mr-2"></i>
+      <span class="sm-section-title">Soportes</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/204']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-columns fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Soportes</strong>
+            <small class="text-muted">Catálogo de Soportes de la Empresa</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/219']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-building fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Soportes Empresa</strong>
+            <small class="text-muted">Catálogo de Soportes por Empresa</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/223']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-paint-brush fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Colores Soportes</strong>
+            <small class="text-muted">Combinación Colores-Soportes</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAPAS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-dark text-white d-flex align-items-center">
+      <i class="fa fa-stop-circle mr-2"></i>
+      <span class="sm-section-title">Tapas</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/205']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-stop-circle fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tapas</strong>
+            <small class="text-muted">Catálogo de Tapas de la Empresa</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/220']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-building fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tapas Empresa</strong>
+            <small class="text-muted">Traducción de Tapas por Empresa</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/224']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-paint-brush fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Colores de Tapas</strong>
+            <small class="text-muted">Combinación Colores-Tapas</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TUBOS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-secondary text-white d-flex align-items-center">
+      <i class="fa fa-circle-o mr-2"></i>
+      <span class="sm-section-title">Tubos</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/206']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-circle-o fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tipos de Tubos</strong>
+            <small class="text-muted">Registro de los Tipos de Tubos</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/dnd']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-lock fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Permisos Clientes</strong>
+            <small class="text-muted">Catálogo de Tubos por Cliente</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTROS MAESTROS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-light text-dark border d-flex align-items-center">
+      <i class="fa fa-ellipsis-h mr-2"></i>
+      <span class="sm-section-title">Otros Maestros</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/207']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-cube fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Embalajes</strong>
+            <small class="text-muted">Catálogo de Embalajes</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/208']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-gift fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Empaquetados</strong>
+            <small class="text-muted">Catálogo de Empaquetados</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/209']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-wrench fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Instalación</strong>
+            <small class="text-muted">Catálogo de Instalación Cortina</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/210']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-hand-o-right fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Posición Mando</strong>
+            <small class="text-muted">Catálogo de Posiciones de Mando</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/213']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-home fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Estancias</strong>
+            <small class="text-muted">Catálogo de Estancias</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTRAS TARIFAS -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+      <i class="fa fa-eur mr-2"></i>
+      <span class="sm-section-title">Otras Tarifas</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/907']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-eur fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Tarifas Accesorios</strong>
+            <small class="text-muted">Precios accesorios</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/908']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-yen fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Mecanismo Japonés</strong>
+            <small class="text-muted">Tarifas Mecanismo Japonés</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/909']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-arrows-v fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Mecanismo Vertical</strong>
+            <small class="text-muted">Tarifas Mecanismo Vertical</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/incrementos-genericos']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-cog fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Incrementos Motores</strong>
+            <small class="text-muted">Precio Incrementos Motores</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAJONES ZIP -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-dark text-white d-flex align-items-center">
+      <i class="fa fa-archive mr-2"></i>
+      <span class="sm-section-title">Cajones ZIP</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/300']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-archive fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Cajones</strong>
+            <small class="text-muted">Catálogo de Cajones publicados</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/914']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-users fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Cajones Clientes</strong>
+            <small class="text-muted">Catálogo de Cajones Clientes</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/301']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-arrows-h fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Guias</strong>
+            <small class="text-muted">Catálogo de Guias publicadas</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/911']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-paint-brush fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Incr. Lacados</strong>
+            <small class="text-muted">Precios Incrementos Lacados</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/910']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-arrows-h fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Incr. Guias</strong>
+            <small class="text-muted">Precios Incrementos Guias</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/routes/master/detail/915']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-plus fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Incr. Cajones</strong>
+            <small class="text-muted">Precios Incrementos Cajones</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HONEYCOMB -->
+  <div class="card mb-3 shadow-sm">
+    <div class="card-header bg-warning text-dark d-flex align-items-center">
+      <i class="fa fa-th-large mr-2"></i>
+      <span class="sm-section-title">Honeycomb</span>
+    </div>
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/manza/admin-images']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-picture-o fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Imágenes</strong>
+            <small class="text-muted">Gestión de imágenes Honeycomb</small>
+          </a>
+        </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2">
+          <a [routerLink]="['/manza/admin-data']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-database fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Datos</strong>
+            <small class="text-muted">Gestión de datos Honeycomb</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

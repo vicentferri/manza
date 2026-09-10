@@ -1,0 +1,45 @@
+<div class="container-fluid">
+
+  <div class="card card-block">
+    <div class="panel">
+      <h6>
+        <span class="glyphicons glyphicons-shopping-cart"></span>
+        &nbsp;Backup de Tablas Tarifas
+      </h6>
+      <hr />
+    </div>
+
+    <div class="card-body">
+
+      <div class="row">
+        <div class="col col-12">
+          <div class="BtnToolBar">
+            <button class="btn btn-secondary btn-sm" (click)="Backup()">
+              Crear Copia de Seguridad
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button class="btn btn-secondary btn-sm" (click)="Delete()">
+              Borrar Copia de Seguridad
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button class="btn btn-secondary btn-sm" (click)="Recover()">
+              Restaurar Copia de Seguridad
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col col-12">
+          <jqxGrid #gridSReference [auto-create]="false" (onRowselect)="rowSelect($event)"></jqxGrid>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+
+</div>

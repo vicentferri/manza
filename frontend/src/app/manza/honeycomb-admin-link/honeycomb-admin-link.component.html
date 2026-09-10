@@ -1,0 +1,477 @@
+<div class="container">
+  <div class="honeycomb-articulos-container">
+
+    <!-- CABECERA -->
+    <div class="page-header">
+      <h2><i class="fas fa-cubes"></i> Honeycomb – Artículos y Atributos</h2>
+    </div>
+
+    <!-- TABS -->
+    <ul class="nav nav-tabs mb-3">
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="tabActivo === 'tipos'" (click)="setTab('tipos')">
+          <i class="fas fa-tags"></i> Tipos y Atributos
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="tabActivo === 'articulos'" (click)="setTab('articulos')">
+          <i class="fas fa-list"></i> Artículos
+        </a>
+      </li>
+      <li class="nav-item" *ngIf="articuloEditando">
+        <a class="nav-link" [class.active]="tabActivo === 'valores'" (click)="setTab('valores')">
+          <i class="fas fa-edit"></i> Valores – {{ articuloEditando.Descripcion }}
+        </a>
+      </li>
+    </ul>
+
+    <!-- ══════════════════════════════════════════════════════════════
+        PESTAÑA 1 – TIPOS Y ATRIBUTOS
+    ══════════════════════════════════════════════════════════════ -->
+    <div *ngIf="tabActivo === 'tipos'">
+      <div class="row">
+
+        <!-- LISTA DE TIPOS -->
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><strong>Tipos de artículo</strong></span>
+              <button class="btn btn-sm btn-primary" (click)="abrirModalTipo()">
+                <i class="fas fa-plus"></i> Nuevo
+              </button>
+            </div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush">
+                <li
+                  *ngFor="let tipo of tiposArticulo"
+                  class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                  [class.active]="tipoSeleccionado?.Id === tipo.Id"
+                  (click)="seleccionarTipo(tipo)"
+                  style="cursor:pointer">
+                  <div>
+                    <strong>{{ tipo.Nombre }}</strong>
+                  </div>
+                  <div>
+                    <button class="btn btn-xs btn-outline-secondary mr-1" (click)="abrirModalTipo(tipo); $event.stopPropagation()">
+                      <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="btn btn-xs btn-outline-danger" (click)="eliminarTipo(tipo); $event.stopPropagation()">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </li>
+                <li *ngIf="tiposArticulo.length === 0" class="list-group-item text-muted text-center">
+                  Sin tipos definidos
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ATRIBUTOS DEL TIPO SELECCIONADO -->
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>
+                <strong>Atributos</strong>
+                <span *ngIf="tipoSeleccionado" class="badge badge-primary ml-2">{{ tipoSeleccionado.Nombre }}</span>
+                <span *ngIf="!tipoSeleccionado" class="text-muted"> – selecciona un tipo</span>
+              </span>
+              <button class="btn btn-sm btn-primary" [disabled]="!tipoSeleccionado" (click)="abrirModalAtributo()">
+                <i class="fas fa-plus"></i> Nuevo
+              </button>
+            </div>
+            <div class="card-body p-0">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Orden</th>
+                    <th>Nombre</th>
+                    <th>Tipo dato</th>
+                    <th>Tabla FK</th>
+                    <th>Oblig.</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let atrib of atributos">
+                    <td>{{ atrib.Orden }}</td>
+                    <td><strong>{{ atrib.Nombre }}</strong></td>
+                    <td>
+                      <span class="badge" [ngClass]="{
+                        'badge-secondary': atrib.TipoDato === 'TEXT',
+                        'badge-info':      atrib.TipoDato === 'INT' || atrib.TipoDato === 'DECIMAL',
+                        'badge-warning':   atrib.TipoDato === 'FK'
+                      }">{{ atrib.TipoDato }}</span>
+                    </td>
+                    <td><small>{{ atrib.TablaFK }}</small></td>
+                    <td>
+                      <i class="fas" [class.fa-check-circle]="atrib.Obligatorio" [class.fa-circle]="!atrib.Obligatorio"
+                        [class.text-success]="atrib.Obligatorio" [class.text-light]="!atrib.Obligatorio"></i>
+                    </td>
+                    <td class="text-right">
+                      <button class="btn btn-xs btn-outline-secondary mr-1" (click)="abrirModalAtributo(atrib)">
+                        <i class="fas fa-pencil-alt"></i>
+                      </button>
+                      <button class="btn btn-xs btn-outline-danger" (click)="eliminarAtributo(atrib)">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="atributos.length === 0">
+                    <td colspan="6" class="text-center text-muted">Sin atributos definidos</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 mt-3">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><strong>Catálogo de tablas FK</strong></span>
+      <button class="btn btn-sm btn-primary" (click)="abrirModalTablaFK()">
+        <i class="fas fa-plus"></i> Nueva
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th>Nombre legible</th>
+            <th>Tabla SQL</th>
+            <th>Col. Id</th>
+            <th>Col. Desc</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of tablasFK">
+            <td><strong>{{ t.Nombre }}</strong></td>
+            <td><small class="text-muted">{{ t.Tabla }}</small></td>
+            <td>{{ t.ColumnaId }}</td>
+            <td>{{ t.ColumnaDesc }}</td>
+            <td class="text-right">
+              <button class="btn btn-xs btn-outline-secondary mr-1" (click)="abrirModalTablaFK(t)">
+                <i class="fas fa-pencil-alt"></i>
+              </button>
+              <button class="btn btn-xs btn-outline-danger" (click)="eliminarTablaFK(t)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="tablasFK.length === 0">
+            <td colspan="5" class="text-center text-muted">Sin tablas registradas</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+        PESTAÑA 2 – ARTÍCULOS
+    ══════════════════════════════════════════════════════════════ -->
+    <div *ngIf="tabActivo === 'articulos'">
+
+      <!-- FILTROS + ASIGNACIÓN MASIVA -->
+      <div class="card mb-3">
+        <div class="card-body py-2">
+          <div class="row align-items-center">
+            <div class="col-md-4">
+              <input type="text" class="form-control form-control-sm"
+                placeholder="Buscar por descripción o código..."
+                [(ngModel)]="filtroTexto" (ngModelChange)="filtrarArticulos()">
+            </div>
+            <div class="col-md-3">
+              <select class="form-control form-control-sm" [(ngModel)]="filtroTipo" (ngModelChange)="filtrarArticulos()">
+                <option [value]="0">Todos los tipos</option>
+                <option *ngFor="let t of tiposArticulo" [value]="t.Id">{{ t.Nombre }}</option>
+              </select>
+            </div>
+            <div class="col-md-5 d-flex align-items-center" *ngIf="seleccionados.length > 0">
+              <span class="badge badge-primary mr-2">{{ seleccionados.length }} seleccionados</span>
+              <select class="form-control form-control-sm mr-2" [(ngModel)]="tipoMasivo" style="max-width:180px">
+                <option [value]="0">Asignar tipo...</option>
+                <option *ngFor="let t of tiposArticulo" [value]="t.Id">{{ t.Nombre }}</option>
+              </select>
+              <button class="btn btn-sm btn-success" (click)="asignarTipoMasivo()">
+                <i class="fas fa-check"></i> Aplicar
+              </button>
+            </div>
+            <!-- Dentro del card de filtros, al lado del select de tipo -->
+            <div class="col-md-2">
+              <button class="btn btn-sm btn-outline-secondary btn-block" (click)="cargarArticulos()">
+                <i class="fas fa-sync-alt"></i> Cargar artículos
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRID DE ARTÍCULOS -->
+      <div class="card">
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th style="width:40px">
+                  <input type="checkbox" (change)="toggleTodos($event)">
+                </th>
+                <th>Id ERP</th>
+                <th>Cod.Sol</th>
+                <th>Descripción</th>
+                <th style="width:180px">Tipo artículo</th>
+                <th style="width:80px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let art of articulosFiltrados">
+                <td>
+                  <input type="checkbox" [checked]="estaSeleccionado(art.IdArticuloERP)"
+                    (change)="toggleSeleccion(art.IdArticuloERP)">
+                </td>
+                <td>{{ art.IdArticuloERP }}</td>
+                <td>{{ art.CodSol }}</td>
+                <td>{{ art.Descripcion }}</td>
+                <td>
+                  <select class="form-control form-control-sm"
+                    [ngModel]="art.IdTipoArticulo"
+                    (ngModelChange)="cambiarTipoArticulo(art, $event)">
+                    <option [value]="null">Sin tipo</option>
+                    <option *ngFor="let t of tiposArticulo" [value]="t.Id">{{ t.Nombre }}</option>
+                  </select>
+                </td>
+                <td>
+                  <button class="btn btn-xs btn-outline-primary" [disabled]="!art.IdTipoArticulo"
+                    (click)="abrirValores(art)" title="Editar valores">
+                    <i class="fas fa-sliders-h"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="articulosFiltrados.length === 0">
+                <td colspan="6" class="text-center text-muted py-3">Sin artículos</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+        PESTAÑA 3 – VALORES DE ATRIBUTOS
+    ══════════════════════════════════════════════════════════════ -->
+    <div *ngIf="tabActivo === 'valores' && articuloEditando">
+
+      <div class="d-flex align-items-center mb-3">
+        <button class="btn btn-sm btn-outline-secondary mr-3" (click)="volverAArticulos()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <div>
+          <strong>{{ articuloEditando.Descripcion }}</strong>
+          <span class="text-muted ml-2">Cod: {{ articuloEditando.CodSol }}</span>
+          <span class="badge badge-primary ml-2">{{ articuloEditando.NombreTipoArticulo }}</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div *ngIf="atributosDelTipo.length === 0" class="text-center text-muted py-3">
+            Cargando atributos...
+          </div>
+
+          <div class="row">
+            <div class="col-md-6" *ngFor="let atrib of atributosDelTipo">
+              <div class="form-group">
+                <label>
+                  {{ atrib.Nombre }}
+                  <span *ngIf="atrib.Obligatorio" class="text-danger">*</span>
+                  <span class="badge badge-secondary ml-1" style="font-size:10px">{{ atrib.TipoDato }}</span>
+                </label>
+
+                <!-- TEXT -->
+                <input *ngIf="atrib.TipoDato === 'TEXT'"
+                  type="text" class="form-control form-control-sm"
+                  [(ngModel)]="valoresForm[atrib.Id]"
+                  [placeholder]="atrib.Nombre">
+
+                <!-- INT -->
+                <input *ngIf="atrib.TipoDato === 'INT'"
+                  type="number" step="1" class="form-control form-control-sm"
+                  [(ngModel)]="valoresForm[atrib.Id]">
+
+                <!-- DECIMAL -->
+                <input *ngIf="atrib.TipoDato === 'DECIMAL'"
+                  type="number" step="0.01" class="form-control form-control-sm"
+                  [(ngModel)]="valoresForm[atrib.Id]">
+
+                <!-- FK -->
+                <select *ngIf="atrib.TipoDato === 'FK'"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="valoresForm[atrib.Id]">
+                  <option [value]="null">-- Selecciona --</option>
+                  <option *ngFor="let opt of fkOptions[atrib.Id]" [value]="opt.Id">
+                    {{ opt.Descripcion }}
+                  </option>
+                </select>
+
+                <small *ngIf="atrib.TipoDato === 'FK' && !fkOptions[atrib.Id]?.length" class="text-warning">
+                  Cargando opciones...
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+          <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary mr-2" (click)="volverAArticulos()">Cancelar</button>
+            <button class="btn btn-primary" (click)="guardarValores()" [disabled]="guardandoValores">
+              <i class="fas fa-save"></i>
+              {{ guardandoValores ? 'Guardando...' : 'Guardar valores' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL – TIPO DE ARTÍCULO
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade show d-block" *ngIf="modalTipo" tabindex="-1" style="background:rgba(0,0,0,0.4)">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ formTipo.Id ? 'Editar' : 'Nuevo' }} tipo de artículo</h5>
+        <button class="close" (click)="modalTipo = false"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nombre <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formTipo.Nombre" placeholder="ej: TEJIDO">
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" class="form-control" [(ngModel)]="formTipo.Descripcion">
+        </div>
+        <div class="form-group" *ngIf="false">
+          <label>Tabla destino</label>
+          <input type="text" class="form-control" [(ngModel)]="formTipo.TablaDestino"
+            placeholder="ej: SOL_ARTICULOS_HONEYCOMB_TEJIDOS">
+          <small class="form-text text-muted">Tabla de SQL Server donde se volcarán los datos de este tipo.</small>
+        </div>
+        <div class="form-group form-check">
+          <input type="checkbox" class="form-check-input" id="chkActivo" [(ngModel)]="formTipo.Activo">
+          <label class="form-check-label" for="chkActivo">Activo</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="modalTipo = false">Cancelar</button>
+        <button class="btn btn-primary" (click)="guardarTipo()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL – ATRIBUTO
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade show d-block" *ngIf="modalAtributo" tabindex="-1" style="background:rgba(0,0,0,0.4)">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ formAtributo.Id ? 'Editar' : 'Nuevo' }} atributo</h5>
+        <button class="close" (click)="modalAtributo = false"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nombre <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formAtributo.Nombre" placeholder="ej: COLOR">
+        </div>
+        <div class="form-group">
+          <label>Tipo de dato <span class="text-danger">*</span></label>
+          <select class="form-control" [(ngModel)]="formAtributo.TipoDato">
+            <option *ngFor="let t of tiposDato" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <!-- Sólo si es FK -->
+        <ng-container *ngIf="formAtributo.TipoDato === 'FK'">
+  <div class="form-group">
+    <label>Tabla de referencia <span class="text-danger">*</span></label>
+    <select class="form-control" (ngModelChange)="onTablaFKSeleccionada($event)" [ngModel]="null">
+      <option [value]="null">-- Selecciona una tabla --</option>
+      <option *ngFor="let t of tablasFK" [value]="t.Id">{{ t.Nombre }}</option>
+    </select>
+    <small class="form-text text-muted" *ngIf="formAtributo.TablaFK">
+      Tabla: <strong>{{ formAtributo.TablaFK }}</strong> &nbsp;|&nbsp;
+      Id: <strong>{{ formAtributo.ColumnaFKId }}</strong> &nbsp;|&nbsp;
+      Desc: <strong>{{ formAtributo.ColumnaFKDesc }}</strong>
+    </small>
+  </div>
+</ng-container>
+
+        <div class="form-row">
+          <div class="col">
+            <div class="form-group">
+              <label>Orden</label>
+              <input type="number" class="form-control" [(ngModel)]="formAtributo.Orden">
+            </div>
+          </div>
+          <div class="col d-flex align-items-end">
+            <div class="form-group form-check">
+              <input type="checkbox" class="form-check-input" id="chkOblig" [(ngModel)]="formAtributo.Obligatorio">
+              <label class="form-check-label" for="chkOblig">Obligatorio</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="modalAtributo = false">Cancelar</button>
+        <button class="btn btn-primary" (click)="guardarAtributo()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade show d-block" *ngIf="modalTablaFK" tabindex="-1" style="background:rgba(0,0,0,0.4)">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ formTablaFK.Id ? 'Editar' : 'Nueva' }} tabla FK</h5>
+        <button class="close" (click)="modalTablaFK = false"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nombre legible <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formTablaFK.Nombre"
+            placeholder="ej: Colores de tejido">
+        </div>
+        <div class="form-group">
+          <label>Tabla SQL <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formTablaFK.Tabla"
+            placeholder="ej: SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO">
+        </div>
+        <div class="form-group">
+          <label>Columna ID <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formTablaFK.ColumnaId"
+            placeholder="ej: Id">
+        </div>
+        <div class="form-group">
+          <label>Columna descripción <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" [(ngModel)]="formTablaFK.ColumnaDesc"
+            placeholder="ej: ColorTejido">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="modalTablaFK = false">Cancelar</button>
+        <button class="btn btn-primary" (click)="guardarTablaFK()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

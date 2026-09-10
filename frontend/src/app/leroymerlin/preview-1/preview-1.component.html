@@ -1,0 +1,109 @@
+<div class="card card-border-left">
+    <div class="card-header">
+        <h4 class="card-title">
+            ENROLLABLE&nbsp;{{item.cantidad}}x{{item.ancho}}x{{item.alto}}
+            <span [hidden]="item.precios.T1_Fecha_Entrega == ''">
+                <font color="black">(F.Fab.{{item.precios.T1_Fecha_Entrega}}&nbsp;&nbsp;+ {{item.precios.T1_Transporte}}
+                    d Transporte)</font>
+            </span>
+            <div class="pull-right">
+                <button class="btn btn-success btn-sm" (click)="EditLine(item)"><span
+                        class="glyphicon glyphicon-pencil"></span>&nbsp;Modificar</button>
+                <button class="btn btn-danger btn-sm" (click)="DeleteLine(item)"><span
+                        class="glyphicon glyphicon-trash"></span>&nbsp;Borrar</button>
+            </div>
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4 mt-2 ml-5">
+            <div class="col-sm-4">
+                <h6 class="mb-3">Accionamiento:</h6>
+                <div>
+                    {{item.acc_tipo_text}}&nbsp;{{item.acc_marca_text}}&nbsp;
+                    {{item.acc_tubo_text}}&nbsp;{{item.acc_modelo_text}}&nbsp;{{item.acc_posicion_text}}<br />
+                    <div [hidden]="item.acc_tipo_text!='Cadena'">
+                        <div [hidden]="item.cad_Tipo != 2">
+                            Cadena Metálica:{{item.cad_Altura}}&nbsp;{{item.cad_color_text}}
+                        </div>
+                        <div [hidden]="item.cad_Tipo != 1">
+                            Cadena Específica:{{item.cad_Altura}}&nbsp;{{item.cad_color_text}}
+                        </div>
+                        <div [hidden]="item.cad_Tipo != 0">
+                            Cadena Contínua:{{item.cad_Altura}}&nbsp;{{item.cad_color_text}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <h6 class="mb-3">Tejido:</h6>
+                <div>
+                    {{item.tej_tipo_text}}&nbsp;{{item.tej_color_text}}&nbsp;{{item.tej_salida_text}}
+                </div>
+                <h6 [hidden]="!item.impresion">Impresion Digital:{{item.impresion_imagen}}</h6>
+            </div>
+            <div class="col-sm-4">
+                <h6 class="mb-3">Otros:</h6>
+                <div>Soportes:{{item.sop_tipo_text}}&nbsp;{{item.sop_color_text}}</div>
+                <div>Tapas:{{item.tap_tipo_text}}&nbsp;{{item.tap_color_text}}</div>
+                <div>Contrapeso:{{item.con_tipo_text}}&nbsp;{{item.con_color_text}}</div>
+            </div>
+        </div>
+        <div class="row mb-4 mt-2 ml-5">
+            <div class="col-sm-6 col-lg-6 well" [hidden]="true">
+                <h6 class="mb-3">Instrucciones:({{item.instrucciones.length}})</h6>
+                <div class="input-group">
+                    <textarea class="form-control" style="width:100%;height:100px">{{item.instrucciones}}</textarea>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" [class.btn-success]="isCopied1" type="button">copia</button>
+                    </span>
+                </div>
+            </div>
+            <div class="col-lg-6  col-sm-6 ">
+                <table class="table table-clear">
+                    <thead>
+                        <tr>
+                            <td><strong>Descripción</strong></td>
+                            <td class="center"><strong>Cantidad</strong></td>
+                            <td class="center"><strong>PVP</strong></td>
+                            <td class="center"><strong>C1</strong></td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tej.Según Tarifa</td>
+                            <td style="text-align:center">{{item.precios.T1_Cantidad}}</td>
+                            <td style="text-align:center">{{item.precios.T1_Tejido | number}}€</td>
+                            <td style="text-align:center">{{item.precios.T1_Tejido_C1}}</td>
+                        </tr>
+                        <tr *ngIf="item.precios.T1_Inc_CadenaMetalica>0">
+                            <td>Incr.Cadena Metálica</td>
+                            <td style="text-align:center">{{item.precios.T1_Cantidad}}</td>
+                            <td style="text-align:center">{{item.precios.T1_Inc_CadenaMetalica | number}}€</td>
+                            <td style="text-align:center">{{item.precios.T1_Inc_CadenaMetalica_C1}}</td>
+                        </tr>
+                        <tr *ngIf="item.precios.T1_Inc_Contrapeso>0">
+                            <td>Incr.Contrapeso</td>
+                            <td style="text-align:center">{{item.precios.T1_Cantidad}}</td>
+                            <td style="text-align:center">{{item.precios.T1_Inc_Contrapeso | number}}€</td>
+                            <td style="text-align:center">{{item.precios.T1_Inc_Contrapeso_C1}}</td>
+                        </tr>
+                        <tr *ngIf="item.precios.T1_Inc_Mando>0">
+                            <td>Incr.Mando</td>
+                            <td style="text-align:center">{{item.precios.T1_Cantidad}}</td>
+                            <td style="text-align:center">{{item.precios.T1_Inc_Mando | number}}€</td>
+                            <td style="text-align:center">{{item.precios.T1_Inc_Mando_C1}}&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td class="left"></td>
+                            <td class="left"><strong>TOTAL</strong></td>
+                            <td style="text-align:center"><strong>{{item.precios.T1_PVP | number}}€</strong></td>
+                            <td style="text-align:center"><strong>{{item.precios.T1_PVP_C1}}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+</div>

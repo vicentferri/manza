@@ -1,0 +1,59 @@
+
+
+.bottom-align-text {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+.flex-row {
+  flex-direction: row !important; 
+}
+
+
+.align-items-center {
+  align-items: center !important; }
+
+.app {
+    display:flex;
+    flex: 0 0 50px;
+}
+
+nav-link {
+    color: white !important;
+}
+
+card-border-left {
+    border-left: 2px #0000ff;
+}
+
+footer .navbar-fixed-bottom {
+    bottom: 0px;
+    position: absolute;
+    background-color:#333;
+    width:100%;
+}
+
+.card-header-white {
+  padding: .75rem 1.25rem;
+  margin-bottom: 0;
+  background-color: #ffffff;
+  border : none;
+}
+
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: auto;
+  opacity: 1;
+}
+
+input[type="number"] {
+  -moz-appearance: number-input; 
+}
+
+input[type="number"]::-webkit-inner-spin-button {
+  opacity: 1;
+  height: 38px;
+}
+ 

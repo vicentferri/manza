@@ -1,0 +1,254 @@
+<div class="card">
+  <div class="card-block">
+    <h4 class="card-title">
+      PANEL JAPONES
+      <div *ngIf="item.PJ_TipoJapones == 1">Mecanismo + Tejido</div>
+      <div *ngIf="item.PJ_TipoJapones == 2">Sólo Tejido</div>
+      <div *ngIf="item.PJ_TipoJapones == 3">Solo Mecanismo</div>
+      <span [hidden]="item.precios.T2_Fecha_Entrega == ''">
+        <font color="black"
+          >(F.Fab.{{ item.precios.T2_Fecha_Entrega }}&nbsp;&nbsp;+
+          {{ item.precios.T2_Transporte }} d Transporte)</font
+        >
+      </span>
+      <div class="pull-right">
+        <button class="btn btn-success btn-sm" (click)="EditLine(item)">
+          <span class="glyphicon glyphicon-pencil"></span>&nbsp;Modificar
+        </button>
+        <button class="btn btn-danger btn-sm" (click)="DeleteLine(item)">
+          <span class="glyphicon glyphicon-trash"></span>&nbsp;Borrar
+        </button>
+      </div>
+    </h4>
+
+    <div card="card-body">
+      <div class="row">
+        <table class="table table-bordered">
+          <tr>
+            <td>Cantidad</td>
+            <td>Ancho Mecanismo</td>
+            <td>
+              <div *ngIf="item.PJ_TipoJapones == 1">
+                <label>Alto Total</label>
+              </div>
+              <div *ngIf="item.PJ_TipoJapones == 2">
+                <label>Alto Total</label>
+              </div>
+              <div *ngIf="item.PJ_TipoJapones == 3">
+                <label>Altura Mando(cuerda)</label>
+              </div>
+            </td>
+            <td>Número de Vias</td>
+            <td>Num.Portatelas</td>
+            <td>Ancho Portatela</td>
+            <td>Color Mecanismo</td>
+          </tr>
+          <tr>
+            <td>
+              <b>{{ item.PJ_Cantidad_1 }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_Ancho_2 }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_Alto_1 }}</b>
+            </td>
+            <td>
+              <b>
+                <div *ngIf="item.PJ_NumeroVias_2 == '2'">Riel 2 Vias</div>
+                <div *ngIf="item.PJ_NumeroVias_2 == '3'">Riel 3 Vias</div>
+                <div *ngIf="item.PJ_NumeroVias_2 == '4'">Riel 4 Vias</div>
+                <div *ngIf="item.PJ_NumeroVias_2 == '5'">Riel 5 Vias</div>
+              </b>
+            </td>
+            <td>
+              <b>{{ item.PJ_NumeroPortatelas }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_Ancho_1 }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_ColorRiel_2 }}</b>
+            </td>
+          </tr>
+          <tr>
+            <td>Posición Mando</td>
+            <td>Recogida</td>
+            <td>Tipo de Soporte</td>
+            <td>Contrapeso</td>
+            <td>Num Lamas</td>
+            <td>Ancho Lama</td>
+            <td>Alto Lama Term.</td>
+          </tr>
+          <tr>
+            <td>
+              <b>{{ item.PJ_PosicionMando_2 }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_TipoRecogida_2 }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_TipoSoporte_2 }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_Contrapeso_1 }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_NumeroLamas }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_AnchoLama }}</b>
+            </td>
+            <td>
+              <b>{{ item.PJ_AltoLamaTerminada }}</b>
+            </td>
+          </tr>
+          <tr>
+            <td>Número Paños</td>
+            <td>
+              <b>{{ item.PJ_NumeroPanos }}</b>
+            </td>
+            <td>Estancia</td>
+            <td>
+              <b>{{ item.PJ_Estancia }}</b>
+            </td>
+            <td colspan="3">
+              Observaciones:<b>{{ item.PJ_Estancia_Obs }}</b>
+            </td>
+          </tr>
+
+          <tr>
+            <td colspan="2" *ngIf="item.impresion == true">
+              Impresión Digital:&nbsp;{{ item.impresion }}&nbsp;<b>{{
+                item.impresion_imagen
+              }}</b>
+            </td>
+            <td colspan="5">
+              Tejido:&nbsp;<b>{{ item.PJ_tejidos_text }}</b
+              >&nbsp;Color Lamas:
+              <span
+                ><b>(1) - {{ item.PJ_tejidosC_text }}</b></span
+              >
+              <span *ngIf="item.Tipo2_TejidoColor_2 != '-1'"
+                ><b>(2) - {{ item.PJ_Text_2 }}</b></span
+              >
+              <span *ngIf="item.Tipo2_TejidoColor_3 != '-1'"
+                ><b>(3) - {{ item.PJ_Text_3 }}</b></span
+              >
+              <span *ngIf="item.Tipo2_TejidoColor_4 != '-1'"
+                ><b>(4) - {{ item.PJ_Text_4 }}</b></span
+              >
+              <span *ngIf="item.Tipo2_TejidoColor_5 != '-1'"
+                ><b>(5) - {{ item.PJ_Text_5 }}</b></span
+              >
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="row mb-4 mt-2 ml-5">
+        <div class="col-sm-4 col-lg-4 well" [hidden]="true">
+          <h6 class="mb-3">Instrucciones:({{ item.instrucciones.length }})</h6>
+          <div class="input-group">
+            <textarea class="form-control" style="width: 100%; height: 200px">{{
+              item.instrucciones
+            }}</textarea>
+            <span class="input-group-btn">
+              <button
+                class="btn btn-default"
+                [class.btn-success]="isCopied1"
+                type="button"
+              >
+                copia
+              </button>
+            </span>
+          </div>
+        </div>
+
+        <div class="col-lg-8 col-sm-8">
+          <div
+            class="card card-block mt-1"
+            style="border-left: 4px solid green"
+          >
+            <div>
+              <table class="table table-clear">
+                <thead>
+                  <tr>
+                    <td>
+                      <strong>Descripción</strong>
+                    </td>
+                    <td class="center">
+                      <strong>Cantidad</strong>
+                    </td>
+                    <td class="center">
+                      <strong>PVP</strong>
+                    </td>
+                    <td class="center">
+                      <strong>C1</strong>
+                    </td>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Tejido Según Tarifa</td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_Cantidad }}
+                    </td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_Tejido }}€
+                    </td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_Tejido_C1 }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Número de Vias</td>
+                    <td style="text-align: center"></td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_NumeroVias }}€
+                    </td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_NumeroVias_C1 }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Soportes</td>
+                    <td style="text-align: center"></td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_SoporteTotal }}€
+                    </td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_TipoSoporte_C1 }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Impresión</td>
+                    <td style="text-align: center"></td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_Inc_Impresion }}€
+                    </td>
+                    <td style="text-align: center">
+                      {{ item.precios.T2_Inc_Impresion_C1 }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="left"></td>
+                    <td class="left">
+                      <strong>TOTAL</strong>
+                    </td>
+                    <td style="text-align: center">
+                      <strong>{{ item.precios.T2_PVP }}€</strong>
+                    </td>
+                    <td style="text-align: center">
+                      <strong>{{ item.precios.T2_PVP_C1 }}</strong>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

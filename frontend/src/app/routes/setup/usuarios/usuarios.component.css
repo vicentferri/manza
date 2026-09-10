@@ -1,0 +1,9 @@
+.prod-badge {
+    cursor: pointer;
+    min-width: 32px;
+    transition: opacity 0.1s ease;
+}
+
+.prod-badge:hover {
+    opacity: 0.75;
+}

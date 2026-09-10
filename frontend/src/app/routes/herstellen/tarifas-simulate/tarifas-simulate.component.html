@@ -1,0 +1,528 @@
+<div class="animated fadeIn">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-header">
+        <h5>
+          Generador de Tarifa
+
+          <div class="pull-right">
+            <button class="btn btn-default btn-sm" (click)="BloqueoOpen()">
+              Bloqueo/Desbloqueo
+            </button>
+            &nbsp;
+            <button class="btn btn-default btn-sm" (click)="ClonateOpen()">
+              Clonar
+            </button>
+            &nbsp;
+            <haru-btn-general (Event_New)="New()" (Event_Save)="Save()" (Event_Delete)="Delete()"
+              (Event_Search)="Search()"></haru-btn-general>
+          </div>
+          <div class="pull-right" *ngIf="model.bloqueo === 1">
+            <div class="text-center alert-info">
+              <h5>TARIFA BLOQUEADA</h5>
+            </div>
+          </div>
+        </h5>
+      </div>
+
+      <div class="card-body card-block">
+        <div class="row">
+          <div class="col col-2">
+            <label>Producto</label>
+            <select name="Productos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.tipoproducto" (change)="ChangeProducto($event)" [disabled]="model.bloqueo === 1">
+              <option *ngFor="let pow of lista_productos" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-4">
+            <label>Nombre del Escandallo</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.nombreescandallo"
+              [disabled]="model.bloqueo === 1" />
+          </div>
+          <div class="col col-2">
+            <label form="tipo">Accionamientos</label>
+            <select name="Accionamientos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.tipo" (change)="ChangeTipo($event)" [disabled]="model.bloqueo === 1">
+              <option *ngFor="let pow of lista_accionamientos" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col col-2">
+            <label form="marca">Marcas/Modelos</label>
+            <select name="Marcas" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.marca" [disabled]="model.bloqueo === 1">
+              <option *ngFor="let pow of lista_marcas" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-1">
+            <label>M.Meca(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margenmec" type="number"
+              [disabled]="model.bloqueo === 1" [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-1">
+            <label>M.Acc(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margenacc" type="number"
+              [disabled]="model.bloqueo === 1" [appOnlynumbers]="true" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col col-2">
+            <label>Tejido o Grupo</label>
+            <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.grupotejido" (change)="ChangeGrupoTejido($event)">
+              <option value="1">APLICAR SOBRE GRUPO</option>
+              <option value="0">APLICAR SOBRE TEJIDO</option>
+            </select>
+          </div>
+
+          <div class="col col-3">
+            <div class="row" [hidden]="esgrupo">
+              <div class="col col-12">
+                <label form="tejido">Tejidos</label>
+                <select name="Tejidos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+                  [disabled]="model.bloqueo === 1" [(ngModel)]="model.tejido" (change)="ChangeTejido($event)">
+                  <option *ngFor="let pow of lista_tejidos" [value]="pow.idrow">
+                    {{ pow.descripcion }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="row" [hidden]="!esgrupo">
+              <div class="col col-12">
+                <label form="grupo">Grupo</label>
+                <select name="Grupos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+                  [disabled]="model.bloqueo === 1" [(ngModel)]="model.grupo" (change)="ChangeGrupo($event)">
+                  <option *ngFor="let pow of lista_grupos" [value]="pow.idrow">
+                    {{ pow.descripcion }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group col col-2">
+            <label>Criterio</label>
+            <select class="form-control form-control-sm" id="cliente" required [(ngModel)]="model.criterio"
+              [disabled]="model.bloqueo === 1" [ngModelOptions]="{ standalone: true }">
+              <option *ngFor="let pow of lista_criterios" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-1">
+            <label>M.Tejido(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margentej" type="number"
+              [disabled]="model.bloqueo === 1" [appOnlynumbers]="true" />
+          </div>
+
+          <div class="col col-1">
+            <label>M.Cliente(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margencli" type="number"
+              [disabled]="model.bloqueo === 1" [appOnlynumbers]="true" />
+          </div>
+
+          <div class="form-group col col-1">
+            <label>{{ lblPrecio }}</label>
+            <input type="number" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.preciom2" [appOnlynumbers]="true" />
+          </div>
+          <div class="form-group col col-1">
+            <label>Montaje</label>
+            <input type="number" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.preciomon" [appOnlynumbers]="true" />
+          </div>
+          <div class="form-group col col-1">
+            <label>Densidad</label>
+            <input type="number" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.densidad" [appOnlynumbers]="true" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group col col-2">
+            <label>Desmultiplicador</label>
+            <select class="form-control form-control-sm" id="desmultiplicador" required
+              [(ngModel)]="model.desmultiplicador" [disabled]="model.bloqueo === 1"
+              [ngModelOptions]="{ standalone: true }">
+              <option [value]="1">Si Actúa</option>
+              <option [value]="0">No Actúa</option>
+            </select>
+          </div>
+          <div class="form-group col col-2">
+            <label>Umbral de Actuación</label>
+            <input type="number" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.desmultiplicador_trigger" [appOnlynumbers]="true" />
+          </div>
+          <div class="form-group col col-2">
+            <label>Valor de Actuación</label>
+            <input type="number" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.desmultiplicador_value" [appOnlynumbers]="true" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col col-3">
+            <label>SP Sistema</label>
+            <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.sp_sistema">
+              <option *ngFor="let pow of sp_sistemas" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-3">
+            <label>SP Modelo</label>
+            <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.sp_modelo">
+              <option *ngFor="let pow of sp_modelos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-3">
+            <label>SP Accionamiento</label>
+            <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.sp_accionamiento">
+              <option *ngFor="let pow of sp_accionamientos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-3">
+            <label>SP Tejido</label>
+            <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.sp_tejido">
+              <option *ngFor="let pow of sp_tejidos" [value]="pow.agrupacion">
+                {{ pow.agrupacion }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mt-1">
+          <div class="col col-12">
+            <tabset>
+              <tab>
+                <ng-template tabHeading><i class="icon-list"></i>&nbsp;Detalle de
+                  Escandallo</ng-template>
+                <div style="margin: 5px">
+                  <div class="form-group row mt-2">
+                    <div class="col col-12">
+                      <div>
+                        <div class="BtnToolBar">
+                          <button class="btn btn-secondary btn-block btn-sm" (click)="Open()"
+                            [hidden]="model.idrow == -1">
+                            Agregar Artículos
+                          </button>
+                        </div>
+                        <div class="BtnToolBar">
+                          <button class="btn btn-secondary btn-block btn-sm" (click)="DeleteLines()"
+                            [hidden]="model.idrow == -1">
+                            Borrar Artículos
+                          </button>
+                        </div>
+                        <div class="BtnToolBar">
+                          <button class="btn btn-secondary btn-block btn-sm" (click)="Export(1)"
+                            [hidden]="model.idrow == -1">
+                            Exportar Escandallo
+                          </button>
+                        </div>
+                        <div class="BtnToolBar">
+                          <input type="checkbox" [checked]="model.Editar" (click)="Editar()" />Permitir Edición
+                        </div>
+                      </div>
+                      <jqxGrid #gridDetail [auto-create]="false" (onCellbeginedit)="cellBeginEditEvent($event)"
+                        (onCellendedit)="cellEndEditEvent($event)"></jqxGrid>
+                    </div>
+                  </div>
+                </div>
+              </tab>
+              <tab>
+                <ng-template tabHeading><i class="icon-list"></i>&nbsp;Mano de Obra</ng-template>
+                <jqxGrid #gridTiempos [auto-create]="false" class="mt-2"
+                  (onCellbeginedit)="cellBeginEditEvent_Tiempos($event)"
+                  (onCellendedit)="cellEndEditEvent_Tiempos($event)"></jqxGrid>
+              </tab>
+              <tab>
+                <ng-template tabHeading><i class="icon-list"></i>&nbsp;Tarifa de Precios</ng-template>
+                <div class="row" style="margin: 5px">
+                  <div class="col col-12">
+                    <div>
+                      <div class="BtnToolBar">
+                        <button class="btn btn-secondary btn-block btn-sm mt-3" (click)="Export(2)"
+                          [hidden]="model.idrow == -1">
+                          Exportar Tarifa
+                        </button>
+                      </div>
+                      <div class="pull-right" style="margin-left: 5px">
+                        <button style="margin-left: 3px" class="btn btn-sm btn-secondary mt-3" (click)="GeneraTarifa()">
+                          <i class="fa fa-refresh"></i>&nbsp;Generar Tarifa
+                        </button>
+                      </div>
+
+                      <div class="pull-right">
+                        <label>Bloque</label>
+                        <select class="form-control form-control-sm" required [(ngModel)]="model.bloque"
+                          [ngModelOptions]="{ standalone: true }">
+                          <option [value]="10">Mapa Completo - EURO</option>
+                          <option [value]="15">Mapa Embalaje - EURO</option>
+                          <option [value]="7">
+                            Mapa Desmultiplicador - EURO
+                          </option>
+                          <option [value]="6">Mapa del Peso - KG</option>
+                          <option [value]="5">Mapa de Mecanismo - EURO</option>
+                          <option [value]="4">Mapa Mano de Obra - EURO</option>
+                          <option [value]="3">
+                            Mapa Artículos (ud) - EURO
+                          </option>
+                          <option [value]="2">
+                            Mapa Artículos (ml) - EURO
+                          </option>
+                          <option [value]="8">
+                            Mapa Artículos Verticales - EURO
+                          </option>
+                          <option [value]="9">
+                            Artículos Cantidad por Ancho - EURO
+                          </option>
+                          <option [value]="20">Portatela,Pletina - EURO</option>
+                          <option [value]="14">Mapa K - EURO</option>
+                          <option [value]="13">
+                            Mapa Tejido Con Merma - EURO
+                          </option>
+                          <option [value]="12">
+                            Mapa Tejido Sin Merma - EURO
+                          </option>
+                          <option [value]="1">Mapa del Tejido - EURO</option>
+                        </select>
+                      </div>
+                    </div>
+                    <jqxGrid #gridReference [auto-create]="false" class="mt-3" (onCellclick)="Cellclick($event)">
+                    </jqxGrid>
+                  </div>
+                </div>
+              </tab>
+            </tabset>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" bsModal #staticModalAdd="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+  aria-hidden="true" id="docModalDet">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="staticModalAdd.hide()">
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="Update()">
+          Asignar Artículos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" bsModal #staticModalDetalle="bs-modal" tabindex="-1" role="dialog"
+  aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width: 1100px">
+    <div class="modal-content">
+ 
+      <div class="modal-header">
+        <h6 class="modal-title">
+          Detalle Celda &nbsp;
+          <span class="badge badge-secondary">{{ cx }} m ancho</span>
+          &nbsp;
+          <span class="badge badge-secondary">{{ cy }} m alto</span>
+          &nbsp;
+          <small class="text-muted">{{ model.nombreescandallo }}</small>
+        </h6>
+        <button type="button" class="close" (click)="staticModalDetalle.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+ 
+      <div class="modal-body">
+ 
+        <!-- TABLA DESGLOSE -->
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-bordered mb-0">
+            <thead class="thead-dark">
+              <tr>
+                <th style="width:550px">Componente</th>
+                <th class="text-right" style="width:120px">Cantidad</th>
+                <th class="text-right" style="width:120px">Precio</th>
+                <th class="text-right" style="width:120px">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of detailRows"
+                  [class.table-active]="selectedDetail && selectedDetail.articulo === row.articulo"
+                  style="cursor:pointer"
+                  (click)="onDetailRowClick(row)">
+                <td>{{ row.descripcion }}</td>
+                <td class="text-right">{{ row.cantidad | number:'1.4-4' }}</td>
+                <td class="text-right">{{ row.precio | number:'1.4-4' }}</td>
+                <td class="text-right"><strong>{{ row.total | number:'1.2-2' }}</strong></td>
+              </tr>
+              <tr *ngIf="detailRows.length === 0">
+                <td colspan="4" class="text-center text-muted">Sin datos</td>
+              </tr>
+            </tbody>
+            <tfoot *ngIf="detailRows.length > 0">
+              <tr class="table-secondary">
+                <td colspan="3" class="text-right"><strong>Total</strong></td>
+                <td class="text-right">
+                  <strong>{{ totalDetalle() | number:'1.2-2' }}</strong>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+ 
+        <!-- TABLA ARTÍCULOS DEL COMPONENTE -->
+        <div *ngIf="selectedDetail" class="mt-3">
+          <p class="mb-1">
+            <small class="text-muted">Artículos — <strong>{{ selectedDetail.descripcion }}</strong></small>
+          </p>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover table-bordered mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>Descripción</th>
+                  <th class="text-right" style="width:120px">Cantidad</th>
+                  <th class="text-right" style="width:120px">Precio Tarifa</th>
+                  <th class="text-right" style="width:120px">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of articleRows">
+                  <td>{{ row.descripcion }}</td>
+                  <td class="text-right">{{ row.cantidad | number:'1.4-4' }}</td>
+                  <td class="text-right">{{ row.precio | number:'1.4-4' }}</td>
+                  <td class="text-right"><strong>{{ row.total | number:'1.2-2' }}</strong></td>
+                </tr>
+                <tr *ngIf="articleRows.length === 0">
+                  <td colspan="4" class="text-center text-muted">Sin artículos</td>
+                </tr>
+              </tbody>
+              <tfoot *ngIf="articleRows.length > 0">
+                <tr class="table-secondary">
+                  <td colspan="3" class="text-right"><strong>Total</strong></td>
+                  <td class="text-right">
+                    <strong>{{ totalArticulos() | number:'1.2-2' }}</strong>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+ 
+      </div>
+ 
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="staticModalDetalle.hide()">Cerrar</button>
+      </div>
+ 
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" bsModal #staticModal="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title pull-left">Búsqueda de Clientes</h5>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="staticModal.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <kunden-search (onLineAdded)="KundeAdded($event)" [MultipleSelection]="true"></kunden-search>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" bsModal #staticModalClone="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary">
+        <h5 class="modal-title pull-left">Clonación de Tarifa</h5>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="staticModalClone.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="card h-100">
+          <div class="card-header">
+            Clonar Tarifa
+            <button style="width: 100px" class="btn btn-secondary btn-sm pull-right" (click)="Clone()">
+              Clonar
+            </button>
+          </div>
+          <div class="card-body card-block">
+            <div>
+              <label>Nombre de la Nueva Tarifa</label>
+              <input class="form-control form-control-sm" [(ngModel)]="newmodel.NuevoNombre" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" bsModal #staticModalBloqueo="bs-modal" tabindex="-1" role="dialog"
+  aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary">
+        <h5 class="modal-title pull-left">Bloqueo/Desbloqueo de Tarifa</h5>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="staticModalBloqueo.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="card h-100">
+          <div class="card-header">
+            Bloqueo/DesBloqueo
+            <button style="width: 100px" class="btn btn-secondary btn-sm pull-right" (click)="Operation()">
+              Realizar
+            </button>
+          </div>
+          <div class="card-body card-block">
+            <div class="row">
+              <div class="col col-6 col-no-pad">
+                <label>Nuevo Estado</label>
+                <select class="form-control form-control-sm" id="cliente" required [(ngModel)]="model2.operation"
+                  [ngModelOptions]="{ standalone: true }">
+                  <option [value]="1">BLOQUEADO</option>
+                  <option [value]="0">DESBLOQUEADO</option>
+                </select>
+              </div>
+              <div class="col col-6 col-no-pad">
+                <label>Password</label>
+                <input type="password" class="form-control form-control-sm" [(ngModel)]="model2.password" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

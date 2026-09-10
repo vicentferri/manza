@@ -1,0 +1,20 @@
+<select
+  class="form-control"
+  [(ngModel)]="seleccion"
+  [ngModelOptions]="{ standalone: true }"
+>
+  <option *ngFor="let pow of tipos" [value]="pow.idrow">
+    {{ pow.descripcion }}
+  </option>
+</select>
+<br />
+
+<select2
+  [width]="500"
+  [data]="tipos"
+  [options]="options"
+  [value]="value"
+  (valueChanged)="changed($event)"
+></select2>
+<br />
+Selected values: {{ current }}

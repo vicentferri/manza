@@ -1,0 +1,107 @@
+<div class="animated fadeIn">
+  <div class='container-fluid'>
+
+    <div class="card card-block">
+
+      <div class="container-overview panel">
+        <h5><i class="icon-list mt-1"></i>
+          &nbsp;Descuentos de Fabricación
+        </h5>
+      
+      <hr>
+      
+      </div>
+
+      <div class="row mt-2">
+
+        <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label form="Tipo">Accionamiento</label>
+            <select class="form-control form-control-sm" id="familia" required [(ngModel)]="model.accionamiento" 
+            [ngModelOptions]="{standalone: true}" (change)="ChangeAccionamiento();">
+              <option *ngFor="let pow of accionamientos" [value]="pow.idrow">{{pow.descripcion}}</option>
+            </select>
+          
+        </div>
+
+        <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label form="Tipo">Tipo/Marca</label>
+            <select class="form-control form-control-sm" id="familia" required [(ngModel)]="model.value1" [ngModelOptions]="{standalone: true}"
+            (change)="ChangeAccionamientoMarca();">
+              <option *ngFor="let pow of accionamientos_tipo" [value]="pow.idrow">{{pow.tipo}}</option>
+            </select>
+          
+        </div>
+
+        <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label form="Tipo">Modelo</label>
+            <select class="form-control form-control-sm" id="familia" required [(ngModel)]="model.value5" [ngModelOptions]="{standalone: true}">
+              <option *ngFor="let pow of accionamientos_tipo2" [value]="pow.idrow">{{pow.tipo}}</option>
+            </select>
+          
+        </div>
+      
+        <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label form="Tipo">Soportes</label>
+            <select class="form-control form-control-sm" id="campo1" [(ngModel)]="model.value2" [ngModelOptions]="{standalone: true}">
+              <option *ngFor="let pow of soportes_tipo" [value]="pow.idrow">{{pow.descripcion}}</option>
+            </select>
+         </div>
+
+        <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label form="Tipo">Tapas</label>
+            <select class="form-control form-control-sm" id="campo2" [(ngModel)]="model.value3" [ngModelOptions]="{standalone: true}" >
+              <option *ngFor="let pow of tapas_tipo" [value]="pow.idrow">{{pow.descripcion}}</option>
+            </select>
+        </div>
+       <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label form="Tipo">Tubos</label>
+            <select class="form-control form-control-sm" id="campo2" [(ngModel)]="model.value4" [ngModelOptions]="{standalone: true}" >
+              <option *ngFor="let pow of tubos_tipo" [value]="pow.idrow">{{pow.descripcion}}</option>
+            </select>
+        </div>
+
+          
+        </div>
+
+        <div class="row">
+        <div class="col col-12">
+          <div class="pull-right">
+          <button class="btn btn-secondary btn-block" (click)="Open();">Agregar</button>
+          </div>
+          <div class="pull-right">
+          <button class="btn btn-secondary btn-block" (click)="Refresh();">Recargar</button>
+        </div>
+        </div>
+
+      </div>
+
+      <div class="row mt-2">
+        <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <jqxGrid #gridReference [auto-create]='false'  [ready]='gridReady' 
+            (onCellbeginedit)="cellBeginEditEvent($event)" 
+            (onCellendedit)="cellEndEditEvent($event)" 
+            (onCellclick)="Cellclick($event)"></jqxGrid>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+<div class="modal fade" bsModal #staticModalAdd="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+    aria-hidden="true" id="docModalDet">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                  <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary btn-sm"
+                    (click)="staticModalAdd.hide();">Cerrar</button>
+                <button class="btn btn-primary btn-sm " (click)="Update();">Asignar Artículos</button>
+            </div>
+        </div>
+    </div>
+</div>

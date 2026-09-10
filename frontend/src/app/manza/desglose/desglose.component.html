@@ -1,0 +1,18 @@
+<div *ngIf="values.length > 0">
+  <table
+    class="table table-bordered table-striped table-hoover table-condensed table_responsive"
+  >
+    <tr>
+      <th style="text-align: center">Concepto</th>
+      <th style="text-align: center">Precio</th>
+      <th style="text-align: center">C1</th>
+    </tr>
+    <tr *ngFor="let item of values">
+      <td style="text-align: left">
+        {{ item["label"] }}
+      </td>
+      <td style="text-align: center">{{ item["precio"] }}</td>
+      <td style="text-align: center">{{ item["c1"] }}</td>
+    </tr>
+  </table>
+</div>

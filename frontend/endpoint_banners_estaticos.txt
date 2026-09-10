@@ -1,0 +1,121 @@
+=========================================================
+  ENDPOINT ESTÁTICO: GET /api/sm/uploads/banners/:fichero
+  Servir imágenes de banner de promociones
+=========================================================
+
+La URL que genera el frontend es:
+  https://www.manzasm.com/api/sm/uploads/banners/banner_<idrow>.ext
+
+Por tanto el servidor debe exponer los ficheros bajo el prefijo
+/api/sm/uploads  (que es donde está montado el router /sm).
+
+----------------------------------------------------------
+OPCIÓN A — Static dentro del router /sm  (RECOMENDADO)
+----------------------------------------------------------
+
+En el fichero donde defines el router de /sm (p.ej. routes/sm.js):
+
+  const path   = require('path');
+  const express = require('express');
+
+  // Directorio físico donde se guardan los banners
+  // Debe coincidir con el BANNER_DIR del endpoint de subida
+  const UPLOADS_DIR = path.join(__dirname, '../uploads');
+
+  // Sirve /api/sm/uploads/banners/xxx como fichero estático
+  router.use('/uploads', express.static(UPLOADS_DIR));
+
+  // Asegúrate de que esta línea va ANTES de las rutas dinámicas
+  // que también empiecen por /uploads (si las hay).
+
+
+----------------------------------------------------------
+OPCIÓN B — Static en el app principal (más explícito)
+----------------------------------------------------------
+
+En app.js / server.js, ANTES de montar el router:
+
+  const path    = require('path');
+  const express = require('express');
+
+  const UPLOADS_DIR = path.join(__dirname, 'uploads');
+
+  // Expone en /api/sm/uploads/...
+  app.use('/api/sm/uploads', express.static(UPLOADS_DIR));
+
+
+----------------------------------------------------------
+CABECERAS CORS (si el frontend está en dominio distinto)
+----------------------------------------------------------
+
+Si Express tiene CORS restrictivo, asegúrate de que las
+peticiones GET a /api/sm/uploads/* están permitidas:
+
+  app.use('/api/sm/uploads', (req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      next();
+  }, express.static(UPLOADS_DIR));
+
+
+----------------------------------------------------------
+ESTRUCTURA DE DIRECTORIOS esperada en el servidor
+----------------------------------------------------------
+
+  <raiz_proyecto>/
+  └── uploads/
+      └── banners/
+          ├── banner_1.jpg
+          ├── banner_3.png
+          └── ...
+
+  imagen_banner guardado en BD:  /uploads/banners/banner_1.jpg
+  URL resultante:  https://www.manzasm.com/api/sm/uploads/banners/banner_1.jpg
+
+
+----------------------------------------------------------
+TAMBIÉN actualizar el endpoint de subida (endpoint_promocion_banner.txt)
+----------------------------------------------------------
+
+El route del POST debe ser (sin /sm/ extra):
+
+  router.post('/promocion_banner/:idrow', upload.single('image'), ...)
+
+Y el BANNER_DIR debe apuntar a  <raiz>/uploads/banners/  para que
+express.static los encuentre después.
+
+  const BANNER_DIR = path.join(__dirname, '../uploads/banners');
+
+
+----------------------------------------------------------
+TAMBIÉN añadir imagen_banner al SELECT del endpoint GET de promociones
+----------------------------------------------------------
+
+  GET /api/lm/datosPromocion/:cliente/:centro
+
+  SELECT idrow,
+         descripcion,
+         promocion_activa,
+         promocion_coeficiente,
+         promocion_modificapvp,
+         promocion_coeficiente2,
+         promocion_modificapvc,
+         desde,
+         hasta,
+         promocion_mensaje,
+         imagen_banner          -- <-- añadir
+  FROM   SOL_ARTICULOS_TARIFAS_CLIENTES
+  WHERE  ...
+
+=========================================================
+  RESUMEN DE LO QUE FALTA EN BACKEND
+=========================================================
+
+  1. router.use('/uploads', express.static(UPLOADS_DIR))
+     en el router de /sm  (o equivalente en app.js)
+
+  2. Asegurarse de que BANNER_DIR del POST /promocion_banner
+     guarda en  uploads/banners/  (no en otra ruta)
+
+  3. SELECT imagen_banner en GET /api/lm/datosPromocion
+
+=========================================================

@@ -1,0 +1,95 @@
+<div class="container">
+
+  <div class="row">
+    <div class="col col-4">
+      <!-- form -->
+      <div class="form-group">
+
+        <form [formGroup]="promForm" (ngSubmit)="onSubmit()">
+
+          <div class="row">
+            <div class="col col-12">
+              <label>Cliente</label>
+              <select name="Exportacion" class="form-control form-control-sm" (change)="LoadCustomerData();"
+                [ngModelOptions]="{ standalone: true }" [(ngModel)]="modelCliente.idrow">
+                <option *ngFor="let pow of clientesapi" [value]="pow.idrow">
+                  {{ pow.descripcion }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col col-6">
+              <label>Desde</label>
+              <input class="form-control form-control-sm" type="date" placeholder="Desde" formControlName="Desde"
+                value="{{model.Desde | date:'yyyy-MM-dd'}}" id="Desde"
+                (change)="onDateChange($event,$event.target.value)">
+            </div>
+
+            <div class="col col-6">
+              <label>Hasta</label>
+              <input class="form-control form-control-sm" type="date" placeholder="Hasta" formControlName="Hasta"
+                value="{{model.Hasta | date:'yyyy-MM-dd'}}" id="Hasta"
+                (change)="onDateChange($event,$event.target.value)">
+            </div>
+          </div>
+
+          <div class="row mt-2">
+            <div class="col col-6">
+              <label><input type="checkbox" formControlName="aplicaPVP">&nbsp;Coeficiente PVP</label>
+              <input class="form-control form-control-sm" type="number" placeholder="%PVP" formControlName="CoefPVP">
+            </div>
+
+            <div class="col col-6">
+              <label><input type="checkbox" formControlName="aplicaC1">&nbsp;Coeficiente C1</label>
+              <input class="form-control form-control-sm" type="number" placeholder="%C1" formControlName="CoefC1">
+            </div>
+          </div>
+
+
+
+          <div class="row">
+            <div class="col col-12">
+              <label>Mensaje Promoción</label>
+              <textarea class="form-control form-control-sm" formControlName="Mensaje"
+                placeholder="(Mensaje de la Promoción)"></textarea>
+
+              <div *ngIf="promForm.get('Mensaje').invalid">
+                <div *ngIf="promForm.get('Mensaje').errors.required">Mensaje es Obligatorio</div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col col-12">
+              <button type="submit" class="btn btn-secondary  btn-sm">Programar Promoción</button>
+            </div>
+          </div>
+
+
+        </form>
+
+      </div>
+      <!-- form -->
+    </div>
+    <div class="col col-8">
+      <!-- grid -->
+      <div style="height:600px">
+        <div>
+          <div class="BtnToolBar"><button class="btn  btn-secondary btn-block btn-sm" (click)="All(1);">Todos</button>
+          </div>
+          <div class="BtnToolBar"><button class="btn  btn-secondary btn-block btn-sm" (click)="All(0);">Ninguno</button>
+          </div>
+        </div>
+        <jqxGrid #gridReference [auto-create]='false'></jqxGrid>
+      </div>
+      <!-- grid -->
+    </div>
+  </div>
+
+
+
+
+</div>

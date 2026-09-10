@@ -1,0 +1,17 @@
+/*
+.home-container {
+    margin: 0 auto;
+    max-width: $container-md;
+
+    .home-logo {
+        width: 440px;
+    }
+
+    .home-text {
+        @media only screen and (max-width: $mq-tablet) {
+            text-align: center;
+        }
+    }
+}
+*/
+

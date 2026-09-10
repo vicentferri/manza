@@ -1,0 +1,231 @@
+<div class="card">
+  <div class="card-header">
+    <h4 class="card-title">
+      VERTICAL
+      <div *ngIf="item.TipoVertical == 1">(Mecanismo y Tejido)</div>
+      <div *ngIf="item.TipoVertical == 2">(Solo Tejido)</div>
+      <div *ngIf="item.TipoVertical == 3">(Solo Riel)</div>
+      <span [hidden]="item.precios.T3_Fecha_Entrega == ''">
+        <font color="black"
+          >(F.Fab.{{ item.precios.T3_Fecha_Entrega }}&nbsp;&nbsp;+
+          {{ item.precios.T3_Transporte }} d Transporte)</font
+        >
+      </span>
+      <div class="pull-right">
+        <button class="btn btn-success btn-sm" (click)="EditLine(item)">
+          <span class="glyphicon glyphicon-pencil"></span>&nbsp;Modificar
+        </button>
+        <button class="btn btn-danger btn-sm" (click)="DeleteLine(item)">
+          <span class="glyphicon glyphicon-trash"></span>&nbsp;Borrar
+        </button>
+      </div>
+    </h4>
+  </div>
+  <div class="card-body">
+    <table class="table table-bordered">
+      <tr>
+        <td [hidden]="!item.PV_SEL_1">
+          <table>
+            <tr>
+              <td colspan="6"><b>VERTICAL</b></td>
+            </tr>
+            <tr>
+              <td><b>Ancho</b></td>
+              <td><b>Alto</b></td>
+              <td><b>Cantidad</b></td>
+              <td><b>Ancho Lama</b></td>
+              <td><b>Posición Mec</b></td>
+              <td><b>Color Riel</b></td>
+            </tr>
+            <tr>
+              <td>{{ item.PV_Ancho_1 }}&nbsp;cms</td>
+              <td>{{ item.PV_Alto_1 }}&nbsp;cms</td>
+              <td>{{ item.PV_Cantidad_1 }}</td>
+              <td>{{ item.PV_AnchoLama_1 }}</td>
+              <td>{{ item.PV_PosicionMecanismo_1 }}</td>
+              <td>{{ item.PV_ColorRiel_1 }}</td>
+            </tr>
+            <tr>
+              <td><b>Accionamiento</b></td>
+              <td><b>Tipo de Soporte</b></td>
+              <td><b>Tipo de recogida</b></td>
+              <td><b>Tejido</b></td>
+              <td><b>Color 1</b></td>
+              <td><b>Color 2</b></td>
+            </tr>
+            <tr>
+              <td>{{ item.PV_Accionamiento_1 }}</td>
+              <td>{{ item.PV_TipoSoporte_1 }}</td>
+              <td>{{ item.PV_TipoRecogida_1 }}</td>
+              <td>{{ item.PV_Tejido_text }}</td>
+              <td>{{ item.PV_Tejido_c1_text }}</td>
+              <td>{{ item.PV_Tejido_c2_text }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td [hidden]="!item.PV_SEL_2">
+          <table>
+            <tr>
+              <td colspan="9"><b>VERTICAL INCLINADA</b></td>
+            </tr>
+            <tr>
+              <td><b>Ancho</b></td>
+              <td><b>Cantidad</b></td>
+              <td><b>Altura Min</b></td>
+              <td><b>Altura Max</b></td>
+              <td><b>Posición Mec</b></td>
+              <td><b>Color Riel</b></td>
+              <td><b>Accionamiento</b></td>
+              <td><b>Soporte</b></td>
+              <td><b>Recogida</b></td>
+            </tr>
+
+            <tr>
+              <td>{{ item.PV_Ancho_2 }}&nbsp;cms</td>
+              <td>{{ item.PV_Cantidad_2 }}</td>
+              <td>{{ item.PV_AlturaMin_2 }}&nbsp;cms</td>
+              <td>{{ item.PV_AlturaMax_2 }}&nbsp;cms</td>
+              <td>{{ item.PV_PosicionMecanismo_2 }}</td>
+              <td>{{ item.PV_ColorRiel_2 }}</td>
+              <td>{{ item.PV_Accionamiento_2 }}</td>
+              <td>{{ item.PV_TipoSoporte_2 }}</td>
+              <td>{{ item.PV_TipoRecogida_2 }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <div class="row mb-4 mt-2 ml-5">
+      <div class="col-sm-6 col-lg-6 well" [hidden]="true">
+        <h6 class="mb-3">Instrucciones:({{ item.instrucciones.length }})</h6>
+        <div class="input-group">
+          <textarea class="form-control" style="width: 100%; height: 100px">{{
+            item.instrucciones
+          }}</textarea>
+          <span class="input-group-btn">
+            <button
+              class="btn btn-default"
+              [class.btn-success]="isCopied1"
+              type="button"
+            >
+              copia
+            </button>
+          </span>
+        </div>
+      </div>
+      <div class="col-lg-6 col-sm-6">
+        <table class="table table-clear" *ngIf="item.PV_SEL_1">
+          <thead>
+            <tr>
+              <td><strong>Descripción</strong></td>
+              <td class="center"><strong>Cantidad</strong></td>
+              <td class="center"><strong>PVP</strong></td>
+              <td class="center"><strong>C1</strong></td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Según Tarifa</td>
+              <td style="text-align: center">{{ item.precios.T3_Cantidad }}</td>
+              <td style="text-align: center">{{ item.precios.T3_Tejido }}€</td>
+              <td style="text-align: center">
+                {{ item.precios.T3_Tejido_C1 }}
+              </td>
+            </tr>
+            <tr *ngIf="item.precios.T3_TejidosCombinados > 0">
+              <td>Tejidos Combinados</td>
+              <td style="text-align: center">{{ item.precios.T3_Cantidad }}</td>
+              <td style="text-align: center">
+                {{ item.precios.T3_TejidosCombinados }}€
+              </td>
+              <td style="text-align: center">
+                {{ item.precios.T3_TejidosCombinados_C1 }}
+              </td>
+            </tr>
+            <tr *ngIf="item.precios.T3_NumSoportes > 0">
+              <td>Incr.Tipo de Soporte</td>
+              <td style="text-align: center">
+                {{ item.precios.T3_NumSoportes }}
+              </td>
+              <td style="text-align: center">
+                {{ item.precios.T3_TipoSoporte }}€
+              </td>
+              <td style="text-align: center">
+                {{ item.precios.T3_TipoSoporte_C1 }}
+              </td>
+            </tr>
+            <tr>
+              <td class="left"></td>
+              <td class="left"><strong>TOTAL</strong></td>
+              <td style="text-align: center">
+                <strong>{{ item.precios.T3_PVP }}€</strong>
+              </td>
+              <td style="text-align: center">
+                <strong>{{ item.precios.T3_PVP_C1 }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="table table-clear" *ngIf="item.PV_SEL_2">
+          <thead>
+            <tr>
+              <td><strong>Descripción</strong></td>
+              <td class="center"><strong>Cantidad</strong></td>
+              <td class="center"><strong>Precio</strong></td>
+              <td class="center"><strong>C1</strong></td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Según Tarifa</td>
+              <td style="text-align: center">
+                {{ item.precios.T32_Cantidad }}
+              </td>
+              <td style="text-align: center">{{ item.precios.T32_Tejido }}€</td>
+              <td style="text-align: center">
+                {{ item.precios.T32_Tejido_C1 }}
+              </td>
+            </tr>
+            <tr *ngIf="item.precios.T32_TejidosCombinados > 0">
+              <td>Tejidos Combinados</td>
+              <td style="text-align: center">
+                {{ item.precios.T32_Cantidad }}
+              </td>
+              <td style="text-align: center">
+                {{ item.precios.T32_TejidosCombinados }}€
+              </td>
+              <td style="text-align: center">
+                {{ item.precios.T32_TejidosCombinados_C1 }}
+              </td>
+            </tr>
+            <tr *ngIf="item.precios.T32_NumSoportes > 0">
+              <td>Incr.Tipo de Soporte</td>
+              <td style="text-align: center">
+                {{ item.precios.T32_NumSoportes }}
+              </td>
+              <td style="text-align: center">
+                {{ item.precios.T32_TipoSoporte }}€
+              </td>
+              <td style="text-align: center">
+                {{ item.precios.T32_TipoSoporte_C1 }}
+              </td>
+            </tr>
+            <tr>
+              <td class="left"></td>
+              <td class="left"><strong>TOTAL</strong></td>
+              <td style="text-align: center">
+                <strong>{{ item.precios.T3_PVP }}€</strong>
+              </td>
+              <td style="text-align: center">
+                <strong>{{ item.precios.T3_PVP_C1 }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

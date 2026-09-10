@@ -1,0 +1,408 @@
+<div class="animated fadeIn">
+  <div class="container-fluid">
+    <div class="card card-block">
+      <div class="container-overview panel">
+        <h5>
+          <span class="glyphicons glyphicons-shopping-cart"></span>
+          &nbsp;Presupuestos
+          <div class="pull-right" style="padding-right: 10px">
+            <h5>{{ timerValue }}/{{ timerMaxValue }}</h5>
+          </div>
+        </h5>
+        <hr />
+      </div>
+
+      <div [hidden]="Tab == 2">
+        <div class="row">
+          <div class="col col-md-12">
+            <div *ngIf="document.header[0] != null">
+              <div class="card">
+                <div class="card-header">
+                  Pedido:<strong>{{ document.header[0].codigo }}</strong
+                  >, Fecha:<strong>{{ document.header[0].fecha }}</strong>
+                  <a
+                    href="#"
+                    class="btn btn-sm btn-info float-right"
+                    onclick="javascript:window.print();"
+                    ><i class="fa fa-print"></i> Print</a
+                  >
+                </div>
+                <div class="card-body">
+                  <div class="row mb-4 mt-2">
+                    <div class="col-sm-4">
+                      <h6 class="mb-3">Dirección Fiscal:</h6>
+                      <div>
+                        <strong>{{ document.header[0].nomfiscal }}</strong>
+                      </div>
+                      <div>{{ document.header[0].dirfiscal }}</div>
+                      <div>
+                        {{ document.header[0].cpfiscal }}&nbsp;{{
+                          document.header[0].pobfiscal
+                        }}
+                      </div>
+                      <div>{{ document.header[0].provfiscal }}</div>
+                      <div>{{ document.header[0].emailcliente }}</div>
+                      <div>{{ document.header[0].telcliente }}</div>
+                    </div>
+                    <!--/.col-->
+
+                    <div class="col-sm-4">
+                      <h6 class="mb-3">Dirección de Entrega:</h6>
+                      <div>
+                        <strong>{{ document.header[0].nombre }}</strong>
+                      </div>
+                      <div>{{ document.header[0].domicilio }}</div>
+                      <div>
+                        {{ document.header[0].cp }}&nbsp;{{
+                          document.header[0].poblacion
+                        }}
+                      </div>
+                      <div>{{ document.header[0].provincia }}</div>
+                      <div>{{ document.header[0].email_1 }}</div>
+                      <div>{{ document.header[0].telefono_1 }}</div>
+                    </div>
+                    <!--/.col-->
+
+                    <div class="col-sm-4">
+                      <h6 class="mb-3">Detalles:</h6>
+                      <div>
+                        <strong>{{ document.header[0].observaciones }}</strong>
+                      </div>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                      <div><strong></strong></div>
+                    </div>
+                    <!--/.col-->
+                  </div>
+                  <!--/.row-->
+
+                  <div *ngIf="firmaID == '004'">
+                    <div class="table-responsive-sm">
+                      <table class="table table-striped">
+                        <tbody>
+                          <tr *ngFor="let item of document.lines1">
+                            <td>
+                              <form-bestellung [item]="item"></form-bestellung>
+                            </td>
+                          </tr>
+                          <tr *ngFor="let item of document.lines2">
+                            <td>
+                              <form-bestellung [item]="item"></form-bestellung>
+                            </td>
+                          </tr>
+                          <tr *ngFor="let item of document.lines3">
+                            <td>
+                              <form-bestellung [item]="item"></form-bestellung>
+                            </td>
+                          </tr>
+                          <tr *ngFor="let item of document.lines4">
+                            <td>
+                              <form-bestellung [item]="item"></form-bestellung>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div *ngIf="firmaID != '004'">
+                    <div class="table-responsive-sm">
+                      <table class="table table-striped">
+                        <thead>
+                          <tr>
+                            <th class="center">#</th>
+                            <th>Artículo</th>
+                            <th>Descripcion</th>
+                            <th class="center">Cantidad</th>
+                            <th class="right">Precio</th>
+                            <th class="right">Total</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let item of document.lines">
+                            <td class="center">{{ item.LISTA }}</td>
+                            <td class="left">{{ item.ARTICULO }}</td>
+                            <td class="left">{{ item.DESCRIPCION }}</td>
+                            <td class="center">{{ item.CANTIDAD }}</td>
+                            <td class="right">{{ item.PRECIO }}</td>
+                            <td class="right">{{ item.TOTAL }}</td>
+                            <td></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-4 col-sm-5">
+                      <div class="well">
+                        {{ document.header[0].observaciones }}
+                      </div>
+                    </div>
+                    <!--/.col-->
+
+                    <div class="col-lg-4 offset-lg-4 col-sm-5 offset-sm-2">
+                      <table class="table table-clear">
+                        <tbody>
+                          <tr>
+                            <td class="left"><strong>Subtotal</strong></td>
+                            <td class="right"></td>
+                          </tr>
+                          <tr>
+                            <td class="left"><strong>Descuento</strong></td>
+                            <td class="right"></td>
+                          </tr>
+                          <tr>
+                            <td class="left"><strong>IVA</strong></td>
+                            <td class="right"></td>
+                          </tr>
+                          <tr>
+                            <td class="left"><strong>Total</strong></td>
+                            <td class="right"><strong></strong></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <!--/.col-->
+                  </div>
+                  <!--/.row-->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col col-md-12">
+            <button
+              class="btn btn-primary float-left"
+              (click)="Planificacion()"
+            >
+              Volver a Lista
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div [hidden]="Tab == 1">
+        <div class="row">
+          <div class="col col-md-12">
+            <div style="text-align: center">
+              <label
+                >Desde:
+                <input
+                  type="date"
+                  class="form-control form_control-sm"
+                  [ngModel]="SelectedDate | date : 'yyyy-MM-dd'"
+                  placeholder="Fecha Desde"
+                  id="_SelectedDate"
+                  (change)="onDateChange($event, $event)"
+                  required
+                />
+              </label>
+              <label
+                >Hasta:
+                <input
+                  type="date"
+                  class="form-control form_control-sm"
+                  [ngModel]="SelectedDate2 | date : 'yyyy-MM-dd'"
+                  placeholder="Fecha Hasta"
+                  id="_SelectedDate2"
+                  (change)="onDateChange($event, $event)"
+                  required
+                />
+              </label>
+              <label
+                >&nbsp;
+                <button
+                  class="btn btn-small btn-block btn-primary btn-sm"
+                  (click)="getScope()"
+                >
+                  Consultar
+                </button>
+              </label>
+            </div>
+            <br />
+            <div>
+              <jqxGrid #gridReference [auto-create]="false"></jqxGrid>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col col-lg-12">
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-secondary btn-block btn-sm"
+                (click)="exportData()"
+              >
+                Exportar a Excel
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-secondary btn-block btn-sm"
+                (click)="Impresion()"
+              >
+                Detalle
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-secondary btn-block btn-sm"
+                (click)="staticModalI.show(); Impresion2()"
+              >
+                Imprimir
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-secondary btn-block btn-sm"
+                (click)="Convertir()"
+              >
+                Convertir a Pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal3="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal3"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Visor de Factura</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal3.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 600px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModal3.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal9="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal9"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Enlazar Pedido a Factura</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal9.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label><b>Indicar la Factura a Enlazar</b></label>
+            <input
+              type="text"
+              placeholder="Indicar Factura"
+              [(ngModel)]="FacturaEnlace"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModal9.hide(); EnlazarFactura()"
+        >
+          Enlazar Factura
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalI="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalI"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h4 class="modal-title pull-left">Informe</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModalI.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 850px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModalI.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

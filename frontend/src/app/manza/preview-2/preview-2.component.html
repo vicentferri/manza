@@ -1,0 +1,187 @@
+<div style="background: var(--color-background-primary, #fff); border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; font-size: 14px;">
+
+  <!-- Header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 13px; font-weight: 500;">Panel japonés</span>
+      <span *ngIf="item.PJ_TipoJapones == 1" style="font-size: 12px; color: #495057; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">Mecanismo + Tejido</span>
+      <span *ngIf="item.PJ_TipoJapones == 2" style="font-size: 12px; color: #495057; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">Sólo Tejido</span>
+      <span *ngIf="item.PJ_TipoJapones == 3" style="font-size: 12px; color: #495057; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">Solo Mecanismo</span>
+      <span *ngIf="item.precios.T2_Fecha_Entrega != ''"
+        style="font-size: 12px; color: #6c757d; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">
+        F.Fab. {{ item.precios.T2_Fecha_Entrega }}&nbsp;+&nbsp;{{ item.precios.T2_Transporte }}d transporte
+      </span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-sm btn-outline-secondary" (click)="EditLine(item)">Modificar</button>
+      <button class="btn btn-sm btn-outline-danger" (click)="DeleteLine(item)">Borrar</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+    <!-- Columna izquierda: datos -->
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+
+      <!-- Medidas -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Cantidad</div>
+          <div style="font-weight: 500;">{{ item.PJ_Cantidad_1 }}</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Ancho mecanismo</div>
+          <div style="font-weight: 500;">{{ item.PJ_Ancho_2 }} cm</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">
+            <span *ngIf="item.PJ_TipoJapones != 3">Alto total</span>
+            <span *ngIf="item.PJ_TipoJapones == 3">Alt. mando</span>
+          </div>
+          <div style="font-weight: 500;">{{ item.PJ_Alto_1 }} cm</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Vías</div>
+          <div style="font-weight: 500;">{{ item.PJ_NumeroVias_2 }}</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Portatelas</div>
+          <div style="font-weight: 500;">{{ item.PJ_NumeroPortatelas }}</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Ancho portatela</div>
+          <div style="font-weight: 500;">{{ item.PJ_Ancho_1 }} cm</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Color riel</div>
+          <div style="font-weight: 500;">{{ item.PJ_ColorRiel_2 }}</div>
+        </div>
+      </div>
+
+      <!-- Detalles mecanismo -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Pos. mando</div>
+          <div style="font-size: 13px;">{{ item.PJ_PosicionMando_2 }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Recogida</div>
+          <div style="font-size: 13px;">{{ item.PJ_TipoRecogida_2 }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Soporte</div>
+          <div style="font-size: 13px;">{{ item.PJ_TipoSoporte_2 }}</div>
+        </div>
+      </div>
+
+      <!-- Lamas -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Contrapeso</div>
+          <div style="font-size: 13px;">{{ item.PJ_Contrapeso_1 }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Núm. lamas</div>
+          <div style="font-size: 13px;">{{ item.PJ_NumeroLamas }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Ancho lama</div>
+          <div style="font-size: 13px;">{{ item.PJ_AnchoLama }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Alto term.</div>
+          <div style="font-size: 13px;">{{ item.PJ_AltoLamaTerminada }}</div>
+        </div>
+      </div>
+
+      <!-- Paños / Estancia -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Núm. paños</div>
+          <div style="font-size: 13px;">{{ item.PJ_NumeroPanos }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Estancia</div>
+          <div style="font-size: 13px;">{{ item.PJ_Estancia }}</div>
+        </div>
+      </div>
+      <div *ngIf="item.PJ_Estancia_Obs">
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Observaciones</div>
+        <div style="font-size: 13px;">{{ item.PJ_Estancia_Obs }}</div>
+      </div>
+
+      <!-- Tejido -->
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Tejido</div>
+        <div style="font-size: 13px; line-height: 1.7;">
+          {{ item.PJ_tejidos_text }}
+          &nbsp;·&nbsp; (1) {{ item.PJ_tejidosC_text }}
+          <span *ngIf="item.Tipo2_TejidoColor_2 != '-1'">&nbsp;·&nbsp; (2) {{ item.PJ_Text_2 }}</span>
+          <span *ngIf="item.Tipo2_TejidoColor_3 != '-1'">&nbsp;·&nbsp; (3) {{ item.PJ_Text_3 }}</span>
+          <span *ngIf="item.Tipo2_TejidoColor_4 != '-1'">&nbsp;·&nbsp; (4) {{ item.PJ_Text_4 }}</span>
+          <span *ngIf="item.Tipo2_TejidoColor_5 != '-1'">&nbsp;·&nbsp; (5) {{ item.PJ_Text_5 }}</span>
+        </div>
+        <div *ngIf="item.impresion == true" style="font-size: 12px; color: #6c757d; margin-top: 4px;">
+          Impresión digital: {{ item.impresion_imagen }}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Columna derecha: precios -->
+    <div style="border-left: 1px solid #dee2e6; padding-left: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Resumen de precio</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Tejido según tarifa</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T2_Tejido | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T2_Tejido_C1 }}</div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Número de vías</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T2_NumeroVias | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T2_NumeroVias_C1 }}</div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Soportes</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T2_SoporteTotal | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T2_TipoSoporte_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T2_Inc_Impresion > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Impresión</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T2_Inc_Impresion | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T2_Inc_Impresion_C1 }}</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #dee2e6; margin-top: 16px; padding-top: 12px; display: flex; justify-content: space-between; align-items: baseline;">
+        <span style="font-size: 13px; font-weight: 500; color: #6c757d;">Total</span>
+        <div style="text-align: right;">
+          <div style="font-size: 20px; font-weight: 500;">{{ item.precios.T2_PVP | number:'1.2-2' }} €</div>
+          <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T2_PVP_C1 }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

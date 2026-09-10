@@ -1,0 +1,23 @@
+.prod-badge {
+    cursor: pointer;
+    user-select: none;
+    font-size: 85%;
+    padding: 0.35em 0.6em;
+    min-width: 48px;
+    display: inline-block;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.prod-badge:hover {
+    opacity: 0.8;
+}
+
+.cm-sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.cm-sortable:hover {
+    background-color: #e9ecef;
+}

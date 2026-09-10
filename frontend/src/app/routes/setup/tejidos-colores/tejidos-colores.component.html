@@ -1,0 +1,134 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-2">
+            <h6>
+                <i class="icon-list mt-1"></i>&nbsp;{{ title }}
+                <div class="pull-right">
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <!-- BÚSQUEDA -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-auto">
+                <input type="text" class="form-control form-control-sm"
+                    style="min-width: 260px;"
+                    placeholder="Buscar tejido o color..."
+                    [(ngModel)]="busqueda"
+                    [ngModelOptions]="{ standalone: true }"
+                    (input)="onBusqueda()" />
+            </div>
+            <div class="col-auto ml-auto text-muted small">
+                {{ datosFiltrados.length }} registros
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="row mb-2">
+            <div class="col-12">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="abrirAsignar()">
+                    <i class="fa fa-plus"></i> Agregar Colores a Tejidos
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <div class="table-responsive tc-table-container">
+            <table class="table table-bordered table-hover table-sm tc-table">
+                <thead class="thead-light">
+                    <tr>
+                        <th class="tc-th-sm tc-sortable" (click)="ordenar('idrow')">
+                            ID
+                            <span *ngIf="sortCol === 'idrow'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="tc-sortable" (click)="ordenar('desctejido')">
+                            Tejido
+                            <span *ngIf="sortCol === 'desctejido'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="tc-sortable" (click)="ordenar('desccolor')">
+                            Color
+                            <span *ngIf="sortCol === 'desccolor'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="tc-th-lg text-center">Impresión Digital</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let fila of datosPagina">
+                        <td>{{ fila.idrow }}</td>
+                        <td>{{ fila.desctejido }}</td>
+                        <td>{{ fila.desccolor }}</td>
+                        <td class="text-center">
+                            <i class="fa tc-toggle"
+                                [ngClass]="fila.impresion_digital ? 'fa-check-square text-success' : 'fa-square-o text-muted'"
+                                (click)="toggleImpresionDigital(fila)"></i>
+                        </td>
+                    </tr>
+                    <tr *ngIf="datosPagina.length === 0">
+                        <td colspan="4" class="text-center text-muted py-3">Sin resultados</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="row mt-2 align-items-center" *ngIf="totalPaginas > 1">
+            <div class="col-auto">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === 1 }">
+                            <a class="page-link" (click)="irPagina(pagina - 1)">&laquo;</a>
+                        </li>
+                        <li class="page-item" *ngFor="let p of paginas"
+                            [ngClass]="{ 'active': p === pagina }">
+                            <a class="page-link" (click)="irPagina(p)">{{ p }}</a>
+                        </li>
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === totalPaginas }">
+                            <a class="page-link" (click)="irPagina(pagina + 1)">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="col-auto text-muted small">
+                Página {{ pagina }} de {{ totalPaginas }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- MODAL ASIGNAR COLORES A TEJIDOS -->
+<div bsModal #modalAsignar="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header bg-primary">
+                <h6 class="modal-title pull-left">Colores de Tejidos</h6>
+                <button type="button" class="close pull-right" aria-label="Close" (click)="cerrarAsignar()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <assign-groups></assign-groups>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="cerrarAsignar()">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

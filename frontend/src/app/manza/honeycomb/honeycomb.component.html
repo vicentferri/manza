@@ -1,0 +1,311 @@
+<!-- PANEL HONEYCOMB -->
+<div class="card shadow-sm mt-4">
+  <div class="card-header bg-dark text-white">
+    <h5 class="mb-0">{{ "HONEYCOMB" | translate }}</h5>
+  </div>
+
+  <div class="card-body">
+    <!-- Dimensiones y Cantidad -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">{{ "ANCHO" | translate }} (cm)</label>
+        <input
+          #ancho
+          class="form-control"
+          type="number"
+          min="30"
+          max="130"
+          step="0.1"
+          [(ngModel)]="model.Ancho"
+          (change)="ChangeAncho(ancho.value)"
+        />
+        <small class="text-muted">30-130 cm</small>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">{{ "ALTO" | translate }} (cm)</label>
+        <input
+          #alto
+          class="form-control"
+          type="number"
+          min="30"
+          max="280"
+          step="0.1"
+          [(ngModel)]="model.Alto"
+          (change)="ChangeAlto(alto.value)"
+        />
+        <small class="text-muted">30-280 cm</small>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">{{ "CANTIDAD" | translate }}</label>
+        <input
+          #cantidad
+          class="form-control"
+          type="number"
+          min="1"
+          max="50"
+          [(ngModel)]="model.Cantidad"
+          (change)="ChangeCantidad(cantidad.value)"
+        />
+        <small class="text-muted">1-50 uds</small>
+      </div>
+    </div>
+
+    <!-- Tipo de Accionamiento -->
+    <div class="mb-4">
+      <label class="form-label fw-semibold mb-3">{{ "TIPO DE ACCIONAMIENTO" | translate }}</label>
+      <div class="row g-3">
+        <div class="col-md-3 col-sm-6" *ngFor="let tipo of TiposAccionamiento">
+          <div class="form-check form-check-card">
+            <input
+              class="form-check-input"
+              type="radio"
+              [id]="'tipoAcc_' + tipo.idTipoAccionamiento"
+              name="tipoAccionamiento"
+              [value]="tipo.idTipoAccionamiento"
+              [(ngModel)]="model.TipoAccionamiento"
+              (change)="ChangeAccionamiento()"
+            />
+            <label class="form-check-label w-100" [for]="'tipoAcc_' + tipo.idTipoAccionamiento">
+              <div class="card h-100 option-card">
+                <div class="card-body text-center p-3 d-flex align-items-center justify-content-center" style="min-height: 60px;">
+                  <span class="fw-semibold">{{ tipo.TipoAccionamiento }}</span>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div *ngIf="TiposAccionamiento.length === 0" class="col-12">
+          <p class="text-muted small">No hay tipos de accionamiento disponibles</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tipo de Tejido y Color de Tejido en la misma fila -->
+    <div class="row mb-4">
+      <!-- Tipo de Tejido - Columna Izquierda -->
+      <div class="col-lg-3">
+        <label class="form-label fw-semibold mb-3">{{ "TIPO DE TEJIDO" | translate }}</label>
+        <div class="row g-2">
+          <div class="col-12" *ngFor="let tipo of TiposTejido">
+            <div class="form-check form-check-card">
+              <input
+                class="form-check-input"
+                type="radio"
+                [id]="'tipoTejido_' + tipo.idTipoTejido"
+                name="tipoTejido"
+                [value]="tipo.idTipoTejido"
+                [(ngModel)]="model.TipoTejido"
+                (change)="ChangeTipoTejido()"
+              />
+              <label class="form-check-label w-100" [for]="'tipoTejido_' + tipo.idTipoTejido">
+                <div class="card h-100 option-card" [class.loading]="!tipo.imagenCargada">
+                  
+                  <div class="card-img-container">
+                    <div *ngIf="!tipo.imagenCargada" class="image-loader">
+                      <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Imagen o placeholder SVG -->
+                    <img 
+                      *ngIf="tipo.imagen"
+                      [src]="tipo.imagen" 
+                      [alt]="tipo.TipoTejido"
+                      class="card-img-top"
+                      [class.loaded]="tipo.imagenCargada"
+                      (error)="handleImageError($event, 'tejido')"
+                    />
+                    
+                    <!-- SVG No Image cuando no hay imagen -->
+                    <div *ngIf="!tipo.imagen" class="no-image-placeholder">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+                        <rect width="400" height="300" fill="#f8f9fa"/>
+                        <g opacity="0.5">
+                          <path d="M150 100 L250 100 L250 200 L150 200 Z" fill="none" stroke="#dee2e6" stroke-width="4"/>
+                          <circle cx="180" cy="130" r="15" fill="#dee2e6"/>
+                          <path d="M150 170 L180 145 L210 165 L250 130 L250 200 L150 200 Z" fill="#dee2e6"/>
+                        </g>
+                        <text x="200" y="240" font-family="Arial, sans-serif" font-size="16" fill="#6c757d" text-anchor="middle">
+                          Sin imagen
+                        </text>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="card-body text-center p-2">
+                    <span class="d-block fw-semibold small">{{ tipo.TipoTejido }}</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Color Tejido - Columna Derecha -->
+      <div class="col-lg-9">
+        <label class="form-label fw-semibold mb-3">{{ "COLOR_TEJIDO" | translate }}</label>
+        <div class="row g-2">
+          <div class="col-4" *ngFor="let color of ColoresTejidoFiltrados">
+            <div class="form-check form-check-card">
+              <input
+                class="form-check-input"
+                type="radio"
+                [id]="'colorTejido_' + color.idColorTejido"
+                name="colorTejido"
+                [value]="color.idColorTejido"
+                [(ngModel)]="model.ColorTejido"
+                (change)="ChangeColorTejido()"
+              />
+              <label class="form-check-label w-100" [for]="'colorTejido_' + color.idColorTejido">
+                <div class="card h-100 option-card" [class.loading]="!color.imagenCargada">
+                  <div class="card-img-container">
+                    <div *ngIf="!color.imagenCargada" class="image-loader">
+                      <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Imagen o placeholder SVG -->
+                    <img 
+                      *ngIf="color.imagen"
+                      [src]="color.imagen" 
+                      [alt]="color.ColorTejido"
+                      class="card-img-top"
+                      [class.loaded]="color.imagenCargada"
+                      (error)="handleImageError($event, 'color')"
+                    />
+                    
+                    <!-- SVG No Image cuando no hay imagen -->
+                    <div *ngIf="!color.imagen" class="no-image-placeholder">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+                        <rect width="400" height="300" fill="#f8f9fa"/>
+                        <g opacity="0.5">
+                          <circle cx="200" cy="150" r="60" fill="none" stroke="#dee2e6" stroke-width="4"/>
+                          <path d="M160 150 L200 110 L240 150 L200 190 Z" fill="#dee2e6"/>
+                        </g>
+                        <text x="200" y="240" font-family="Arial, sans-serif" font-size="16" fill="#6c757d" text-anchor="middle">
+                          Sin color
+                        </text>
+                      </svg>
+                    </div>
+                    
+                    <!-- Muestra swatch de color si existe código hex -->
+                    <div 
+                      *ngIf="color.codigoColor" 
+                      class="color-swatch"
+                      [style.background-color]="color.codigoColor">
+                    </div>
+                  </div>
+                  <div class="card-body text-center p-2">
+                    <span class="d-block fw-semibold small">{{ color.ColorTejido }}</span>
+                    <small class="text-muted d-block" *ngIf="color.referencia" style="font-size: 0.7rem;">{{ color.referencia }}</small>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color Perfil - Fila completa -->
+    <div class="mb-4">
+      <label class="form-label fw-semibold mb-3">{{ "COLOR_PERFIL" | translate }}</label>
+      <div class="row g-3">
+        <div class="col-md-3 col-sm-6" *ngFor="let color of ColoresPerfil">
+          <div class="form-check form-check-card">
+            <input
+              class="form-check-input"
+              type="radio"
+              [id]="'colorPerfil_' + color.idColorPerfil"
+              name="colorPerfil"
+              [value]="color.idColorPerfil"
+              [(ngModel)]="model.ColorPerfil"
+              (change)="ChangeColorPerfil()"
+            />
+            <label class="form-check-label w-100" [for]="'colorPerfil_' + color.idColorPerfil">
+              <div class="card h-100 option-card" [class.loading]="!color.imagenCargada">
+                <div class="card-img-container">
+                  <div *ngIf="!color.imagenCargada" class="image-loader">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">Cargando...</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Imagen o placeholder SVG -->
+                  <img 
+                    *ngIf="color.imagen"
+                    [src]="color.imagen" 
+                    [alt]="color.ColorPerfil"
+                    class="card-img-top"
+                    [class.loaded]="color.imagenCargada"
+                    (error)="handleImageError($event, 'perfil')"
+                  />
+                  
+                  <!-- SVG No Image cuando no hay imagen -->
+                  <div *ngIf="!color.imagen" class="no-image-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+                      <rect width="400" height="300" fill="#f8f9fa"/>
+                      <g opacity="0.5">
+                        <rect x="120" y="80" width="160" height="140" rx="8" fill="none" stroke="#dee2e6" stroke-width="4"/>
+                        <line x1="200" y1="120" x2="200" y2="180" stroke="#dee2e6" stroke-width="3"/>
+                        <line x1="170" y1="150" x2="230" y2="150" stroke="#dee2e6" stroke-width="3"/>
+                      </g>
+                      <text x="200" y="240" font-family="Arial, sans-serif" font-size="16" fill="#6c757d" text-anchor="middle">
+                        Sin perfil
+                      </text>
+                    </svg>
+                  </div>
+                  
+                  <!-- Muestra swatch de color si existe código hex -->
+                  <div 
+                    *ngIf="color.codigoColor" 
+                    class="color-swatch"
+                    [style.background-color]="color.codigoColor">
+                  </div>
+                </div>
+                <div class="card-body text-center p-2">
+                  <span class="d-block fw-semibold">{{ color.ColorPerfil }}</span>
+                  <small class="text-muted" *ngIf="color.referencia">{{ color.referencia }}</small>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Precio y Acciones -->
+    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+      <div *ngIf="model.precios?.T7_PVP > 0" class="text-start">
+        <h4 class="mb-1 text-primary fw-bold">
+          {{ model.precios.T7_PVP | number : '1.2-2' }}&nbsp;€
+          <small class="text-muted">({{ model.precios.T7_PVP_C1 }})</small>
+        </h4>
+        <small class="text-muted" *ngIf="model.precios.T7_Fecha_Entrega">
+          F.Fab: {{ model.precios.T7_Fecha_Entrega }} + {{ model.precios.T7_Transporte }}d Trans
+        </small>
+      </div>
+      <div *ngIf="!model.precios?.T7_PVP || model.precios?.T7_PVP <= 0" class="text-start">
+        <p class="text-muted mb-0">Calcule el precio para continuar</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button 
+          class="btn btn-primary" 
+          (click)="CalcularPrecio()"
+          [disabled]="calculando">
+          <span *ngIf="calculando" class="spinner-border spinner-border-sm me-2"></span>
+          {{ calculando ? ('CALCULANDO' | translate) : ('CALCULAR PRECIO' | translate) }}
+        </button>
+        <button 
+          class="btn btn-success" 
+          (click)="Agregar()"
+          [disabled]="!model.precios?.T7_PVP || model.precios?.T7_PVP <= 0">
+          <i class="fas fa-plus me-2"></i>
+          {{ "AGREGAR" | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

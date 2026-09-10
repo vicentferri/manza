@@ -1,0 +1,8 @@
+<button style="margin-left:3px" class="btn btn-sm btn-danger" *ngIf="isDeleteUsed==true" [disabled]="model.bloqueo==1"
+        (click)="Delete();"><i class="fa fa-times"></i>&nbsp;F9 Borrar&nbsp;</button>
+<button style="margin-left:3px" class="btn btn-sm btn-success" *ngIf="isNewUsed==true" (click)="New();"><i
+                class="fa fa-plus"></i>&nbsp;F6 Nuevo&nbsp;</button>
+<button style="margin-left:3px" class="btn btn-sm btn-info" *ngIf="isSearchUsed==true" (click)="Search();"><i
+                class="fa fa-search"></i>&nbsp;F7 Buscar</button>
+<button style="margin-left:3px" class="btn btn-sm btn-primary" *ngIf="isSaveUsed==true" [disabled]="model.bloqueo==1"
+        (click)="Save();"><i class="fa fa-refresh"></i>&nbsp;F8 Actualizar</button>

@@ -1,0 +1,41 @@
+.tj-table-container {
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.tj-table thead th {
+    white-space: nowrap;
+    background-color: #f8f9fa;
+    vertical-align: middle;
+}
+
+.tj-table thead tr:first-child th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.tj-filter-row th {
+    padding: 4px 6px;
+}
+
+.tj-filter-row input {
+    font-size: 0.78rem;
+    min-width: 60px;
+}
+
+.tj-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.tj-sortable:hover {
+    background-color: #e9ecef;
+}
+
+.tj-th-sm { width: 90px; }
+.tj-th-md { width: 160px; }
+
+.tj-input {
+    width: 90px;
+}

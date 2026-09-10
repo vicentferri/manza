@@ -1,0 +1,241 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-2">
+            <h6>
+                <i class="icon-picture mt-1"></i>&nbsp;{{ title }}
+                <div class="pull-right">
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <!-- ZONA DE SUBIDA -->
+        <div class="id-dropzone mb-3" [ngClass]="{ 'id-dropzone-over': isDragOver }"
+            (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)"
+            (click)="inputFile.click()">
+            <i class="fa fa-cloud-upload fa-2x"></i>
+            <p class="mb-0">Arrastra una imagen aquí o haz clic para seleccionarla</p>
+            <input #inputFile type="file" accept="image/*" style="display:none" (change)="onFileInputChange($event)" />
+        </div>
+
+        <!-- FILTROS -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-auto">
+                <label class="mb-0 mr-2">Colección</label>
+                <select class="form-control form-control-sm d-inline-block" style="width: auto;"
+                    [(ngModel)]="coleccionFiltro" [ngModelOptions]="{ standalone: true }" (change)="onFiltroChange()">
+                    <option [ngValue]="-1">Todas</option>
+                    <option *ngFor="let c of colecciones" [ngValue]="c.idrow">{{ c.nombre }} ({{ c.num_imagenes }})</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="mb-0 mr-2">Estado</label>
+                <select class="form-control form-control-sm d-inline-block" style="width: auto;"
+                    [(ngModel)]="activoFiltro" [ngModelOptions]="{ standalone: true }" (change)="onFiltroChange()">
+                    <option value="">Todos</option>
+                    <option value="1">Activos</option>
+                    <option value="0">Inactivos</option>
+                </select>
+            </div>
+            <div class="col-auto ml-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="abrirColecciones()">
+                    <i class="fa fa-folder"></i> Gestionar Colecciones
+                </button>
+            </div>
+        </div>
+
+        <!-- GRID DE IMÁGENES -->
+        <div class="id-grid">
+            <div class="id-card" *ngFor="let img of imagenes" [ngClass]="{ 'id-card-inactivo': !img.activo }">
+                <div class="id-card-img">
+                    <img [src]="getImagenUrl(img.archivo_web)" [alt]="img.nombre" />
+                    <span class="badge badge-info id-badge" *ngIf="img.personalizable">Personalizable</span>
+                </div>
+                <div class="id-card-body">
+                    <input type="text" class="form-control form-control-sm mb-1"
+                        [(ngModel)]="img.nombre" [ngModelOptions]="{ standalone: true }" />
+                    <div class="mb-1 text-muted small">{{ img.coleccion_nombre }}</div>
+                    <div class="form-row mb-1">
+                        <div class="col-6">
+                            <input type="number" step="0.01" class="form-control form-control-sm" placeholder="Precio"
+                                [(ngModel)]="img.precio" [ngModelOptions]="{ standalone: true }" />
+                        </div>
+                        <div class="col-6">
+                            <select class="form-control form-control-sm" [(ngModel)]="img.coleccion_id" [ngModelOptions]="{ standalone: true }">
+                                <option *ngFor="let c of colecciones" [ngValue]="c.idrow">{{ c.nombre }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row mb-2 align-items-center">
+                        <div class="col-6">
+                            <label class="mb-0 small">
+                                <input type="checkbox" [(ngModel)]="img.activo" [ngModelOptions]="{ standalone: true }" /> Activo
+                            </label>
+                        </div>
+                        <div class="col-6">
+                            <label class="mb-0 small">
+                                <input type="checkbox" [(ngModel)]="img.personalizable" [ngModelOptions]="{ standalone: true }" /> Personalizable
+                            </label>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-warning btn-sm btn-block mb-1" (click)="actualizarImagen(img)">
+                        <i class="fa fa-save"></i> Guardar
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm btn-block" (click)="eliminarImagen(img)">
+                        <i class="fa fa-trash"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+            <div class="text-muted py-4 text-center w-100" *ngIf="imagenes.length === 0">
+                No hay imágenes para los filtros seleccionados
+            </div>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="row mt-3 align-items-center" *ngIf="totalPaginas > 1">
+            <div class="col-auto">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === 1 }">
+                            <a class="page-link" (click)="irPagina(pagina - 1)">&laquo;</a>
+                        </li>
+                        <li class="page-item" *ngFor="let p of paginas" [ngClass]="{ 'active': p === pagina }">
+                            <a class="page-link" (click)="irPagina(p)">{{ p }}</a>
+                        </li>
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === totalPaginas }">
+                            <a class="page-link" (click)="irPagina(pagina + 1)">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="col-auto text-muted small">
+                Página {{ pagina }} de {{ totalPaginas }} — {{ total }} imágenes
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- MODAL SUBIDA -->
+<div bsModal #modalSubida="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Subir Imagen</h5>
+                <button type="button" class="close" (click)="cerrarModalSubida()"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3" *ngIf="previewUrl">
+                    <img [src]="previewUrl" class="id-upload-preview" alt="Vista previa" />
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Nombre <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm" maxlength="255"
+                            [(ngModel)]="formSubida.nombre" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Colección <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <select class="form-control form-control-sm" [(ngModel)]="formSubida.coleccion_id" [ngModelOptions]="{ standalone: true }">
+                            <option *ngFor="let c of colecciones" [ngValue]="c.idrow">{{ c.nombre }}</option>
+                            <option [ngValue]="-1">+ Crear nueva colección</option>
+                        </select>
+                        <input *ngIf="formSubida.coleccion_id === -1" type="text" class="form-control form-control-sm mt-1"
+                            placeholder="Nombre de la nueva colección"
+                            [(ngModel)]="formSubida.coleccion_nueva" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Precio</label>
+                    <div class="col-sm-8">
+                        <input type="number" step="0.01" class="form-control form-control-sm"
+                            [(ngModel)]="formSubida.precio" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-sm-6">
+                        <label class="mb-0">
+                            <input type="checkbox" [(ngModel)]="formSubida.activo" [ngModelOptions]="{ standalone: true }" /> Activo
+                        </label>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="mb-0">
+                            <input type="checkbox" [(ngModel)]="formSubida.personalizable" [ngModelOptions]="{ standalone: true }" /> Personalizable
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" [disabled]="subiendo" (click)="confirmarSubida()">
+                    <i class="fa fa-save"></i> {{ subiendo ? 'Subiendo...' : 'Subir' }}
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="cerrarModalSubida()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL COLECCIONES -->
+<div bsModal #modalColecciones="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gestionar Colecciones</h5>
+                <button type="button" class="close" (click)="modalColecciones.hide()"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th class="text-center">Activa</th>
+                            <th class="text-center">Imágenes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let c of colecciones">
+                            <td>{{ c.nombre }}</td>
+                            <td class="text-center">
+                                <i class="fa" [ngClass]="c.activo ? 'fa-check text-success' : 'fa-times text-danger'"></i>
+                            </td>
+                            <td class="text-center">{{ c.num_imagenes }}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-outline-secondary btn-sm mr-1" (click)="editarColeccion(c)">
+                                    <i class="fa fa-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminarColeccion(c)">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <hr />
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">{{ formColeccion.idrow ? 'Editar' : 'Nueva' }} colección</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm mb-1" maxlength="255"
+                            placeholder="Nombre" [(ngModel)]="formColeccion.nombre" [ngModelOptions]="{ standalone: true }" />
+                        <label class="mb-0">
+                            <input type="checkbox" [(ngModel)]="formColeccion.activo" [ngModelOptions]="{ standalone: true }" /> Activa
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" (click)="guardarColeccion()">
+                    <i class="fa fa-save"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalColecciones.hide()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>

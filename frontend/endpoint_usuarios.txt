@@ -1,0 +1,192 @@
+=========================================================
+  ENDPOINTS: Maestro de Usuarios con Permisos de Producto
+  Tabla:     SOL_USUARIOS  (confirmar nombre real)
+  Stack:     Node.js + Express + SQL Server / MySQL
+=========================================================
+
+
+-- CAMBIOS EN LA BD --
+
+  Añadir las 5 columnas de producto a la tabla de usuarios:
+
+  --- SQL Server ---
+  ALTER TABLE SOL_USUARIOS ADD
+    prod_1  BIT NOT NULL DEFAULT 0,   -- Enrollable
+    prod_2  BIT NOT NULL DEFAULT 0,   -- Panel Japonés
+    prod_3  BIT NOT NULL DEFAULT 0,   -- Vertical
+    prod_4  BIT NOT NULL DEFAULT 0,   -- Compac
+    prod_7  BIT NOT NULL DEFAULT 0;   -- HoneyComb
+
+  --- MySQL ---
+  -- ALTER TABLE SOL_USUARIOS
+  --   ADD COLUMN prod_1 TINYINT(1) NOT NULL DEFAULT 0,
+  --   ADD COLUMN prod_2 TINYINT(1) NOT NULL DEFAULT 0,
+  --   ADD COLUMN prod_3 TINYINT(1) NOT NULL DEFAULT 0,
+  --   ADD COLUMN prod_4 TINYINT(1) NOT NULL DEFAULT 0,
+  --   ADD COLUMN prod_7 TINYINT(1) NOT NULL DEFAULT 0;
+
+  NOTA: el nombre real de la tabla puede diferir.
+  Buscar la tabla que contiene los campos idrow, name, surname,
+  email, empresa, subempresa, ambito usada por el endpoint
+  actual GET /api/users (Master_NH_Usuario_GetURL).
+
+
+-- CÓDIGO DE LOS ENDPOINTS --
+
+  Añadir en el fichero de rutas /sm:
+
+--------------------------------------------------------------
+
+// ─── GET /sm/usuarios ────────────────────────────────────────────────────────
+// Lista todos los usuarios con los 5 campos de producto
+router.get('/usuarios', async (req, res) => {
+  try {
+
+    // --- SQL Server ---
+    const result = await pool.request().query(`
+      SELECT
+        u.idrow,
+        u.name,
+        u.surname,
+        u.email,
+        u.empresa,
+        u.subempresa,
+        u.ambito,
+        u.integracion,
+        ISNULL(c.descripcion, '') AS descempresa,
+        ISNULL(u.prod_1, 0) AS prod_1,
+        ISNULL(u.prod_2, 0) AS prod_2,
+        ISNULL(u.prod_3, 0) AS prod_3,
+        ISNULL(u.prod_4, 0) AS prod_4,
+        ISNULL(u.prod_7, 0) AS prod_7
+      FROM  SOL_USUARIOS u
+      LEFT  JOIN SOL_ARTICULOS_TARIFAS_CLIENTES c
+             ON  c.idrow = u.empresa
+      ORDER BY u.name
+    `);
+    return res.json({ Table: result.recordset });
+
+    // --- MySQL ---
+    // const [rows] = await db.query(`
+    //   SELECT
+    //     u.idrow, u.name, u.surname, u.email,
+    //     u.empresa, u.subempresa, u.ambito, u.integracion,
+    //     IFNULL(c.descripcion, '') AS descempresa,
+    //     IFNULL(u.prod_1, 0) AS prod_1,
+    //     IFNULL(u.prod_2, 0) AS prod_2,
+    //     IFNULL(u.prod_3, 0) AS prod_3,
+    //     IFNULL(u.prod_4, 0) AS prod_4,
+    //     IFNULL(u.prod_7, 0) AS prod_7
+    //   FROM  SOL_USUARIOS u
+    //   LEFT  JOIN SOL_ARTICULOS_TARIFAS_CLIENTES c ON c.idrow = u.empresa
+    //   ORDER BY u.name
+    // `);
+    // return res.json({ Table: rows });
+
+  } catch (err) {
+    console.error('[GET /sm/usuarios]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+
+// ─── POST /sm/usuario ─────────────────────────────────────────────────────────
+// Crea un nuevo usuario
+router.post('/usuario', async (req, res) => {
+  try {
+    const { name, surname, email, password, empresa, subempresa, ambito } = req.body;
+
+    // --- SQL Server ---
+    await pool.request()
+      .input('name',       sql.VarChar(100), name       || null)
+      .input('surname',    sql.VarChar(100), surname    || null)
+      .input('email',      sql.VarChar(255), email      || null)
+      .input('password',   sql.VarChar(100), password   || null)
+      .input('empresa',    sql.Int,          empresa    && empresa !== '-1' ? parseInt(empresa) : null)
+      .input('subempresa', sql.Int,          subempresa && subempresa !== '-1' ? parseInt(subempresa) : null)
+      .input('ambito',     sql.VarChar(10),  ambito     || 'E')
+      .query(`
+        INSERT INTO SOL_USUARIOS (name, surname, email, password, empresa, subempresa, ambito)
+        VALUES (@name, @surname, @email, @password, @empresa, @subempresa, @ambito)
+      `);
+
+    // --- MySQL ---
+    // await db.query(
+    //   `INSERT INTO SOL_USUARIOS (name, surname, email, password, empresa, subempresa, ambito)
+    //    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    //   [name || null, surname || null, email || null, password || null,
+    //    empresa && empresa !== '-1' ? empresa : null,
+    //    subempresa && subempresa !== '-1' ? subempresa : null,
+    //    ambito || 'E']
+    // );
+
+    return res.json({ message: 'OK' });
+
+  } catch (err) {
+    console.error('[POST /sm/usuario]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+
+// ─── DELETE /sm/usuario/:id ───────────────────────────────────────────────────
+// Elimina un usuario por su idrow
+router.delete('/usuario/:id', async (req, res) => {
+  try {
+    const idrow = parseInt(req.params.id, 10);
+
+    // --- SQL Server ---
+    await pool.request()
+      .input('idrow', sql.Int, idrow)
+      .query('DELETE FROM SOL_USUARIOS WHERE idrow = @idrow');
+
+    // --- MySQL ---
+    // await db.query('DELETE FROM SOL_USUARIOS WHERE idrow = ?', [idrow]);
+
+    return res.json({ message: 'OK' });
+
+  } catch (err) {
+    console.error('[DELETE /sm/usuario/:id]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+--------------------------------------------------------------
+
+
+-- NOTA: EDICIÓN DE CAMPOS Y PRODUCTOS --
+
+  El frontend usa el endpoint genérico ya existente:
+
+    POST /sm/update_table
+
+  con body:
+    {
+      "table":  "SOL_USUARIOS",
+      "column": "idrow",
+      "id":     <idrow>,
+      "field":  "<campo>",         (name|surname|email|empresa|subempresa|ambito|prod_1|...|prod_7)
+      "value":  "<valor>"
+    }
+
+  El toggle inline de productos también usa /sm/update_table.
+  La edición en bloque lanza múltiples llamadas a /sm/update_table
+  en paralelo (una por usuario × campo con valor != '').
+
+  IMPORTANTE: asegurarse de que la tabla SOL_USUARIOS está en
+  la lista de tablas permitidas por el endpoint /sm/update_table.
+
+
+=========================================================
+  RESUMEN DE CAMBIOS
+=========================================================
+
+  1. BD:     ALTER TABLE SOL_USUARIOS ADD prod_1..prod_7 BIT DEFAULT 0
+  2. RUTAS:  Añadir al router /sm:
+               GET    /sm/usuarios
+               POST   /sm/usuario
+               DELETE /sm/usuario/:id
+  3. EDICIÓN: usa /sm/update_table ya existente
+             (añadir SOL_USUARIOS a tablas permitidas si aplica)
+
+=========================================================

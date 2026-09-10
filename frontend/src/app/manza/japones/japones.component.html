@@ -1,0 +1,366 @@
+<div class="card shadow-sm mt-4">
+  
+
+<div class="card-header bg-dark text-white">
+    <h5 class="mb-0">{{ "PANEL JAPONES" | translate }}</h5>
+  </div>
+
+  <div class="card-body">
+<div class="row">
+  <div class="col col-12">
+    <div class="mt-2" style="padding: 5px; border: none">
+
+      <!-- Tipo -->
+      <div class="row">
+        <div class="col-12">
+          <div class="input-group">
+            <label>{{ "COMPOSICION" | translate }}</label>
+            <select name="TipoJapones" class="form-control selcls"
+              [(ngModel)]="TipoJapones" style="width: 100%"
+              (change)="ChangeTipoJapones()" (blur)="ChangeTipoJapones()">
+              <option value="1">{{ "MECANISMOTEJIDO" | translate }}</option>
+              <option value="2">{{ "SOLOTEJIDO" | translate }}</option>
+              <option value="3">{{ "SOLOMECANISMO" | translate }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mecanismo -->
+      <div class="row">
+        <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "CANTIDAD" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="0" max="600"
+            [(ngModel)]="PJ_Cantidad_1" id="PJ_Cantidad_1"
+            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required />
+        </div>
+        <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "ANCHOMECANISMO" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+            [(ngModel)]="PJ_Ancho_2" name="PJ_Ancho_2" id="PJ_Ancho_2"
+            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }"
+            (change)="Tarifa_Japones_Mecanismo()" (blur)="Tarifa_Japones_Mecanismo()" required />
+        </div>
+        <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label *ngIf="TipoJapones == '1'">{{ "ALTURATOTAL" | translate }}</label>
+          <label *ngIf="TipoJapones == '3'">{{ "ALTURAMANDO" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+            [(ngModel)]="PJ_Alto_1" id="PJ_Alto_1"
+            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required
+            (change)="Tarifa_Japones_Mecanismo()" (blur)="Tarifa_Japones_Mecanismo()" />
+        </div>
+        <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "NUMEROVIAS" | translate }}</label>
+          <select name="PJ_NumeroVias_2" [(ngModel)]="PJ_NumeroVias_2"
+            class="form-control form-control-sm"
+            (change)="Tarifa_Japones_Mecanismo()" (blur)="Tarifa_Japones_Mecanismo()">
+            <option value="-1">{{ "ELEGIR" | translate }}</option>
+            <option value="2">{{ "RIEL2VIAS" | translate }}</option>
+            <option value="3">{{ "RIEL3VIAS" | translate }}</option>
+            <option value="4">{{ "RIEL4VIAS" | translate }}</option>
+            <option value="5">{{ "RIEL5VIAS" | translate }}</option>
+          </select>
+        </div>
+        <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "NUMPORTATELAS" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="2" max="10"
+            [(ngModel)]="PJ_NumeroPortatelas" id="PJ_NumeroPortatelas"
+            [appMaxdigits]="3" (blur)="ChangeNumeroPortatelas()"
+            [ngModelOptions]="{ standalone: true }" required />
+        </div>
+        <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "ANCHOPORTATELAS" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+            [(ngModel)]="PJ_Ancho_1" id="PJ_Ancho_1"
+            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required />
+        </div>
+      </div>
+
+      <!-- Color mecanismo, posición, recogida, soporte -->
+      <div class="row">
+        <div class="col col-3 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "COLORMECANISMO" | translate }}</label>
+          <select name="PJ_ColorRiel_2" [(ngModel)]="PJ_ColorRiel_2" class="form-control form-control-sm">
+            <option value="-1">{{ "ELEGIR" | translate }}</option>
+            <option value="BLANCO">{{ "BLANCO" | translate }}</option>
+          </select>
+        </div>
+        <div class="col col-3 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "POSICIONMANDO" | translate }}</label>
+          <select name="PJ_PosicionMando_2" [(ngModel)]="PJ_PosicionMando_2" class="form-control form-control-sm">
+            <option value="-1">{{ "ELEGIR" | translate }}</option>
+            <option value="IZ">{{ "IZ" | translate }}</option>
+            <option value="DE">{{ "DE" | translate }}</option>
+            <option value="SM">{{ "SM" | translate }}</option>
+          </select>
+        </div>
+        <div class="col col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "RECOGIDA" | translate }}</label>
+          <select name="PJ_TipoRecogida_2" [(ngModel)]="PJ_TipoRecogida_2" class="form-control form-control-sm">
+            <option value="-1">{{ "ELEGIR" | translate }}</option>
+            <option value="IZ">{{ "IZ" | translate }}</option>
+            <option value="DE">{{ "DE" | translate }}</option>
+            <option value="RC">{{ "RC" | translate }}</option>
+          </select>
+        </div>
+        <div class="col col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ Tipo2_TipoSoporte_Label }}</label>
+          <select name="PJ_TipoSoporte_2" [(ngModel)]="PJ_TipoSoporte_2"
+            class="form-control form-control-sm" (change)="Tarifa_Japones_Soporte()">
+            <option value="-1">{{ "ELEGIR" | translate }}</option>
+            <option value="TEC">{{ "TECHO" | translate }}</option>
+            <option value="P08">P08</option>
+            <option value="P10">P10</option>
+            <option value="P12">P12</option>
+            <option value="P14">P14</option>
+            <option value="P15">P15</option>
+            <option value="P19">P19</option>
+            <option value="P21">P21</option>
+            <option value="P23">P23</option>
+          </select>
+        </div>
+        <div class="col col-2 pt-2" [hidden]="TipoJapones == '2'">
+          <label>{{ "CONTRAPESO" | translate }}</label>
+          <select name="PJ_Contrapeso_1" [(ngModel)]="PJ_Contrapeso_1" class="form-control form-control-sm">
+            <option value="-1">{{ "ELEGIR" | translate }}</option>
+            <option value="1">{{ "SI" | translate }}</option>
+            <option value="0">{{ "NO" | translate }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Lamas -->
+      <div class="row">
+        <div class="col col-2 pt-2" [hidden]="TipoJapones == '3'">
+          <label>{{ "NUMLAMAS" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="0" max="600"
+            [(ngModel)]="PJ_NumeroLamas" id="PJ_NumeroLamas"
+            [appMaxdigits]="3" [disabled]="!(TipoJapones == '2')"
+            [ngModelOptions]="{ standalone: true }" required />
+        </div>
+        <div class="col col-2 pt-2" [hidden]="TipoJapones == '3'">
+          <label>{{ "ANCHOLAMA" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+            [(ngModel)]="PJ_AnchoLama" [disabled]="!(TipoJapones == '2')"
+            id="PJ_AnchoLama" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required />
+        </div>
+        <div class="col col-2 pt-2" [hidden]="TipoJapones == '3'">
+          <label>{{ "ALTOLAMATERM" | translate }}</label>
+          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+            [(ngModel)]="PJ_AltoLamaTerminada" id="PJ_AltoLamaTerminada"
+            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required />
+        </div>
+        <div class="col col-3 pt-2">
+          <label>{{ "ESTANCIA" | translate }}</label>
+          <select name="Tipo2_Estancia" class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_Estancia">
+            <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
+          </select>
+        </div>
+        <div class="col col-3 pt-2">
+          <label>{{ "OBSERVACIONES" | translate }}:</label>
+          <textarea class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_Estancia_Obs"></textarea>
+        </div>
+      </div>
+
+      <!-- Combinar colores -->
+      <div class="row" [hidden]="TipoJapones == '3'">
+        <div class="col col-4 pt-2">
+          <div class="input-group">
+            <span class="input-group-addon beautiful" style="background-color: white;">{{ "COMBINARCOLORES" | translate }}</span>
+            <span class="input-group-addon beautiful" style="background-color: white;">
+              <input class="form-control form-control-sm" type="checkbox" name="CombinarColores"
+                [(ngModel)]="PJ_CombinarColores" style="width: 20px" (click)="CombinarColores()" />
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Impresión + Tejido -->
+      <div class="row" [hidden]="TipoJapones == '3'">
+        <div class="col col-4 pt-2">
+          <label>{{ "IMPRESION DIGITAL" | translate }}</label>
+          <div class="input-group">
+            <span class="input-group-addon beautiful" style="background-color: white;">
+              <input class="form-control form-control-sm" type="checkbox" name="ImpresionDigital"
+                [(ngModel)]="PJ_ID_Quiero" style="width: 20px" (change)="selImpresionDigital_Tipo2()" />
+            </span>
+            <span>
+              <input class="form-control form-control-sm" type="text"
+                [(ngModel)]="PJ_NumeroPanos" id="PJ_NumeroPanos"
+                style="width: 50px" [ngModelOptions]="{ standalone: true }"
+                placeholder="Numero" (change)="selImpresionDigital_Tipo2()" />
+            </span>
+            <input class="form-control form-control-sm" type="text"
+              [(ngModel)]="PJ_ID_Imagen" id="PJ_ImpresionDigital"
+              [ngModelOptions]="{ standalone: true }" />
+            <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!PJ_ID_Quiero" [hidden]="true"
+              (click)="idSelector.abrir()">
+              <i class="fa fa-picture-o"></i> Seleccionar Imagen
+            </button>
+          </div>
+          <div class="mt-1" *ngIf="PJ_ID_Quiero && idSeleccion" style="display: flex; align-items: center; gap: 0.5em;">
+            <img [src]="idSeleccion.previewUrl" style="height: 40px; border: 1px solid #ccc; border-radius: 4px;" />
+            <small class="text-muted">{{ PJ_ID_Imagen }}</small>
+            <button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="quitarImpresionDigital()">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+          <small class="text-muted d-block mt-1" *ngIf="PJ_ID_Quiero && !idSeleccion">{{ PJ_ID_Imagen }}</small>
+        </div>
+        <div class="col col-5 pt-2">
+          <label>{{ "TEJIDO" | translate }}</label>
+          <div class="input-group">
+            <select name="Tipo2_Tejido" class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_Tejido"
+              (change)="ChangeTipo2Tejido()" (blur)="ChangeTipo2Tejido()">
+              <option *ngFor="let pow of pj_tejidos" [value]="pow.id">{{ pow.text }}</option>
+            </select>
+            <span class="input-group-btn">
+              <button class="btn btn-default" type="button">{{ CodigoProv2 }}</button>
+            </span>
+          </div>
+        </div>
+        <div class="col col-3 pt-2">
+          <label>{{ "COLOR" | translate }}</label>
+          <select name="Tipo2_TejidoColor" class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor"
+            (change)="ChangeTipo2Color()" (blur)="ChangeTipo2Color()">
+            <option *ngFor="let pow of pj_tejidosC" [value]="pow.id">{{ pow.text }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Colores combinados -->
+      <div class="row" *ngIf="PJ_CombinarColores == true">
+        <div class="col col-3" *ngIf="PJ_NumeroLamas >= 2">
+          <label>{{ "COLORLAMA2" | translate }}</label>
+          <select name="Tipo2_TejidoColor_2" class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_2">
+            <option *ngFor="let pow of pj_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
+          </select>
+        </div>
+        <div class="col col-3" *ngIf="PJ_NumeroLamas >= 3">
+          <label>{{ "COLORLAMA3" | translate }}</label>
+          <select name="Tipo2_TejidoColor_3" class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_3">
+            <option *ngFor="let pow of pj_tejidosC_3" [value]="pow.id">{{ pow.text }}</option>
+          </select>
+        </div>
+        <div class="col col-3" *ngIf="PJ_NumeroLamas >= 4">
+          <label>{{ "COLORLAMA4" | translate }}</label>
+          <select name="Tipo2_TejidoColor_4" class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_4">
+            <option *ngFor="let pow of pj_tejidosC_4" [value]="pow.id">{{ pow.text }}</option>
+          </select>
+        </div>
+        <div class="col col-3" *ngIf="PJ_NumeroLamas >= 5">
+          <label>{{ "COLORLAMA5" | translate }}</label>
+          <select name="Tipo2_TejidoColor_5" class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_5">
+            <option *ngFor="let pow of pj_tejidosC_5" [value]="pow.id">{{ pow.text }}</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Desglose precios -->
+<div class="row mt-2" [hidden]="!Tipo2_Desglose">
+  <div class="col col-2"></div>
+  <div class="col col-8">
+    <div class="card card-block mt-1" style="border-left: 4px solid green">
+      <div *ngIf="Global_Visualizar_C1_Parciales">
+        <table class="table table-bordered table-striped table-condensed">
+          <thead>
+            <th style="text-align:center">Cod.48 Mecanismo</th>
+            <th colspan="2" style="text-align:center">Tejido</th>
+            <th colspan="2" style="text-align:center">Número de Vias</th>
+            <th colspan="2" style="text-align:center">Soportes</th>
+            <th colspan="2" style="text-align:center">Impresión</th>
+            <td style="text-align:center" class="bg-primary"><b>Total</b></td>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align:center"><button class="btn btn-default" type="button">{{ Accesorios_Japones }}</button></td>
+              <td style="text-align:center">{{ precios.T2_Tejido | number }}&nbsp;€</td>
+              <td style="text-align:center">{{ precios.T2_Tejido_C1 }}</td>
+              <td style="text-align:center">{{ precios.T2_NumeroVias | number }}&nbsp;€</td>
+              <td style="text-align:center">{{ precios.T2_NumeroVias_C1 }}</td>
+              <td style="text-align:center">{{ PJ_SoporteTotal | number }}&nbsp;€</td>
+              <td style="text-align:center">{{ precios.T2_TipoSoporte_C1 }}</td>
+              <td style="text-align:center">{{ precios.T2_Inc_Impresion | number }}&nbsp;€</td>
+              <td style="text-align:center">{{ precios.T2_Inc_Impresion_C1 }}</td>
+              <td style="text-align:center" class="bg-primary"><b>{{ precios.T2_PVP | number }}&nbsp;€</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div *ngIf="!Global_Visualizar_C1_Parciales">
+        <table class="table table-bordered table-striped table-condensed">
+          <thead>
+            <th style="text-align:center">Cod.48 Mecanismo</th>
+            <th style="text-align:center">Tejido</th>
+            <th style="text-align:center">Número de Vias</th>
+            <th style="text-align:center">Soportes</th>
+            <th style="text-align:center">Impresión</th>
+            <td style="text-align:center" class="bg-primary"><b>Total</b></td>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align:center"><button class="btn btn-default" type="button">{{ Accesorios_Japones }}</button></td>
+              <td style="text-align:center">{{ precios.T2_Tejido | number }}&nbsp;€</td>
+              <td style="text-align:center">{{ precios.T2_NumeroVias | number }}&nbsp;€</td>
+              <td style="text-align:center">{{ PJ_SoporteTotal | number }}&nbsp;€</td>
+              <td style="text-align:center">{{ precios.T2_Inc_Impresion | number }}&nbsp;€</td>
+              <td style="text-align:center" class="bg-primary"><b>{{ precios.T2_PVP | number }}&nbsp;€</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col col-2"></div>
+</div>
+
+
+<br/>
+<!-- Precio y Acciones -->
+    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+      <div *ngIf="precios?.T2_PVP > 0" class="text-start">
+        <h4 class="mb-1 text-primary fw-bold">
+          {{ precios?.T2_PVP | number : '1.2-2' }}&nbsp;€
+          <small class="text-muted">({{ precios?.T2_PVP_C1 }})</small>
+        </h4>
+        <small class="text-muted" *ngIf="precios?.T2_Fecha_Entrega">
+          F.Fab: {{ precios?.T2_Fecha_Entrega }} + {{ precios?.T2_Transporte }}d Trans
+        </small>
+      </div>
+      <div *ngIf="!precios?.T2_PVP || precios?.T2_PVP <= 0" class="text-start">
+        <p class="text-muted mb-0">Calcule el precio para continuar</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button 
+          class="btn btn-primary" 
+          (click)="CheckPrice()"
+          [disabled]="calculando">
+          <span *ngIf="calculando" class="spinner-border spinner-border-sm me-2"></span>
+          {{ calculando ? ('CALCULANDO' | translate) : ('CALCULAR PRECIO' | translate) }}
+        </button>
+        <button 
+          class="btn btn-success" 
+          (click)="Agregar()"
+          [disabled]="!precios?.T2_PVP || precios?.T2_PVP <= 0">
+          <i class="fas fa-plus me-2"></i>
+          {{ "AGREGAR" | translate }}
+        </button>
+      </div>
+    </div>
+
+</div>
+</div>
+
+<app-impresion-digital-selector #idSelector (seleccionado)="onImpresionDigitalSeleccionada($event)"></app-impresion-digital-selector>

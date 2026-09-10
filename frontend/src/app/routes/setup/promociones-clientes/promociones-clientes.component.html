@@ -1,0 +1,572 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-2">
+            <h6>
+                <i class="icon-list mt-1"></i>&nbsp;{{ title }}
+                <div class="pull-right">
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <!-- BÚSQUEDA -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-auto">
+                <input type="text" class="form-control form-control-sm"
+                    style="min-width: 260px;"
+                    placeholder="Buscar descripción, mensaje, fechas..."
+                    [(ngModel)]="busqueda"
+                    [ngModelOptions]="{ standalone: true }"
+                    (input)="onBusqueda()" />
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">
+                    <i class="fa fa-times"></i> Limpiar
+                </button>
+            </div>
+            <div class="col-auto ml-auto text-muted small">
+                {{ datosFiltrados.length }} registros
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="row mb-2">
+            <div class="col-12">
+                <button type="button" class="btn btn-warning btn-sm mr-2"
+                    [disabled]="!filaUnica" (click)="openEdit()">
+                    <i class="fa fa-pencil"></i> Editar
+                </button>
+                <button type="button" class="btn btn-info btn-sm mr-2"
+                    [disabled]="seleccionadas.size === 0" (click)="openBanner()">
+                    <i class="fa fa-image"></i> Banner
+                    <span *ngIf="seleccionadas.size > 1" class="badge badge-light ml-1">{{ seleccionadas.size }}</span>
+                </button>
+                <button type="button" class="btn btn-danger btn-sm mr-2"
+                    [disabled]="seleccionadas.size === 0" (click)="eliminar()">
+                    <i class="fa fa-trash"></i> Eliminar
+                    <span *ngIf="seleccionadas.size > 0" class="badge badge-light ml-1">{{ seleccionadas.size }}</span>
+                </button>
+                <button type="button" class="btn btn-success btn-sm" (click)="openProgramar()">
+                    <i class="fa fa-calendar"></i> Programar Promoción
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <div class="table-responsive pc-table-container">
+            <table class="table table-bordered table-hover table-sm pc-table">
+                <thead class="thead-light">
+                    <tr>
+                        <th class="pc-th-check text-center">
+                            <input type="checkbox"
+                                [checked]="todasSeleccionadas"
+                                (change)="toggleTodas()"
+                                title="Seleccionar / deseleccionar página" />
+                        </th>
+                        <th class="pc-th-sm pc-sortable" (click)="ordenar('idrow')">
+                            ID
+                            <span *ngIf="sortCol === 'idrow'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-sortable" (click)="ordenar('descripcion')">
+                            Descripción
+                            <span *ngIf="sortCol === 'descripcion'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-th-md pc-sortable" (click)="ordenar('desde')">
+                            Desde
+                            <span *ngIf="sortCol === 'desde'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-th-md pc-sortable" (click)="ordenar('hasta')">
+                            Hasta
+                            <span *ngIf="sortCol === 'hasta'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-th-sm text-center pc-sortable" (click)="ordenar('promocion_activa')">
+                            Activa
+                            <span *ngIf="sortCol === 'promocion_activa'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-th-sm pc-sortable" (click)="ordenar('promocion_coeficiente')">
+                            Coef.PVP
+                            <span *ngIf="sortCol === 'promocion_coeficiente'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-th-sm text-center">Mod.PVP</th>
+                        <th class="pc-th-sm pc-sortable" (click)="ordenar('promocion_coeficiente2')">
+                            Coef.C1
+                            <span *ngIf="sortCol === 'promocion_coeficiente2'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-th-sm text-center">Mod.C1</th>
+                        <th class="pc-sortable" (click)="ordenar('promocion_mensaje')">
+                            Mensaje
+                            <span *ngIf="sortCol === 'promocion_mensaje'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="pc-th-sm text-center">Banner</th>
+                    </tr>
+
+                    <!-- FILA DE FILTROS -->
+                    <tr class="pc-filter-row">
+                        <th></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="ID"
+                            [(ngModel)]="filtros.idrow" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.descripcion" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="dd/mm/aa"
+                            [(ngModel)]="filtros.desde" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="dd/mm/aa"
+                            [(ngModel)]="filtros.hasta" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="0/1"
+                            [(ngModel)]="filtros.promocion_activa" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.promocion_coeficiente" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.promocion_coeficiente2" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th></th>
+                        <th><input type="text" class="pc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.promocion_mensaje" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let fila of datosPagina"
+                        (click)="toggleFila(fila)"
+                        [ngClass]="{ 'pc-fila-sel': estaSeleccionada(fila) }"
+                        class="pc-fila">
+                        <td class="text-center" (click)="$event.stopPropagation()">
+                            <input type="checkbox"
+                                [checked]="estaSeleccionada(fila)"
+                                (change)="toggleFila(fila)" />
+                        </td>
+                        <td>{{ fila.idrow }}</td>
+                        <td>{{ fila.descripcion }}</td>
+                        <td>{{ formatDate(fila.desde) }}</td>
+                        <td>{{ formatDate(fila.hasta) }}</td>
+                        <td class="text-center">
+                            <i class="fa" [ngClass]="fila.promocion_activa ? 'fa-check-circle text-success' : 'fa-circle-o text-muted'"></i>
+                        </td>
+                        <td class="text-right">{{ fila.promocion_coeficiente }}</td>
+                        <td class="text-center">
+                            <i class="fa" [ngClass]="fila.promocion_modificapvp ? 'fa-check text-success' : 'fa-times text-muted'"></i>
+                        </td>
+                        <td class="text-right">{{ fila.promocion_coeficiente2 }}</td>
+                        <td class="text-center">
+                            <i class="fa" [ngClass]="fila.promocion_modificapvc ? 'fa-check text-success' : 'fa-times text-muted'"></i>
+                        </td>
+                        <td class="pc-td-truncate" [title]="fila.promocion_mensaje">{{ fila.promocion_mensaje }}</td>
+                        <td class="text-center pc-td-banner">
+                            <img *ngIf="fila.imagen_banner"
+                                [src]="getBannerUrl(fila.imagen_banner)"
+                                class="pc-banner-thumb"
+                                [title]="fila.imagen_banner"
+                                alt="banner" />
+                            <i *ngIf="!fila.imagen_banner"
+                                class="fa fa-image text-muted"
+                                title="Sin banner"></i>
+                        </td>
+                    </tr>
+                    <tr *ngIf="datosPagina.length === 0">
+                        <td colspan="12" class="text-center text-muted py-3">Sin resultados</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="row mt-2 align-items-center" *ngIf="totalPaginas > 1">
+            <div class="col-auto">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === 1 }">
+                            <a class="page-link" (click)="irPagina(pagina - 1)">&laquo;</a>
+                        </li>
+                        <li class="page-item" *ngFor="let p of paginas"
+                            [ngClass]="{ 'active': p === pagina }">
+                            <a class="page-link" (click)="irPagina(p)">{{ p }}</a>
+                        </li>
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === totalPaginas }">
+                            <a class="page-link" (click)="irPagina(pagina + 1)">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="col-auto text-muted small">
+                Página {{ pagina }} de {{ totalPaginas }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- MODAL EDITAR -->
+<div bsModal #modalEdit="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Promoción — ID: {{ formEdit.idrow }}</h5>
+                <button type="button" class="close" (click)="modalEdit.hide()">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">Descripción <span class="text-danger">*</span></label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control form-control-sm"
+                            maxlength="255"
+                            [(ngModel)]="formEdit.descripcion"
+                            [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+
+                <div class="form-row mb-2">
+                    <div class="col-sm-6">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label">Desde</label>
+                            <div class="col-sm-7">
+                                <input type="date" class="form-control form-control-sm"
+                                    [(ngModel)]="formEdit.desde"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label">Hasta</label>
+                            <div class="col-sm-7">
+                                <input type="date" class="form-control form-control-sm"
+                                    [(ngModel)]="formEdit.hasta"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row mb-2">
+                    <div class="col-sm-6">
+                        <div class="form-group row align-items-center">
+                            <label class="col-sm-5 col-form-label">Coeficiente PVP</label>
+                            <div class="col-sm-4">
+                                <input type="number" step="0.01" class="form-control form-control-sm"
+                                    [(ngModel)]="formEdit.promocion_coeficiente"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                            <div class="col-sm-3 d-flex align-items-center">
+                                <input type="checkbox" class="mr-1"
+                                    [(ngModel)]="formEdit.promocion_modificapvp"
+                                    [ngModelOptions]="{ standalone: true }" />
+                                <span class="small">Mod. PVP</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group row align-items-center">
+                            <label class="col-sm-5 col-form-label">Coeficiente C1</label>
+                            <div class="col-sm-4">
+                                <input type="number" step="0.01" class="form-control form-control-sm"
+                                    [(ngModel)]="formEdit.promocion_coeficiente2"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                            <div class="col-sm-3 d-flex align-items-center">
+                                <input type="checkbox" class="mr-1"
+                                    [(ngModel)]="formEdit.promocion_modificapvc"
+                                    [ngModelOptions]="{ standalone: true }" />
+                                <span class="small">Mod. C1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group row align-items-center">
+                    <label class="col-sm-3 col-form-label">Activa</label>
+                    <div class="col-sm-9 d-flex align-items-center">
+                        <input type="checkbox"
+                            [(ngModel)]="formEdit.promocion_activa"
+                            [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-sm-3 col-form-label">Mensaje</label>
+                    <div class="col-sm-9">
+                        <textarea class="form-control form-control-sm" rows="3" maxlength="255"
+                            [(ngModel)]="formEdit.promocion_mensaje"
+                            [ngModelOptions]="{ standalone: true }"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning btn-sm" (click)="guardarEdit()">
+                    <i class="fa fa-save"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalEdit.hide()">
+                    Cancelar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL BANNER -->
+<div bsModal #modalBanner="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    Banner
+                    <span *ngIf="seleccionadas.size === 1"> — {{ filaUnica?.descripcion }}</span>
+                    <span *ngIf="seleccionadas.size > 1" class="badge badge-light ml-2">{{ seleccionadas.size }} promociones</span>
+                </h5>
+                <button type="button" class="close text-white" (click)="modalBanner.hide()">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Aviso multi-selección -->
+                <div *ngIf="seleccionadas.size > 1" class="alert alert-info py-2 mb-3 small">
+                    <i class="fa fa-info-circle mr-1"></i>
+                    La imagen que subas se asignará a las <strong>{{ seleccionadas.size }} promociones seleccionadas</strong>.
+                    El archivo se sube una vez y se replica automáticamente.
+                </div>
+
+                <!-- Banner actual (selección única) -->
+                <div *ngIf="bannerActual && !previewUrl && seleccionadas.size === 1" class="mb-3 text-center">
+                    <p class="small text-muted mb-1">Banner actual</p>
+                    <img [src]="getBannerUrl(bannerActual)" class="pc-banner-preview" alt="Banner actual" />
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-danger btn-sm" (click)="eliminarBanner()">
+                            <i class="fa fa-trash"></i> Eliminar banner
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Eliminar banner (multi-selección) -->
+                <div *ngIf="seleccionadas.size > 1 && !previewUrl" class="mb-3 text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminarBanner()">
+                        <i class="fa fa-trash mr-1"></i> Eliminar banner de las {{ seleccionadas.size }} seleccionadas
+                    </button>
+                </div>
+
+                <div *ngIf="!bannerActual && !previewUrl && seleccionadas.size === 1" class="mb-3 text-center text-muted py-3">
+                    <i class="fa fa-image fa-3x mb-2"></i>
+                    <p class="small">Sin banner asignado</p>
+                </div>
+
+                <!-- Preview nueva imagen -->
+                <div *ngIf="previewUrl" class="mb-3 text-center">
+                    <p class="small text-muted mb-1">Vista previa</p>
+                    <img [src]="previewUrl" class="pc-banner-preview" alt="Vista previa" />
+                </div>
+
+                <hr />
+
+                <div class="form-group">
+                    <label class="small font-weight-bold">Seleccionar nueva imagen</label>
+                    <input type="file" class="form-control-file"
+                        #inputFileBanner
+                        accept="image/*"
+                        (change)="onBannerSelected($event)" />
+                    <small class="text-muted">Formatos: JPG, PNG, GIF, WebP. Se recomienda proporción 3:1 para banner.</small>
+                    <small class="text-muted">Tamaño máximo: 5 Megas</small>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info btn-sm"
+                    [disabled]="!fileBanner" (click)="subirBanner()">
+                    <i class="fa fa-upload"></i> Subir banner
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalBanner.hide()">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL PROGRAMAR PROMOCIÓN -->
+<div bsModal #modalProgramar="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header bg-success text-white">
+                <h6 class="modal-title">Programar Promoción</h6>
+                <button type="button" class="close text-white" (click)="modalProgramar.hide()">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Parámetros -->
+                <div class="row mb-3">
+                    <div class="col-sm-12 col-md-6">
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label small">Cliente</label>
+                            <div class="col-sm-8">
+                                <select class="form-control form-control-sm"
+                                    [(ngModel)]="formProgramar.idCliente"
+                                    [ngModelOptions]="{ standalone: true }"
+                                    (change)="onClienteChange()">
+                                    <option value="-1">Seleccionar cliente</option>
+                                    <option *ngFor="let c of clientesapi" [value]="c.idrow">{{ c.descripcion }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label small">Desde</label>
+                            <div class="col-sm-8">
+                                <input type="date" class="form-control form-control-sm"
+                                    [(ngModel)]="formProgramar.Desde"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-4 col-form-label small">Hasta</label>
+                            <div class="col-sm-8">
+                                <input type="date" class="form-control form-control-sm"
+                                    [(ngModel)]="formProgramar.Hasta"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-md-6">
+                        <div class="form-group row align-items-center">
+                            <label class="col-sm-4 col-form-label small">Coef. PVP</label>
+                            <div class="col-sm-4">
+                                <input type="number" step="0.01" class="form-control form-control-sm"
+                                    [(ngModel)]="formProgramar.CoefPVP"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                            <div class="col-sm-4 d-flex align-items-center">
+                                <input type="checkbox" class="mr-1"
+                                    [(ngModel)]="formProgramar.aplicaPVP"
+                                    [ngModelOptions]="{ standalone: true }" />
+                                <span class="small">Aplica</span>
+                            </div>
+                        </div>
+                        <div class="form-group row align-items-center">
+                            <label class="col-sm-4 col-form-label small">Coef. C1</label>
+                            <div class="col-sm-4">
+                                <input type="number" step="0.01" class="form-control form-control-sm"
+                                    [(ngModel)]="formProgramar.CoefC1"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                            <div class="col-sm-4 d-flex align-items-center">
+                                <input type="checkbox" class="mr-1"
+                                    [(ngModel)]="formProgramar.aplicaC1"
+                                    [ngModelOptions]="{ standalone: true }" />
+                                <span class="small">Aplica</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group row align-items-center">
+                            <div class="col-12">
+                                <label class="col-form-label small">Mensaje</label>
+                                <input type="text" class="form-control form-control-sm"
+                                    maxlength="255"
+                                    [(ngModel)]="formProgramar.Mensaje"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de centros -->
+                <div *ngIf="formProgramar.idCliente !== '-1'">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small font-weight-bold">
+                            Centros del cliente
+                            <span class="badge badge-secondary ml-1">{{ centrosCliente.length }}</span>
+                        </span>
+                        <div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mr-1"
+                                (click)="seleccionarTodos(true)">Todos</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                (click)="seleccionarTodos(false)">Ninguno</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <input type="text" class="form-control form-control-sm"
+                            placeholder="Buscar centro..."
+                            [(ngModel)]="busquedaCentros"
+                            [ngModelOptions]="{ standalone: true }" />
+                    </div>
+
+                    <div class="pc-centros-container border rounded p-2">
+                        <div *ngIf="centrosFiltrados.length === 0" class="text-muted text-center small py-2">
+                            Sin centros disponibles para este cliente
+                        </div>
+                        <div class="pc-centros-grid">
+                            <div *ngFor="let centro of centrosFiltrados" class="pc-centro-item">
+                                <label class="d-flex align-items-center mb-0 py-1">
+                                    <input type="checkbox" class="mr-2"
+                                        [(ngModel)]="centro.seleccionado"
+                                        [ngModelOptions]="{ standalone: true }" />
+                                    <span class="small">{{ centro.descripcion }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-1 text-muted small">
+                        {{ centrosSeleccionados }} de {{ centrosCliente.length }} seleccionados
+                    </div>
+                </div>
+
+                <div *ngIf="formProgramar.idCliente === '-1'" class="text-muted text-center py-3 small">
+                    Selecciona un cliente para ver sus centros
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" (click)="programar()">
+                    <i class="fa fa-check"></i> Programar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalProgramar.hide()">
+                    Cancelar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,28 @@
+<div class="container-fluid">
+  <div class="row mt-3">
+    <div class="col col-6 mt-6">
+      <div class="list-group">
+        <a
+          [routerLink]="['/routes/cdeco/cd_producto_v2']"
+          class="list-group-item list-group-item-action"
+        >
+          <h4 class="list-group-item-heading">Modelo de Productos</h4>
+          <br />
+          <p class="list-group-item-text">Lista de Modelos Registrados</p>
+        </a>
+      </div>
+    </div>
+    <div class="col col-6 mt-6" [hidden]="true">
+      <div class="list-group">
+        <a
+          [routerLink]="['/routes/master/detail/116']"
+          class="list-group-item list-group-item-action"
+        >
+          <h4 class="list-group-item-heading">Facturas Exportadas</h4>
+          <br />
+          <p class="list-group-item-text">Relación de Facturas Exportadas</p>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

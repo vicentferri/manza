@@ -1,0 +1,39 @@
+/* You can add global styles to this file, and also import other style files */
+
+.dashboard_border {
+  border-top: 2px solid blue;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.colorsquare div {
+  width: 50px;
+  height: 50px;
+  float: left;
+  border: 1px solid silver;
+}
+
+.selectedItem {
+  background-color: blue;
+}
+
+.modal-lg {
+  max-width: 95%;
+}
+
+
+
+.card-middle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e4e6eb;
+  border-radius: 0.25rem;
+  padding: 0.75rem 0.75rem;
+  margin-bottom: 0;
+  background-color: transparent;
+  border: 1px solid #e4e6eb;
+}
+

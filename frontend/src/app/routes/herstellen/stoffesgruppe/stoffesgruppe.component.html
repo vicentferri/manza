@@ -1,0 +1,156 @@
+<div class="container">
+  <div class="row">
+    <div class="col col-6 card-middle">
+      <h6>
+        Grupos de Tejidos
+        <div class="pull-right">
+          <button class="btn btn-sm btn-secondary" (click)="DelGrupo()">
+            <i class="fa fa-minus"></i>
+          </button>
+          <button class="btn btn-sm btn-secondary" (click)="EditGrupo()">
+            <i class="fa fa-edit"></i>
+          </button>
+
+          <button
+            style="margin-right: 5px"
+            class="btn btn-sm btn-secondary"
+            (click)="AddGrupo()"
+          >
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+      </h6>
+      <div style="height: 700px; margin-top: 2px">
+        <jqxGrid
+          #gridReference
+          [auto-create]="false"
+          (onRowselect)="rowSelect($event)"
+        ></jqxGrid>
+      </div>
+    </div>
+    <div class="col col-6 card-middle">
+      <h6>
+        Tejidos Incluidos en el Grupo
+        <div class="pull-right">
+          <button class="btn btn-sm btn-secondary" (click)="DelTejidoGrupo()">
+            <i class="fa fa-minus"></i>
+          </button>
+          <button
+            [hidden]="hideButton"
+            style="margin-right: 5px"
+            class="btn btn-sm btn-secondary"
+            (click)="AddTejido()"
+          >
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+      </h6>
+      <div style="height: 700px">
+        <jqxGrid
+          #gridReference2
+          [auto-create]="false"
+          (onRowselect)="rowSelect2($event)"
+        ></jqxGrid>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-4">
+            <label>Grupo</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="model.grupo"
+            />
+          </div>
+          <div class="col col-8">
+            <label>Descripción</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="model.descripcion"
+            />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col col-4">
+            <label>Precio</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="model.precio"
+              type="number"
+            />
+          </div>
+          <div class="col col-8">
+            <label>Criterio</label>
+            <select
+              class="form-control form-control-sm"
+              id="cliente"
+              required
+              [(ngModel)]="model.criterio"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of lista_criterios" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalAdd.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="Update()">
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd2="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet2"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body" style="height: 600px">
+        <jqxGrid #gridReference3 [auto-create]="false"></jqxGrid>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalAdd2.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="Update2()">
+          Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

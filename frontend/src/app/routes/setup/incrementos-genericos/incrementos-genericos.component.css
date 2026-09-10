@@ -1,0 +1,42 @@
+.table-scroll {
+  height: calc(100vh - 220px);
+  overflow-y: auto;
+  min-height: 300px;
+}
+
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8f9fa;
+  border-top: none;
+  white-space: nowrap;
+}
+
+.filter-row th {
+  top: 37px;
+  padding: 4px 6px;
+}
+
+.filter-row input {
+  font-size: 0.78rem;
+  min-width: 60px;
+}
+
+.col-id {
+  width: 55px;
+  font-size: 0.8rem;
+}
+
+.data-row {
+  cursor: pointer;
+}
+
+.selected-row td {
+  background-color: #cfe2ff !important;
+  font-weight: 500;
+}
+
+.card-footer {
+  padding: 6px 12px;
+}

@@ -1,0 +1,40 @@
+<!--
+
+<div class="container">
+  <div class="row">
+    <div class="col col-6">
+      <header class="header">
+        <h1>Todos</h1>
+        <input class="new-todo" placeholder="What needs to be done?" autofocus="" [(ngModel)]="title" (keyup.enter)="addTodo()">
+      </header>
+      <section class="main" *ngIf="datalist.length > 0">
+        <ul class="todo-list" dnd-sortable-container [sortableData]="datalist">
+          <li *ngFor="let todo of datalist; let i = index" class="todo-item" [class.completed]="todo.complete" dnd-sortable [sortableIndex]="i"
+            [dragEnabled]="true" [dragData]="todo" dnd-droppable (onDropSuccess)="onMove($event, i)">
+            <div class="view">
+              <span class="handle" dnd-sortable-handle>=</span>
+              <input class="toggle" type="checkbox" (click)="toggleTodoComplete(todo)" [checked]="todo.complete">
+              <label>{{todo.descripcion}}</label>
+              <button class="destroy" (click)="removeTodo(todo)"></button>
+            </div>
+          </li>
+        </ul>
+      </section>
+      <footer class="footer" *ngIf="datalist.length > 0">
+        <span class="todo-count">
+          <strong>{{datalist.length}}</strong> {{datalist.length == 1 ? 'item' : 'items'}} left</span>
+      </footer>
+
+
+    </div>
+    <div class="col col-6">
+
+      <div style="width:200px;height:200px;background-color:yellow" dnd-droppable (onDropSuccess)="onMove($event, -1)">
+          DROPPABLE
+      </div>
+  
+    </div>
+  </div>
+</div>
+
+-->

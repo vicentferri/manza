@@ -1,0 +1,178 @@
+/* Tarjeta de promoción */
+.pm-card {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+.pm-card-header {
+    background-color: #f0f4ff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pm-card-title {
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.pm-badge-activa {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+.pm-card-dates {
+    font-size: 13px;
+    color: #555;
+}
+
+.pm-date-range {
+    font-weight: 600;
+}
+
+/* Cuerpo */
+.pm-card-body {
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+/* Detalles de promoción */
+.pm-promo-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+    min-width: 220px;
+}
+
+.pm-detail-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 90px;
+}
+
+.pm-detail-item.pm-detail-mensaje {
+    min-width: 200px;
+    flex: 1;
+}
+
+.pm-detail-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.pm-detail-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.pm-mensaje-text {
+    font-size: 13px;
+    font-weight: 400;
+    color: #555;
+    font-style: italic;
+}
+
+/* Centros */
+.pm-centros-section {
+    flex: 1;
+    min-width: 280px;
+}
+
+.pm-centros-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pm-centro-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    background-color: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+.pm-centro-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+}
+
+.pm-centro-id {
+    font-size: 10px;
+}
+
+.pm-centro-nombre {
+    color: #444;
+}
+
+/* Banner miniatura */
+.pm-banner-thumb {
+    height: 28px;
+    max-width: 72px;
+    object-fit: cover;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.pm-banner-thumb:hover {
+    transform: scale(4);
+    transform-origin: center right;
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Pie / toggle pedidos */
+.pm-card-footer {
+    background-color: #fafafa;
+    border-top: 1px solid #dee2e6;
+    padding: 8px 16px;
+}
+
+/* Sección pedidos */
+.pm-pedidos-section {
+    border-top: 2px solid #007bff22;
+    background-color: #f8f9ff;
+    padding: 12px 16px;
+}
+
+.pm-pedidos-table {
+    font-size: 13px;
+    margin-bottom: 0;
+}
+
+.pm-summary {
+    border-left: 3px solid #007bff;
+    padding-left: 8px;
+}
+
+@media (max-width: 768px) {
+    .pm-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pm-card-body {
+        flex-direction: column;
+    }
+}

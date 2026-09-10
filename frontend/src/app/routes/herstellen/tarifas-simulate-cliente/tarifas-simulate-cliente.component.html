@@ -1,0 +1,176 @@
+<div class="animated fadeIn">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-header">
+        <h6>
+          Tarifa de Cliente
+          <div class="pull-right">
+            <haru-btn-general (Event_Delete)="Delete()" (Event_Search)="Search()" (Event_Save)="Save()">
+            </haru-btn-general>
+          </div>
+        </h6>
+      </div>
+
+      <div class="card-body card-block">
+        <div class="row">
+          <div class="col col-4">
+            <label>Nombre del Escandallo</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.nombreescandallo" />
+          </div>
+
+          <div class="col col-2">
+            <label form="tipo">Accionamientos</label>
+            <select name="Accionamientos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.tipo" (change)="ChangeTipo($event)">
+              <option *ngFor="let pow of lista_accionamientos" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col col-2">
+            <label form="marca">Marcas/Modelos</label>
+            <select name="Marcas" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.marca">
+              <option *ngFor="let pow of lista_marcas" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col col-2">
+            <label form="tipotejido">Tipo de Tejido</label>
+            <select name="TipoTejidos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.tipotejido" (change)="ChangeTipoTejido($event)">
+              <option *ngFor="let pow of lista_tipotejidos" [value]="pow.idrow">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col col-2">
+            <label form="tejido">Tejidos</label>
+            <select name="Tejidos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.tejido" (change)="ChangeTejido($event)">
+              <option *ngFor="let pow of lista_tejidos" [value]="pow.idrow">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col col-1">
+            <label>M.Tejido(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margentej" type="number"
+              [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-1">
+            <label>M.Meca(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margenmec" type="number"
+              [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-1">
+            <label>M.Acc(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margenacc" type="number"
+              [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-1">
+            <label>M.Cliente(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.margencli" type="number"
+              [appOnlynumbers]="true" />
+          </div>
+          <div class="form-group col col-2">
+            <label>Criterio</label>
+            <select class="form-control form-control-sm" id="cliente" required [(ngModel)]="model.criterio"
+              [ngModelOptions]="{ standalone: true }">
+              <option [value]="180">Criterio 180</option>
+              <option [value]="140">Criterio 140</option>
+              <option [value]="200">Criterio 200</option>
+              <option [value]="250">Criterio 250</option>
+              <option [value]="300">Criterio 300</option>
+              <option [value]="320">Criterio 320</option>
+            </select>
+          </div>
+          <div class="form-group col col-1">
+            <label>Precio m2</label>
+            <input type="number" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.preciom2" [appOnlynumbers]="true" />
+          </div>
+          <div class="form-group col col-1">
+            <label>Montaje</label>
+            <input type="number" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="model.preciomon" [appOnlynumbers]="true" />
+          </div>
+
+          <div class="form-group col col-2">
+            <label>Desmultiplicador</label>
+            <select class="form-control form-control-sm" id="cliente" required [(ngModel)]="model.desmultiplicador"
+              [ngModelOptions]="{ standalone: true }">
+              <option [value]="1">Si Actúa</option>
+              <option [value]="0">No Actúa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col col-1">
+            <label>C1(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.c1" type="number" [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-1">
+            <label>C2(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.c2" type="number" [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-1">
+            <label>C3(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.c3" type="number" [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-1">
+            <label>C4(%)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.c4" type="number" [appOnlynumbers]="true" />
+          </div>
+          <div class="col col-8">
+            <label>Clientes</label>
+            <input class="form-control form-control-sm" [(ngModel)]="model.clientes" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col col-12">
+            <div style="margin: 5px">
+              <div class="col col-12">
+                <div>
+                  <div class="BtnToolBar">
+                    <button class="btn btn-secondary btn-block btn-sm mt-3" (click)="Export(2)"
+                      [hidden]="model.idrow == -1">
+                      Exportar Tarifa
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <jqxGrid #gridReference [auto-create]="false" class="mt-3"></jqxGrid>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" bsModal #staticModal="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title pull-left">Búsqueda de Clientes</h5>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="staticModal.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <kunden-search (onLineAdded)="KundeAdded($event)" [MultipleSelection]="true"></kunden-search>
+      </div>
+    </div>
+  </div>
+</div>

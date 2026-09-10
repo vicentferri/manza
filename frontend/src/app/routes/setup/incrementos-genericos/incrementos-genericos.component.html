@@ -1,0 +1,318 @@
+<div class="container-fluid">
+  <div class="card">
+
+    <!-- ── Header ─────────────────────────────────────────────────── -->
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h6 class="mb-0">
+        <i class="icon-list mr-2"></i>{{ title }}
+        <span class="badge badge-secondary ml-2">{{ datosFiltrados.length }}</span>
+      </h6>
+      <div class="d-flex align-items-center">
+        <input
+          type="text"
+          class="form-control form-control-sm mr-2"
+          style="width: 220px"
+          placeholder="Búsqueda global..."
+          [(ngModel)]="busqueda"
+          (input)="onBusqueda()"
+        />
+        <button class="btn btn-outline-secondary btn-sm mr-1" (click)="limpiarFiltros()" title="Limpiar filtros">
+          <i class="fa fa-times"></i>
+        </button>
+        <button class="btn btn-success btn-sm mr-1" (click)="openAdd()">
+          <i class="fa fa-plus mr-1"></i>Agregar
+        </button>
+        <button class="btn btn-primary btn-sm mr-1" (click)="openEdit()" [disabled]="!filaSeleccionada">
+          <i class="fa fa-pencil mr-1"></i>Editar
+        </button>
+        <button class="btn btn-danger btn-sm" (click)="eliminar()" [disabled]="!filaSeleccionada">
+          <i class="fa fa-trash mr-1"></i>Eliminar
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Table ──────────────────────────────────────────────────── -->
+    <div class="card-body p-0">
+      <div class="table-scroll">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="thead-light">
+
+            <!-- Column headers -->
+            <tr>
+              <th class="col-id" (click)="ordenar('id')" style="cursor:pointer">
+                ID <i class="fa {{ sortIcon('id') }}"></i>
+              </th>
+              <th (click)="ordenar('NomCli')" style="cursor:pointer">
+                Cliente <i class="fa {{ sortIcon('NomCli') }}"></i>
+              </th>
+              <th (click)="ordenar('DesMar')" style="cursor:pointer">
+                Marca <i class="fa {{ sortIcon('DesMar') }}"></i>
+              </th>
+              <th (click)="ordenar('DesMod')" style="cursor:pointer">
+                Modelo <i class="fa {{ sortIcon('DesMod') }}"></i>
+              </th>
+              <th (click)="ordenar('DesPro')" style="cursor:pointer">
+                Producto <i class="fa {{ sortIcon('DesPro') }}"></i>
+              </th>
+              <th (click)="ordenar('descripcion')" style="cursor:pointer">
+                Descripción <i class="fa {{ sortIcon('descripcion') }}"></i>
+              </th>
+              <th (click)="ordenar('pvp')" style="cursor:pointer">
+                PVP <i class="fa {{ sortIcon('pvp') }}"></i>
+              </th>
+              <th (click)="ordenar('c1')" style="cursor:pointer">
+                C1 <i class="fa {{ sortIcon('c1') }}"></i>
+              </th>
+              <th (click)="ordenar('cod_solupyme')" style="cursor:pointer">
+                Cód. Solupyme <i class="fa {{ sortIcon('cod_solupyme') }}"></i>
+              </th>
+              <th (click)="ordenar('dgrupo')" style="cursor:pointer">
+                Grupo <i class="fa {{ sortIcon('dgrupo') }}"></i>
+              </th>
+            </tr>
+
+            <!-- Filter row -->
+            <tr class="filter-row">
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.id" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.NomCli" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.DesMar" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.DesMod" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.DesPro" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.descripcion" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.pvp" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.c1" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.cod_solupyme" (input)="onFiltroColumna()"/>
+              </th>
+              <th>
+                <input type="text" class="form-control form-control-sm"
+                  placeholder="Filtrar..." [(ngModel)]="filtros.dgrupo" (input)="onFiltroColumna()"/>
+              </th>
+            </tr>
+
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let fila of datosPagina"
+              class="data-row"
+              [class.selected-row]="esSeleccionada(fila)"
+              (click)="seleccionar(fila)"
+            >
+              <td class="col-id text-muted">{{ fila.id }}</td>
+              <td>{{ fila.NomCli }}</td>
+              <td>{{ fila.DesMar }}</td>
+              <td>{{ fila.DesMod }}</td>
+              <td>
+                <span class="badge badge-info">{{ fila.DesPro }}</span>
+              </td>
+              <td>{{ fila.descripcion }}</td>
+              <td class="text-right">{{ fila.pvp }}</td>
+              <td class="text-right">{{ fila.c1 }}</td>
+              <td>{{ fila.cod_solupyme }}</td>
+              <td class="text-muted">{{ fila.dgrupo }}</td>
+            </tr>
+            <tr *ngIf="datosPagina.length === 0">
+              <td colspan="10" class="text-center text-muted py-4">
+                {{ datos.length === 0 ? 'Sin datos' : 'Sin resultados para los filtros aplicados' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Pagination ─────────────────────────────────────────────── -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Mostrando {{ (pagina - 1) * porPagina + 1 }}–{{ minVal(pagina * porPagina, datosFiltrados.length) }}
+        de {{ datosFiltrados.length }} registros
+      </small>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="pagina === 1">
+            <a class="page-link" (click)="irPagina(pagina - 1)">‹</a>
+          </li>
+          <li
+            *ngFor="let p of paginas"
+            class="page-item"
+            [class.active]="p === pagina"
+          >
+            <a class="page-link" (click)="irPagina(p)">{{ p }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="pagina === totalPaginas">
+            <a class="page-link" (click)="irPagina(pagina + 1)">›</a>
+          </li>
+        </ul>
+      </nav>
+      <select class="form-control form-control-sm" style="width:80px" [(ngModel)]="porPagina" (change)="pagina=1">
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+        <option [value]="100">100</option>
+      </select>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ── Modal: Agregar ─────────────────────────────────────────────── -->
+<div class="modal fade" bsModal #modalAdd="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa fa-plus mr-1"></i>Agregar Incremento Genérico</h5>
+        <button type="button" class="close" (click)="modalAdd.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Cliente <span class="text-danger">*</span></label>
+            <select class="form-control form-control-sm" [(ngModel)]="formAdd.cliente">
+              <option *ngFor="let o of clientesOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Marca</label>
+            <select class="form-control form-control-sm" [(ngModel)]="formAdd.marca">
+              <option *ngFor="let o of marcasOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Modelo</label>
+            <select class="form-control form-control-sm" [(ngModel)]="formAdd.modelo">
+              <option *ngFor="let o of modelosOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Producto</label>
+            <select class="form-control form-control-sm" [(ngModel)]="formAdd.producto">
+              <option *ngFor="let o of productosOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-12">
+            <label>Descripción</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="formAdd.descripcion" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label>PVP</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="formAdd.pvp" step="0.01" />
+          </div>
+          <div class="form-group col-md-4">
+            <label>C1</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="formAdd.c1" placeholder="C1 0000000" />
+          </div>
+          <div class="form-group col-md-4">
+            <label>Código Solupyme</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="formAdd.cod_solupyme" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="modalAdd.hide()">Cancelar</button>
+        <button class="btn btn-success btn-sm" (click)="guardarAdd()">
+          <i class="fa fa-check mr-1"></i>Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Modal: Editar ──────────────────────────────────────────────── -->
+<div class="modal fade" bsModal #modalEdit="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa fa-pencil mr-1"></i>Editar Incremento — ID {{ formEdit.id }}</h5>
+        <button type="button" class="close" (click)="modalEdit.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Cliente <span class="text-danger">*</span></label>
+            <select class="form-control form-control-sm" [(ngModel)]="formEdit.cliente">
+              <option *ngFor="let o of clientesOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Marca</label>
+            <select class="form-control form-control-sm" [(ngModel)]="formEdit.marca">
+              <option *ngFor="let o of marcasOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Modelo</label>
+            <select class="form-control form-control-sm" [(ngModel)]="formEdit.modelo">
+              <option *ngFor="let o of modelosOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Producto</label>
+            <select class="form-control form-control-sm" [(ngModel)]="formEdit.producto">
+              <option *ngFor="let o of productosOpts" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-12">
+            <label>Descripción</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="formEdit.descripcion" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label>PVP</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="formEdit.pvp" step="0.01" />
+          </div>
+          <div class="form-group col-md-4">
+            <label>C1</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="formEdit.c1" placeholder="C1 0000000" />
+          </div>
+          <div class="form-group col-md-4">
+            <label>Código Solupyme</label>
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="formEdit.cod_solupyme" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="modalEdit.hide()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="guardarEdit()">
+          <i class="fa fa-check mr-1"></i>Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

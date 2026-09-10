@@ -1,0 +1,36 @@
+{
+  "compileOnSave": false,
+  "angularCompilerOptions": {
+    "enableIvy": false,
+    "strictTemplates": true
+  },
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "sourceMap": true,
+    "declaration": false,
+    "module": "es2015",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es6",
+    "allowSyntheticDefaultImports": true,
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/jqwidgets-framework/jqwidgets-ts"
+    ],
+    "lib": [
+      "es2018",
+      "dom"
+    ],
+    "types": ["node","jquery"]
+  },
+    "include": [ 
+      "src/**/*",
+      "node_modules/jqwidgets-framework/jqwidgets-ts/angular_jqxgrid.ts",
+      "node_modules/jqwidgets-framework/jqwidgets-ts/angular_jqxlistbox.ts",
+    
+      
+   ]
+}

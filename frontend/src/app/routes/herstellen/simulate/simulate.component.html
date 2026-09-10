@@ -1,0 +1,56 @@
+<div class='container-fluid'>
+
+    <div class="card card-block">
+
+    <div class="container-overview panel">
+        <h5><i class="icon-list"></i>
+            &nbsp;Simulación Asignación de Tejido
+        </h5>
+    </div>
+ 
+<tabset>
+  <tab>
+      <ng-template tabHeading >
+        <div (click)="ViewPanel(1);"><i class="icon-list"></i>&nbsp;Información de Entrada</div></ng-template>
+        <div class="row">
+            <div class="form-group col-xs-12 col-md-12 col-lg-12" style="height:350px">
+                <jqxGrid #gridSReference [auto-create]='false' (onRowselect)="rowSelect($event)"   ></jqxGrid>
+            </div>
+        </div>
+  </tab>
+  <tab>
+      <ng-template tabHeading >
+        <div (click)="ViewPanel(2);"><i class="icon-list"></i>&nbsp;Simulación</div></ng-template>
+        <div class="row">
+            <div class="form-group col-xs-2 col-md-2 col-lg-2">
+              <button class="btn btn-primary btn-block btn-sm" (click)="Generate();">Generar</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group col-xs-7 col-md-7 col-lg-7" style="height:500px">
+                <jqxGrid #gridSReference2 [auto-create]='false' (onRowselect)="rowSelect2($event)"   ></jqxGrid>
+            </div>
+           <div class="form-group col-xs-5 col-md-5 col-lg-5">
+            <div class="sim_panel">
+                <div class="sim_sheet">
+                    <div *ngFor="let item of arrInfo">
+                        <div *ngIf="item.type==1" class="sim_pill" [style.width.px]="item.ancho" [style.height.px]="item.alto"></div>
+                        <div *ngIf="item.type==2" class="sim_pill_rest" [style.width.px]="item.ancho" [style.height.px]="item.alto"></div>
+                    </div>
+                </div>
+            </div>
+           </div>
+        </div>
+  </tab>
+</tabset>
+
+
+
+  
+
+
+
+
+</div>
+
+</div>

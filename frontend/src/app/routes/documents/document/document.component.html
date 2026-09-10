@@ -1,0 +1,30 @@
+<div class="container-fluid my-3">
+  <div class="card card-block">
+    <div class="container-overview panel">
+      <h5>
+        <i class="icon-list mt-1"></i> &nbsp;<b
+          >Documento&nbsp;({{ this.documentName }}&nbsp;)</b
+        >
+
+        <div class="pull-right">
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-primary-outline btn-block btn-sm"
+              (click)="Save()"
+            >
+              <span class="glyphicons glyphicon-save"></span
+              >&nbsp;&nbsp;Actualizar
+            </button>
+          </div>
+        </div>
+      </h5>
+      <hr />
+    </div>
+
+    <div class="row mt-1">
+      <div class="form-group col-xs-12 col-md-12 col-lg-12">
+        <!-- <ckeditor [(ngModel)]="model.editorData" [editor]="Editor"></ckeditor> -->
+      </div>
+    </div>
+  </div>
+</div>

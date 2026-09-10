@@ -1,0 +1,108 @@
+<div style="background: var(--color-background-primary, #fff); border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; font-size: 14px;">
+
+  <!-- Header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 13px; font-weight: 500;">Compac</span>
+      <span *ngIf="item.precios.T4_Fecha_Entrega != ''"
+        style="font-size: 12px; color: #6c757d; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">
+        F.Fab. {{ item.precios.T4_Fecha_Entrega }}&nbsp;+&nbsp;{{ item.precios.T4_Transporte }}d transporte
+      </span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-sm btn-outline-secondary" (click)="EditLine(item)">Modificar</button>
+      <button class="btn btn-sm btn-outline-danger" (click)="DeleteLine(item)">Borrar</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+    <!-- Columna izquierda: datos -->
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+
+      <!-- Medidas -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Junquillo</div>
+          <div style="font-weight: 500;">{{ item.junquillo }}</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Ancho</div>
+          <div style="font-weight: 500;">{{ item.ancho }} cm</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Alto</div>
+          <div style="font-weight: 500;">{{ item.alto }} cm</div>
+        </div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Cantidad</div>
+          <div style="font-weight: 500;">{{ item.cantidad }}</div>
+        </div>
+      </div>
+
+      <!-- Accionamiento -->
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Accionamiento</div>
+        <div style="font-size: 13px; line-height: 1.6;">
+          {{ item.com_acc_tipo_text }} {{ item.com_acc_marca_text }}
+          {{ item.com_acc_tubo_text }} {{ item.com_acc_modelo_text }}
+          {{ item.com_acc_posicion_text }}
+          <div *ngIf="item.acc_tipo_text == 'Cadena'" style="margin-top: 4px; color: #6c757d; font-size: 12px;">
+            <span *ngIf="item.com_cad_Tipo != '1'">Cadena específica &nbsp;·&nbsp; {{ item.com_cad_Altura }} {{ item.com_cad_color_text }}</span>
+            <span *ngIf="item.com_cad_Tipo != '0'">Cadena contínua &nbsp;·&nbsp; {{ item.com_cad_altura_text }} {{ item.com_cad_color_text }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Soportes + Tapas -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Soportes</div>
+          <div style="font-size: 13px;">{{ item.com_sop_tipo_text }} &nbsp;·&nbsp; {{ item.com_sop_color_text }}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Tapas</div>
+          <div style="font-size: 13px;">{{ item.com_tap_tipo_text }} &nbsp;·&nbsp; {{ item.com_tap_color_text }}</div>
+        </div>
+      </div>
+
+      <!-- Tejido -->
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Tejido</div>
+        <div style="font-size: 13px;">{{ item.com_tej_tipo_text }} &nbsp;·&nbsp; {{ item.com_tej_color_text }} &nbsp;·&nbsp; {{ item.com_tej_salida_text }}</div>
+      </div>
+
+    </div>
+
+    <!-- Columna derecha: precios -->
+    <div style="border-left: 1px solid #dee2e6; padding-left: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Resumen de precio</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Según tarifa</span>
+            <span>{{ item.precios.T4_Tejido | number:'1.2-2' }} €</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Cantidad</span>
+            <span>× {{ item.precios.T4_Cantidad }}</span>
+          </div>
+          <div *ngIf="item.precios.T4_Coeficiente == 1.5"
+            style="display: flex; justify-content: space-between; font-size: 12px; color: #6c757d;">
+            <span>Color perfilería +50%</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #dee2e6; margin-top: 16px; padding-top: 12px; display: flex; justify-content: space-between; align-items: baseline;">
+        <span style="font-size: 13px; font-weight: 500; color: #6c757d;">Total</span>
+        <div style="text-align: right;">
+          <div style="font-size: 20px; font-weight: 500;">{{ item.precios.T4_PVP | number:'1.2-2' }} €</div>
+          <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T4_PVP_C1 }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

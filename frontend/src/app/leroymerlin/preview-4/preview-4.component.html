@@ -1,0 +1,100 @@
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">COMPAC
+            <span [hidden]="item.precios.T4_Fecha_Entrega == ''">
+                <font color="black">(F.Fab.{{item.precios.T4_Fecha_Entrega}}&nbsp;&nbsp;+ {{item.precios.T4_Transporte}}
+                    d Transporte)</font>
+            </span>
+            <div class="pull-right">
+                <button class="btn btn-success btn-sm" (click)="EditLine(item)"><span
+                        class="glyphicon glyphicon-pencil"></span>&nbsp;Modificar</button>
+                <button class="btn btn-danger btn-sm" (click)="DeleteLine(item)"><span
+                        class="glyphicon glyphicon-trash"></span>&nbsp;Borrar</button>
+            </div>
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4 mt-2 ml-5">
+            <table class="table table-bordered">
+                <tr>
+                    <td>Junquillo:</td>
+                    <td>{{item.junquillo}}</td>
+                    <td>Ancho:</td>
+                    <td>{{item.ancho}}</td>
+                    <td>Alto:</td>
+                    <td>{{item.alto}}</td>
+                    <td>Cantidad:</td>
+                    <td>{{item.cantidad}}</td>
+                </tr>
+                <tr>
+                    <td>Accionamiento</td>
+                    <td colspan="7">
+                        {{item.com_acc_tipo_text}}&nbsp;{{item.com_acc_marca_text}}
+                        {{item.com_acc_tubo_text}}&nbsp;{{item.com_acc_modelo_text}}
+                        {{item.com_acc_posicion_text}}<br />
+                        <div [hidden]="item.acc_tipo_text!='Cadena'">
+
+                            <div [hidden]="item.com_cad_Tipo == '1'">
+                                Cadena Específica: <br />
+                                {{item.com_cad_Altura}}&nbsp;{{item.com_cad_color_text}}
+                            </div>
+                            <div [hidden]="item.com_cad_Tipo == '0'">
+                                Cadena Contínua:<br />
+                                {{item.com_cad_altura_text}}&nbsp;{{item.com_cad_color_text}}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Soportes:</td>
+                    <td>{{item.com_sop_tipo_text}}&nbsp;{{item.com_sop_color_text}}</td>
+                    <td>Tapas</td>
+                    <td>{{item.com_tap_tipo_text}}&nbsp;{{item.com_tap_color_text}}</td>
+                    <td>Tejidos:</td>
+                    <td colspan="3">
+                        {{item.com_tej_tipo_text}}&nbsp;{{item.com_tej_color_text}}<br /> {{item.com_tej_salida_text}}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="row mb-4 mt-2 ml-5">
+            <div class="col-sm-6 col-lg-6 well" [hidden]="true">
+                <h6 class="mb-3">Instrucciones:({{item.instrucciones.length}})</h6>
+                <div class="input-group">
+                    <textarea class="form-control" style="width:100%;height:100px">{{item.instrucciones}}</textarea>
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" [class.btn-success]="isCopied1" type="button">copia</button>
+                    </span>
+                </div>
+            </div>
+            <div class="col-lg-6  col-sm-6 ">
+                <table class="table table-clear">
+                    <thead>
+                        <tr>
+                            <td><strong>Descripción</strong></td>
+                            <td class="center"><strong>Cantidad</strong></td>
+                            <td class="center"><strong>Precio</strong></td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Según Tarifa</td>
+                            <td style="text-align:center">{{item.precios.T4_Cantidad}}</td>
+                            <td style="text-align:center">{{item.precios.T4_Tejido | number}}€</td>
+                        </tr>
+                        <tr *ngIf="item.precios.T4_Coeficiente==1.5">
+                            <td style="text-align:center" colspan="3">Color Perfilería +50%</td>
+                        </tr>
+                        <tr>
+                            <td class="left"></td>
+                            <td class="left"><strong>TOTAL</strong></td>
+                            <td style="text-align:center"><strong>{{item.precios.T4_PVP | number}}€</strong></td>
+                            <td style="text-align:center"><strong>{{item.precios.T4_PVP_C1}}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>

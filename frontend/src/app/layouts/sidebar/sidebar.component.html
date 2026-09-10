@@ -1,0 +1,164 @@
+<nav class="sidebar-nav">
+
+  <!-- ─── 1. CONFIGURACIÓN ─────────────────────────────────────────────────── -->
+  <ul class="nav" *ngIf="isAdmin() || canAny(['config_clientes','config_clientes_gestion','config_promociones','config_campos','config_articulos','config_pedidos','config_presupuestos'])">
+    <li class="nav-item nav-dropdown" routerLinkActive="open" appNavDropdown>
+      <a class="nav-link nav-dropdown-toggle" href="#" appNavDropdownToggle>
+        <i class="icon-cloud-upload"></i>Configuración
+      </a>
+      <ul class="nav-dropdown-items">
+
+        <!-- Solo Administrador -->
+        <li class="nav-item" *ngIf="isAdmin()">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master/usuarios']">
+            <span class="menu-padding-left">Usuarios</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('config_clientes')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master/setupcli']">
+            <span class="menu-padding-left">Clientes</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('config_clientes_gestion')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master/clientes-gestion']">
+            <span class="menu-padding-left">Gestión de Clientes</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('config_promociones')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master/promociones-clientes']">
+            <span class="menu-padding-left">Promociones</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('config_campos')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master/setup']">
+            <span class="menu-padding-left">Gestión de Campos</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('config_articulos')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/artikeln']">
+            <span class="menu-padding-left">Artículos</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('config_pedidos')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/prebestell2']">
+            <span class="menu-padding-left">Pedidos</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('config_presupuestos')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/budgetliste']">
+            <span class="menu-padding-left">Presupuestos</span>
+          </a>
+        </li>
+
+      </ul>
+    </li>
+  </ul>
+
+  <!-- ─── 2. TARIFAS ──────────────────────────────────────────────────────── -->
+  <ul class="nav" *ngIf="canAny(['tarifas_generador','tarifas_clientes','tarifas_leroy','tarifas_backup'])">
+    <li class="nav-item nav-dropdown" routerLinkActive="open" appNavDropdown>
+      <a class="nav-link nav-dropdown-toggle" href="#" appNavDropdownToggle>
+        <i class="icon-cloud-upload"></i>Tarifas
+      </a>
+      <ul class="nav-dropdown-items">
+
+        <li class="nav-item" *ngIf="can('tarifas_generador')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/tarifasimul-search']">
+            <span class="menu-padding-left">Generador de Tarifas</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('tarifas_clientes')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/tarifasimul-cli-search']">
+            <span class="menu-padding-left">Tarifas de Clientes</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('tarifas_leroy')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/tarifs']">
+            <span class="menu-padding-left">Tarifas Leroy Merlín</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('tarifas_backup')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/backup']">
+            <span class="menu-padding-left">Backup</span>
+          </a>
+        </li>
+
+      </ul>
+    </li>
+  </ul>
+
+  <!-- ─── 3. FABRICACIÓN ──────────────────────────────────────────────────── -->
+  <ul class="nav" *ngIf="can('fab_config')">
+    <li class="nav-item nav-dropdown" routerLinkActive="open" appNavDropdown>
+      <a class="nav-link nav-dropdown-toggle" href="#" appNavDropdownToggle>
+        <i class="icon-puzzle"></i>Fabricación
+      </a>
+      <ul class="nav-dropdown-items">
+        <li class="nav-item" *ngIf="can('fab_config')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/artikeln_fab_cd_v3']">
+            <span class="menu-padding-left">Configuración</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- ─── 4. CORTINADECOR ─────────────────────────────────────────────────── -->
+  <ul class="nav" *ngIf="canAny(['cdeco_tejidos','cdeco_atributos','cdeco_config'])">
+    <li class="divider"></li>
+    <li class="nav-item nav-dropdown" routerLinkActive="open" appNavDropdown>
+      <a class="nav-link nav-dropdown-toggle" href="#" appNavDropdownToggle>
+        <i class="icon-puzzle"></i>Cortinadecor
+      </a>
+      <ul class="nav-dropdown-items">
+
+        <li class="nav-item" *ngIf="can('cdeco_tejidos')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/cdeco/main']">
+            <span class="menu-padding-left">Tejidos</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('cdeco_atributos')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/artikeln_fab_cd']">
+            <span class="menu-padding-left">Configuración Atributos</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="can('cdeco_config')">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/artikeln_fab_cd_v2']">
+            <span class="menu-padding-left">Configuración</span>
+          </a>
+        </li>
+
+      </ul>
+    </li>
+  </ul>
+
+  <!-- ─── 5. INTEGRACIONES (siempre visible para usuarios logueados) ────────── -->
+  <ul class="nav">
+    <li class="divider"></li>
+    <li class="nav-item nav-dropdown" routerLinkActive="open" appNavDropdown>
+      <a class="nav-link nav-dropdown-toggle" href="#" appNavDropdownToggle>
+        <i class="icon-puzzle"></i>Integraciones
+      </a>
+      <ul class="nav-dropdown-items">
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/manza/config/']">
+            <span class="menu-padding-left">Configurador</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+
+</nav>

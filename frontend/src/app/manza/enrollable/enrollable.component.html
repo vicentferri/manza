@@ -1,0 +1,876 @@
+<div class="card shadow-sm mt-4">
+  <div class="card-header bg-dark text-white">
+    <h5 class="mb-0">{{ "ENROLLABLE" | translate }}</h5>
+  </div>
+
+  <div class="card-body">
+    <!-- Subtipo -->
+    <div class="row mt-1">
+      <div class="col col-12">
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-sm"
+            [class.btn-primary]="SubTipoCortina == 1"
+            [class.btn-secondary]="SubTipoCortina != 1"
+            (click)="SubTipo(1)"
+          >
+            {{ "ENROLLABLE" | translate }}
+          </button>
+          <button
+            class="btn btn-sm ml-1"
+            [class.btn-primary]="SubTipoCortina == 2"
+            [class.btn-secondary]="SubTipoCortina != 2"
+            (click)="SubTipo(2)"
+          >
+            {{ "CAJON ZIP" | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dimensiones y Cantidad -->
+    <div class="row g-3 mb-4 mt-2">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold"
+          >{{ "ANCHO" | translate }} (cm)</label
+        >
+        <input
+          #ancho
+          class="form-control"
+          type="number"
+          min="100"
+          max="600"
+          step="0.5"
+          [(ngModel)]="Ancho"
+          (change)="Ancho_Change()"
+          (blur)="Ancho_Change()"
+          (keyup.enter)="Next($event, alto)"
+        />
+        <small class="text-muted">100-600 cm</small>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold"
+          >{{ "ALTO" | translate }} (cm)</label
+        >
+        <input
+          #alto
+          class="form-control"
+          type="number"
+          min="100"
+          max="600"
+          step=".5"
+          [(ngModel)]="Alto"
+          (keyup.enter)="Next($event, cantidad)"
+        />
+        <small class="text-muted">100-600 cm</small>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">{{
+          "CANTIDAD" | translate
+        }}</label>
+        <input
+          #cantidad
+          class="form-control"
+          type="number"
+          min="1"
+          max="600"
+          [(ngModel)]="Cantidad"
+        />
+        <small class="text-muted">1-600 uds</small>
+      </div>
+    </div>
+
+    <!-- Cards principales -->
+    <div class="row mt-1" [hidden]="Ancho == '' || Alto == ''">
+      <div class="col col-12">
+        <div class="row">
+          <!-- TEJIDO -->
+          <div class="col col-5" style="padding: 0.3em">
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                <b>{{ "SELECCION DE TEJIDO" | translate | uppercase }}</b>
+              </div>
+              <div class="card-body card-block">
+                <div class="row">
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "TIPO DE TEJIDO" | translate }}</label>
+                    <select
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      style="width: 100%"
+                      [(ngModel)]="Tipo1_Opacidad"
+                      (change)="ChangeTipo1Opacidad()"
+                    >
+                      <option *ngFor="let pow of TiposTejido" [value]="pow">
+                        {{ pow }}
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    style="padding: 0.3em; width: 99%"
+                    [hidden]="SubTipoCortina == 2"
+                  >
+                    <label>{{ "IMPRESION DIGITAL" | translate }}</label>
+                    <div class="input-group">
+                      <span
+                        class="input-group-addon beautiful"
+                        style="background-color: white; border: none"
+                      >
+                        <input
+                          class="form-control form-control-sm"
+                          type="checkbox"
+                          name="ImpresionDigital"
+                          [(ngModel)]="ID_Quiero"
+                          style="width: 20px"
+                          (change)="selImpresionDigital()"
+                        />
+                      </span>
+                      <input
+                        class="form-control form-control-sm"
+                        type="text"
+                        [(ngModel)]="ID_Imagen"
+                        id="ImpresionDigital"
+                        [ngModelOptions]="{ standalone: true }"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        [disabled]="!ID_Quiero"
+                        [hidden]="true"
+                        (click)="abrirSelectorImpresionDigital()"
+                      >
+                        <i class="fa fa-picture-o"></i> Seleccionar Imagen
+                      </button>
+                    </div>
+                    <div class="mt-1" *ngIf="ID_Quiero && idSeleccion" style="display: flex; align-items: center; gap: 0.5em;">
+                      <img [src]="idSeleccion.previewUrl" style="height: 40px; border: 1px solid #ccc; border-radius: 4px;" />
+                      <small class="text-muted">{{ ID_Imagen }}</small>
+                      <button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="quitarImpresionDigital()">
+                        <i class="fa fa-times"></i>
+                      </button>
+                    </div>
+                    <small class="text-muted d-block mt-1" *ngIf="ID_Quiero && !idSeleccion">{{ ID_Imagen }}</small>
+                  </div>
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "SERIE" | translate }}</label>
+                    <div class="input-group">
+                      <select
+                        name="Tipo1_Tejido"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Tejido"
+                        (change)="ChangeTipo1Tejido()"
+                      >
+                        <option *ngFor="let pow of tejidos" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                      <span class="input-group-btn">
+                        <button class="btn btn-default" type="button">
+                          {{ CodigoProv }}
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                  <div style="padding: 0.3em; width: 50%">
+                    <label>{{ "COLOR" | translate }}</label>
+                    <select
+                      name="Tipo1_TejidoColor"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_TejidoColor"
+                      (change)="ChangeTejidoColor()"
+                    >
+                      <option *ngFor="let pow of tejidosC" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div style="padding: 0.3em; width: 50%">
+                    <label>{{ "SALIDA" | translate }}</label>
+                    <select
+                      name="Tipo1_TejidoSalida"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_TejidoSalida"
+                    >
+                      <option *ngFor="let pow of tejidosS" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /TEJIDO -->
+
+          <!-- ACCIONAMIENTO -->
+          <div class="col col-7" style="padding: 0.3em">
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                <b>{{
+                  "SELECCION DEL ACCIONAMIENTO" | translate | uppercase
+                }}</b>
+              </div>
+              <div class="card-body card-block">
+                <div class="row flex-row flex-wrap">
+                  <div class="col-6" style="padding: 0.3em">
+                    <label>{{ "ACCIONAMIENTO" | translate }}</label>
+                    <select
+                      name="Tipo1_Tipo"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Tipo"
+                      (change)="ChangeAccionamiento()"
+                    >
+                      <option *ngFor="let pow of items1" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-6" style="padding: 0.3em">
+                    <label>{{ "TIPO" | translate }}</label>
+                    <select
+                      name="Tipo1_Marca"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Marca"
+                      (change)="ChangeAccionamientoMarca()"
+                    >
+                      <option *ngFor="let pow of items2" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row flex-row flex-wrap">
+                  <div class="col-12" style="padding: 0.3em">
+                    <label>{{ Modelo_Label }}</label>
+                    <select
+                      name="Tipo1_Color"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Color"
+                      (change)="ChangeTipo1Color()"
+                    >
+                      <option *ngFor="let pow of items3" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-12"
+                    style="padding: 0.3em"
+                    [hidden]="!verMando"
+                  >
+                    <label>{{ Tipo1_RadioMando_Label }}</label>
+                    <select
+                      name="Tipo1_Mando"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Mando"
+                      (change)="ChangeRadioMando()"
+                      [disabled]="Tipo1_RadioMando_Disabled"
+                    >
+                      <option *ngFor="let pow of radiomando" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-6" style="padding: 0.3em" [hidden]="cargadores.length == 0">
+                    <label>{{ Label_Cargador }}</label>
+                    <select
+                      name="Tipo1_Cargador"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Cargador"
+                      (change)="changeCargador();"
+                    >
+                      <option
+                        *ngFor="let pow of cargadores"
+                        [value]="pow.id"
+                      >
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-6" style="padding: 0.3em">
+                    <label>{{ "POSICION" | translate }}</label>
+                    <select
+                      name="Tipo1_Posicion"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Posicion"
+                    >
+                      <option
+                        *ngFor="let pow of PosicionMando"
+                        [value]="pow.id"
+                      >
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Cadena -->
+                <div class="row mt-2" [hidden]="!esCadena">
+                  <div class="col col-12">
+                    <!-- Cadena simple -->
+                    <div class="row mt-1">
+                      <div class="col-6">
+                        <div class="input-group">
+                          <span
+                            class="input-group-addon"
+                            style="background-color: white"
+                          >
+                            <input
+                              type="radio"
+                              name="cadena"
+                              (click)="Cadena(0)"
+                              [checked]="TipoCadena1"
+                            />
+                          </span>
+                          <span class="mt-2">{{ "CADENA" | translate }}</span>
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <div [hidden]="esCadenaExt != 0">
+                          <label>{{ Tipo1_Cadena_Label }}</label>
+                          <input
+                            type="number"
+                            class="form-control form-control-sm"
+                            id="AlturaCadena"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="AlturaCadena"
+                            style="padding: 0.3em"
+                          />
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <div [hidden]="esCadenaExt != 0">
+                          <label>{{ "COLOR" | translate }}</label>
+                          <select
+                            name="Tipo1_ColorCadena"
+                            class="form-control form-control-sm"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="Tipo1_ColorCadena"
+                            style="padding: 0.3em"
+                          >
+                            <option
+                              *ngFor="let pow of colorCadena"
+                              [value]="pow.id"
+                            >
+                              {{ pow.text }}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Cadena continua -->
+                    <div class="row mt-1">
+                      <div class="col-6">
+                        <div class="input-group">
+                          <span
+                            class="input-group-addon"
+                            style="background-color: white"
+                          >
+                            <input
+                              type="radio"
+                              name="cadena"
+                              (click)="Cadena(1)"
+                              [checked]="TipoCadena2"
+                            />
+                          </span>
+                          <span class="mt-2">{{
+                            "CADENACONTINUA" | translate
+                          }}</span>
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <div [hidden]="esCadenaExt != 1">
+                          <label>{{ "COLOR" | translate }}</label>
+                          <select
+                            name="Tipo1_ColorCadena"
+                            class="form-control form-control-sm"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="Tipo1_ColorCadena"
+                            (change)="Change_ColorCadenaContinua()"
+                            style="padding: 0.3em"
+                          >
+                            <option
+                              *ngFor="let pow of colorCadena"
+                              [value]="pow.id"
+                            >
+                              {{ pow.text }}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-3">
+                        <div [hidden]="esCadenaExt != 1">
+                          <label>{{ Tipo1_Cadena_Label }}</label>
+                          <select
+                            name="Tipo1_AlturaCadena"
+                            class="form-control form-control-sm"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="Tipo1_AlturaCadena"
+                            style="padding: 0.3em"
+                          >
+                            <option
+                              *ngFor="let pow of alturaCadena"
+                              [value]="pow.id"
+                            >
+                              {{ pow.text }}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Cadena metálica -->
+                    <div class="row mt-1">
+                      <div class="col-6">
+                        <div class="input-group">
+                          <span
+                            class="input-group-addon"
+                            style="background-color: white"
+                          >
+                            <input
+                              type="radio"
+                              name="cadena"
+                              (click)="Cadena(2)"
+                              [checked]="TipoCadena3"
+                            />
+                          </span>
+                          <span class="mt-2">{{
+                            "CADENAMETALICA" | translate
+                          }}</span>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div [hidden]="esCadenaExt != 2">
+                          <label>{{ "ALTURA CADENA" | translate }}</label>
+                          <select
+                            name="Tipo1_AlturaCadenaM"
+                            class="form-control form-control-sm"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="Tipo1_AlturaCadenaM"
+                            (change)="tarifaCadena()"
+                          >
+                            <option
+                              *ngFor="let pow of alturaCadenaM"
+                              [value]="pow.id"
+                            >
+                              {{ pow.text }}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-6" [hidden]="esCadenaExt != 2">
+                        <div [hidden]="Tipo1_AlturaCadenaM != '9999'">
+                          <label>{{ "ALTURA_CADENA" | translate }}</label>
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [(ngModel)]="Tipo1_AlturaCadenaM2"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- /Cadena -->
+              </div>
+            </div>
+          </div>
+          <!-- /ACCIONAMIENTO -->
+
+          <!-- ESTANCIAS -->
+          <div class="col col-3" style="padding: 0.3em">
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                {{ "SELECCION DE ESTANCIAS" | translate | uppercase }}
+              </div>
+              <div class="card-body card-block">
+                <div class="row">
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "ESTANCIA" | translate }}</label>
+                    <select
+                      name="Tipo1_Estancia"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Estancia"
+                    >
+                      <option
+                        *ngFor="let pow of Tipo1_Estancias"
+                        [value]="pow.idrow"
+                      >
+                        {{ pow.descripcion }}
+                      </option>
+                    </select>
+                  </div>
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "OBSERVACIONES" | translate }}</label>
+                    <textarea
+                      class="form-control form-control-sm"
+                      rows="1"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Estancia_Obs"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /ESTANCIAS -->
+
+          <!-- SOPORTES (oculto en Cajón ZIP) -->
+          <div
+            class="col col-3"
+            [hidden]="SubTipoCortina == 2"
+            style="padding: 0.3em"
+          >
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                {{ "SOPORTES" | translate | uppercase }}
+              </div>
+              <div class="card-body card-block">
+                <div class="row">
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "TIPO" | translate }}</label>
+                    <select
+                      name="Tipo1_Soporte"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Soporte"
+                      (change)="ChangeTipo1Soporte()"
+                    >
+                      <option *ngFor="let pow of soportes" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "COLOR" | translate }}</label>
+                    <select
+                      name="Tipo1_SoporteC"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_SoporteC"
+                      (change)="ChangeTipo1SoporteColor()"
+                    >
+                      <option *ngFor="let pow of soportesC" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /SOPORTES -->
+
+          <!-- TAPAS (oculto en Cajón ZIP) -->
+          <div
+            class="col col-3"
+            [hidden]="SubTipoCortina == 2"
+            style="padding: 0.3em"
+          >
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                {{ "SELECCION DE TAPAS" | translate | uppercase }}
+              </div>
+              <div class="card-body card-block">
+                <div class="row">
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "TIPO" | translate }}</label>
+                    <select
+                      name="Tipo1_Tapa"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Tapa"
+                      (change)="ChangeTipo1Tapa()"
+                    >
+                      <option *ngFor="let pow of tapas" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "COLOR" | translate }}</label>
+                    <select
+                      name="Tipo1_TapaC"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_TapaC"
+                    >
+                      <option *ngFor="let pow of tapasC" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /TAPAS -->
+
+          <!-- CONTRAPESOS (oculto en Cajón ZIP) -->
+          <div
+            class="col col-3"
+            [hidden]="SubTipoCortina == 2"
+            style="padding: 0.3em"
+          >
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                {{ "SELECCION DE CONTRAPESOS" | translate | uppercase }}
+              </div>
+              <div class="card-body card-block">
+                <div class="row">
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ Tipo1_Contrapeso_Label }}</label>
+                    <select
+                      name="Tipo1_Contrapeso"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Contrapeso"
+                      (change)="ChangeTipo1Contrapeso()"
+                      style="width: 100%"
+                    >
+                      <option *ngFor="let pow of contrapesos" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                  <div style="padding: 0.3em; width: 99%">
+                    <label>{{ "COLOR" | translate }}</label>
+                    <select
+                      name="Tipo1_ContrapesoC"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_ContrapesoC"
+                    >
+                      <option *ngFor="let pow of contrapesosC" [value]="pow.id">
+                        {{ pow.text }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /CONTRAPESOS -->
+
+          <!-- CAJÓN (solo Cajón ZIP) -->
+          <div
+            class="col col-3"
+            [hidden]="SubTipoCortina != 2"
+            style="padding: 0.3em"
+          >
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                {{ "SELECCION DE CAJON" | translate | uppercase }}
+              </div>
+              <div class="card-block">
+                <div class="row">
+                  <div class="col col-12">
+                    <label>{{ Modelo_Cajon_Label }}</label>
+                    <select
+                      name="Tipo1_Cajon"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Cajon"
+                    >
+                      <option *ngFor="let pow of Cajones" [value]="pow.idrow">
+                        {{ pow.descripcion }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col col-6">
+                    <label>{{ "COLOR" | translate }}</label>
+                    <select
+                      name="Tipo1_CajonC"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_CajonC"
+                      (change)="ChangeRalColor()"
+                    >
+                      <option value="BLA">{{ "BLANCO" | translate }}</option>
+                      <option value="RAL">
+                        {{ "INDICAR RAL" | translate }}
+                      </option>
+                    </select>
+                    <div
+                      style="padding: 0.3em; width: 100%"
+                      [hidden]="Tipo1_CajonC != 'RAL'"
+                    >
+                      <label>{{ Ral_Label }}</label>
+                      <select
+                        name="Tipo1_CajonRAL"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_CajonRAL"
+                        (change)="ChangeRal()"
+                      >
+                        <option *ngFor="let pow of items90" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col col-6">
+                    <label>{{ "VISTA CAJON" | translate }}</label>
+                    <select
+                      name="Tipo1_Cajon_VistaCajon"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Cajon_VistaCajon"
+                    >
+                      <option value="-1">Elegir</option>
+                      <option value="EXTERIOR">Visto desde el Exterior</option>
+                      <option value="INTERIOR">Visto desde el Interior</option>
+                    </select>
+                  </div>
+                  <div class="col col-6">
+                    <label>{{ "SOPORTES" | translate }}</label>
+                    <select
+                      name="Tipo1_Cajon_Soportes"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Cajon_Soportes"
+                    >
+                      <option value="-1">{{ "ELEGIR" | translate }}</option>
+                      <option value="FRENTE">{{ "FRENTE" | translate }}</option>
+                      <option value="TECHO">{{ "TECHO" | translate }}</option>
+                    </select>
+                  </div>
+                  <div class="col col-6">
+                    <label>{{ "SALIDA CABLE" | translate }}</label>
+                    <select
+                      name="Tipo1_Cajon_PosicionSalida"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Cajon_PosicionSalida"
+                    >
+                      <option value="-1">{{ "ELEGIR" | translate }}</option>
+                      <option value="LATERAL">
+                        {{ "SALIDA LATERAL" | translate }}
+                      </option>
+                      <option value="TRASERA">
+                        {{ "SALIDA TRASERA" | translate }}
+                      </option>
+                      <option value="SUPERIOR">
+                        {{ "SALIDA SUPERIOR" | translate }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /CAJÓN -->
+
+          <!-- GUÍAS (solo Cajón ZIP, no Cliente==1) -->
+          <div
+            class="col col-3"
+            [hidden]="SubTipoCortina != 2 || Cliente == '1'"
+            style="padding: 0.3em"
+          >
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                {{ "SELECCIONGUIAS" | translate | uppercase }}
+              </div>
+              <div class="card-body card-block">
+                <div class="row">
+                  <div class="col col-12">
+                    <label>{{ Modelo_Guia_Label }}</label>
+                    <select
+                      name="Tipo1_Guia"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_Guia"
+                    >
+                      <option *ngFor="let pow of Guias" [value]="pow.idrow">
+                        {{ pow.descripcion }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col col-12">
+                    <label>{{ "COLOR" | translate }}</label>
+                    <select
+                      name="Tipo1_GuiaC"
+                      class="form-control form-control-sm"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="Tipo1_GuiaC"
+                    >
+                      <option value="BLA">{{ "BLANCO" | translate }}</option>
+                    </select>
+                    <div
+                      style="padding-top: 5px"
+                      [hidden]="Tipo1_GuiaC != 'RAL'"
+                    >
+                      <label>{{ "RAL" | translate }}</label>
+                      <input
+                        class="form-control form-control-sm"
+                        [(ngModel)]="Tipo1_GuiaRAL"
+                        [ngModelOptions]="{ standalone: true }"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /GUÍAS -->
+        </div>
+      </div>
+    </div>
+
+    <br />
+    <!-- Precio y Acciones -->
+    <div
+      class="d-flex justify-content-between align-items-center pt-3 border-top"
+    >
+      <div *ngIf="precios?.T1_PVP > 0" class="text-start">
+        <h4 class="mb-1 text-primary fw-bold">
+          {{ precios?.T1_PVP | number: "1.2-2" }}&nbsp;€
+          <small class="text-muted">({{ precios?.T1_PVP_C1 }})</small>
+        </h4>
+        <small class="text-muted" *ngIf="precios?.T1_Fecha_Entrega">
+          F.Fab: {{ precios?.T1_Fecha_Entrega }} + {{ precios?.T1_Transporte }}d
+          Trans
+        </small>
+      </div>
+      <div *ngIf="!precios?.T1_PVP || precios?.T1_PVP <= 0" class="text-start">
+        <p class="text-muted mb-0">Calcule el precio para continuar</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button
+          class="btn btn-primary"
+          (click)="CheckPrice()"
+          [disabled]="calculando"
+        >
+          <span
+            *ngIf="calculando"
+            class="spinner-border spinner-border-sm me-2"
+          ></span>
+          {{
+            calculando
+              ? ("CALCULANDO" | translate)
+              : ("CALCULAR PRECIO" | translate)
+          }}
+        </button>
+        <button
+          class="btn btn-success"
+          (click)="Agregar()"
+          [disabled]="!precios?.T1_PVP || precios?.T1_PVP <= 0"
+        >
+          <i class="fas fa-plus me-2"></i>
+          {{ "AGREGAR" | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-impresion-digital-selector #idSelector (seleccionado)="onImpresionDigitalSeleccionada($event)"></app-impresion-digital-selector>

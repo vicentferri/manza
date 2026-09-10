@@ -1,0 +1,228 @@
+<div class="container-fluid">
+  <div class="card card-block">
+    <div class="container-overview panel">
+      <h6>
+        <span class="glyphicons glyphicons-shopping-cart"></span>
+        &nbsp;Tarifas Registradas
+        <div class="pull-right">
+          <button class="btn btn-sm btn-secondary" (click)="ExportTarifas(1)">
+            Exportar Tarifas SP
+          </button>
+          <button
+            class="btn btn-sm btn-secondary"
+            (click)="ParametrosExportacion()"
+          >
+            Parámetros Exportacion
+          </button>
+          <div class="btn btn-default btn-secondary btn-sm" (click)="New()">
+            Nuevo
+          </div>
+          <div
+            class="btn btn-default btn-secondary btn-sm"
+            (click)="searchDocuments()"
+          >
+            Buscar
+          </div>
+        </div>
+      </h6>
+      <hr />
+    </div>
+
+    <div class="row">
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Desde Número</label>
+        <input
+          type="number"
+          class="form-control form-control-sm"
+          [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="searchmodel.Numero1"
+        />
+      </div>
+
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Hasta Número</label>
+        <input
+          type="number"
+          class="form-control form-control-sm"
+          [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="searchmodel.Numero2"
+        />
+      </div>
+
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Desde Fecha</label>
+        <input
+          type="date"
+          class="form-control form-control-sm"
+          id="DesdeFecha"
+          [ngModelOptions]="{ standalone: true }"
+          [ngModel]="searchmodel.Fecha1 | date : 'yyyy-MM-dd'"
+          (change)="onDateChange($event, $event)"
+        />
+      </div>
+
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Hasta Fecha</label>
+        <input
+          type="date"
+          class="form-control form-control-sm"
+          id="HastaFecha"
+          [ngModelOptions]="{ standalone: true }"
+          [ngModel]="searchmodel.Fecha2 | date : 'yyyy-MM-dd'"
+          (change)="onDateChange($event, $event)"
+        />
+      </div>
+    </div>
+
+    <div class="row">
+      <div
+        class="form-group col-xs-12 col-md-12 col-lg-12"
+        style="height: 600px"
+      >
+        <jqxGrid
+          #gridSReference
+          [auto-create]="false"
+          (onRowselect)="rowSelect($event)"
+          (onRowdoubleclick)="rowdoubleclick($event)"
+        ></jqxGrid>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group col-xs-12 col-md-12 col-lg-12 col-no-pad">
+        <jqxGrid #gridS2Reference [auto-create]="false"></jqxGrid>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col col-3">
+        <div class="card h-100">
+          <div class="card-header">Exportar Mapas de Tarifa</div>
+          <div class="card-body card-block"></div>
+          <div class="card-footer">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="ExportarMapas()"
+            >
+              Exportar Mapas
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalUpdate="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet2"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-2">
+            <label>SP Tipo Tarifa</label>
+            <div class="input-group mb-3">
+              <select
+                class="form-control form-control-sm"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="parametros.sp_cliente"
+                style="width: 80px"
+              >
+                <option *ngFor="let pow of sp_clientes" [value]="pow.tag">
+                  {{ pow.descripcion }}
+                </option>
+              </select>
+              <div class="input-group-append">
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  placeholder="num.cliente"
+                  style="width: 100%; background-color: azure"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="col col-2">
+            <label>SP Sistema</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_sistema"
+            >
+              <option *ngFor="let pow of sp_sistemas" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Modelo</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_modelo"
+            >
+              <option *ngFor="let pow of sp_modelos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Accionamiento</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_accionamiento"
+            >
+              <option *ngFor="let pow of sp_accionamientos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Tejido</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_tejido"
+            >
+              <option *ngFor="let pow of sp_tejidos" [value]="pow.agrupacion">
+                {{ pow.agrupacion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Grupo</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_grupo"
+            >
+              <option *ngFor="let pow of sp_grupos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalUpdate.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="AssignTarifa()">
+          Asignar Tarifa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

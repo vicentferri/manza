@@ -1,0 +1,542 @@
+<div class="animated fadeIn">
+  <div class="container-fluid">
+    <div class="card card-block">
+      <div class="container-overview panel">
+        <h6>
+          <span class="glyphicons glyphicons-shopping-cart"></span> &nbsp;<span
+            style="vertical-align: middle"
+            >Recepción de Pedidos</span
+          >
+          <div class="pull-right" style="padding-right: 10px">
+            <h6>{{ timerValue }}/{{ timerMaxValue }}</h6>
+          </div>
+        </h6>
+        <hr />
+      </div>
+
+      <div class="row mt-1">
+        <div class="col col-2">
+          <label>Desde</label>
+          <input
+            type="date"
+            class="form-control form-control-sm"
+            [ngModel]="SelectedDate | date: 'yyyy-MM-dd'"
+            placeholder="Fecha Desde"
+            id="_SelectedDate"
+            (change)="onDateChange($event)"
+            required
+          />
+        </div>
+        <div class="col col-2">
+          <label>Hasta</label>
+          <input
+            type="date"
+            class="form-control form-control-sm"
+            [ngModel]="SelectedDate2 | date: 'yyyy-MM-dd'"
+            placeholder="Fecha Hasta"
+            id="_SelectedDate2"
+            (change)="onDateChange($event)"
+            required
+          />
+        </div>
+        <div class="col col-2">
+          <label>Estado</label>
+          <select
+            class="form-control form-control-sm"
+            name="EstadoOrden"
+            [(ngModel)]="EstadoOrden"
+            (change)="getScope()"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            <option *ngFor="let pow of zustanden" [value]="pow.p1">
+              {{ pow.p2 }}
+            </option>
+          </select>
+        </div>
+        <div class="col col-2">
+          <label>&nbsp;</label>
+          <button
+            class="btn btn-sm btn-block btn-secondary"
+            (click)="getScope()"
+          >
+            Consultar
+          </button>
+        </div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col col-md-12">
+          <tabset>
+            <tab>
+              <ng-template tabHeading>
+                <div (click)="setTipo(1)">
+                  <i class="icon-basket"></i>&nbsp;Leroy Merlin
+                </div>
+              </ng-template>
+              <app-pedidos-grid
+                #gridLM
+                [columns]="colsStd"
+                [rows]="rowsLM"
+                [loading]="loading && SelectedCliente === 1"
+                (selectionChange)="onSelect($event)"
+              ></app-pedidos-grid>
+            </tab>
+
+            <tab>
+              <ng-template tabHeading>
+                <div (click)="setTipo(2)">
+                  <i class="icon-layers"></i>&nbsp;Canal B2B
+                </div>
+              </ng-template>
+
+              <div class="row mb-2">
+                <div class="col col-3">
+                  <label>Cliente del canal</label>
+                  <select
+                    class="form-control form-control-sm"
+                    [(ngModel)]="canalCliente"
+                    (change)="onCanalChange()"
+                    [ngModelOptions]="{ standalone: true }"
+                  >
+                    <option
+                      *ngFor="let c of canalClientes"
+                      [value]="c.id"
+                    >
+                      {{ c.text }}
+                    </option>
+                    <option value="*">Todos</option>
+                  </select>
+                </div>
+              </div>
+
+              <app-pedidos-grid
+                #gridB2B
+                [columns]="colsB2B"
+                [rows]="rowsB2BView"
+                [loading]="loading && SelectedCliente === 2"
+                (selectionChange)="onSelect($event)"
+              ></app-pedidos-grid>
+            </tab>
+
+            <tab>
+              <ng-template tabHeading>
+                <div (click)="setTipo(4)">
+                  <i class="icon-drop"></i>&nbsp;Solarmanes
+                </div>
+              </ng-template>
+              <app-pedidos-grid
+                #grid4
+                [columns]="colsStd"
+                [rows]="rows4"
+                [loading]="loading && SelectedCliente === 4"
+                (selectionChange)="onSelect($event)"
+              ></app-pedidos-grid>
+            </tab>
+
+            <tab>
+              <ng-template tabHeading>
+                <div (click)="setTipo(5)">
+                  <i class="icon-globe"></i>&nbsp;Leroy Merlin Online
+                </div>
+              </ng-template>
+              <app-pedidos-grid
+                #grid5
+                [columns]="colsLMO"
+                [rows]="rows5"
+                [loading]="loading && SelectedCliente === 5"
+                (selectionChange)="onSelect($event)"
+              ></app-pedidos-grid>
+            </tab>
+          </tabset>
+        </div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col col-lg-12">
+          <div class="tb-groups">
+            <fieldset class="tb-group">
+              <legend>Documentos</legend>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="exportData()"
+              >
+                Exportar
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="staticModalI.show(); Impresion2()"
+              >
+                Imprimir
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="VerImagen(); staticModal3.show()"
+              >
+                Ver Fichero Entrada
+              </button>
+            </fieldset>
+
+            <fieldset class="tb-group">
+              <legend>Fabricación</legend>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="HojaFabricacion()"
+              >
+                Fichero
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="VerHojaFabricacion(0); staticModal10.show()"
+              >
+                Detalle
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="VerHojaFabricacion(1); staticModal10.show()"
+              >
+                Reconstruir
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="Herstellung()"
+              >
+                Editar
+              </button>
+              <button
+                class="btn btn-success btn-sm"
+                (click)="IniciarFabricacion()"
+              >
+                Iniciar
+              </button>
+              <button
+                class="btn btn-warning btn-sm"
+                (click)="DetenerFabricacion()"
+              >
+                Detener
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                [hidden]="SelectedCliente != 5"
+                (click)="Reprocesar()"
+              >
+                Reprocesar
+              </button>
+            </fieldset>
+
+            <fieldset class="tb-group">
+              <legend>Modificar pedido</legend>
+              <div class="tb-inline tb-estado">
+                <label for="tbEstado" class="tb-estado-label">Estado</label>
+                <div class="input-group input-group-sm">
+                  <select
+                    id="tbEstado"
+                    class="form-control form-control-sm"
+                    name="TargetEstadoOrden"
+                    [(ngModel)]="Target_EstadoOrden"
+                    [ngModelOptions]="{ standalone: true }"
+                    style="width: 130px"
+                  >
+                    <option *ngFor="let pow of zustanden" [value]="pow.p1">
+                      {{ pow.p2 }}
+                    </option>
+                  </select>
+                  <div class="input-group-append">
+                    <button
+                      class="btn btn-secondary"
+                      (click)="CambiarEstado()"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="ModificarCliente()"
+              >
+                Cambiar Cliente
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="ModificarRefCliente()"
+              >
+                Cambiar Referencia
+              </button>
+            </fieldset>
+
+            <fieldset class="tb-group tb-group--danger">
+              <legend>Eliminar</legend>
+              <button
+                class="btn btn-danger btn-sm"
+                (click)="BorrarPedido()"
+              >
+                Borrar Pedido
+              </button>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal3="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">Visor</h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal3.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 600px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-sm btn-secondary"
+          (click)="staticModal3.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalI="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h6 class="modal-title pull-left">Informe</h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModalI.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 850px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModalI.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal10="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">Hoja de Fabricación</h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal10.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <app-pedidos-grid
+          [columns]="colsDetalle"
+          [rows]="detailRows"
+        ></app-pedidos-grid>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-block btn-sm"
+          (click)="IniciarFabricacion()"
+        >
+          Iniciar Fabricación
+        </button>
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="exportHojaFabricacion()"
+        >
+          Exportar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="staticModal10.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal11="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Asignación de Cliente</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal11.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-9">
+            <label>Cliente</label>
+            <select
+              class="form-control"
+              name="TargetNuevoCliente"
+              [(ngModel)]="Target_NuevoCliente"
+              [ngModelOptions]="{ standalone: true }"
+              style="width: 100%"
+            >
+              <option *ngFor="let pow of descTiendas" [value]="pow.id">
+                {{ pow.text }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-3">
+            <label>&nbsp;</label>
+            <button
+              class="btn btn-secondary btn-block"
+              (click)="ActualizarCliente()"
+            >
+              Cambiar
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="staticModal11.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal12="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">
+          Asignación de Referencia de Cliente
+        </h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal12.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-9">
+            <label>Referencia del Cliente</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Indicar Referencia"
+              [(ngModel)]="Target_NuevaReferencia"
+              [ngModelOptions]="{ standalone: true }"
+            />
+          </div>
+          <div class="col col-3">
+            <label>&nbsp;</label>
+            <button
+              class="btn btn-secondary btn-block"
+              (click)="ActualizarReferenciaCliente()"
+            >
+              Cambiar
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="staticModal12.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

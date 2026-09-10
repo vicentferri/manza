@@ -1,0 +1,33 @@
+<div class="container">
+<div class="row">
+  <div class="form-group col-xs-12 col-md-12 col-lg-12">
+    <label>Tejidos</label>
+    <select class="form-control" id="sel_master" required #SelectedMaster [(ngModel)]="bulk.id"
+      [ngModelOptions]="{standalone: true}" (change)="ChangeTejido();">
+      <option *ngFor="let pow of master_values" [value]="pow.idrow">{{pow.descripcion}}</option>
+    </select>
+  </div>
+  <div class="form-group col-xs-6 col-md-6 col-lg-6">
+    <label>Colores</label>
+    <div style="height:450px">
+      <jqxGrid #gridReference1 [auto-create]='false' 
+      (onFilter)="FilterFrom($event)" (onRowclick)="SelectFrom($event);">
+      </jqxGrid>
+    </div>
+  </div>
+  <div class="form-group col-xs-6 col-md-6 col-lg-6">
+    <label>Asignados</label>
+    <div style="height:450px">
+      <jqxGrid #gridReference2 [auto-create]='false' (onFilter)="FilterTo($event)" (onRowclick)="SelectTo($event);">
+      </jqxGrid>
+    </div>
+  </div>
+  <div class="form-group col-xs-6 col-md-6 col-lg-6">
+    <input type="button" class="btn btn-secondary btn-block btn-sm" value="Asignar Colores" (click)="AsignarColores()">
+  </div>
+  <div class="form-group col-xs-6 col-md-6 col-lg-6">
+      <input type="button" class="btn btn-secondary btn-block btn-sm" value="Borrar Colores" (click)="BorrarColores()">
+    </div>
+</div>
+
+</div>

@@ -1,0 +1,129 @@
+=========================================================
+  ENDPOINT: GET /sm/pedidos_promocion
+  Pedidos en curso para centros con promoción activa
+  Stack: Node.js + Express + SQL Server / MySQL
+=========================================================
+
+
+-- DESCRIPCIÓN --
+
+  Devuelve, para cada pedido en cola (SOL_PEDIDOS_COLA) cuyo
+  centro de entrega tenga una promoción activa en la fecha del
+  pedido, la referencia de cliente y la cantidad total de
+  unidades de artículo tipo enrollable (tipo=1, articulo=1).
+
+  Columnas devueltas:
+    cliente_entrega   INT        -- ID del centro de entrega
+    refcliente        VARCHAR    -- Referencia del cliente en el pedido
+    total             INT        -- Suma de unidades (t1.cantidad)
+
+  No requiere parámetros de entrada.
+  No requiere cambios en la BD (usa tablas y vista ya existentes).
+
+
+-- CÓDIGO DEL ENDPOINT --
+
+  Añadir en el fichero de rutas /sm (donde estén el resto de rutas /sm):
+
+--------------------------------------------------------------
+
+// ─── GET /sm/pedidos_promocion ───────────────────────────────────────────────
+// Pedidos en período de promoción activa, agrupados por centro y referencia
+router.get('/pedidos_promocion', async (req, res) => {
+  try {
+
+    // --- SQL Server ---
+    const result = await pool.request().query(`
+      SELECT
+        head.cliente_entrega,
+        head.refcliente,
+        SUM(t1.cantidad) AS total
+      FROM  SOL_PEDIDOS_COLA              head
+      INNER JOIN sol_pedidos_cola_lineas  lin ON lin.idrow = head.idrow
+      INNER JOIN sol_pedidos_cola_tipo_1  t1  ON t1.idrow  = lin.id
+      INNER JOIN vw_nh_clientes_promociones pro
+                                          ON  pro.idrow = head.CLIENTE_ENTREGA
+      WHERE CAST(head.fecha AS date) >= pro.desde
+        AND CAST(head.fecha AS date) <= pro.hasta
+        AND t1.tipo    = 1
+        AND lin.articulo = 1
+      GROUP BY head.cliente_entrega, head.refcliente
+      ORDER BY head.cliente_entrega, head.refcliente
+    `);
+    return res.json({ Table: result.recordset });
+
+    // --- MySQL ---
+    // const [rows] = await db.query(`
+    //   SELECT
+    //     head.cliente_entrega,
+    //     head.refcliente,
+    //     SUM(t1.cantidad) AS total
+    //   FROM  SOL_PEDIDOS_COLA              head
+    //   INNER JOIN sol_pedidos_cola_lineas  lin ON lin.idrow = head.idrow
+    //   INNER JOIN sol_pedidos_cola_tipo_1  t1  ON t1.idrow  = lin.id
+    //   INNER JOIN vw_nh_clientes_promociones pro
+    //                                       ON  pro.idrow = head.CLIENTE_ENTREGA
+    //   WHERE CAST(head.fecha AS date) >= pro.desde
+    //     AND CAST(head.fecha AS date) <= pro.hasta
+    //     AND t1.tipo    = 1
+    //     AND lin.articulo = 1
+    //   GROUP BY head.cliente_entrega, head.refcliente
+    //   ORDER BY head.cliente_entrega, head.refcliente
+    // `);
+    // return res.json({ Table: rows });
+
+  } catch (err) {
+    console.error('[GET /sm/pedidos_promocion]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+--------------------------------------------------------------
+
+
+-- NOTA: FILTRO POR MODELO (opcional) --
+
+  La query original incluye una línea comentada para filtrar
+  por modelo de accionamiento:
+
+    -- AND t1.acc_modelo_id = @acc_modelo_id
+
+  Si en el futuro se necesita filtrar por modelo, cambiar la ruta a:
+
+    GET /sm/pedidos_promocion/:acc_modelo_id
+
+  y añadir el parámetro:
+
+    router.get('/pedidos_promocion/:acc_modelo_id', async (req, res) => {
+      const acc_modelo_id = parseInt(req.params.acc_modelo_id, 10);
+      // Añadir en la query: AND t1.acc_modelo_id = @acc_modelo_id
+      // .input('acc_modelo_id', sql.Int, acc_modelo_id)
+    });
+
+
+-- NOTA: VISTA REQUERIDA --
+
+  El endpoint depende de la vista vw_nh_clientes_promociones,
+  que debe existir en la BD. Esta vista es la misma que usa
+  el endpoint GET /sm/promociones_activas.
+
+
+=========================================================
+  RESUMEN DE CAMBIOS
+=========================================================
+
+  1. BD:     Sin cambios. Usa tablas y vista ya existentes:
+               SOL_PEDIDOS_COLA
+               sol_pedidos_cola_lineas
+               sol_pedidos_cola_tipo_1
+               vw_nh_clientes_promociones
+
+  2. RUTAS:  Añadir el endpoint al router /sm:
+               GET  /sm/pedidos_promocion
+
+  3. FRONTEND: El componente PromocionesMonitorComponent
+               llama este endpoint en el init junto con
+               GET /sm/promociones_activas y distribuye
+               los resultados por centro (cliente_entrega).
+
+=========================================================

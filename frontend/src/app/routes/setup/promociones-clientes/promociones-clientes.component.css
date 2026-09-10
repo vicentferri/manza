@@ -1,0 +1,122 @@
+.pc-table-container {
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.pc-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+}
+
+.pc-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.pc-sortable:hover {
+    background-color: #e9ecef;
+}
+
+.pc-fila {
+    cursor: pointer;
+}
+
+.pc-fila-sel td {
+    background-color: #fff3cd !important;
+    font-weight: 600;
+}
+
+.pc-th-check { width: 36px; }
+.pc-th-sm { width: 70px; }
+.pc-th-md { width: 110px; }
+.pc-td-banner { width: 90px; padding: 2px 4px !important; }
+
+.pc-banner-thumb {
+    height: 36px;
+    max-width: 80px;
+    object-fit: cover;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.pc-banner-thumb:hover {
+    transform: scale(3);
+    transform-origin: center left;
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.pc-td-truncate {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Filtros de cabecera */
+.pc-filter-row th {
+    padding: 2px 4px;
+    background-color: #eef2f7;
+}
+
+.pc-filter-input {
+    width: 100%;
+    font-size: 11px;
+    padding: 2px 5px;
+    height: 24px;
+    border: 1px solid #ced4da;
+    border-radius: 3px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+.pc-filter-input:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+/* Banner */
+.pc-banner-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    object-fit: contain;
+}
+
+/* Centros */
+.pc-centros-container {
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: #fafafa;
+}
+
+.pc-centros-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+}
+
+.pc-centro-item {
+    padding: 3px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    border-right: 1px solid #f0f0f0;
+    cursor: pointer;
+}
+
+.pc-centro-item:hover {
+    background-color: #f0f4ff;
+}
+
+@media (max-width: 768px) {
+    .pc-centros-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

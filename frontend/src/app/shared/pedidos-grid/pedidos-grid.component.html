@@ -1,0 +1,143 @@
+<div class="pedidos-grid">
+  <div class="pg-toolbar">
+    <span class="pg-count">{{ processedRows.length }} registros</span>
+    <button type="button" class="btn btn-link btn-sm pg-clear" (click)="clearFilters()">
+      Limpiar filtros
+    </button>
+    <label class="pg-pagesize-label">Filas</label>
+    <select
+      class="form-control form-control-sm pg-pagesize"
+      [ngModel]="pageSize"
+      (ngModelChange)="changePageSize($event)"
+    >
+      <option *ngFor="let s of pageSizeOptions" [ngValue]="s">{{ s }}</option>
+    </select>
+  </div>
+
+  <div class="pg-scroll">
+    <table
+      class="table table-sm table-striped table-hover pg-table"
+      [class.pg-hasgroups]="hasGroups"
+    >
+      <thead>
+        <tr *ngIf="hasGroups" class="pg-grouprow">
+          <th
+            *ngFor="let g of groupHeaders"
+            [attr.colspan]="g.span"
+            class="pg-group"
+          >
+            {{ g.name }}
+          </th>
+        </tr>
+        <tr class="pg-headrow">
+          <th
+            *ngFor="let col of columns"
+            (click)="setSort(col)"
+            [style.min-width.px]="col.width || 90"
+            [class.text-center]="col.align === 'center'"
+            [class.text-right]="col.align === 'right'"
+          >
+            {{ col.header }} <span class="pg-sort">{{ sortIcon(col) }}</span>
+          </th>
+        </tr>
+        <tr class="pg-filterrow">
+          <th *ngFor="let col of columns">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              [(ngModel)]="filters[col.field]"
+              (ngModelChange)="onFilterChange()"
+            />
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td [attr.colspan]="columns.length" class="text-center pg-msg">
+            Cargando&hellip;
+          </td>
+        </tr>
+        <tr *ngIf="!loading && !processedRows.length">
+          <td [attr.colspan]="columns.length" class="text-center pg-msg">
+            Sin resultados
+          </td>
+        </tr>
+        <tr
+          *ngFor="let row of pagedRows"
+          (click)="selectRow(row)"
+          [class.pg-selected]="row[idField] === selectedId"
+        >
+          <td
+            *ngFor="let col of columns"
+            [class.text-center]="col.align === 'center'"
+            [class.text-right]="col.align === 'right'"
+            [ngClass]="cellClass(col, row[col.field])"
+            [title]="display(col, row)"
+          >
+            <span
+              *ngIf="col.type === 'dias'; else plainCell"
+              class="pg-badge"
+              [ngStyle]="diasStyle(row[col.field])"
+              >{{ row[col.field] }}</span
+            >
+            <ng-template #plainCell
+              ><span
+                class="pg-cell"
+                [style.max-width.px]="col.width || 90"
+                >{{ display(col, row) }}</span
+              ></ng-template
+            >
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pg-pager" *ngIf="pager.totalPages > 1">
+    <button
+      type="button"
+      class="btn btn-sm btn-secondary"
+      [disabled]="pager.currentPage === 1"
+      (click)="setPage(1)"
+    >
+      &laquo;
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-secondary"
+      [disabled]="pager.currentPage === 1"
+      (click)="setPage(pager.currentPage - 1)"
+    >
+      &lsaquo;
+    </button>
+    <button
+      type="button"
+      *ngFor="let p of pager.pages"
+      class="btn btn-sm"
+      [class.btn-primary]="p === pager.currentPage"
+      [class.btn-secondary]="p !== pager.currentPage"
+      (click)="setPage(p)"
+    >
+      {{ p }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-secondary"
+      [disabled]="pager.currentPage === pager.totalPages"
+      (click)="setPage(pager.currentPage + 1)"
+    >
+      &rsaquo;
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-secondary"
+      [disabled]="pager.currentPage === pager.totalPages"
+      (click)="setPage(pager.totalPages)"
+    >
+      &raquo;
+    </button>
+    <span class="pg-pageinfo"
+      >Página {{ pager.currentPage }} / {{ pager.totalPages }}</span
+    >
+  </div>
+</div>

@@ -1,0 +1,258 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col col-12 callout callout-success m-0 py-3 mt-2">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="panel-title">
+            <span class="icon-container color-bg">
+              <span class="icon-map-alt white-text"></span>
+            </span>
+            <span class="title-text"
+              >Histórico de Presupuestos&nbsp;({{ numeroPedidos }})</span
+            >
+
+            <div class="pull-right">
+              <button class="btn btn-sm btn-primary-outline" (click)="Filter()">
+                <i class="fa fa-search"></i>
+              </button>
+            </div>
+          </h5>
+        </div>
+        <div class="card-header">
+          Filtros: Desde:<b>{{ model.Desde | date : "dd/MM/yyyy" }}</b>
+          Hasta:<b>{{ model.Hasta | date : "dd/MM/yyyy" }}</b> Referencia:<b>{{
+            model.Referencia
+          }}</b>
+        </div>
+        <div class="card-body text-center">
+          <table class="table table-striped table-hoover table-responsive">
+            <thead>
+              <th style="font-size: 9pt">Fec.Registro</th>
+              <th style="font-size: 9pt">Número del Presupuesto</th>
+              <th style="font-size: 9pt">Referencia del Presupuesto</th>
+              <th style="font-size: 9pt">Referencia Tienda/Cliente</th>
+              <th style="font-size: 9pt">Validez del Presupuesto</th>
+              <th></th>
+              <th></th>
+              <th></th>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of pagedItems; let first = first">
+                <td style="font-size: 9pt">{{ item.fecha | date }}</td>
+                <td style="font-size: 9pt">{{ item.numero }}</td>
+                <td style="font-size: 9pt">{{ item.referencia }}</td>
+                <td style="font-size: 9pt">{{ item.refcliente }}</td>
+                <th style="font-size: 9pt">
+                  {{ item.fec_validez | date : "dd/MM/yyyy" }}
+                </th>
+                <td style="font-size: 9pt">
+                  <button
+                    class="btn btn-sm btn-primary-outline"
+                    (click)="Delete(item)"
+                  >
+                    <i class="fa fa-times"></i>&nbsp;Borrar
+                  </button>
+                </td>
+                <td style="font-size: 9pt">
+                  <button
+                    class="btn btn-sm btn-primary-outline"
+                    (click)="Load(item)"
+                  >
+                    <i class="fa fa-cloud-download"></i>&nbsp;Cargar
+                  </button>
+                </td>
+                <td style="font-size: 9pt">
+                  <button
+                    class="btn btn-sm btn-primary-outline"
+                    (click)="staticModal3.show(); Print(item)"
+                  >
+                    <i class="fa fa-file-pdf-o"></i>&nbsp;Imprimir
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pull-right" style="padding-right: 10px">
+            <nav aria-label="Page navigation example">
+              <ul *ngIf="pager.pages && pager.pages.length" class="pagination">
+                <li [ngClass]="{ disabled: pager.currentPage === 1 }">
+                  <a class="page-link" (click)="setPage(1)">Primera</a>
+                </li>
+                <li [ngClass]="{ disabled: pager.currentPage === 1 }">
+                  <a class="page-link" (click)="setPage(pager.currentPage - 1)">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+                <li
+                  *ngFor="let page of pager.pages"
+                  [ngClass]="{ active: pager.currentPage === page }"
+                >
+                  <a class="page-link" (click)="setPage(page)">{{ page }}</a>
+                </li>
+                <li
+                  [ngClass]="{
+                    disabled: pager.currentPage === pager.totalPages
+                  }"
+                >
+                  <a class="page-link" (click)="setPage(pager.currentPage + 1)">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+                <li
+                  [ngClass]="{
+                    disabled: pager.currentPage === pager.totalPages
+                  }"
+                >
+                  <a class="page-link" (click)="setPage(pager.totalPages)"
+                    >Ultima</a
+                  >
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        <div class="card-footer text-muted">
+          <small>{{ fechaConsulta | date : "dd/MM/yyyy hh:mm:ss" }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal3="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal3"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h4 class="modal-title pull-left">Informe</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal3.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 850px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModal3.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticFilter="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal3"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h4 class="modal-title pull-left">Filtrado</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticFilter.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col col-4">
+            <label>Desde</label>
+            <input
+              type="date"
+              class="form-control"
+              id="Desde"
+              required
+              [ngModel]="model.Desde | date : 'yyyy-MM-dd'"
+              name="Desde"
+              (change)="onDateChange($event, $event)"
+            />
+          </div>
+          <div class="form-group col col-4">
+            <label>Hasta</label>
+            <input
+              type="date"
+              class="form-control"
+              id="Hasta"
+              required
+              [ngModel]="model.Hasta | date : 'yyyy-MM-dd'"
+              name="Hasta"
+              (change)="onDateChange($event, $event)"
+            />
+          </div>
+          <div class="form-group col col-4">
+            <label>Ref.Cliente</label>
+            <input
+              class="form-control"
+              id="RefCliente"
+              required
+              [(ngModel)]="model.RefCliente"
+            />
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-group col col-6">
+            <label>Número Presupuesto</label>
+            <input
+              class="form-control"
+              id="NumeroPresupuesto"
+              required
+              [(ngModel)]="model.NumeroPedido"
+              name="NumeroPresupuesto"
+            />
+          </div>
+          <div class="form-group col col-6">
+            <label>Referencia</label>
+            <input
+              class="form-control"
+              id="Referencia"
+              required
+              [(ngModel)]="model.Referencia"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-sm btn-primary-outline"
+          (click)="GoFilter()"
+        >
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

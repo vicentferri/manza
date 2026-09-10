@@ -1,0 +1,194 @@
+<div style="background: var(--color-background-primary, #fff); border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; font-size: 14px;">
+
+  <!-- Header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 13px; font-weight: 500;">Vertical</span>
+      <span *ngIf="item.TipoVertical == 1" style="font-size: 12px; color: #495057; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">Mecanismo + Tejido</span>
+      <span *ngIf="item.TipoVertical == 2" style="font-size: 12px; color: #495057; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">Solo Tejido</span>
+      <span *ngIf="item.TipoVertical == 3" style="font-size: 12px; color: #495057; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">Solo Riel</span>
+      <span *ngIf="item.precios.T3_Fecha_Entrega != ''"
+        style="font-size: 12px; color: #6c757d; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">
+        F.Fab. {{ item.precios.T3_Fecha_Entrega }}&nbsp;+&nbsp;{{ item.precios.T3_Transporte }}d transporte
+      </span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-sm btn-outline-secondary" (click)="EditLine(item)">Modificar</button>
+      <button class="btn btn-sm btn-outline-danger" (click)="DeleteLine(item)">Borrar</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+    <!-- Columna izquierda: datos -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+
+      <!-- Vertical normal -->
+      <div *ngIf="item.PV_SEL_1">
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Vertical</div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Ancho</div>
+            <div style="font-weight: 500;">{{ item.PV_Ancho_1 }} cm</div>
+          </div>
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Alto</div>
+            <div style="font-weight: 500;">{{ item.PV_Alto_1 }} cm</div>
+          </div>
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Cantidad</div>
+            <div style="font-weight: 500;">{{ item.PV_Cantidad_1 }}</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Ancho lama</div>
+            <div style="font-weight: 500;">{{ item.PV_AnchoLama_1 | smtrans }}</div>
+          </div>
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Pos. mecanismo</div>
+            <div style="font-weight: 500;">{{ item.PV_PosicionMecanismo_1 | smtrans }}</div>
+          </div>
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Color riel</div>
+            <div style="font-weight: 500;">{{ item.PV_ColorRiel_1 }}</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Accionamiento:</span> {{ item.PV_Accionamiento_1 | smtrans }}</div>
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Soporte:</span> {{ item.PV_TipoSoporte_1 | smtrans }}</div>
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Recogida:</span> {{ item.PV_TipoRecogida_1 | smtrans }}</div>
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Tejido:</span> {{ item.PV_Tejido_text }} &nbsp;·&nbsp; {{ item.PV_Tejido_c1_text }}
+            <span *ngIf="item.PV_Tejido_c2_text"> &nbsp;/&nbsp; {{ item.PV_Tejido_c2_text }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vertical inclinada -->
+      <div *ngIf="item.PV_SEL_2">
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; border-top: 1px solid #dee2e6; padding-top: 12px;">Vertical inclinada</div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px;">
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Ancho</div>
+            <div style="font-weight: 500;">{{ item.PV_Ancho_2 }} cm</div>
+          </div>
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Cantidad</div>
+            <div style="font-weight: 500;">{{ item.PV_Cantidad_2 }}</div>
+          </div>
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Alt. mín.</div>
+            <div style="font-weight: 500;">{{ item.PV_AlturaMin_2 }} cm</div>
+          </div>
+          <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; text-align: center;">
+            <div style="font-size: 11px; color: #6c757d; margin-bottom: 2px;">Alt. máx.</div>
+            <div style="font-weight: 500;">{{ item.PV_AlturaMax_2 }} cm</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Pos. mecanismo:</span> {{ item.PV_PosicionMecanismo_2 | smtrans }}</div>
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Color riel:</span> {{ item.PV_ColorRiel_2 }}</div>
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Accionamiento:</span> {{ item.PV_Accionamiento_2 | smtrans }}</div>
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Soporte:</span> {{ item.PV_TipoSoporte_2 | smtrans }}</div>
+          <div style="font-size: 13px;"><span style="color: #6c757d;">Recogida:</span> {{ item.PV_TipoRecogida_2 | smtrans }}</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Columna derecha: precios -->
+    <div style="border-left: 1px solid #dee2e6; padding-left: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+
+      <!-- Precios vertical normal -->
+      <div *ngIf="item.PV_SEL_1">
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Resumen de precio</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Según tarifa</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T3_Tejido | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T3_Tejido_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T3_TejidosCombinados > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Tejidos combinados</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T3_TejidosCombinados | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T3_TejidosCombinados_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T3_NumSoportes > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Incr. soporte ({{ item.precios.T3_NumSoportes }})</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T3_TipoSoporte | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T3_TipoSoporte_C1 }}</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="border-top: 1px solid #dee2e6; margin-top: 16px; padding-top: 12px; display: flex; justify-content: space-between; align-items: baseline;">
+          <span style="font-size: 13px; font-weight: 500; color: #6c757d;">Total</span>
+          <div style="text-align: right;">
+            <div style="font-size: 20px; font-weight: 500;">{{ item.precios.T3_PVP | number:'1.2-2' }} €</div>
+            <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T3_PVP_C1 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Precios vertical inclinada -->
+      <div *ngIf="item.PV_SEL_2">
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Resumen de precio (inclinada)</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Según tarifa</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T32_Tejido | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T32_Tejido_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T32_TejidosCombinados > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Tejidos combinados</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T32_TejidosCombinados | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T32_TejidosCombinados_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T32_NumSoportes > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Incr. soporte ({{ item.precios.T32_NumSoportes }})</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T32_TipoSoporte | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T32_TipoSoporte_C1 }}</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="border-top: 1px solid #dee2e6; margin-top: 16px; padding-top: 12px; display: flex; justify-content: space-between; align-items: baseline;">
+          <span style="font-size: 13px; font-weight: 500; color: #6c757d;">Total</span>
+          <div style="text-align: right;">
+            <div style="font-size: 20px; font-weight: 500;">{{ item.precios.T3_PVP | number:'1.2-2' }} €</div>
+            <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T3_PVP_C1 }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

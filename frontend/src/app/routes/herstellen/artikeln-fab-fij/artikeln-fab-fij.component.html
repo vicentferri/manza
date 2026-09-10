@@ -1,0 +1,134 @@
+<div class="container-fluid">
+  <div class="card">
+    <div class="card-header">
+      <h5>
+        <i class="icon-list mt-1"></i>
+        &nbsp;Artículos Fijos para Fabricación
+      </h5>
+    </div>
+
+    <div class="card-body card-block">
+      <div class="row mt-2">
+        <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label form="producto">Producto</label>
+          <select
+            class="form-control"
+            id="producto"
+            [(ngModel)]="model.producto"
+            [ngModelOptions]="{ standalone: true }"
+            (change)="ChangeProducto($event.target.value)"
+          >
+            <option *ngFor="let pow of productos_tipo" [value]="pow.idrow">
+              {{ pow.descripcion }}
+            </option>
+          </select>
+        </div>
+        <div
+          class="form-group col-xs-2 col-md-2 col-lg-2"
+          [hidden]="!model.campo1_show"
+        >
+          <label form="Tipo">{{ model.campo1 }}</label>
+          <select
+            class="form-control"
+            id="campo1"
+            [(ngModel)]="model.campo1_value"
+            [ngModelOptions]="{ standalone: true }"
+            (change)="ChangeValue1($event.target.value)"
+          >
+            <option *ngFor="let pow of campos1_tipo" [value]="pow.idrow">
+              {{ pow.descripcion }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label>&nbsp;</label>
+          <button class="btn btn-secondary btn-block" (click)="Open()">
+            Artículos
+          </button>
+        </div>
+      </div>
+
+      <div class="row mt-2" [hidden]="true">
+        <div class="form-group col-xs-12 col-md-12 col-lg-12">
+          <div style="height: 600px; overflow: auto">
+            <div>
+              <strong>{{ details_tipo.length }} Artículos</strong>
+            </div>
+            <div class="table-responsive">
+              <table
+                class="table table-striped table-hover table-bordered table-condensed borderless"
+              >
+                <thead class="thead-inverse">
+                  <tr>
+                    <th></th>
+                    <th>Código</th>
+                    <th>Artículo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of details_tipo">
+                    <td style="width: 50px">
+                      <button
+                        class="btn btn-default btn-primary-outline btn-block btn-sm"
+                        (click)="DelItem(item)"
+                      >
+                        Del
+                      </button>
+                    </td>
+                    <td>{{ item.cod_solupyme }}</td>
+                    <td>{{ item.articulos }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="form-group col-xs-12 col-md-12 col-lg-12">
+          <div style="height: 600px; overflow: auto">
+            <jqxGrid
+              #gridReference
+              [auto-create]="false"
+              (onCellclick)="Cellclick($event)"
+              (onCellbeginedit)="cellBeginEditEvent($event)"
+              (onCellendedit)="cellEndEditEvent($event)"
+            ></jqxGrid>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalAdd.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="Update()">
+          Asignar Artículos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

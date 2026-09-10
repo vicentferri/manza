@@ -1,0 +1,47 @@
+.art-table-container {
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.art-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+}
+
+.art-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.art-sortable:hover {
+    background-color: #e9ecef;
+}
+
+.art-fila {
+    cursor: pointer;
+}
+
+.art-fila-sel td {
+    background-color: #fff3cd !important;
+    font-weight: 600;
+}
+
+.art-th-sm { width: 70px; }
+.art-th-md { width: 120px; }
+
+.art-filter-row th {
+    padding: 2px 4px;
+    background-color: #f8f9fa;
+}
+
+.art-filter-input {
+    width: 100%;
+    font-size: 11px;
+    padding: 1px 4px;
+    border: 1px solid #ced4da;
+    border-radius: 3px;
+    height: 22px;
+}

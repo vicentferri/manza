@@ -1,0 +1,110 @@
+<div class="container-fluid">
+
+<div class="row">
+  <div class="col col-12" style="height:600px">
+    <jqxGrid #gridReference [auto-create]='false'  (onBindingcomplete)="Bindingcomplete($event);"></jqxGrid>
+  </div>
+</div>
+
+
+<div class="row mt-2">
+  <div class="col col-lg-8">
+    <div class="BtnToolBar"><button class="btn  btn-primary btn-block btn-sm" (click)="Select();">Configurar Envío Documentos</button></div>
+    <div class="BtnToolBar"><button class="btn  btn-primary btn-block btn-sm"  (click)="Export();">Exportar</button></div>
+  </div>
+</div>
+
+</div>
+
+
+<div class="modal fade" bsModal #staticModalConf="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" id="docModalConf">
+    <div class="modal-dialog modal-lg" role="document">
+       <div class="modal-content">
+           <div class="modal-header bg-primary">
+               <h4 class="modal-title pull-left">Configuración de Envío</h4>
+               <button type="button" class="close pull-right" aria-label="Close" (click)="staticModalConf.hide()">
+                   <span aria-hidden="true">&times;</span>
+               </button>
+           </div>
+          <div class="modal-body">
+              <div class="row">
+                  <div class="col-2"><h5>Documento</h5></div>
+                  <div class="col-2"><h5>E-mail</h5></div>
+                  <div class="col-2"><h5>Tipo de Documento</h5></div>
+                  <div class="col-2"><h5>Aplicar</h5></div>
+                </div>
+
+            <div class="row mt-2">
+              <div class="col-2"><h4>Presupuestos</h4></div>
+              <div class="col-2">
+                <input type="text" class="form-control" id="presupuestos_email" name="presupuestos_email" class="form-control" placeholder="email"
+                  [(ngModel)]="conf.presupuestos_email" [ngModelOptions]="{standalone: true}">
+              </div>
+              <div class="col-2">
+                  <select class="form-control"  [(ngModel)]="conf.presupuestos_tipo" [ngModelOptions]="{standalone: true}">
+                      <option *ngFor="let pow of doc_presupuestos" [value]="pow.idrow">{{pow.desc}}</option>
+                  </select>
+              </div>
+              <div class="col-2">
+                  <input type="checkbox" class="form-control" class="form-control" 
+                  [(ngModel)]="conf.presupuestos_ope" [ngModelOptions]="{standalone: true}">
+              </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-2"><h4>Pedidos</h4></div>
+                <div class="col-2">
+                    <input type="text" class="form-control" id="pedidos_email" name="pedidos_email" class="form-control" placeholder="email"
+                      [(ngModel)]="conf.pedidos_email" [ngModelOptions]="{standalone: true}">
+                  </div>
+                  <div class="col-2">
+                      <select class="form-control"  [(ngModel)]="conf.pedidos_tipo" [ngModelOptions]="{standalone: true}">
+                          <option *ngFor="let pow of doc_pedidos" [value]="pow.idrow">{{pow.desc}}</option>
+                      </select>
+                  </div>
+                  <div class="col-2">
+                      <input type="checkbox" class="form-control" class="form-control" 
+                      [(ngModel)]="conf.pedidos_ope" [ngModelOptions]="{standalone: true}">
+                  </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><h4>Albaranes</h4></div>
+                <div class="col-2">
+                    <input type="text" class="form-control" id="albaranes_email" name="albaranes_email" class="form-control" placeholder="email"
+                      [(ngModel)]="conf.albaranes_email" [ngModelOptions]="{standalone: true}">
+                  </div>
+                  <div class="col-2">
+                      <select class="form-control"  [(ngModel)]="conf.albaranes_tipo" [ngModelOptions]="{standalone: true}">
+                          <option *ngFor="let pow of doc_albaranes" [value]="pow.idrow">{{pow.desc}}</option>
+                      </select>
+                  </div>
+                  <div class="col-2">
+                      <input type="checkbox" class="form-control" class="form-control" 
+                      [(ngModel)]="conf.albaranes_ope" [ngModelOptions]="{standalone: true}">
+                  </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><h4>Facturas</h4></div>
+                <div class="col-2">
+                    <input type="text" class="form-control" id="facturas_email" name="facturas_email" class="form-control" placeholder="email"
+                      [(ngModel)]="conf.facturas_email" [ngModelOptions]="{standalone: true}">
+                  </div>
+                  <div class="col-2">
+                      <select class="form-control"  [(ngModel)]="conf.facturas_tipo" [ngModelOptions]="{standalone: true}">
+                          <option *ngFor="let pow of doc_facturas" [value]="pow.idrow">{{pow.desc}}</option>
+                      </select>
+                  </div>
+                  <div class="col-2">
+                      <input type="checkbox" class="form-control" class="form-control" 
+                      [(ngModel)]="conf.facturas_ope" [ngModelOptions]="{standalone: true}">
+                  </div>
+            </div>
+          </div>
+          
+           <div class="modal-footer">
+               <button class="btn btn-primary " (click)="staticModalConf.hide();myGrid.clearselection();">Cerrar</button>
+               <button class="btn btn-primary " (click)="Update();staticModalConf.hide();">Actualizar</button>
+           </div>
+       </div>
+   </div>
+

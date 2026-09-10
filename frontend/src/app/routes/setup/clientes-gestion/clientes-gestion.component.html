@@ -1,0 +1,344 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-2">
+            <h6>
+                <i class="fa fa-briefcase mt-1"></i>&nbsp;{{ title }}
+                <div class="pull-right">
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <!-- BÚSQUEDA -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-auto">
+                <input type="text" class="form-control form-control-sm"
+                    style="min-width: 320px;"
+                    placeholder="Buscar nombre, email, empresa o tienda..."
+                    [(ngModel)]="busqueda"
+                    [ngModelOptions]="{ standalone: true }"
+                    (input)="onBusqueda()" />
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">
+                    <i class="fa fa-times"></i> Limpiar
+                </button>
+            </div>
+            <div class="col-auto ml-auto text-muted small">
+                {{ datosFiltrados.length }} clientes externos
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="row mb-2">
+            <div class="col-12">
+                <button type="button" class="btn btn-success btn-sm mr-2" (click)="openAdd()">
+                    <i class="fa fa-user-plus"></i> Nuevo Cliente
+                </button>
+                <button type="button" class="btn btn-primary btn-sm mr-2"
+                    [disabled]="seleccionadas.size === 0" (click)="openBulk()">
+                    <i class="fa fa-th-large"></i> Productos en Bloque
+                    <span *ngIf="seleccionadas.size > 0" class="badge badge-light ml-1">{{ seleccionadas.size }}</span>
+                </button>
+                <button type="button" class="btn btn-danger btn-sm"
+                    [disabled]="seleccionadas.size === 0" (click)="eliminar()">
+                    <i class="fa fa-trash"></i> Eliminar
+                    <span *ngIf="seleccionadas.size > 0" class="badge badge-light ml-1">{{ seleccionadas.size }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover table-sm">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width:36px;" class="text-center">
+                            <input type="checkbox"
+                                [checked]="todasSeleccionadas"
+                                (change)="toggleTodas()" />
+                        </th>
+                        <th style="width:50px;" class="cm-sortable" (click)="ordenar('IDROW')">
+                            ID
+                            <span *ngIf="sortCol === 'IDROW'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="cm-sortable" (click)="ordenar('NAME')">
+                            Nombre
+                            <span *ngIf="sortCol === 'NAME'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="cm-sortable" (click)="ordenar('SURNAME')">
+                            Apellidos
+                            <span *ngIf="sortCol === 'SURNAME'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="cm-sortable" (click)="ordenar('EMAIL')">
+                            Email / Usuario
+                            <span *ngIf="sortCol === 'EMAIL'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="cm-sortable" (click)="ordenar('descempresa')">
+                            Empresa
+                            <span *ngIf="sortCol === 'descempresa'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="cm-sortable" (click)="ordenar('descsubempresa')">
+                            Tienda / Domicilio
+                            <span *ngIf="sortCol === 'descsubempresa'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th style="width:85px;" class="text-center" (click)="ordenar('prod_1')">Enrollable</th>
+                        <th style="width:80px;" class="text-center" (click)="ordenar('prod_2')">Panel Jap.</th>
+                        <th style="width:95px;" class="text-center" (click)="ordenar('prod_3')">Vertical</th>
+                        <th style="width:90px;" class="text-center" (click)="ordenar('prod_4')">Noche/Día</th>
+                        <th style="width:95px;" class="text-center" (click)="ordenar('prod_7')">Veneciana</th>
+                        <th style="width:75px;" class="text-center" (click)="ordenar('ACTIVO')">Activo</th>
+                    </tr>
+
+                    <!-- FILA DE FILTROS POR COLUMNA -->
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th>
+                            <input type="text" class="form-control form-control-sm p-0 px-1"
+                                placeholder="Filtrar..."
+                                [(ngModel)]="filtros.name" [ngModelOptions]="{ standalone: true }"
+                                (input)="onFiltroColumna()" />
+                        </th>
+                        <th>
+                            <input type="text" class="form-control form-control-sm p-0 px-1"
+                                placeholder="Filtrar..."
+                                [(ngModel)]="filtros.surname" [ngModelOptions]="{ standalone: true }"
+                                (input)="onFiltroColumna()" />
+                        </th>
+                        <th>
+                            <input type="text" class="form-control form-control-sm p-0 px-1"
+                                placeholder="Filtrar..."
+                                [(ngModel)]="filtros.email" [ngModelOptions]="{ standalone: true }"
+                                (input)="onFiltroColumna()" />
+                        </th>
+                        <th>
+                            <input type="text" class="form-control form-control-sm p-0 px-1"
+                                placeholder="Filtrar..."
+                                [(ngModel)]="filtros.descempresa" [ngModelOptions]="{ standalone: true }"
+                                (input)="onFiltroColumna()" />
+                        </th>
+                        <th>
+                            <input type="text" class="form-control form-control-sm p-0 px-1"
+                                placeholder="Filtrar..."
+                                [(ngModel)]="filtros.descsubempresa" [ngModelOptions]="{ standalone: true }"
+                                (input)="onFiltroColumna()" />
+                        </th>
+                        <th colspan="6"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let fila of datosPagina"
+                        [ngClass]="{ 'table-active': estaSeleccionada(fila) }">
+                        <td class="text-center">
+                            <input type="checkbox"
+                                [checked]="estaSeleccionada(fila)"
+                                (change)="toggleFila(fila)" />
+                        </td>
+                        <td>{{ fila.IDROW }}</td>
+                        <td>{{ fila.NAME }}</td>
+                        <td>{{ fila.SURNAME }}</td>
+                        <td><small>{{ fila.EMAIL || fila.USERNAME }}</small></td>
+                        <td><small>{{ fila.descempresa }}</small></td>
+                        <td><small>{{ fila.descsubempresa }}</small></td>
+
+                        <!-- PRODUCTOS (TOGGLE INTERACTIVO) -->
+                        <td class="text-center">
+                            <span class="badge prod-badge"
+                                [ngClass]="fila.prod_1 ? 'badge-success' : 'badge-secondary'"
+                                (click)="toggleProducto(fila, 'prod_1')"
+                                title="Clic para alternar">
+                                {{ fila.prod_1 ? 'SI' : 'NO' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge prod-badge"
+                                [ngClass]="fila.prod_2 ? 'badge-success' : 'badge-secondary'"
+                                (click)="toggleProducto(fila, 'prod_2')"
+                                title="Clic para alternar">
+                                {{ fila.prod_2 ? 'SI' : 'NO' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge prod-badge"
+                                [ngClass]="fila.prod_3 ? 'badge-success' : 'badge-secondary'"
+                                (click)="toggleProducto(fila, 'prod_3')"
+                                title="Clic para alternar">
+                                {{ fila.prod_3 ? 'SI' : 'NO' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge prod-badge"
+                                [ngClass]="fila.prod_4 ? 'badge-success' : 'badge-secondary'"
+                                (click)="toggleProducto(fila, 'prod_4')"
+                                title="Clic para alternar">
+                                {{ fila.prod_4 ? 'SI' : 'NO' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge prod-badge"
+                                [ngClass]="fila.prod_7 ? 'badge-success' : 'badge-secondary'"
+                                (click)="toggleProducto(fila, 'prod_7')"
+                                title="Clic para alternar">
+                                {{ fila.prod_7 ? 'SI' : 'NO' }}
+                            </span>
+                        </td>
+
+                        <!-- ACTIVO -->
+                        <td class="text-center">
+                            <span class="badge prod-badge"
+                                [ngClass]="fila.ACTIVO ? 'badge-success' : 'badge-danger'"
+                                (click)="toggleActivo(fila)"
+                                title="Clic para alternar activo">
+                                {{ fila.ACTIVO ? 'ACTIVO' : 'INACTIVO' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr *ngIf="datosPagina.length === 0">
+                        <td colspan="13" class="text-center text-muted py-3">Sin resultados</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="row align-items-center mt-2">
+            <div class="col-auto">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === 1 }">
+                            <a class="page-link" (click)="irPagina(pagina - 1)">&laquo;</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">{{ pagina }} / {{ totalPaginas }}</span>
+                        </li>
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === totalPaginas }">
+                            <a class="page-link" (click)="irPagina(pagina + 1)">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="col-auto text-muted small">
+                Mostrando {{ datosPagina.length }} de {{ datosFiltrados.length }} clientes
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ─── MODAL NUEVO CLIENTE ─────────────────────────────────────────────────── -->
+<div bsModal #modalAdd="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-user-plus"></i> Alta de Cliente</h5>
+                <button type="button" class="close" (click)="modalAdd.hide()"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Nombre <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm" maxlength="100"
+                            [(ngModel)]="formAdd.name" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Apellidos</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm" maxlength="100"
+                            [(ngModel)]="formAdd.surname" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Email / Usuario <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="email" class="form-control form-control-sm" maxlength="255"
+                            [(ngModel)]="formAdd.email" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Contraseña <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="password" class="form-control form-control-sm" maxlength="100"
+                            [(ngModel)]="formAdd.password" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Empresa (IdCliente) <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control form-control-sm"
+                            [(ngModel)]="formAdd.empresa" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Subempresa (Tienda) <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control form-control-sm"
+                            [(ngModel)]="formAdd.subempresa" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="alert alert-info small py-1 mt-2 mb-0">
+                    <i class="fa fa-info-circle"></i>
+                    Empresa y Subempresa deben corresponder a un cliente/domicilio ya existente en
+                    <strong>Configuración &gt; Clientes</strong>.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" (click)="guardarAdd()">
+                    <i class="fa fa-save"></i> Crear Cliente
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalAdd.hide()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── MODAL PRODUCTOS EN BLOQUE ───────────────────────────────────────────── -->
+<div bsModal #modalBulk="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fa fa-th-large"></i> Asignar Productos en Bloque ({{ seleccionadas.size }} clientes)
+                </h5>
+                <button type="button" class="close text-white" (click)="modalBulk.hide()"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">
+                    Selecciona el valor a aplicar para los clientes marcados. Deja en <em>"Sin cambios"</em> los productos que no desees modificar.
+                </p>
+                <div *ngFor="let p of productos" class="form-group row align-items-center">
+                    <label class="col-sm-6 col-form-label font-weight-bold">{{ p.label }}</label>
+                    <div class="col-sm-6">
+                        <select class="form-control form-control-sm" [(ngModel)]="formBulk[p.campo]" [ngModelOptions]="{ standalone: true }">
+                            <option value="">-- Sin cambios --</option>
+                            <option value="1">Habilitar (SI)</option>
+                            <option value="0">Deshabilitar (NO)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalBulk.hide()">Cancelar</button>
+                <button type="button" class="btn btn-success btn-sm" (click)="aplicarBulk()">
+                    <i class="fa fa-save"></i> Aplicar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

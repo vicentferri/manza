@@ -1,0 +1,616 @@
+<div class="container-fluid">
+  <!-- PANEL GENERACION -->
+  <div class="card card-block" [hidden]="TipoPanel == 2">
+    <div class="panel">
+      <h5>
+        <span class="glyphicons glyphicons-shopping-cart"></span>
+        &nbsp;Tarifas Registradas
+        <div class="pull-right">
+          <button class="btn btn-sm btn-secondary" (click)="OpenTimes()">
+            Mano de Obra
+          </button>
+          <button class="btn btn-sm btn-secondary" (click)="ExportTarifas(1)">
+            Exportar Tarifas SP
+          </button>
+          <button
+            class="btn btn-sm btn-secondary"
+            (click)="ParametrosExportacion()"
+          >
+            Parámetros Exportacion
+          </button>
+          <button class="btn btn-sm btn-secondary" (click)="Multiple()">
+            Generación Múltiple
+          </button>
+          <button class="btn btn-sm btn-secondary" (click)="MultipleEdicion()">
+            Edición Múltiple
+          </button>
+          <haru-btn-general
+            (Event_New)="New()"
+            (Event_Search)="searchDocuments()"
+            (Event_Delete)="deleteDocuments()"
+          >
+          </haru-btn-general>
+        </div>
+      </h5>
+      <hr />
+    </div>
+
+    <div class="card-body">
+      <div class="row">
+        <div class="col col-2 col-no-pad">
+          <div class="card h-100">
+            <div class="card-header">
+              Clonación
+              <button
+                style="width: 100px"
+                class="btn btn-secondary btn-sm pull-right"
+                (click)="Clone()"
+              >
+                Clonar
+              </button>
+            </div>
+            <div class="card-body card-block">
+              <div>
+                <label>Nombre de la Nueva Tarifa</label>
+                <input
+                  class="form-control form-control-sm"
+                  [(ngModel)]="model.NuevoNombre"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col col-2 col-no-pad">
+          <div class="card h-100">
+            <div class="card-header">
+              Estado
+              <button
+                style="width: 100px"
+                class="btn btn-secondary btn-sm pull-right"
+                (click)="Operation()"
+              >
+                Cambiar
+              </button>
+            </div>
+            <div class="card-body card-block">
+              <div class="row">
+                <div class="col col-9 col-no-pad">
+                  <label>Nuevo Estado</label>
+                  <select
+                    class="form-control form-control-sm"
+                    id="cliente"
+                    required
+                    [(ngModel)]="model2.operation"
+                    [ngModelOptions]="{ standalone: true }"
+                  >
+                    <option [value]="1">BLOQUEADO</option>
+                    <option [value]="0">DESBLOQUEADO</option>
+                  </select>
+                </div>
+                <div class="col col-3 col-no-pad">
+                  <label>pwd</label>
+                  <input
+                    type="password"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model2.password"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col col-5 col-no-pad">
+          <div class="card h-100">
+            <div class="card-header">
+              Exportar Mapas
+
+              <button
+                style="width: 100px"
+                class="btn btn-secondary btn-sm pull-right"
+                (click)="ExportarMapas()"
+              >
+                Exportar
+              </button>
+            </div>
+            <div class="card-body card-block">
+              <div class="row">
+                <div class="col col-7 col-no-pad">
+                  <label>Tipo de Exportación</label>
+                  <select
+                    name="Exportacion"
+                    class="form-control form-control-sm"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="tipoExport"
+                  >
+                    <option
+                      *ngFor="let pow of exportOptions"
+                      [value]="pow.idrow"
+                    >
+                      {{ pow.descripcion }}&nbsp;{{ pow.rango }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col col-3 col-no-pad">
+                  <label>Tipo Mapa</label>
+                  <select
+                    name="Exportacion"
+                    class="form-control form-control-sm"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="tipoMapa"
+                  >
+                    <option *ngFor="let pow of exportMapas" [value]="pow.idrow">
+                      {{ pow.descripcion }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col col-1 col-no-pad" [hidden]="tipoMapa == '1'">
+                  <label>%Com</label>
+                  <input
+                    class="form-control form-control-sm"
+                    type="number"
+                    [(ngModel)]="DtoComercial"
+                  />
+                </div>
+                <div class="col col-1 col-no-pad" [hidden]="tipoMapa == '1'">
+                  <label>%Marg</label>
+                  <input
+                    class="form-control form-control-sm"
+                    type="number"
+                    [(ngModel)]="MargenCliente"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col col-3 col-no-pad">
+          <div class="card h-100">
+            <div class="card-header">
+              Generar Mapas Cliente
+              <button
+                style="width: 100px"
+                class="btn btn-secondary btn-sm pull-right"
+                (click)="ExportarMapasCliente()"
+              >
+                Generar
+              </button>
+            </div>
+            <div class="card-body card-block">
+              <div class="row">
+                <div class="col col-12">
+                  <label>Cliente</label>
+                  <select
+                    name="Exportacion"
+                    class="form-control form-control-sm"
+                    (change)="LoadCustomerData()"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="modelCliente.idrow"
+                  >
+                    <option *ngFor="let pow of clientesapi" [value]="pow.idrow">
+                      {{ pow.descripcion }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col col-3">
+                  <label>c1</label>
+                  <input
+                    class="form-control form-control-sm"
+                    type="number"
+                    [(ngModel)]="modelCliente.c1"
+                  />
+                </div>
+                <div class="col col-3 col-no-pad">
+                  <label>c2</label>
+                  <input
+                    class="form-control form-control-sm"
+                    type="number"
+                    [(ngModel)]="modelCliente.c2"
+                  />
+                </div>
+                <div class="col col-3 col-no-pad">
+                  <label>c3</label>
+                  <input
+                    class="form-control form-control-sm"
+                    type="number"
+                    [(ngModel)]="modelCliente.c3"
+                  />
+                </div>
+                <div class="col col-3">
+                  <label>c4</label>
+                  <input
+                    class="form-control form-control-sm"
+                    type="number"
+                    [(ngModel)]="modelCliente.c4"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group col-xs-12 col-md-12 col-lg-12 col-no-pad">
+          <jqxGrid
+            #gridSReference
+            [auto-create]="false"
+            (onRowselect)="rowSelect($event)"
+            (onRowdoubleclick)="rowdoubleclick($event)"
+            [rendertoolbar]="createButtonsContainers"
+          ></jqxGrid>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col col-2 col-no-pad">
+          <div class="card h-100">
+            <div class="card-header">
+              Cambio de Precio
+              <button
+                style="width: 75px"
+                class="btn btn-secondary btn-sm pull-right"
+                (click)="BulkApply()"
+              >
+                Cambiar
+              </button>
+            </div>
+            <div class="card-body card-block">
+              <div>
+                <label>Nuevo Precio</label>
+                <input
+                  class="form-control form-control-sm"
+                  type="number"
+                  [(ngModel)]="model_bulk.param1"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group col-xs-12 col-md-12 col-lg-12 col-no-pad">
+          <jqxGrid #gridS2Reference [auto-create]="false"></jqxGrid>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- PANEL GENERACION -->
+
+  <!-- PANEL EDICION -->
+  <div class="card card-block" [hidden]="TipoPanel == 1">
+    <div class="panel">
+      <h5>
+        <span class="glyphicons glyphicons-shopping-cart"></span>
+        &nbsp;Edición de Tarifas Registradas
+        <div class="pull-right">
+          <button
+            class="btn btn-sm btn-secondary"
+            (click)="CloseMultipleEdicion()"
+          >
+            Cerrar
+          </button>
+        </div>
+      </h5>
+      <hr />
+    </div>
+
+    <div class="card-body">
+      <div class="row">
+        <div class="col col-4 col-no-pad">
+          <jqxGrid
+            #gridD3Reference
+            [auto-create]="false"
+            (onRowselect)="Edicion_rowSelect($event)"
+            (onRowdoubleclick)="Edicion_rowdoubleclick($event)"
+          ></jqxGrid>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="ClearSelection()"
+            >
+              Quitar Selección
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="CargarArticulos()"
+            >
+              Obtener Artículos
+            </button>
+          </div>
+        </div>
+        <div class="col col-8 col-no-pad">
+          <jqxGrid
+            #gridD4Reference
+            [auto-create]="false"
+            (onCellbeginedit)="cellBeginEditEvent($event)"
+            (onCellendedit)="cellEndEditEvent($event)"
+          ></jqxGrid>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="Seleccion_BorrarArticulos()"
+            >
+              Borrar Artículos
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button class="btn btn-secondary btn-block btn-sm" (click)="Open()">
+              Agregar Artículos
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- PANEL EDICION -->
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal="bs-modal"
+  (onShown)="myGridD2.render()"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">Generación Múltiple de Tarifas</h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-6">
+            <div class="row">
+              <div class="col col-12">
+                <label>Texto Base</label>
+                <input
+                  class="form-control form-control-sm"
+                  [(ngModel)]="generacion.base"
+                />
+              </div>
+              <div class="col col-12">
+                <label>Tarifa Base</label>
+                <jqxGrid #gridD1Reference [auto-create]="false"></jqxGrid>
+              </div>
+            </div>
+          </div>
+          <div class="col col-6">
+            <div class="row">
+              <div class="col col-12">
+                <div *ngIf="generacion.model == 1">
+                  <button
+                    class="btn btn-primary btn-sm"
+                    (click)="ChangeModel(1)"
+                  >
+                    Tejidos
+                  </button>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    (click)="ChangeModel(2)"
+                  >
+                    Grupos de Tejidos
+                  </button>
+                </div>
+                <div *ngIf="generacion.model == 2">
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    (click)="ChangeModel(1)"
+                  >
+                    Tejidos
+                  </button>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    (click)="ChangeModel(2)"
+                  >
+                    Grupos de Tejidos
+                  </button>
+                </div>
+                <jqxGrid #gridD2Reference [auto-create]="false"></jqxGrid>
+              </div>
+            </div>
+            <div class="col col-12 mt-2">
+              <button
+                class="btn btn-block btn-primary"
+                (click)="RealizarGeneracion()"
+              >
+                Generación de Tarifas
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd="bs-modal"
+  (onShown)="onModalAddShown();"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <search-artikel *ngIf="modalAddVisible" [editable]="0" #SearchArtikel></search-artikel>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalAdd.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="Update()">
+          Asignar Artículos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalUpdate="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet2"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-2">
+            <label>SP Tipo Tarifa</label>
+            <div class="input-group mb-3">
+              <select
+                class="form-control form-control-sm"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="parametros.sp_tarifa"
+                style="width: 80px"
+              >
+                <option *ngFor="let pow of sp_clientes" [value]="pow.tag">
+                  {{ pow.descripcion }}
+                </option>
+              </select>
+              <div class="input-group-append">
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  placeholder="num.cliente"
+                  style="width: 100%; background-color: azure"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="col col-2">
+            <label>SP Sistema</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_sistema"
+            >
+              <option *ngFor="let pow of sp_sistemas" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Modelo</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_modelo"
+            >
+              <option *ngFor="let pow of sp_modelos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Accionamiento</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_accionamiento"
+            >
+              <option *ngFor="let pow of sp_accionamientos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Tejido</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_tejido"
+            >
+              <option *ngFor="let pow of sp_tejidos" [value]="pow.agrupacion">
+                {{ pow.agrupacion }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label>SP Grupo</label>
+            <select
+              class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="parametros.sp_grupo"
+            >
+              <option *ngFor="let pow of sp_grupos" [value]="pow.tag">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalUpdate.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="AssignTarifa()">
+          Asignar Tarifa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalTiempos="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet2"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <jqxGrid #gridTiempos [auto-create]="false" class="mt-2"></jqxGrid>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalTiempos.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="ActualizaTiempos()">
+          Actualizar Mano de Obra
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

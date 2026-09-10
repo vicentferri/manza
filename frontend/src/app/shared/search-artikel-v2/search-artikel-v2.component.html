@@ -1,0 +1,161 @@
+<div class="row">
+  <div class="form-group col-2">
+    <label>Atributo</label>
+    <select
+      class="form-control form-control-sm"
+      [(ngModel)]="atributos.seleccion"
+      [ngModelOptions]="{ standalone: true }"
+    >
+      <option *ngFor="let pow of tipoatributos" [value]="pow.idrow">
+        {{ pow.descripcion }}
+      </option>
+    </select>
+  </div>
+
+  <div class="form-group col-2 col-no-pad">
+    <label>Referencia</label>
+    <input
+      type="number"
+      class="form-control form-control-sm"
+      [ngModelOptions]="{ standalone: true }"
+      [(ngModel)]="searchmodel.Alias"
+    />
+  </div>
+
+  <div class="form-group col-6 col-no-pad">
+    <label>Descripción(Separar criterios con +)</label>
+    <input
+      type="text"
+      class="form-control form-control-sm"
+      id="DesdeFecha"
+      [ngModelOptions]="{ standalone: true }"
+      [(ngModel)]="searchmodel.Descripcion"
+      (keyup.enter)="searchDocuments()"
+    />
+  </div>
+  <div class="form-group col-2">
+    <label>&nbsp;</label>
+    <div
+      class="btn btn-default btn-secondary btn-block btn-sm"
+      (click)="searchDocuments()"
+    >
+      &nbsp;&nbsp;Buscar
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="form-group col-6">
+    <jqxGrid
+      #gridSReference
+      [auto-create]="false"
+      [ready]="gridReady"
+      (onCellbeginedit)="cellBeginEditEvent($event)"
+      (onCellendedit)="cellEndEditEvent($event)"
+      (onRowselect)="GridOnRowSelect($event)"
+      (onRowunselect)="GridOnRowUnselect($event)"
+      [rendertoolbar]="createButtonsContainers"
+    ></jqxGrid>
+  </div>
+  <div class="form-group col-6">
+    <div class="card">
+      <div class="card-header"><b>Configuración del Atributo</b></div>
+      <div class="card-body">
+        <div class="row" *ngFor="let item of parametros; let i = index">
+          <div class="col col-4 mt-2">
+            &nbsp;&nbsp;&nbsp;<b>{{ item.atributo }}</b>
+          </div>
+          <div class="col col-8 mt-2">
+            <app-selectable
+              style="width: 100%"
+              [seleccion]="item.selected"
+              [url]="item.url"
+            ></app-selectable>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col col-12" *ngIf="parametros.length > 0">
+            <button class="btn btn-block" (click)="Aplicar()">
+              Aplicar Configuración
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="form-group col col-2 mt-1">
+    <button
+      class="btn btn-default btn-primary-outline btn-block btn-sm"
+      (click)="Edit()"
+      [hidden]="hideParams"
+    >
+      Edición Parámetros
+    </button>
+  </div>
+
+  <div
+    class="modal fade"
+    bsModal
+    #staticModalAdd="bs-modal"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="myModalLabel"
+    aria-hidden="true"
+    id="docModalDet"
+  >
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-body">
+          <div class="row">
+            <div class="form-group col col-2"></div>
+            <div class="form-group col col-3">
+              <label>Cantidad</label>
+              <input
+                class="form-control form-control-sm"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="newrow.cantidad"
+                type="number"
+              />
+            </div>
+            <div class="form-group col col-3">
+              <label>por cm</label>
+              <input
+                class="form-control form-control-sm"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="newrow.ancho"
+                type="number"
+              />
+            </div>
+            <div class="form-group col col-3">
+              <label>Mínimo</label>
+              <input
+                class="form-control form-control-sm"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="newrow.minimo"
+                type="number"
+              />
+            </div>
+            <div class="form-group col col-1"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            class="btn btn-secondary btn-sm"
+            (click)="staticModalAdd.hide()"
+          >
+            Cerrar
+          </button>
+          <button
+            class="btn btn-secondary btn-sm"
+            (click)="Parameters_Update()"
+          >
+            Actualizar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

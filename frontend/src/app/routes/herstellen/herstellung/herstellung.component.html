@@ -1,0 +1,164 @@
+<div class="animated fadeIn">
+  <div class="container-fluid">
+    <div class="card card-block">
+      <div class="container-overview panel">
+        <h6>
+          <span class="glyphicons glyphicons-shopping-cart"></span> &nbsp;<span
+            style="vertical-align: middle"
+            >Hoja de Fabricación</span
+          >
+        </h6>
+        <hr />
+      </div>
+
+      <div class="row">
+        <div class="col col-md-12">
+          <jqxGrid
+            #gridLines
+            [auto-create]="false"
+            [initrowdetails]="initRowDetail"
+            [rowdetailstemplate]="rowdetailstemplate"
+            [rowdetails]="true"
+          ></jqxGrid>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col col-md-12">
+          <div class="BtnToolBar">
+            <button class="btn btn-secondary btn-block btn-sm" (click)="Open()">
+              Agregar Artículos
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="Borrar()"
+            >
+              Borrar Artículos
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="Editar()"
+            >
+              Editar Artículo
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="Rebuild()"
+            >
+              Reconstruir Hoja
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="HojaFabricacion()"
+            >
+              Obtener Fichero de Fabricación
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="IniciarFabricacion()"
+            >
+              Iniciar Fabricación
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="DetenerFabricacion()"
+            >
+              Detener Fabricación
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="staticModalAdd.hide()">
+          Cerrar
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="Update()">
+          Asignar Artículos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalEdit="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalEdit"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-12">
+            <label>Descripción</label>
+            <input
+              class="form-control form-control-sm"
+              [ngModel]="selectedItem.descripcion"
+            />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col col-6">
+            <label>Cantidad</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="selectedItem.cantidad"
+              type="number"
+            />
+          </div>
+          <div class="col col-6">
+            <label>Consumo</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="selectedItem.consumo"
+              type="number"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="staticModalEdit.hide()">
+          Cerrar
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="UpdateArticle()">
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

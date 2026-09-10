@@ -1,0 +1,34 @@
+.cm-table-container {
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.cm-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+}
+
+.cm-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.cm-sortable:hover {
+    background-color: #e9ecef;
+}
+
+.cm-fila {
+    cursor: pointer;
+}
+
+.cm-fila-sel td {
+    background-color: #fff3cd !important;
+    font-weight: 600;
+}
+
+.cm-th-sm { width: 70px; }
+.cm-th-md { width: 140px; }
+.cm-th-lg { width: 170px; }

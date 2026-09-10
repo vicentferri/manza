@@ -1,0 +1,274 @@
+<div class="container-fluid">
+  <div class="card">
+
+    <!-- ── Header ─────────────────────────────────────────────────── -->
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h6 class="mb-0">
+        <i class="icon-layers mr-2"></i>Tejidos y Colores · Cortinadecor
+      </h6>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm mr-1" (click)="openAddTejidoModal()">
+          <i class="fa fa-plus mr-1"></i>Agregar Tejido
+        </button>
+        <button class="btn btn-outline-danger btn-sm" (click)="deleteTejido()" [disabled]="!selectedTejido">
+          <i class="fa fa-trash mr-1"></i>Borrar Tejido
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row">
+
+        <!-- ── Left: Tejidos list ──────────────────────────────────── -->
+        <div class="col-5 pr-1">
+          <div class="panel-box">
+
+            <div class="panel-box-header">
+              <span class="font-weight-semibold">
+                Tejidos
+                <span class="badge badge-secondary ml-1">{{ filteredTejidos.length }}</span>
+              </span>
+            </div>
+
+            <div class="table-scroll">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Producto</th>
+                    <th>Tejido base</th>
+                  </tr>
+                  <tr class="filter-row">
+                    <th>
+                      <input type="text" class="form-control form-control-sm" placeholder="Filtrar..."
+                        [(ngModel)]="filterTejidos.nombre" />
+                    </th>
+                    <th>
+                      <input type="text" class="form-control form-control-sm" placeholder="Filtrar..."
+                        [(ngModel)]="filterTejidos.producto" />
+                    </th>
+                    <th>
+                      <input type="text" class="form-control form-control-sm" placeholder="Filtrar..."
+                        [(ngModel)]="filterTejidos.tejido" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let t of filteredTejidos" class="tejido-row"
+                    [class.selected-row]="selectedTejido?.id === t.id" (click)="selectTejido(t)">
+                    <td>{{ t.name }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="getProductoBadgeClass(t._producto)">
+                        {{ getProductoName(t._producto) }}
+                      </span>
+                    </td>
+                    <td class="text-muted">{{ t.descripcion }}</td>
+                  </tr>
+                  <tr *ngIf="filteredTejidos.length === 0">
+                    <td colspan="3" class="text-center text-muted py-3">
+                      <i class="fa fa-search mr-1"></i>Sin resultados
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Right: Detail + Colors ─────────────────────────────── -->
+        <div class="col-7 pl-1">
+
+          <!-- Empty state -->
+          <div *ngIf="!selectedTejido" class="empty-state">
+            <i class="fa fa-hand-pointer-o fa-2x text-muted mb-2"></i>
+            <p class="text-muted">Selecciona un tejido para ver sus colores</p>
+          </div>
+
+          <!-- Detail panel -->
+          <div *ngIf="selectedTejido" class="panel-box">
+
+            <!-- Tejido detail form -->
+            <div class="panel-box-header">
+              <span class="font-weight-semibold">
+                <i class="fa fa-pencil-square-o mr-1"></i>{{ selectedTejido.name }}
+              </span>
+            </div>
+            <div class="detail-form p-2 border-bottom bg-light">
+              <div class="form-row align-items-end">
+                <div class="form-group col-auto mb-0">
+                  <label class="form-label-sm mb-1">Nombre</label>
+                  <input type="text" class="form-control form-control-sm" style="width: 160px"
+                    [(ngModel)]="editedTejido.name" (keyup.enter)="saveNombre()" />
+                </div>
+                <div class="form-group col-auto mb-0">
+                  <label class="form-label-sm mb-1">Producto</label>
+                  <select class="form-control form-control-sm" style="width: 170px" [(ngModel)]="editedTejido._producto"
+                    (change)="saveProducto()">
+                    <option *ngFor="let p of productos" [value]="p.id">{{ p.name }}</option>
+                  </select>
+                </div>
+                <div class="form-group col-auto mb-0">
+                  <label class="form-label-sm mb-1">Tejido base</label>
+                  <select class="form-control form-control-sm" style="width: 170px" [(ngModel)]="editedTejido._tejido"
+                    (change)="saveTejidoRef()">
+                    <option *ngFor="let tj of tejidosList" [value]="tj.idrow">{{ tj.descripcion }}</option>
+                  </select>
+                </div>
+                <div class="form-group col-auto mb-0">
+                  <small class="text-muted d-block">Pulsa Enter para guardar los cambios</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Colors section -->
+            <div class="p-2 border-bottom">
+              <div class="input-group input-group-sm" style="max-width: 340px">
+                <input type="text" class="form-control" placeholder="Nombre del color..." [(ngModel)]="newColor"
+                  (keyup.enter)="addColor()" />
+                <div class="input-group-append">
+                  <button class="btn btn-success btn-sm" (click)="addColor()">
+                    <i class="fa fa-plus mr-1"></i>Agregar color
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-scroll table-scroll-sm">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th style="width: 40%">Color</th>
+                    <th>Artículos</th>
+                    <th class="text-center" style="width: 90px">Acciones</th>
+                  </tr>
+                  <tr class="filter-row">
+                    <th>
+                      <input type="text" class="form-control form-control-sm" placeholder="Filtrar..."
+                        [(ngModel)]="filterColores.color" />
+                    </th>
+                    <th>
+                      <input type="text" class="form-control form-control-sm" placeholder="Filtrar..."
+                        [(ngModel)]="filterColores.articulos" />
+                    </th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let c of filteredColores">
+
+                    <!-- Normal view -->
+                    <ng-container *ngIf="editingColorId !== c.id">
+                      <td class="color-cell" title="Doble clic para editar" (dblclick)="startEditColor(c, $event)">
+                        {{ c.color }}
+                        <i class="fa fa-pencil edit-hint ml-1"></i>
+                      </td>
+                      <td>
+                        <span *ngIf="getArticulosCount(c.articulos) > 0" class="badge badge-info mr-1">{{
+                          getArticulosCount(c.articulos) }}</span>
+                        <small class="text-muted">{{ c.articulos }}</small>
+                      </td>
+                      <td class="text-center">
+                        <button class="btn btn-outline-secondary btn-xs mr-1" title="Asignar artículos"
+                          (click)="openArticulosModal(c)"><i class="fa fa-link"></i></button>
+                        <button class="btn btn-outline-danger btn-xs" title="Borrar color" (click)="deleteColor(c)"><i
+                            class="fa fa-trash"></i></button>
+                      </td>
+                    </ng-container>
+
+                    <!-- Edit view -->
+                    <ng-container *ngIf="editingColorId === c.id">
+                      <td>
+                        <input type="text" class="form-control form-control-sm" [(ngModel)]="editColorValue"
+                          (blur)="cancelColorEdit()" (keyup.enter)="saveColorEdit(c)" (keyup.escape)="cancelColorEdit()"
+                          autofocus />
+                      </td>
+                      <td><small class="text-muted">{{ c.articulos }}</small></td>
+                      <td class="text-center">
+                        <button class="btn btn-outline-secondary btn-xs" (click)="cancelColorEdit()">
+                          <i class="fa fa-times"></i>
+                        </button>
+                      </td>
+                    </ng-container>
+
+                  </tr>
+                  <tr *ngIf="filteredColores.length === 0">
+                    <td colspan="3" class="text-center text-muted py-3">
+                      {{ colores.length === 0 ? 'Sin colores asignados' : 'Sin resultados' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Modal: Artículos ──────────────────────────────────────────── -->
+<div class="modal fade" bsModal #modalArticulos="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Asignar Artículos</h5>
+        <button type="button" class="close" (click)="modalArticulos.hide()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="modalArticulos.hide()">Cerrar</button>
+        <button class="btn btn-primary btn-sm" (click)="assignArticulos()">
+          <i class="fa fa-check mr-1"></i>Asignar Artículos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Modal: Agregar Tejido ─────────────────────────────────────── -->
+<div class="modal fade" bsModal #modalAddTejido="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa fa-plus mr-1"></i>Agregar Tejido</h5>
+        <button type="button" class="close" (click)="modalAddTejido.hide()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nombre Tejido</label>
+          <input class="form-control form-control-sm" placeholder="Nombre del tejido..."
+            [(ngModel)]="tejidomodel.nombre" />
+        </div>
+        <div class="form-group">
+          <label>Producto</label>
+          <select class="form-control form-control-sm" [(ngModel)]="tejidomodel.producto">
+            <option *ngFor="let p of productos" [value]="p.id">{{ p.name }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tejido base</label>
+          <select class="form-control form-control-sm" [(ngModel)]="tejidomodel.tejido">
+            <option *ngFor="let tj of tejidosList" [value]="tj.idrow">{{ tj.descripcion }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="modalAddTejido.hide()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="addTejido()">
+          <i class="fa fa-plus mr-1"></i>Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,148 @@
+.pedidos-grid {
+  font-size: 12px;
+}
+
+.pg-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.pg-count {
+  font-weight: 600;
+  color: #555;
+}
+
+.pg-clear {
+  padding: 0 4px;
+}
+
+.pg-pagesize-label {
+  margin: 0 0 0 auto;
+  color: #555;
+}
+
+.pg-pagesize {
+  width: auto;
+  display: inline-block;
+}
+
+.pg-scroll {
+  max-height: 560px;
+  overflow: auto;
+  border: 1px solid #e0e0e0;
+}
+
+.pg-table {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.pg-table th,
+.pg-table td {
+  padding: 2px 6px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* celda truncada con puntos suspensivos; texto completo en el title del td.
+   El max-width en px lo pone la plantilla según col.width */
+.pg-cell {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.pg-table thead th {
+  position: sticky;
+  background: #eef3f7;
+  border-bottom: 2px solid #cfd8e0;
+  z-index: 2;
+}
+
+.pg-grouprow th {
+  top: 0;
+  text-align: center;
+  border-left: 1px solid #cfd8e0;
+  font-weight: 700;
+}
+
+/* sin grupos: cabecera en top 0, filtros justo debajo */
+.pg-headrow th {
+  top: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pg-filterrow th {
+  top: 25px;
+  padding: 2px 4px;
+}
+
+/* con grupos: se desplaza todo una fila hacia abajo */
+.pg-hasgroups .pg-headrow th {
+  top: 25px;
+}
+
+.pg-hasgroups .pg-filterrow th {
+  top: 50px;
+}
+
+.pg-filterrow input {
+  height: 22px;
+  font-size: 11px;
+  padding: 1px 4px;
+}
+
+.pg-sort {
+  color: #337ab7;
+  font-size: 10px;
+}
+
+.pg-table tbody tr {
+  cursor: pointer;
+}
+
+.pg-selected,
+.pg-table tbody tr.pg-selected:hover {
+  background: #b8d9f2 !important;
+}
+
+.pg-badge {
+  display: inline-block;
+  min-width: 34px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+.pg-flag-red {
+  background: #f2b8b8;
+  color: #7a1010;
+}
+
+.pg-flag-green {
+  background: #bfe6bf;
+  color: #14601a;
+}
+
+.pg-msg {
+  padding: 18px;
+  color: #888;
+}
+
+.pg-pager {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 6px 0;
+}
+
+.pg-pageinfo {
+  margin-left: 8px;
+  color: #555;
+}

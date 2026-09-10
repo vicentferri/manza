@@ -1,0 +1,93 @@
+<div class="container">
+
+    <div class="card" *ngIf="DocInfo != null">
+      <div class="card-block">
+   
+          <div class="row mt-3">
+              <div class="col col-5" style="text-align: center">
+                  <img style="width:400px;height:300px" [src]="WebImage"/>
+              </div>
+              <div class="col col-7">
+
+                <!--INTERIOR-->
+
+                <div class="row">
+                    <div class="col col-12 text-center"><h3>{{DocInfo.linea}}</h3></div>
+                    <div class="col col-12 text-center"><h3>{{DocInfo.sublinea}}</h3></div>
+                  </div>
+
+                  <div class="row">
+                      <div class="col col-12 text-center"><h4>Ref:{{DocInfo.agrupacion}}</h4></div>
+                   </div>
+
+                 <div class="row">
+                    <div class="col col-12 text-center"><h4>{{DocInfo.nombre_es}}</h4></div>
+                 </div>
+
+                 <div class="row mt-3">
+                    <div class="col col-2"></div>
+                    <div class="col col-8">
+                      <div><b>Características:</b></div>
+                      <div class="mt-1">
+                        {{DocInfo.caracteristicas}}
+                      </div>
+                    </div>
+                    <div class="col col-2"></div>
+                  </div>
+
+                <div class="row mt-3">
+                  <div class="col col-2"></div>
+                  <div class="col col-8">
+                    <div><b>Colores:</b></div>
+                    <div class="mt-1" *ngFor="let item of model.gama">
+                      <a href="#/routes/master/preview/{{item.id}}">
+                        <div style="float:left;border:1px solid silver;margin:2px;width:40px;height:30px;text-align:center;vertical-align: middle"
+                      [style.background]="item.col"></div>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col col-2"></div>
+                    <div class="col col-8">
+                      <div><b>Medidas:</b></div>
+                      <div class="mt-1" *ngFor="let item of model.medidas">
+                        <div style="float:left;border:1px solid silver;margin:4px;padding-top:4px;width:100px;height:30px;text-align:center;vertical-align: middle">{{item.atr}}</div>
+                      </div>
+                    </div>
+                    <div class="col col-2"></div>
+                  </div>
+
+                 <div class="row mt-3">
+                    <div class="col col-2"></div>
+                    <div class="col col-8">
+                        <div><b>Especificaciones Técnicas:</b></div>
+                        <div class="mt-1 table-responsive">
+                            <table class='table table-striped borderless'>
+                              <tbody>
+                                <tr *ngFor="let item of model.atributos">
+                                  <td><b>{{item.atr}}</b></td>
+                                  <td>{{item.val}}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                    </div>
+                    <div class="col col-2"></div>
+                 </div>
+                 <!--INTERIOR-->
+
+              </div>
+            </div>
+
+            <div>
+        </div>
+      </div>
+
+</div>
+
+
+     
+

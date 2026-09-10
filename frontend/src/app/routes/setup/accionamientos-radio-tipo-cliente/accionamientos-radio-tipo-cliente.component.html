@@ -1,0 +1,372 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-2">
+            <h6>
+                <i class="fa fa-users mt-1"></i>&nbsp;{{ title }}
+                <div class="pull-right">
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <!-- BÚSQUEDA -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-auto">
+                <input type="text" class="form-control form-control-sm"
+                    style="min-width: 260px;"
+                    placeholder="Buscar mando, cliente, descripción, código..."
+                    [(ngModel)]="busqueda"
+                    [ngModelOptions]="{ standalone: true }"
+                    (input)="onBusqueda()" />
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">
+                    <i class="fa fa-times"></i> Limpiar
+                </button>
+            </div>
+            <div class="col-auto ml-auto text-muted small">
+                {{ datosFiltrados.length }} registros
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="row mb-2">
+            <div class="col-12">
+                <button type="button" class="btn btn-success btn-sm mr-2" (click)="openAdd()">
+                    <i class="fa fa-plus"></i> Agregar
+                </button>
+                <button type="button" class="btn btn-warning btn-sm mr-2"
+                    [disabled]="!filaSeleccionada" (click)="openEdit()">
+                    <i class="fa fa-pencil"></i> Editar
+                </button>
+                <button type="button" class="btn btn-danger btn-sm"
+                    [disabled]="!filaSeleccionada" (click)="eliminar()">
+                    <i class="fa fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <div class="table-responsive artc-table-container">
+            <table class="table table-bordered table-hover table-sm artc-table">
+                <thead class="thead-light">
+                    <tr>
+                        <th class="artc-th-sm artc-sortable" (click)="ordenar('idrow')">
+                            ID
+                            <span *ngIf="sortCol === 'idrow'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-sortable" (click)="ordenar('DesMar')">
+                            Mando
+                            <span *ngIf="sortCol === 'DesMar'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-sortable" (click)="ordenar('descripcion')">
+                            Descripción
+                            <span *ngIf="sortCol === 'descripcion'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-sortable" (click)="ordenar('NomCli')">
+                            Cliente
+                            <span *ngIf="sortCol === 'NomCli'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-th-md artc-sortable text-right" (click)="ordenar('precio')">
+                            Precio
+                            <span *ngIf="sortCol === 'precio'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-th-md artc-sortable text-right" (click)="ordenar('c1')">
+                            C1
+                            <span *ngIf="sortCol === 'c1'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-sortable" (click)="ordenar('DesPro')">
+                            Producto
+                            <span *ngIf="sortCol === 'DesPro'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-sortable" (click)="ordenar('DesMod')">
+                            Modelo
+                            <span *ngIf="sortCol === 'DesMod'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                        <th class="artc-th-md artc-sortable" (click)="ordenar('codigo_48')">
+                            Código 48
+                            <span *ngIf="sortCol === 'codigo_48'">
+                                <i class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                            </span>
+                        </th>
+                    </tr>
+                    <!-- FILA DE FILTROS -->
+                    <tr class="artc-filter-row">
+                        <th><input type="text" class="artc-filter-input" placeholder="ID"
+                            [(ngModel)]="filtros.idrow" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.DesMar" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.descripcion" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.NomCli" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.precio" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.c1" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.DesPro" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.DesMod" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                        <th><input type="text" class="artc-filter-input" placeholder="Filtrar..."
+                            [(ngModel)]="filtros.codigo_48" [ngModelOptions]="{ standalone: true }"
+                            (input)="onFiltroColumna()" /></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let fila of datosPagina"
+                        (click)="seleccionar(fila)"
+                        [ngClass]="{ 'artc-fila-sel': esSeleccionada(fila) }"
+                        class="artc-fila">
+                        <td>{{ fila.idrow }}</td>
+                        <td class="artc-td-truncate" [title]="fila.DesMar">{{ fila.DesMar }}</td>
+                        <td>{{ fila.descripcion }}</td>
+                        <td class="artc-td-truncate" [title]="fila.NomCli">{{ fila.NomCli }}</td>
+                        <td class="text-right">{{ fila.precio }}</td>
+                        <td class="text-right">{{ fila.c1 }}</td>
+                        <td>{{ fila.DesPro }}</td>
+                        <td class="artc-td-truncate" [title]="fila.DesMod">{{ fila.DesMod }}</td>
+                        <td>{{ fila.codigo_48 }}</td>
+                    </tr>
+                    <tr *ngIf="datosPagina.length === 0">
+                        <td colspan="9" class="text-center text-muted py-3">Sin resultados</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="row mt-2 align-items-center" *ngIf="totalPaginas > 1">
+            <div class="col-auto">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === 1 }">
+                            <a class="page-link" (click)="irPagina(pagina - 1)">&laquo;</a>
+                        </li>
+                        <li class="page-item" *ngFor="let p of paginas"
+                            [ngClass]="{ 'active': p === pagina }">
+                            <a class="page-link" (click)="irPagina(p)">{{ p }}</a>
+                        </li>
+                        <li class="page-item" [ngClass]="{ 'disabled': pagina === totalPaginas }">
+                            <a class="page-link" (click)="irPagina(pagina + 1)">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="col-auto text-muted small">
+                Página {{ pagina }} de {{ totalPaginas }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- MODAL AGREGAR -->
+<div bsModal #modalAdd="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Tarifa Radio Tipo Cliente</h5>
+                <button type="button" class="close" (click)="modalAdd.hide()">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Mando <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <select class="form-control form-control-sm"
+                            [(ngModel)]="formAdd.id"
+                            [ngModelOptions]="{ standalone: true }">
+                            <option value="">Seleccionar...</option>
+                            <option *ngFor="let m of mandosOpts" [value]="m.value">{{ m.label }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Cliente <span class="text-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <select class="form-control form-control-sm"
+                            [(ngModel)]="formAdd.cliente"
+                            [ngModelOptions]="{ standalone: true }">
+                            <option value="">Seleccionar...</option>
+                            <option *ngFor="let c of clientesOpts" [value]="c.idrow">{{ c.descripcion }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Producto</label>
+                    <div class="col-sm-8">
+                        <select class="form-control form-control-sm"
+                            [(ngModel)]="formAdd.producto"
+                            [ngModelOptions]="{ standalone: true }">
+                            <option *ngFor="let p of productosOpts" [value]="p.value">{{ p.label }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Modelo</label>
+                    <div class="col-sm-8">
+                        <select class="form-control form-control-sm"
+                            [(ngModel)]="formAdd.modelo"
+                            [ngModelOptions]="{ standalone: true }">
+                            <option value="">Seleccionar...</option>
+                            <option *ngFor="let m of modelosOpts" [value]="m.value">{{ m.label }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Descripción</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm"
+                            maxlength="255" placeholder="Descripción"
+                            [(ngModel)]="formAdd.descripcion"
+                            [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-row mb-2">
+                    <div class="col-sm-6">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label">Precio</label>
+                            <div class="col-sm-7">
+                                <input type="number" step="0.01" class="form-control form-control-sm"
+                                    [(ngModel)]="formAdd.precio"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label">C1</label>
+                            <div class="col-sm-7">
+                                <input type="text" class="form-control form-control-sm"
+                                    maxlength="50" placeholder="Ej: C1 0004042"
+                                    [(ngModel)]="formAdd.c1"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Código 48</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm"
+                            maxlength="50" placeholder="Código 48"
+                            [(ngModel)]="formAdd.codigo_48"
+                            [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" (click)="guardarAdd()">
+                    <i class="fa fa-save"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalAdd.hide()">
+                    Cancelar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL EDITAR -->
+<div bsModal #modalEdit="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Editar — ID: {{ formEdit.idrow }}</h5>
+                <button type="button" class="close" (click)="modalEdit.hide()">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Descripción</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm"
+                            maxlength="255"
+                            [(ngModel)]="formEdit.descripcion"
+                            [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <div class="form-row mb-2">
+                    <div class="col-sm-6">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label">Precio</label>
+                            <div class="col-sm-7">
+                                <input type="number" step="0.01" class="form-control form-control-sm"
+                                    [(ngModel)]="formEdit.precio"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label">C1</label>
+                            <div class="col-sm-7">
+                                <input type="text" class="form-control form-control-sm"
+                                    maxlength="50"
+                                    [(ngModel)]="formEdit.c1"
+                                    [ngModelOptions]="{ standalone: true }" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Código 48</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control form-control-sm"
+                            maxlength="50"
+                            [(ngModel)]="formEdit.codigo_48"
+                            [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning btn-sm" (click)="guardarEdit()">
+                    <i class="fa fa-save"></i> Actualizar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalEdit.hide()">
+                    Cancelar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

@@ -1,0 +1,179 @@
+=========================================================
+  ENDPOINT: POST /sm/promocion_banner/:idrow
+  Subida de imagen de banner para una promoción
+  Stack: Node.js + Express + Multer + SQL Server / MySQL
+=========================================================
+
+-- DEPENDENCIAS (si no están ya instaladas) --
+
+  npm install multer
+  npm install path
+  npm install fs
+
+
+-- CÓDIGO DEL ENDPOINT --
+
+  Añadir en el fichero de rutas /sm (o donde estén el resto de rutas /sm):
+
+--------------------------------------------------------------
+
+const multer  = require('multer');
+const path    = require('path');
+const fs      = require('fs');
+
+// Directorio donde se guardan los banners
+// Ajusta la ruta al directorio real de uploads del servidor
+const BANNER_DIR = path.join(__dirname, '../uploads/banners');
+
+// Crea el directorio si no existe
+if (!fs.existsSync(BANNER_DIR)) {
+  fs.mkdirSync(BANNER_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, BANNER_DIR);
+  },
+  filename: (req, file, cb) => {
+    // Nombre: banner_<idrow>.<extension>
+    // Sobreescribe si ya existe uno anterior para el mismo idrow
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, 'banner_' + req.params.idrow + ext);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Formato de imagen no permitido'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }  // 5 MB máximo
+});
+
+
+// RUTA:  POST /sm/promocion_banner/:idrow
+router.post('/promocion_banner/:idrow', upload.single('image'), async (req, res) => {
+  try {
+    const idrow = parseInt(req.params.idrow, 10);
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'ERROR', detail: 'No se recibió ningún archivo' });
+    }
+
+    // Ruta relativa que se guardará en la BD
+    // Ajusta el prefijo de URL según cómo sirvas los estáticos
+    const imagenBanner = '/uploads/banners/' + req.file.filename;
+
+    // --- SQL Server ---
+    // Ajusta el nombre de tabla, columna PK y pool de conexión a los del proyecto
+    await pool.request()
+      .input('idrow',        sql.Int,          idrow)
+      .input('imagen_banner', sql.VarChar(255), imagenBanner)
+      .query(`
+        UPDATE SOL_ARTICULOS_TARIFAS_CLIENTES
+        SET    imagen_banner = @imagen_banner
+        WHERE  idrow         = @idrow
+      `);
+
+    // --- MySQL (alternativa) ---
+    // await db.query(
+    //   'UPDATE SOL_ARTICULOS_TARIFAS_CLIENTES SET imagen_banner = ? WHERE idrow = ?',
+    //   [imagenBanner, idrow]
+    // );
+
+    return res.json({ message: 'ok', imagen_banner: imagenBanner });
+
+  } catch (err) {
+    console.error('[POST /sm/promocion_banner]', err);
+    return res.status(500).json({ message: 'ERROR', detail: err.message });
+  }
+});
+
+--------------------------------------------------------------
+
+
+-- CAMBIOS EN LA BD --
+
+  ALTER TABLE SOL_ARTICULOS_TARIFAS_CLIENTES
+  ADD imagen_banner VARCHAR(255) NULL;
+
+
+-- ACTUALIZAR EL GET DE PROMOCIONES --
+
+  El endpoint GET /sm/clientes_promociones debe incluir
+  imagen_banner en el SELECT:
+
+  SELECT idrow,
+         descripcion,
+         promocion_activa,
+         promocion_coeficiente,
+         promocion_modificapvp,
+         promocion_coeficiente2,
+         promocion_modificapvc,
+         desde,
+         hasta,
+         promocion_mensaje,
+         imagen_banner          -- <-- añadir esta columna
+  FROM   SOL_ARTICULOS_TARIFAS_CLIENTES
+  ...
+
+
+-- SERVIR LOS ARCHIVOS ESTÁTICOS --
+
+  En el app.js / server.js principal asegúrate de que
+  la carpeta uploads sea accesible como estático:
+
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+-- ENDPOINT ELIMINAR BANNER (opcional, complementa /update_table) --
+
+  Si el proyecto no usa /update_table para este campo,
+  puedes añadir también:
+
+  router.delete('/promocion_banner/:idrow', async (req, res) => {
+    try {
+      const idrow = parseInt(req.params.idrow, 10);
+
+      // Recupera nombre de archivo actual para borrarlo del disco
+      const result = await pool.request()
+        .input('idrow', sql.Int, idrow)
+        .query('SELECT imagen_banner FROM SOL_ARTICULOS_TARIFAS_CLIENTES WHERE idrow = @idrow');
+
+      const current = result.recordset[0] && result.recordset[0].imagen_banner;
+      if (current) {
+        const filePath = path.join(__dirname, '..', current);
+        if (fs.existsSync(filePath)) { fs.unlinkSync(filePath); }
+      }
+
+      await pool.request()
+        .input('idrow', sql.Int, idrow)
+        .query(`UPDATE SOL_ARTICULOS_TARIFAS_CLIENTES
+                SET imagen_banner = NULL WHERE idrow = @idrow`);
+
+      return res.json({ message: 'ok' });
+    } catch (err) {
+      return res.status(500).json({ message: 'ERROR', detail: err.message });
+    }
+  });
+
+
+=========================================================
+  RESUMEN DE CAMBIOS
+=========================================================
+
+  1. BD:    ALTER TABLE ... ADD imagen_banner VARCHAR(255) NULL
+  2. GET:   Añadir imagen_banner al SELECT de /sm/clientes_promociones
+  3. POST:  Añadir ruta POST /sm/promocion_banner/:idrow  (código arriba)
+  4. APP:   app.use('/uploads', express.static(...))
+  5. OPCIONAL: DELETE /sm/promocion_banner/:idrow para limpiar disco
+
+=========================================================

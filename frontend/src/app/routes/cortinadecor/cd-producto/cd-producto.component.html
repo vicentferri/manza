@@ -1,0 +1,172 @@
+<div class="container-fluid">
+  <div class="card card-block">
+    <div>
+      <h6>
+        Tejidos y Colores Cortinadecor
+
+        <div class="pull-right">
+          <button class="btn btn-secondary btn-block btn-sm" (click)="Open()">
+            Artículos
+          </button>
+        </div>
+        <div class="pull-right">
+          <button class="btn btn-secondary btn-block btn-sm" (click)="Open2()">
+            Agregar Tejidos
+          </button>
+        </div>
+        <div class="pull-right">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            (click)="DeleteTejido()"
+          >
+            Borrar Tejidos
+          </button>
+        </div>
+      </h6>
+      <hr />
+    </div>
+
+    <div>
+      <div class="row">
+        <div class="form-group col-6">
+          <div style="height: 820px; overflow: auto">
+            <jqxGrid
+              #gridReference
+              [auto-create]="false"
+              (onCellclick)="Cellclick($event)"
+              (onCellbeginedit)="cellBeginEditEvent($event)"
+              (onCellendedit)="cellEndEditEvent($event)"
+            ></jqxGrid>
+          </div>
+        </div>
+
+        <div class="form-group col-6">
+          <div class="row" [hidden]="selectedItem == null">
+            <div class="form-group col-5">
+              <label>Color Cortinadecor</label>
+              <div class="input-group mb-3">
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [ngModelOptions]="{ standalone: true }"
+                  [(ngModel)]="model.color"
+                />
+                <div class="input-group-append">
+                  <button
+                    class="btn btn-secondary btn-block btn-sm"
+                    (click)="Add()"
+                  >
+                    Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="height: 580px; overflow: auto">
+            <jqxGrid
+              #gridReference2
+              [auto-create]="false"
+              (onCellclick)="Cellclick2($event)"
+              (onCellbeginedit)="cellBeginEditEvent2($event)"
+              (onCellendedit)="cellEndEditEvent2($event)"
+            ></jqxGrid>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="staticModalAdd.hide()">
+          Cerrar
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="Update()">
+          Asignar Artículos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd2="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet2"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-12">
+            <label>Nombre Tejido</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tejidomodel.nombre"
+            />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col col-12">
+            <label>Producto</label>
+            <select
+              class="form-control form-control-sm"
+              id="producto"
+              required
+              [(ngModel)]="tejidomodel.producto"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of productos" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col col-12">
+            <label>Tejido</label>
+            <select
+              class="form-control form-control-sm"
+              id="tejido"
+              required
+              [(ngModel)]="tejidomodel.tejido"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of tejidos" [value]="pow.idrow">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="staticModalAdd2.hide()">
+          Cerrar
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="AddTejido()">
+          Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

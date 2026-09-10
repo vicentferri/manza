@@ -1,0 +1,11 @@
+
+.jqx-grid-cell-selected {
+  border-left: 0px solid transparent !important;
+  background-color: greenyellow !important;
+}
+
+.jqx-grid-cell-selected-glacier {
+  border-left: 0px solid transparent !important;
+  background-color: greenyellow !important;
+}
+

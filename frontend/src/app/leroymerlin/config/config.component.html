@@ -1,0 +1,3051 @@
+<nav
+  class="navbar navbar-toggleable-sm navbar-inverse navbar-custom lm-success"
+>
+  <div class="flex-row d-flex">
+    <a class="navbar-brand mb-1" href="#" title="Leroy Merlín"
+      >Leroy Merlin:&nbsp;{{ nombreCentro }}</a
+    >
+  </div>
+  <div class="navbar-collapse collapse" id="collapsingNavbar">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link">&nbsp;</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link">&nbsp;</a>
+      </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" (click)="VerPresupuestos()">[Presupuestos]</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" (click)="VerPedidos()">[Pedidos]</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" (click)="VerConfigurador()">[Configurador]</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" (click)="ChangeUser()">[Cambiar Centro]</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" (click)="BorrarPedido()">[Borrar]</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" (click)="VerPedido()">[Ver]</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" (click)="NewPage()">[Nueva Cortina]</a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          (click)="onSubmit()"
+          [hidden]="this.bConfigurador == 1"
+          >[Agregar Cortina]</a
+        >
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link active"
+          (click)="ShowBtns(); staticModal2.show()"
+          [hidden]="Cesta.length == 0"
+          >FINALIZAR PEDIDO</a
+        >
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div class="mt-1">
+  <div
+    class="container-fluid pt-2"
+    [hidden]="bConfigurador == 0 || bConfigurador == 2 || bConfigurador == 3"
+  >
+    <div class="row">
+      <div class="col-6 lm-success py-2" style="padding-left: 5px">
+        <h5>Contenido del Pedido</h5>
+      </div>
+      <div class="col-6 lm-success py-2">
+        <div class="pull-right">
+          <h5>
+            {{ NumeroCortinas }}&nbsp;Cortinas&nbsp;&nbsp;{{
+              TotalCesta | number
+            }}€&nbsp;({{ TotalCestaC1 }})&nbsp;(F.Fab.{{
+              FechaEntregaPedido | date : "dd/MM/yyyy"
+            }}
+            + 3d Trans.&nbsp;&nbsp;)
+          </h5>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col col-md-12 col-lg-12">
+        <div style="overflow: auto" scrollable>
+          <div *ngFor="let item of Cesta">
+            <div class="container">
+              <div *ngIf="item.TipoCortina == 1">
+                <app-preview-1
+                  [item]="item"
+                  (onDelete)="DeleteLine($event)"
+                  (onEdit)="EditLine($event)"
+                ></app-preview-1>
+              </div>
+              <div *ngIf="item.TipoCortina == 2">
+                <app-preview-2
+                  [item]="item"
+                  (onDelete)="DeleteLine($event)"
+                  (onEdit)="EditLine($event)"
+                ></app-preview-2>
+              </div>
+              <div *ngIf="item.TipoCortina == 3">
+                <app-preview-3
+                  [item]="item"
+                  (onDelete)="DeleteLine($event)"
+                  (onEdit)="EditLine($event)"
+                ></app-preview-3>
+              </div>
+              <div *ngIf="item.TipoCortina == 4">
+                <app-preview-4
+                  [item]="item"
+                  (onDelete)="DeleteLine($event)"
+                  (onEdit)="EditLine($event)"
+                ></app-preview-4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="container-fluid pt-2"
+    [hidden]="bConfigurador == 1 || bConfigurador == 2 || bConfigurador == 3"
+  >
+    <div class="row no-gutters" [hidden]="!Promocion">
+      <div class="col-9 lm-success py-2" style="padding-left: 5px">
+        <h5>{{ Promocion_Mensaje }}</h5>
+      </div>
+      <div
+        class="col-3 lm-success py-2"
+        style="text-align: right; padding-right: 5px"
+      >
+        <h5>
+          <app-ticker [maxDate]="Promocion_Hasta"></app-ticker>
+        </h5>
+      </div>
+    </div>
+
+    <div class="row no-gutters pt-1">
+      <div class="col-10 lm-success py-2" style="padding-left: 5px">
+        <div>
+          <div style="float: left">
+            <button [ngClass]="classTipo(1)" (click)="Tipo(1)">
+              ENROLLABLE
+            </button>
+            <button [ngClass]="classTipo(2)" (click)="Tipo(2)">
+              PANEL JAPONES
+            </button>
+            <button [ngClass]="classTipo(3)" (click)="Tipo(3)">VERTICAL</button>
+            <button [ngClass]="classTipo(4)" (click)="Tipo(4)">COMPAC</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-2 lm-success py-2">
+        <div class="pull-right">
+          <h5>{{ NumeroCortinas }}&nbsp;Cortinas&nbsp;</h5>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col col-12">
+        <form (ngSubmit)="onSubmit()" #ConfiguraForm="ngForm">
+          <div *ngIf="TipoCortina == 1">
+            <!-- PANEL ENROLLABLE -->
+            <div class="card card-block mt-1" [hidden]="true">
+              <div class="row">
+                <div class="col col-2">
+                  <div class="input-group">
+                    <span class="input-group-addon beautiful">
+                      <input
+                        class="form-control"
+                        type="checkbox"
+                        name="ImpresionDigital"
+                        [(ngModel)]="Tipo1_Desglose"
+                        style="width: 20px"
+                      />
+                    </span>
+                    <span class="input-group-addon"> Ver desglose de pvp </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card card-block mt-1">
+              <div class="row">
+                <div class="col col-5">
+                  <div class="row">
+                    <div class="col col-12">
+                      <h6>
+                        MEDIDA TOTAL&nbsp;
+                        <span class="lead">(tapas incluidas)</span>
+                      </h6>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col col-2">
+                      <label>Ancho</label>
+                      <input
+                        #ancho
+                        class="form-control form-control-sm"
+                        type="number"
+                        min="100"
+                        max="600"
+                        step=".5"
+                        [(ngModel)]="Ancho"
+                        name="Ancho"
+                        id="Ancho"
+                        [appMaxdigits]="3"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                        (blur)="Ancho_Change(ancho); CheckPrice()"
+                        (keyup.enter)="Next($event, alto)"
+                        minlength="4"
+                      />
+                    </div>
+                    <div class="col col-2">
+                      <label>Alto</label>
+                      <input
+                        #alto
+                        class="form-control form-control-sm"
+                        type="number"
+                        min="100"
+                        max="600"
+                        step=".5"
+                        [(ngModel)]="Alto"
+                        id="Alto"
+                        [appMaxdigits]="3"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                        (keyup.enter)="Next($event, cantidad)"
+                        (blur)="CheckPrice()"
+                      />
+                    </div>
+                    <div class="col col-2">
+                      <label>Cantidad</label>
+                      <input
+                        #cantidad
+                        class="form-control form-control-sm"
+                        type="number"
+                        min="0"
+                        max="600"
+                        [(ngModel)]="Cantidad"
+                        id="Cantidad"
+                        [appMaxdigits]="3"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                        (keyup.enter)="Next($event, Tipo1_Tejido)"
+                        (blur)="CheckPrice()"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col col-7">
+                  <div class="pull-right">
+                    <h5>
+                      {{ precios.T1_PVP | number }}&nbsp;€&nbsp;&nbsp;({{
+                        precios.T1_PVP_C1
+                      }})&nbsp;&nbsp;
+                      <span [hidden]="precios.T1_Fecha_Entrega == ''">
+                        <font color="black"
+                          >(F.Fab.{{ precios.T1_Fecha_Entrega }}&nbsp;&nbsp;+
+                          {{ precios.T1_Transporte }}
+                          d Trans)</font
+                        >
+                      </span>
+                    </h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-1" [hidden]="Ancho == '' || Alto == ''">
+              <div class="col col-3">
+                <div class="card card-block" style="min-height: 335px">
+                  <div class="row">
+                    <div class="col col-12 text-center">
+                      <strong>Seleccionar Tejido</strong>
+                    </div>
+                    <div class="col col-12 mt-1">
+                      <label>Impresión Digital:(Imagen)</label>
+                      <div class="input-group">
+                        <span class="input-group-addon beautiful">
+                          <input
+                            class="form-control form-control-sm"
+                            type="checkbox"
+                            name="ImpresionDigital"
+                            [(ngModel)]="ID_Quiero"
+                            style="width: 20px"
+                            (change)="selImpresionDigital_Tipo1()"
+                          />
+                        </span>
+                        <input
+                          #impresion
+                          class="form-control form-control-sm"
+                          type="text"
+                          min="0"
+                          max="600"
+                          [(ngModel)]="ID_Imagen"
+                          id="ImpresionDigital"
+                          [ngModelOptions]="{ standalone: true }"
+                        />
+                        <span class="input-group-addon beautiful"> </span>
+                      </div>
+                    </div>
+                    <div class="col col-12 mt-1">
+                      <label>Salida:</label>
+                      <select
+                        name="Tipo1_TejidoSalida"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_TejidoSalida"
+                      >
+                        <option *ngFor="let pow of tejidosS" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col col-12 mt-1">
+                      <label>Serie:</label>
+                      <div class="input-group">
+                        <select
+                          name="Tipo1_Tejido"
+                          class="form-control form-control-sm"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo1_Tejido"
+                          (change)="ChangeTipo1Tejido(); CheckPrice()"
+                          (blur)="CheckPrice()"
+                        >
+                          <option *ngFor="let pow of tejidos" [value]="pow.id">
+                            {{ pow.text }}
+                          </option>
+                        </select>
+
+                        <span class="input-group-btn">
+                          <button
+                            class="btn btn-default btn-sm"
+                            [class.btn-success]="isCopied1"
+                            type="button"
+                          >
+                            {{ CodigoProv }}
+                          </button>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col col-12 mt-1">
+                      <label>{{ Tipo1_LabelTejidoColor }}</label>
+                      <select
+                        name="Tipo1_TejidoColor"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_TejidoColor"
+                        (change)="ChangeTejidoColor()"
+                      >
+                        <option *ngFor="let pow of tejidosC" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col col-3">
+                <div class="card card-block" style="min-height: 335px">
+                  <div class="row">
+                    <div class="col col-12">
+                      <div class="text-center">
+                        <strong>Seleccionar Accionamiento</strong>
+                      </div>
+                    </div>
+
+                    <div class="col col-12 mt-1">
+                      <label>Tipo:</label>
+                      <select
+                        name="Tipo1_Tipo"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Tipo"
+                        (change)="ChangeAccionamiento(); CheckPrice()"
+                      >
+                        <option *ngFor="let pow of items1" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                      <div class="row mt-2" [hidden]="!esCadena">
+                        <div class="col col-12">
+                          <div class="row">
+                            <div class="col col-6">
+                              <label>Tipo de Cadena</label>
+                              <div class="input-group">
+                                <span class="input-group-addon">
+                                  <input
+                                    type="radio"
+                                    name="cadena"
+                                    (click)="Cadena(0)"
+                                    [checked]="TipoCadena1"
+                                  />
+                                </span>
+                                <input
+                                  type="text"
+                                  class="form-control form-control-sm"
+                                  value="Cadena"
+                                  readonly
+                                />
+                              </div>
+                            </div>
+                            <div class="col col-3">
+                              <label>{{ Tipo1_Cadena_Label }}</label>
+                              <input
+                                type="number"
+                                class="form-control form-control-sm"
+                                id="AlturaCadena"
+                                [ngModelOptions]="{ standalone: true }"
+                                [(ngModel)]="AlturaCadena"
+                                [hidden]="esCadenaExt != 0"
+                              />
+                            </div>
+                            <div class="col col-3">
+                              <label>Color:</label>
+                              <select
+                                name="Tipo1_ColorCadena"
+                                class="form-control form-control-sm"
+                                [ngModelOptions]="{ standalone: true }"
+                                [(ngModel)]="Tipo1_ColorCadena"
+                                [hidden]="esCadenaExt != 0"
+                              >
+                                <option
+                                  *ngFor="let pow of colorCadena"
+                                  [value]="pow.id"
+                                >
+                                  {{ pow.text }}
+                                </option>
+                              </select>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col col-6">
+                              <div class="input-group">
+                                <span class="input-group-addon">
+                                  <input
+                                    type="radio"
+                                    name="cadena"
+                                    (click)="Cadena(1)"
+                                    [checked]="TipoCadena2"
+                                  />
+                                </span>
+                                <input
+                                  type="text"
+                                  class="form-control form-control-sm"
+                                  value="Cadena Contínua"
+                                  readonly
+                                />
+                              </div>
+                            </div>
+                            <div class="col col-3">
+                              <select
+                                name="Tipo1_AlturaCadena"
+                                class="form-control form-control-sm"
+                                [ngModelOptions]="{ standalone: true }"
+                                [(ngModel)]="Tipo1_AlturaCadena"
+                                [hidden]="esCadenaExt != 1"
+                              >
+                                <option
+                                  *ngFor="let pow of alturaCadena"
+                                  [value]="pow.id"
+                                >
+                                  {{ pow.text }}
+                                </option>
+                              </select>
+                            </div>
+                            <div class="col col-3">
+                              <select
+                                name="Tipo1_ColorCadena"
+                                class="form-control form-control-sm"
+                                [ngModelOptions]="{ standalone: true }"
+                                [(ngModel)]="Tipo1_ColorCadena"
+                                [hidden]="esCadenaExt != 1"
+                              >
+                                <option
+                                  *ngFor="let pow of colorCadena"
+                                  [value]="pow.id"
+                                >
+                                  {{ pow.text }}
+                                </option>
+                              </select>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col col-6">
+                              <div class="input-group">
+                                <span class="input-group-addon">
+                                  <input
+                                    type="radio"
+                                    name="cadena"
+                                    (click)="Cadena(2)"
+                                    [checked]="TipoCadena3"
+                                  />
+                                </span>
+                                <input
+                                  type="text"
+                                  class="form-control form-control-sm"
+                                  value="Cadena Metálica"
+                                  readonly
+                                />
+                              </div>
+                            </div>
+                            <div class="col col-3">
+                              <select
+                                name="Tipo1_AlturaCadenaM"
+                                class="form-control form-control-sm"
+                                [ngModelOptions]="{ standalone: true }"
+                                [(ngModel)]="Tipo1_AlturaCadenaM"
+                                (change)="tarifaCadena()"
+                                [hidden]="esCadenaExt != 2"
+                              >
+                                <option
+                                  *ngFor="let pow of alturaCadenaM"
+                                  [value]="pow.id"
+                                >
+                                  {{ pow.text }}
+                                </option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col col-12 mt-1">
+                      <label>Marca:</label>
+                      <select
+                        name="Tipo1_Marca"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Marca"
+                        (change)="ChangeAccionamientoMarca(); CheckPrice()"
+                        (blur)="CheckPrice()"
+                      >
+                        <option *ngFor="let pow of items2" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="col col-12 mt-1">
+                      <label>Color/Modelo:</label>
+                      <select
+                        name="Tipo1_Color"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Color"
+                        (change)="ChangeTipo1Color(); CheckPrice()"
+                      >
+                        <option *ngFor="let pow of items3" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="col col-12 mt-1" [hidden]="!verMando">
+                      <label>{{ Tipo1_RadioMando_Label }}</label>
+                      <select
+                        name="Tipo1_Mando"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Mando"
+                        (change)="ChangeRadioMando(); CheckPrice()"
+                        [disabled]="Tipo1_RadioMando_Disabled"
+                      >
+                        <option *ngFor="let pow of radiomando" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="col col-12 mt-1">
+                      <label>Posición:</label>
+                      <select
+                        name="Tipo1_Posicion"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Posicion"
+                      >
+                        <option
+                          *ngFor="let pow of PosicionMando"
+                          [value]="pow.id"
+                        >
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="col col-12 mt-1">
+                      <label>Tubo:</label>
+                      <select
+                        name="Tipo1_Tubo"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Tubo"
+                        (blur)="CheckPrice()"
+                        (change)="CheckPrice()"
+                      >
+                        <option *ngFor="let pow of tubos" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col col-3">
+                <div class="card card-block" style="min-height: 335px">
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="text-center" (click)="staticModal4.show()">
+                        <strong>Seleccionar Soportes</strong>
+                      </div>
+                    </div>
+                    <div class="col col-12">
+                      <label>Tipo:</label>
+                      <select
+                        name="Tipo1_Soporte"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Soporte"
+                        (change)="ChangeTipo1Soporte()"
+                      >
+                        <option *ngFor="let pow of soportes" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col col-12">
+                      <label>Color:</label>
+                      <select
+                        name="Tipo1_SoporteC"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_SoporteC"
+                        (change)="ChangeTipo1SoporteColor()"
+                      >
+                        <option *ngFor="let pow of soportesC" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col col-12">
+                      <div class="text-center mt-2">
+                        <strong>Seleccionar Tapas</strong>
+                      </div>
+                    </div>
+                    <div class="col col-12">
+                      <label>Tipo:</label>
+                      <select
+                        name="Tipo1_Tapa"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Tapa"
+                        (change)="ChangeTipo1Tapa()"
+                      >
+                        <option *ngFor="let pow of tapas" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col col-12">
+                      <label>Color:</label>
+                      <select
+                        name="Tipo1_TapaC"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_TapaC"
+                      >
+                        <option *ngFor="let pow of tapasC" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col col-3">
+                <div class="card card-block" style="min-height: 335px">
+                  <div class="row">
+                    <div class="col col-12">
+                      <div class="text-center">
+                        <strong>Seleccionar Contrapeso</strong>
+                      </div>
+                    </div>
+                    <div class="col col-12">
+                      <label>{{ Tipo1_Contrapeso_Label }}</label>
+                      <select
+                        name="Tipo1_Contrapeso"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Contrapeso"
+                        (change)="ChangeTipo1Contrapeso()"
+                        style="width: 100%"
+                      >
+                        <option
+                          *ngFor="let pow of contrapesos"
+                          [value]="pow.id"
+                        >
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col col-12">
+                      <label>Color:</label>
+                      <select
+                        name="Tipo1_ContrapesoC"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_ContrapesoC"
+                      >
+                        <option
+                          *ngFor="let pow of contrapesosC"
+                          [value]="pow.id"
+                        >
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col col-12">
+                      <div class="text-center mt-2">
+                        <strong>Seleccionar Estancia</strong>
+                      </div>
+                    </div>
+                    <div class="col col-12">
+                      <label>Estancia</label>
+                      <select
+                        name="Tipo1_Estancia"
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Estancia"
+                      >
+                        <option
+                          *ngFor="let pow of Tipo1_Estancias"
+                          [value]="pow.idrow"
+                        >
+                          {{ pow.descripcion }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col col-12">
+                      <label>Observaciones de la Estancia</label>
+                      <textarea
+                        class="form-control form-control-sm"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo1_Estancia_Obs"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div [hidden]="!Tipo1_Desglose">
+              <div class="row mt-2" [hidden]="Ancho == '' || Alto == ''">
+                <div class="col col-2"></div>
+                <div class="col col-8">
+                  <div
+                    class="card card-block mt-1"
+                    style="border-left: 4px solid green"
+                  >
+                    <div *ngIf="Global_Visualizar_C1_Parciales">
+                      <table
+                        class="table table-bordered table-striped table-hoover table-condensed table_responsive"
+                      >
+                        <thead>
+                          <th style="text-align: center">
+                            Cod.48 Acc.Enrollables
+                          </th>
+                          <th colspan="2" style="text-align: center">Tejido</th>
+                          <th colspan="2" style="text-align: center">
+                            Cadena Metálica
+                          </th>
+                          <th colspan="2" style="text-align: center">
+                            Contrapeso
+                          </th>
+                          <th colspan="2" style="text-align: center">Mando</th>
+                          <td style="text-align: center" class="lm-success">
+                            <b>Total</b>
+                          </td>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style="text-align: center">
+                              <button
+                                class="btn btn-default"
+                                [class.btn-success]="isCopied1"
+                                type="button"
+                              >
+                                {{ Accesorios_Enrollables }}
+                              </button>
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Tejido | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Tejido_C1 }}
+                            </td>
+                            <td style="text-align: center">
+                              {{
+                                precios.T1_Inc_CadenaMetalica | number
+                              }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Inc_CadenaMetalica_C1 }}
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Inc_Contrapeso | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Inc_Contrapeso_C1 }}
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Inc_Mando | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Inc_Mando_C1 }}&nbsp;
+                            </td>
+                            <td style="text-align: center" class="lm-success">
+                              <b>{{ precios.T1_PVP | number }}&nbsp;€</b>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div *ngIf="!Global_Visualizar_C1_Parciales">
+                      <table
+                        class="table table-bordered table-striped table-hoover table-condensed table_responsive"
+                      >
+                        <thead>
+                          <th style="text-align: center">
+                            Cod.48 Acc.Enrollables
+                          </th>
+                          <th style="text-align: center">Tejido</th>
+                          <th style="text-align: center">Cadena Metálica</th>
+                          <th style="text-align: center">Contrapeso</th>
+                          <th style="text-align: center">Mando</th>
+                          <td style="text-align: center" class="lm-success">
+                            <b>Total</b>
+                          </td>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style="text-align: center">
+                              <button
+                                class="btn btn-default"
+                                [class.btn-success]="isCopied1"
+                                type="button"
+                              >
+                                {{ Accesorios_Enrollables }}
+                              </button>
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Tejido | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{
+                                precios.T1_Inc_CadenaMetalica | number
+                              }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Inc_Contrapeso | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T1_Inc_Mando | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center" class="lm-success">
+                              <b>{{ precios.T1_PVP | number }}&nbsp;€</b>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div class="col col-2"></div>
+              </div>
+            </div>
+
+            <!-- PANEL ENROLLABLE -->
+          </div>
+
+          <div *ngIf="TipoCortina == 2">
+            <!-- PANEL JAPONES -->
+
+            <div class="card card-block mt-1">
+              <div class="row">
+                <div class="col col-2">
+                  <div class="input-group">
+                    <span class="input-group-addon beautiful">
+                      <input
+                        class="form-control"
+                        type="checkbox"
+                        name="ImpresionDigital"
+                        [(ngModel)]="Tipo2_Desglose"
+                        style="width: 20px"
+                      />
+                    </span>
+                    <span class="input-group-addon"> Ver desglose de pvp </span>
+                  </div>
+                </div>
+
+                <div class="col col-10">
+                  <div class="pull-right">
+                    <h5>
+                      {{ precios.T2_PVP | number }}&nbsp;&nbsp;€&nbsp;&nbsp;({{
+                        precios.T2_PVP_C1
+                      }})&nbsp;&nbsp;
+                      <span [hidden]="precios.T2_Fecha_Entrega == ''">
+                        <font color="black"
+                          >(F.Fab.{{ precios.T2_Fecha_Entrega }}&nbsp;&nbsp;+
+                          {{ precios.T2_Transporte }}
+                          d Trans)</font
+                        >
+                      </span>
+                    </h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card card-block" style="border: none">
+              <div class="row LM_Row">
+                <div class="col col-12">
+                  <div
+                    class="card card-default"
+                    style="padding: 5px; border: none"
+                  >
+                    <div class="row">
+                      <div class="col-12">
+                        <div class="input-group">
+                          <select
+                            name="TipoJapones"
+                            class="form-control selcls"
+                            [(ngModel)]="TipoJapones"
+                            style="width: 100%"
+                            (change)="ChangeTipoJapones()"
+                            (blur)="ChangeTipoJapones()"
+                          >
+                            <option value="1">Mecanismo + Tejido</option>
+                            <option value="2">Sólo Tejido</option>
+                            <option value="3">Solo Mecanismo</option>
+                          </select>
+                          <span>
+                            <button
+                              type="button"
+                              (click)="View(3); staticModal3.show()"
+                              class="btn btn-success"
+                              title="Anterior"
+                              data-toggle="tooltip"
+                              data-placement="top"
+                            >
+                              Croquis
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Cantidad</label>
+                        <input
+                          #pj_cantidad_1
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          [(ngModel)]="PJ_Cantidad_1"
+                          id="PJ_Cantidad_1"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="
+                            Next($event, Tipo2_Tejido); CheckPrice()
+                          "
+                          (blur)="CheckPrice()"
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Ancho Mecanismo</label>
+                        <input
+                          #pj_ancho_2
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PJ_Ancho_2"
+                          name="PJ_Ancho_2"
+                          id="PJ_Ancho_2"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          (change)="Tarifa_Japones_Mecanismo()"
+                          (blur)="Tarifa_Japones_Mecanismo()"
+                          required
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <div *ngIf="TipoJapones == 1">
+                          <label>Alto Total</label>
+                        </div>
+                        <div *ngIf="TipoJapones == 2">
+                          <label>Alto Total</label>
+                        </div>
+                        <div *ngIf="TipoJapones == 3">
+                          <label>Altura Mando(cuerda)</label>
+                        </div>
+                        <input
+                          #pj_alto_1
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PJ_Alto_1"
+                          id="PJ_Alto_1"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="
+                            Next($event, pj_cantidad_1); CheckPrice()
+                          "
+                          (change)="Tarifa_Japones_Mecanismo(); CheckPrice()"
+                          (blur)="Tarifa_Japones_Mecanismo(); CheckPrice()"
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>{{ Tipo2_NumeroVias_Label }}</label>
+                        <div class="input-group">
+                          <select
+                            name="PJ_NumeroVias_2"
+                            [(ngModel)]="PJ_NumeroVias_2"
+                            class="form-control"
+                            (change)="Tarifa_Japones_Mecanismo()"
+                            (blur)="Tarifa_Japones_Mecanismo()"
+                          >
+                            <option value="-1">Elegir</option>
+                            <option value="2">Riel 2 Vias</option>
+                            <option value="3">Riel 3 Vias</option>
+                            <option value="4">Riel 4 Vias</option>
+                            <option value="5">Riel 5 Vias</option>
+                          </select>
+                          <span class="input-group-btn">
+                            <button
+                              type="button"
+                              (click)="View(1); staticModal3.show()"
+                              class="btn btn-success"
+                              title="Anterior"
+                              data-toggle="tooltip"
+                              data-placement="top"
+                            >
+                              <i class="fa fa-angle-left"></i>
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Num Portatelas</label>
+                        <input
+                          class="form-control"
+                          type="number"
+                          min="2"
+                          max="10"
+                          [(ngModel)]="PJ_NumeroPortatelas"
+                          id="PJ_NumeroPortatelas"
+                          [appMaxdigits]="3"
+                          (blur)="ChangeNumeroPortatelas()"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Ancho Portatela</label>
+                        <input
+                          #pj_ancho_1
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PJ_Ancho_1"
+                          id="PJ_Ancho_1"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="Next($event, pj_alto_1); CheckPrice()"
+                          (blur)="CheckPrice()"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col col-3 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Color Mecanismo</label>
+                        <select
+                          name="PJ_ColorRiel_2"
+                          [(ngModel)]="PJ_ColorRiel_2"
+                          class="form-control"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="BLANCO">Blanco</option>
+                          <option value="ALUMINIO">Aluminio</option>
+                        </select>
+                      </div>
+                      <div class="col col-3 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Posición Mando</label>
+                        <select
+                          name="PJ_PosicionMando_2"
+                          [(ngModel)]="PJ_PosicionMando_2"
+                          class="form-control"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="IZ">Izquierda</option>
+                          <option value="DE">Derecha</option>
+                          <option value="SM">Sin Mando</option>
+                        </select>
+                      </div>
+                      <div class="col col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Recogida</label>
+                        <select
+                          name="PJ_TipoRecogida_2"
+                          [(ngModel)]="PJ_TipoRecogida_2"
+                          class="form-control"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="IZ">Izquierda</option>
+                          <option value="DE">Derecha</option>
+                          <option value="RC">Recogida Central</option>
+                        </select>
+                      </div>
+                      <div class="col col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>{{ Tipo2_TipoSoporte_Label }}</label>
+                        <select
+                          name="PJ_TipoSoporte_2"
+                          [(ngModel)]="PJ_TipoSoporte_2"
+                          class="form-control"
+                          (change)="Tarifa_Japones_Soporte()"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="TEC">Techo</option>
+                          <option value="P06">Pared 6 cm</option>
+                          <option value="P12">Pared 12 cm</option>
+                          <option value="P15">Pared 15 cm</option>
+                        </select>
+                      </div>
+                      <div class="col col-2 pt-2" [hidden]="TipoJapones == 2">
+                        <label>Contrapeso</label>
+                        <select
+                          name="PJ_Contrapeso_1"
+                          [(ngModel)]="PJ_Contrapeso_1"
+                          class="form-control"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="1">SI</option>
+                          <option value="0">NO</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col col-2 pt-2" [hidden]="TipoJapones == 3">
+                        <label>Num Lamas</label>
+                        <input
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          [(ngModel)]="PJ_NumeroLamas"
+                          id="PJ_NumeroLamas"
+                          [appMaxdigits]="3"
+                          [disabled]="!(TipoJapones == 2)"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (change)="CheckPrice()"
+                        />
+                      </div>
+                      <div class="col col-2 pt-2" [hidden]="TipoJapones == 3">
+                        <label>Ancho Lama</label>
+                        <input
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PJ_AnchoLama"
+                          [disabled]="!(TipoJapones == 2)"
+                          id="PJ_AnchoLama"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                        />
+                      </div>
+                      <div class="col col-2 pt-2" [hidden]="TipoJapones == 3">
+                        <label>Alto Lama Term.</label>
+                        <input
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PJ_AltoLamaTerminada"
+                          id="PJ_AltoLamaTerminada"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                        />
+                      </div>
+
+                      <div class="col col-3 pt-2">
+                        <label>Estancia</label>
+                        <select
+                          name="Tipo2_Estancia"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo2_Estancia"
+                        >
+                          <option
+                            *ngFor="let pow of Tipo1_Estancias"
+                            [value]="pow.idrow"
+                          >
+                            {{ pow.descripcion }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col col-3 pt-2">
+                        <label>Observaciones de la Estancia:</label>
+                        <textarea
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo2_Estancia_Obs"
+                        ></textarea>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col col-4 pt-2" [hidden]="TipoJapones == 3">
+                        <div class="input-group">
+                          <span class="input-group-addon beautiful"
+                            >Quiero Combinar Colores</span
+                          >
+                          <span class="input-group-addon beautiful">
+                            <input
+                              class="form-control"
+                              type="checkbox"
+                              name="CombinarColores"
+                              [(ngModel)]="PJ_CombinarColores"
+                              style="width: 20px"
+                              (click)="CombinarColores()"
+                            />
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        class="col col-8 pt-2"
+                        [hidden]="TipoJapones == 3"
+                      ></div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col col-4 pt-2" [hidden]="TipoJapones == 3">
+                        <label>Impresión Digital</label>
+                        <div class="input-group">
+                          <span class="input-group-addon beautiful">
+                            <input
+                              class="form-control"
+                              type="checkbox"
+                              name="ImpresionDigital"
+                              [(ngModel)]="PJ_ID_Quiero"
+                              style="width: 20px"
+                              (change)="selImpresionDigital_Tipo2()"
+                            />
+                          </span>
+                          <span>
+                            <input
+                              class="form-control"
+                              type="text"
+                              min="0"
+                              max="25"
+                              [(ngModel)]="PJ_NumeroPanos"
+                              id="PJ_NumeroPanos"
+                              style="width: 50px"
+                              [ngModelOptions]="{ standalone: true }"
+                              placeholder="Numero"
+                              (change)="selImpresionDigital_Tipo2()"
+                            />
+                          </span>
+                          <input
+                            #impresion
+                            class="form-control"
+                            type="text"
+                            min="0"
+                            max="600"
+                            [(ngModel)]="PJ_ID_Imagen"
+                            id="PJ_ImpresionDigital"
+                            [ngModelOptions]="{ standalone: true }"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="col col-5 pt-2" [hidden]="TipoJapones == 3">
+                        <label>Tejido</label>
+                        <div class="input-group">
+                          <select
+                            name="Tipo2_Tejido"
+                            class="form-control"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="Tipo2_Tejido"
+                            (change)="ChangeTipo2Tejido()"
+                            (blur)="ChangeTipo2Tejido()"
+                          >
+                            <option
+                              *ngFor="let pow of pj_tejidos"
+                              [value]="pow.id"
+                            >
+                              {{ pow.text }}
+                            </option>
+                          </select>
+                          <span class="input-group-btn">
+                            <button
+                              class="btn btn-default"
+                              [class.btn-success]="isCopied1"
+                              type="button"
+                              ngxClipboard
+                            >
+                              {{ CodigoProv2 }}
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="col col-3 pt-2" [hidden]="TipoJapones == 3">
+                        <label>Color</label>
+                        <select
+                          name="Tipo2_TejidoColor"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo2_TejidoColor"
+                        >
+                          <option
+                            *ngFor="let pow of pj_tejidosC"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="row" *ngIf="PJ_CombinarColores == true">
+                      <div class="col col-3" *ngIf="PJ_NumeroLamas >= 2">
+                        <label>Color Lama 2</label>
+                        <select
+                          name="Tipo2_TejidoColor_2"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo2_TejidoColor_2"
+                        >
+                          <option
+                            *ngFor="let pow of pj_tejidosC_2"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col col-3" *ngIf="PJ_NumeroLamas >= 3">
+                        <label>Color Lama 3</label>
+                        <select
+                          name="Tipo2_TejidoColor_3"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo2_TejidoColor_3"
+                        >
+                          <option
+                            *ngFor="let pow of pj_tejidosC_3"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col col-3" *ngIf="PJ_NumeroLamas >= 4">
+                        <label>Color Lama 4</label>
+                        <select
+                          name="Tipo2_TejidoColor_4"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo2_TejidoColor_4"
+                        >
+                          <option
+                            *ngFor="let pow of pj_tejidosC_4"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col col-3" *ngIf="PJ_NumeroLamas >= 5">
+                        <label>Color Lama 5</label>
+                        <select
+                          name="Tipo2_TejidoColor_5"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo2_TejidoColor_5"
+                        >
+                          <option
+                            *ngFor="let pow of pj_tejidosC_5"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mt-2" [hidden]="!Tipo2_Desglose">
+                <div class="col col-2"></div>
+                <div class="col col-8">
+                  <div
+                    class="card card-block mt-1"
+                    style="border-left: 4px solid green"
+                  >
+                    <div *ngIf="Global_Visualizar_C1_Parciales">
+                      <table
+                        class="table table-bordered table-striped table-hoover table-condensed table_responsive"
+                      >
+                        <thead>
+                          <th style="text-align: center">Cod.48 Mecanismo</th>
+                          <th colspan="2" style="text-align: center">Tejido</th>
+                          <th colspan="2" style="text-align: center">
+                            Número de Vias
+                          </th>
+                          <th colspan="2" style="text-align: center">
+                            Soportes
+                          </th>
+                          <th colspan="2" style="text-align: center">
+                            Impresión
+                          </th>
+                          <td style="text-align: center" class="lm-success">
+                            <b>Total</b>
+                          </td>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style="text-align: center">
+                              <button
+                                class="btn btn-default"
+                                [class.btn-success]="isCopied1"
+                                type="button"
+                              >
+                                {{ Accesorios_Japones }}
+                              </button>
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_Tejido | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_Tejido_C1 }}
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_NumeroVias | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_NumeroVias_C1 }}
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_SoporteTotal }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_TipoSoporte_C1 }}
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_Inc_Impresion }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_Inc_Impresion_C1 }}
+                            </td>
+                            <td style="text-align: center" class="lm-success">
+                              <b>{{ precios.T2_PVP }}&nbsp;€</b>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div *ngIf="!Global_Visualizar_C1_Parciales">
+                      <table
+                        class="table table-bordered table-striped table-hoover table-condensed table_responsive"
+                      >
+                        <thead>
+                          <th style="text-align: center">Cod.48 Mecanismo</th>
+                          <th style="text-align: center">Tejido</th>
+                          <th style="text-align: center">Número de Vias</th>
+                          <th style="text-align: center">Soportes</th>
+                          <th style="text-align: center">Impresión</th>
+                          <td style="text-align: center" class="lm-success">
+                            <b>Total</b>
+                          </td>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style="text-align: center">
+                              <button
+                                class="btn btn-default"
+                                [class.btn-success]="isCopied1"
+                                type="button"
+                              >
+                                {{ Accesorios_Japones }}
+                              </button>
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_Tejido }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_NumeroVias | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_SoporteTotal | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center">
+                              {{ precios.T2_Inc_Impresion | number }}&nbsp;€
+                            </td>
+                            <td style="text-align: center" class="lm-success">
+                              <b>{{ precios.T2_PVP | number }}&nbsp;€</b>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div class="col col-2"></div>
+              </div>
+            </div>
+
+            <!-- PANEL JAPONES -->
+          </div>
+
+          <div *ngIf="TipoCortina == 3">
+            <!-- PANEL VERTICAL -->
+            <div class="card card-block mt-1">
+              <div class="row">
+                <div class="col col-2">
+                  <div class="input-group">
+                    <span class="input-group-addon beautiful">
+                      <input
+                        class="form-control"
+                        type="checkbox"
+                        name="DesgloseT3"
+                        [(ngModel)]="Tipo3_Desglose"
+                        style="width: 20px"
+                      />
+                    </span>
+                    <span class="input-group-addon"> Ver desglose de pvp </span>
+                  </div>
+                </div>
+                <div class="col col-10">
+                  <div class="pull-right">
+                    <h5>
+                      {{ precios.T3_PVP | number }}&nbsp;€&nbsp;({{
+                        precios.T3_PVP_C1
+                      }})
+                      <span [hidden]="precios.T3_Fecha_Entrega == ''">
+                        <font color="black">
+                          &nbsp;&nbsp;(F.Fab.{{
+                            precios.T3_Fecha_Entrega
+                          }}&nbsp;&nbsp;+
+                          {{ precios.T3_Transporte }}
+                          d Trans)</font
+                        >
+                      </span>
+                    </h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card card-block">
+              <div class="row LM_Row">
+                <div class="col col-6">
+                  <div class="card card-default" style="padding: 5px">
+                    <div class="row">
+                      <div class="col-12">
+                        <div class="input-group">
+                          <span class="input-group-addon beautiful">
+                            <input
+                              type="checkbox"
+                              name="pv_sel_1"
+                              checked
+                              [(ngModel)]="PV_SEL_1"
+                              (change)="SelectVertical(1)"
+                            />
+                          </span>
+                          <input
+                            type="text"
+                            class="form-control"
+                            value="VERTICAL"
+                            readonly
+                          />
+                          <span class="input-group-addon beautiful">
+                            <select
+                              name="TipoVertical"
+                              class="form-control"
+                              [(ngModel)]="TipoVertical"
+                              style="width: 100%"
+                            >
+                              <option value="1">Tejido más Riel</option>
+                              <option value="2">Sólo Tejido</option>
+                              <option value="3">Solo Riel</option>
+                            </select>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="col-3 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 2">Ancho</label>
+                        <input
+                          #pv_ancho_1
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PV_Ancho_1"
+                          id="PV_Ancho_1"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="Next($event, pv_alto_1); CheckPrice()"
+                          [hidden]="TipoVertical == 2"
+                          (blur)="CheckPrice()"
+                        />
+                      </div>
+                      <div class="col-3 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 3">Alto</label>
+                        <input
+                          #pv_alto_1
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PV_Alto_1"
+                          id="PV_Alto_1"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="
+                            Next($event, pv_cantidad_1); CheckPrice()
+                          "
+                          (blur)="CheckPrice()"
+                          [hidden]="TipoVertical == 3"
+                        />
+                      </div>
+                      <div class="col-3 pt-2" [hidden]="!PV_SEL_1">
+                        <label>Cantidad</label>
+                        <input
+                          #pv_cantidad_1
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          [(ngModel)]="PV_Cantidad_1"
+                          id="PV_Cantidad_1"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="
+                            Next($event, PV_AnchoLama_1); CheckPrice()
+                          "
+                          (blur)="CheckPrice()"
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="!PV_SEL_1">
+                        <label>&nbsp;</label>
+                        <button
+                          type="button"
+                          (click)="View(4); staticModal3.show()"
+                          class="btn btn-success"
+                          title="Anterior"
+                          data-toggle="tooltip"
+                          data-placement="top"
+                        >
+                          Ver Croquis
+                        </button>
+                      </div>
+                      <div class="col-1 pt-2"></div>
+
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label>Ancho Lama</label>
+                        <select
+                          name="PV_AnchoLama_1"
+                          class="form-control"
+                          [(ngModel)]="PV_AnchoLama_1"
+                          (change)="CheckPrice()"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="089">89 mm</option>
+                          <option value="127">127 mm</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 2"
+                          >Pos.Mecanismo</label
+                        >
+                        <select
+                          name="PV_PosicionMecanismo_1"
+                          class="form-control"
+                          [(ngModel)]="PV_PosicionMecanismo_1"
+                          [hidden]="TipoVertical == 2"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="IZ">Izquierda</option>
+                          <option value="DE">Derecha</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 2">Color Riel</label>
+                        <select
+                          name="PV_ColorRiel_1"
+                          class="form-control"
+                          [(ngModel)]="PV_ColorRiel_1"
+                          [hidden]="TipoVertical == 2"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="BLA">Blanco</option>
+                          <option value="NEG">Negro</option>
+                          <option value="GRI">Gris</option>
+                        </select>
+                      </div>
+
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 2">{{
+                          Tipo4_Accionamiento_Label
+                        }}</label>
+                        <select
+                          name="PV_Accionamiento_1"
+                          class="form-control"
+                          [(ngModel)]="PV_Accionamiento_1"
+                          (change)="Change_Compac_Accionamiento()"
+                          [hidden]="TipoVertical == 2"
+                        >
+                          <option value="-1" precio="0">Elegir</option>
+                          <option value="COR" precio="0">Cordón</option>
+                          <option value="VAR" precio="0">Varilla</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 2">{{
+                          Tipo3_TipoSoporte_Label
+                        }}</label>
+                        <select
+                          name="PV_TipoSoporte_1"
+                          class="form-control"
+                          [(ngModel)]="PV_TipoSoporte_1"
+                          [hidden]="TipoVertical == 2"
+                          (change)="Recalcular_Tipo3()"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="TEC">Techo</option>
+                          <option value="P08">Pared 8 cm</option>
+                          <option value="P12">Pared 12 cm</option>
+                          <option value="P15">Pared 15 cm</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 2"
+                          >Tipo de Recogida</label
+                        >
+                        <div class="input-group">
+                          <select
+                            name="PV_TipoRecogida_1"
+                            class="form-control"
+                            [(ngModel)]="PV_TipoRecogida_1"
+                            [hidden]="TipoVertical == 2"
+                          >
+                            <option value="-1">Elegir</option>
+                            <option value="IZ">Izquierda</option>
+                            <option value="DE">Derecha</option>
+                            <option value="RC">Recogida Central</option>
+                            <option value="AL">Recogida Ambos Lados</option>
+                          </select>
+                          <span
+                            class="input-group-btn"
+                            [hidden]="TipoVertical == 2"
+                          >
+                            <button
+                              type="button"
+                              (click)="View(2); staticModal3.show()"
+                              class="btn btn-success"
+                              title="Anterior"
+                              data-toggle="tooltip"
+                              data-placement="top"
+                            >
+                              <i class="fa fa-angle-left"></i>
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 3">Tejido</label>
+                        <div class="input-group">
+                          <select
+                            name="Tipo3_Tejido"
+                            class="form-control"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="Tipo3_Tejido"
+                            (change)="ChangeTipo3Tejido(); CheckPrice()"
+                            [hidden]="TipoVertical == 3"
+                          >
+                            <option
+                              *ngFor="let pow of pv_tejidos_1"
+                              [value]="pow.id"
+                            >
+                              {{ pow.text }}
+                            </option>
+                          </select>
+                          <span class="input-group-btn">
+                            <button
+                              class="btn btn-default"
+                              [class.btn-success]="isCopied1"
+                              type="button"
+                            >
+                              {{ CodigoProv31 }}
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 3">Color 1</label>
+                        <select
+                          name="Tipo3_TejidoColor1"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo3_TejidoColor1"
+                          (change)="Vertical_TejidosCombinados(); CheckPrice()"
+                          [hidden]="TipoVertical == 3"
+                        >
+                          <option
+                            *ngFor="let pow of pv_tejidosC_1"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label [hidden]="TipoVertical == 3">Color 2</label>
+                        <select
+                          name="Tipo3_TejidoColor2"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo3_TejidoColor2"
+                          (change)="Vertical_TejidosCombinados(); CheckPrice()"
+                          [hidden]="TipoVertical == 3"
+                        >
+                          <option
+                            *ngFor="let pow of pv_tejidosC_2"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="col-12 pt-2" [hidden]="!PV_SEL_1">
+                        {{ Tipo3_Incremento_Tejidos }}
+                      </div>
+                      <div class="col col-4 pt-2" [hidden]="!PV_SEL_1">
+                        <label>Estancia</label>
+                        <select
+                          name="Tipo3_Estancia"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo3_Estancia"
+                        >
+                          <option
+                            *ngFor="let pow of Tipo1_Estancias"
+                            [value]="pow.idrow"
+                          >
+                            {{ pow.descripcion }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col col-8 pt-2" [hidden]="!PV_SEL_1">
+                        <label>Observaciones Estancia</label>
+                        <textarea
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo3_Estancia_Obs"
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col col-6">
+                  <div class="card card-default mx-auto" style="padding: 5px">
+                    <div class="row">
+                      <div class="col-12">
+                        <div class="input-group">
+                          <span class="input-group-addon beautiful">
+                            <input
+                              type="checkbox"
+                              name="pj_sel_2"
+                              [(ngModel)]="PV_SEL_2"
+                              (change)="SelectVertical(2)"
+                            />
+                          </span>
+                          <input
+                            type="text"
+                            class="form-control"
+                            value="VERTICAL INCLINADA"
+                            readonly
+                          />
+                        </div>
+                      </div>
+
+                      <div class="col-2 pt-2"></div>
+                      <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Ancho</label>
+                        <input
+                          #pv_ancho_2
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PV_Ancho_2"
+                          id="PV_Ancho_2"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (change)="Vertical_Angle(); CheckPrice()"
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Cantidad</label>
+                        <input
+                          #pv_cantidad_2
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          [(ngModel)]="PV_Cantidad_2"
+                          id="PV_Cantidad_2"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (blur)="CheckPrice()"
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Altura min</label>
+                        <input
+                          #pv_alturamin_2
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PV_AlturaMin_2"
+                          id="PV_AlturaMin_2"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="Next($event, pv_alturamax_2)"
+                          (change)="Vertical_Angle()"
+                        />
+                      </div>
+                      <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Altura max</label>
+                        <input
+                          #pv_alturamax_2
+                          class="form-control"
+                          type="number"
+                          min="0"
+                          max="600"
+                          step=".5"
+                          [(ngModel)]="PV_AlturaMax_2"
+                          id="PV_AlturaMax_2"
+                          [appMaxdigits]="3"
+                          [ngModelOptions]="{ standalone: true }"
+                          required
+                          (keyup.enter)="Next($event, PV_AnchoLama_2)"
+                          (change)="Vertical_Angle()"
+                        />
+                      </div>
+                      <div class="col-2 pt-2"></div>
+
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Ancho Lama</label>
+                        <select
+                          name="PV_AnchoLama_2"
+                          class="form-control"
+                          [(ngModel)]="PV_AnchoLama_2"
+                          (change)="CheckPrice()"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="089">89 mm</option>
+                          <option value="127">127 mm</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Pos.Mecanismo</label>
+                        <select
+                          name="PV_PosicionMecanismo_2"
+                          class="form-control"
+                          [(ngModel)]="PV_PosicionMecanismo_2"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="IZ">Izquierda</option>
+                          <option value="DE">Derecha</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Color Riel</label>
+                        <select
+                          name="PV_ColorRiel_2"
+                          class="form-control"
+                          [(ngModel)]="PV_ColorRiel_2"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="BLA">Blanco</option>
+                          <option value="NEG">Negro</option>
+                          <option value="GRI">Gris</option>
+                        </select>
+                      </div>
+
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>{{ Tipo4_Accionamiento_Label_2 }}</label>
+                        <select
+                          name="PV_Accionamiento_2"
+                          class="form-control"
+                          [(ngModel)]="PV_Accionamiento_2"
+                          (change)="Change_Compac_Accionamiento_2()"
+                        >
+                          <option value="COR">Cordón</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>{{ Tipo32_TipoSoporte_Label }}</label>
+                        <select
+                          name="PV_TipoSoporte_2"
+                          class="form-control"
+                          [(ngModel)]="PV_TipoSoporte_2"
+                          (change)="
+                            Tarifa_VerticalInclinada_Soporte(); CheckPrice()
+                          "
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="TEC">Techo</option>
+                          <option value="P08">Pared 8 cm</option>
+                          <option value="P12">Pared 12 cm</option>
+                          <option value="P15">Pared 15 cm</option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Tipo de Recogida</label>
+                        <select
+                          name="PV_TipoRecogida_2"
+                          class="form-control"
+                          [(ngModel)]="PV_TipoRecogida_2"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="IZ">Izquierda</option>
+                          <option value="DE">Derecha</option>
+                        </select>
+                      </div>
+
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Tejido</label>
+                        <div class="input-group">
+                          <select
+                            name="Tipo3_Tejido_2"
+                            class="form-control"
+                            [ngModelOptions]="{ standalone: true }"
+                            [(ngModel)]="Tipo3_Tejido_2"
+                            (change)="ChangeTipo3Tejido_2(); CheckPrice()"
+                          >
+                            <option
+                              *ngFor="let pow of pv_tejidos_1"
+                              [value]="pow.id"
+                            >
+                              {{ pow.text }}
+                            </option>
+                          </select>
+                          <span class="input-group-btn">
+                            <button
+                              class="btn btn-default"
+                              [class.btn-success]="isCopied1"
+                              type="button"
+                            >
+                              {{ CodigoProv32 }}
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Color 1</label>
+                        <select
+                          name="Tipo3_TejidoColor1_2"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo3_TejidoColor1_2"
+                          (change)="Vertical_TejidosCombinados(); CheckPrice()"
+                        >
+                          <option
+                            *ngFor="let pow of pv_tejidosC_2"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Color 2:</label>
+                        <select
+                          name="Tipo3_TejidoColor2_2"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo3_TejidoColor2_2"
+                          (change)="Vertical_TejidosCombinados(); CheckPrice()"
+                        >
+                          <option
+                            *ngFor="let pow of pv_tejidosC_2"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="col-12 pt-2" [hidden]="!PV_SEL_2">
+                        {{ Tipo32_Incremento_Tejidos }}
+                      </div>
+                      <div class="col col-4 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Estancia:</label>
+                        <select
+                          name="Tipo31_Estancia"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo31_Estancia"
+                        >
+                          <option
+                            *ngFor="let pow of Tipo1_Estancias"
+                            [value]="pow.idrow"
+                          >
+                            {{ pow.descripcion }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col col-8 pt-2" [hidden]="!PV_SEL_2">
+                        <label>Observaciones de la Estancia:</label>
+                        <textarea
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo31_Estancia_Obs"
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-2" [hidden]="!Tipo3_Desglose">
+              <div class="col col-2"></div>
+              <div class="col col-8">
+                <div
+                  class="card card-block mt-1"
+                  style="border-left: 4px solid green"
+                >
+                  <div *ngIf="Global_Visualizar_C1_Parciales">
+                    <table
+                      class="table table-bordered table-striped table-hoover table-condensed table_responsive"
+                    >
+                      <thead>
+                        <th style="text-align: center">Cod.48 Mecanismo</th>
+                        <th colspan="2" style="text-align: center">Tejido</th>
+                        <th colspan="2" style="text-align: center">
+                          Tejido Combinado
+                        </th>
+                        <th colspan="2" style="text-align: center">Soporte</th>
+                        <td style="text-align: center" class="lm-success">
+                          <b>Total</b>
+                        </td>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style="text-align: center">
+                            <button
+                              class="btn btn-default"
+                              [class.btn-success]="isCopied1"
+                              type="button"
+                            >
+                              {{ Accesorios_Verticales }}
+                            </button>
+                          </td>
+                          <td style="text-align: center">
+                            {{
+                              precios.T3_Cantidad * precios.T3_Tejido | number
+                            }}&nbsp;€
+                          </td>
+                          <td style="text-align: center">
+                            {{ precios.T3_Tejido_C1 }}
+                          </td>
+                          <td style="text-align: center">
+                            {{
+                              precios.T3_Cantidad * precios.T3_TejidosCombinados
+                                | number
+                            }}&nbsp;€
+                          </td>
+                          <td style="text-align: center">
+                            {{ precios.T3_TejidosCombinados_C1 }}
+                          </td>
+                          <td style="text-align: center">
+                            {{
+                              precios.T3_Cantidad *
+                                this.precios.T3_NumSoportes *
+                                precios.T3_TipoSoporte | number
+                            }}&nbsp;€
+                          </td>
+                          <td style="text-align: center">
+                            {{ precios.T3_TipoSoporte_C1 }}
+                          </td>
+                          <td style="text-align: center" class="lm-success">
+                            <b>{{ precios.T3_PVP | number }}&nbsp;€</b>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div *ngIf="!Global_Visualizar_C1_Parciales">
+                    <table
+                      class="table table-bordered table-striped table-hoover table-condensed table_responsive"
+                    >
+                      <thead>
+                        <th style="text-align: center">Cod.48 Mecanismo</th>
+                        <th style="text-align: center">Tejido</th>
+                        <th style="text-align: center">Tejido Combinado</th>
+                        <th style="text-align: center">Soporte</th>
+                        <td style="text-align: center" class="lm-success">
+                          <b>Total</b>
+                        </td>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style="text-align: center">
+                            <button
+                              class="btn btn-default"
+                              [class.btn-success]="isCopied1"
+                              type="button"
+                            >
+                              {{ Accesorios_Verticales }}
+                            </button>
+                          </td>
+                          <td style="text-align: center">
+                            {{
+                              precios.T3_Cantidad * precios.T3_Tejido | number
+                            }}&nbsp;€
+                          </td>
+                          <td style="text-align: center">
+                            {{
+                              precios.T3_Cantidad * precios.T3_TejidosCombinados
+                                | number
+                            }}&nbsp;€
+                          </td>
+                          <td style="text-align: center">
+                            {{
+                              precios.T3_Cantidad *
+                                precios.T3_TipoSoporte *
+                                this.precios.T3_NumSoportes | number
+                            }}&nbsp;€
+                          </td>
+                          <td style="text-align: center" class="lm-success">
+                            <b>{{ precios.T3_PVP | number }}&nbsp;€</b>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="col col-2"></div>
+            </div>
+
+            <!-- PANEL VERTICAL -->
+          </div>
+
+          <div *ngIf="TipoCortina == 4">
+            <div class="card card-block mt-1">
+              <div class="row">
+                <div class="col col-12">
+                  <div class="pull-right">
+                    <h5>
+                      {{ precios.T4_PVP | number }}&nbsp;€&nbsp;({{
+                        precios.T4_Tejido_C1
+                      }})&nbsp;&nbsp;
+                      <span [hidden]="precios.T4_Fecha_Entrega == ''">
+                        <font color="black"
+                          >(F.Fab.{{ precios.T4_Fecha_Entrega }}&nbsp;&nbsp;+
+                          {{ precios.T4_Transporte }}
+                          d Trans)</font
+                        >
+                      </span>
+                    </h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card card-block mt-1">
+              <div class="row LM_Row">
+                <div class="col col-2">&nbsp;</div>
+                <div class="col col-8">
+                  <div class="row">
+                    <div class="col col-2">
+                      <label>Junquillo</label>
+                      <select
+                        name="TipoJunquillo"
+                        class="form-control"
+                        [(ngModel)]="compac.PC_TipoJunquillo"
+                      >
+                        <option value="-1">Elegir</option>
+                        <option value="JC">CUADRADO</option>
+                        <option value="JR">REDONDEADO</option>
+                      </select>
+                    </div>
+                    <div class="col col-2">
+                      <label>Ancho Interior</label>
+                      <input
+                        #ancho4
+                        class="form-control"
+                        type="number"
+                        min="0"
+                        max="600"
+                        step=".5"
+                        [(ngModel)]="Ancho"
+                        id="Compac_ancho"
+                        [appMaxdigits]="3"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                        (blur)="Ancho_Change(ancho4); CheckPrice()"
+                        (keyup.enter)="Next($event, alto4)"
+                      />
+                    </div>
+                    <div
+                      class="col col-2"
+                      [hidden]="
+                        compac.PC_TipoJunquillo == '-1' ||
+                        compac.PC_TipoJunquillo == 'JC'
+                      "
+                    >
+                      <label>Ancho Exterior</label>
+                      <input
+                        #kanchoB
+                        class="form-control"
+                        type="number"
+                        min="0"
+                        max="600"
+                        step=".5"
+                        [(ngModel)]="compac.PC_AnchoB"
+                        id="PC_Ancho"
+                        [appMaxdigits]="3"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                        (blur)="Ancho_Change(ancho4); CheckPrice()"
+                        (keyup.enter)="Next($event, alto4)"
+                      />
+                    </div>
+                    <div class="col col-2">
+                      <label>Alto</label>
+                      <input
+                        #alto4
+                        class="form-control"
+                        type="number"
+                        min="0"
+                        max="600"
+                        step=".5"
+                        [(ngModel)]="Alto"
+                        id="Compac_Alto"
+                        [appMaxdigits]="3"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                        (keyup.enter)="
+                          Ancho_Change(ancho4);
+                          CheckPrice();
+                          Next($event, cantidad4)
+                        "
+                      />
+                    </div>
+                    <div class="col col-2">
+                      <label>Cantidad</label>
+                      <input
+                        #cantidad4
+                        class="form-control"
+                        type="number"
+                        min="0"
+                        max="600"
+                        [(ngModel)]="Cantidad"
+                        id="Compac_Cantidad"
+                        [appMaxdigits]="3"
+                        [ngModelOptions]="{ standalone: true }"
+                        required
+                        (keyup.enter)="
+                          Ancho_Change(ancho4);
+                          CheckPrice();
+                          Next($event, Compac_Acc_Tipo)
+                        "
+                        (blur)="CheckPrice()"
+                      />
+                    </div>
+                    <div class="col col-2">
+                      <label>Color Perfilería</label>
+                      <select
+                        name="ColorPerfileria"
+                        class="form-control"
+                        [(ngModel)]="compac.PC_ColorPerfileria"
+                        (change)="Change_ColorPerfileria()"
+                      >
+                        <option value="-1">Elegir</option>
+                        <option value="BLA" coef="1">BLANCO</option>
+                        <option value="GRI" coef="1">GRIS</option>
+                        <option value="NEG" coef="1">NEGRO</option>
+                        <option value="NOGOSC" coef="1.5">NOGAL OSCURO</option>
+                        <option value="ROBCLA" coef="1.5">ROBLE CLARO</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="col col-2">&nbsp;</div>
+              </div>
+            </div>
+            <div class="card card-block mt-1">
+              <div class="row LM_Row">
+                <div class="col-2">
+                  <div class="LM_Card text-center lm-success">
+                    Accionamiento
+                  </div>
+                </div>
+
+                <div class="col col-10">
+                  <div class="row">
+                    <div style="padding: 0.3em; width: 15%">
+                      <label>Tipo:</label>
+                      <select
+                        #Compac_Acc_Tipo
+                        name="Compac_Acc_Tipo"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Acc_Tipo"
+                        [disabled]="true"
+                      >
+                        <option value="COM">CADENA</option>
+                      </select>
+                    </div>
+                    <div style="padding: 0.3em; width: 15%">
+                      <label>Marca:</label>
+                      <select
+                        name="Compac_Acc_Marca"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Acc_Marca"
+                        [disabled]="true"
+                      >
+                        <option value="COM">COMPAC</option>
+                      </select>
+                    </div>
+                    <div style="padding: 0.3em; width: 20%">
+                      <label>Color:</label>
+                      <select
+                        name="Compac_Acc_Color"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Acc_Color"
+                        (change)="ChangeColorCompac()"
+                      >
+                        <option value="-1">Elegir</option>
+                        <option value="BLA">BLANCO</option>
+                        <option value="NEG">NEGRO</option>
+                        <option value="GRI">GRIS</option>
+                        <option value="BEI">BEIG</option>
+                      </select>
+                    </div>
+                    <div style="padding: 0.3em; width: 15%">
+                      <label>Posición:</label>
+                      <select
+                        name="Compac_Acc_Posicion"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Acc_Posicion"
+                      >
+                        <option value="-1">Elegir</option>
+                        <option value="DER">DERECHA</option>
+                        <option value="IZQ">IZQUIERDA</option>
+                      </select>
+                    </div>
+                    <div style="padding: 0.3em; width: 15%">
+                      <label>Tubo:</label>
+                      <select
+                        name="Compac_Acc_Tubo"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Acc_Tubo"
+                        [disabled]="true"
+                      >
+                        <option value="T18">TUBO 18</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="row" [hidden]="!esCadena">
+                    <div style="padding: 0.3em; width: 20%">
+                      <label>Tipo de Cadena:</label>
+                      <div class="input-group">
+                        <span class="input-group-addon beautiful">
+                          <input
+                            type="radio"
+                            name="cadena"
+                            (click)="Cadena(0)"
+                            checked
+                          />
+                        </span>
+                        <input
+                          type="text"
+                          class="form-control"
+                          value="Cadena"
+                          readonly
+                        />
+                      </div>
+                      <div class="input-group">
+                        <span class="input-group-addon beautiful">
+                          <input
+                            type="radio"
+                            name="cadena"
+                            (click)="Cadena(1)"
+                          />
+                        </span>
+                        <input
+                          type="text"
+                          class="form-control"
+                          value="Cadena Contínua"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                    <div style="padding: 0.3em; width: 20%">
+                      <label>Altura:</label>
+                      <div [hidden]="esCadenaExt == 1">
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="Compac_AlturaCadena"
+                          step=".5"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="AlturaCadena"
+                          [appMaxdigits]="3"
+                        />
+                      </div>
+                      <div [hidden]="esCadenaExt == 0">
+                        <select
+                          name="Compac_Acc_Cad_Altura"
+                          class="form-control"
+                          [(ngModel)]="compac.Compac_Acc_Cad_Altura"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="100">100 cms</option>
+                          <option value="125">125 cms</option>
+                          <option value="150">150 cms</option>
+                          <option value="175">175 cms</option>
+                          <option value="200">200 cms</option>
+                          <option value="225">225 cms</option>
+                          <option value="250">250 cms</option>
+                          <option value="300">300 cms</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style="padding: 0.3em; width: 20%">
+                      <label>Color:</label>
+                      <div>
+                        <select
+                          name="Compac_Acc_Cad_Color"
+                          class="form-control"
+                          [(ngModel)]="compac.Compac_Acc_Cad_Color"
+                        >
+                          <option value="-1">Elegir</option>
+                          <option value="BLA">BLANCO</option>
+                          <option value="NEG">NEGRO</option>
+                          <option value="GRI">GRIS</option>
+                          <option value="BEI">BEIG</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card card-block mt-1">
+              <div class="row LM_Row">
+                <div class="col col-2">
+                  <div class="LM_Card text-center lm-success">Soportes</div>
+                </div>
+                <div class="col col-4">
+                  <div class="row">
+                    <div style="padding: 0.3em; width: 50%">
+                      <label>Tipo:</label>
+                      <select
+                        name="Compac_Sop_Tipo"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Sop_Tipo"
+                        [disabled]="true"
+                      >
+                        <option value="COM">SOPORTES COMPAC</option>
+                      </select>
+                    </div>
+                    <div style="padding: 0.3em; width: 50%">
+                      <label>Color:</label>
+                      <select
+                        name="Compac_Sop_Color"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Sop_Color"
+                      >
+                        <option value="-1">Elegir</option>
+                        <option value="BLA">BLANCO</option>
+                        <option value="NEG">NEGRO</option>
+                        <option value="GRI">GRIS</option>
+                        <option value="BEI">BEIG</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="col col-2">
+                  <div class="LM_Card text-center lm-success">Tapas</div>
+                </div>
+                <div class="col col-4">
+                  <div class="row">
+                    <div style="padding: 0.3em; width: 50%">
+                      <label>Tipo:</label>
+                      <select
+                        name="Compac_Tap_Tipo"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Tap_Tipo"
+                        [disabled]="true"
+                      >
+                        <option value="COM">TAPAS COMPAC</option>
+                      </select>
+                    </div>
+                    <div style="padding: 0.3em; width: 50%">
+                      <label>Color:</label>
+                      <select
+                        name="Compac_Tap_Color"
+                        class="form-control"
+                        [(ngModel)]="compac.Compac_Tap_Color"
+                      >
+                        <option value="-1">Elegir</option>
+                        <option value="BLA">BLANCO</option>
+                        <option value="NEG">NEGRO</option>
+                        <option value="GRI">GRIS</option>
+                        <option value="BEI">BEIG</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card card-block mt-1">
+              <div class="row LM_Row">
+                <div class="col-2">
+                  <div class="LM_Card text-center lm-success">Tejidos</div>
+                </div>
+                <div class="col-10">
+                  <div class="row">
+                    <div style="padding: 0.3em; width: 40%">
+                      <label>Serie:</label>
+                      <div class="input-group">
+                        <select
+                          name="Tipo4_Tejido"
+                          class="form-control"
+                          [ngModelOptions]="{ standalone: true }"
+                          [(ngModel)]="Tipo4_Tejido"
+                          (change)="ChangeTipo4Tejido(); CheckPrice()"
+                          (blur)="CheckPrice()"
+                        >
+                          <option
+                            *ngFor="let pow of tejidos_compac"
+                            [value]="pow.id"
+                          >
+                            {{ pow.text }}
+                          </option>
+                        </select>
+                        <span class="input-group-btn">
+                          <button
+                            class="btn btn-default"
+                            [class.btn-success]="isCopied1"
+                            type="button"
+                          >
+                            {{ CodigoProv4 }}
+                          </button>
+                        </span>
+                      </div>
+                    </div>
+                    <div style="padding: 0.3em; width: 40%">
+                      <label>Color:</label>
+                      <select
+                        name="Tipo4_TejidoColor"
+                        class="form-control"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo4_TejidoColor"
+                      >
+                        <option
+                          *ngFor="let pow of tejidos_compac_colores"
+                          [value]="pow.id"
+                        >
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                    <div style="padding: 0.3em; width: 20%" [hidden]="true">
+                      <label>Salida:</label>
+                      <select
+                        name="Tipo4_TejidoSalida"
+                        class="form-control"
+                        [ngModelOptions]="{ standalone: true }"
+                        [(ngModel)]="Tipo4_TejidoSalida"
+                      >
+                        <option *ngFor="let pow of tejidosS" [value]="pow.id">
+                          {{ pow.text }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card card-block mt-1">
+              <div class="row LM_Row">
+                <div class="col-2">
+                  <div class="LM_Card text-center lm-success">Estancia</div>
+                </div>
+                <div class="col col-4">
+                  <label>Estancia</label>
+                  <select
+                    name="Tipo4_Estancia"
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="Tipo4_Estancia"
+                  >
+                    <option
+                      *ngFor="let pow of Tipo1_Estancias"
+                      [value]="pow.idrow"
+                    >
+                      {{ pow.descripcion }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col col-6">
+                  <label>Observaciones de la Estancia</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="Tipo4_Estancia_Obs"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="container-fluid pt-2"
+    [hidden]="bConfigurador == 0 || bConfigurador == 1 || bConfigurador == 3"
+  >
+    <app-budget
+      [cliente]="'1'"
+      [codeCentro]="codeCentro"
+      (onLoaded)="BudgetLoaded($event)"
+    ></app-budget>
+  </div>
+
+  <div
+    class="container-fluid pt-2"
+    [hidden]="bConfigurador == 0 || bConfigurador == 1 || bConfigurador == 2"
+  >
+    <app-bestellungen
+      [cliente]="'1'"
+      [codeCentro]="codeCentro"
+    ></app-bestellungen>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal2="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel2"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header lm-success">
+        <h5 class="modal-title pull-left">Envío de Pedido/Presupuesto</h5>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal2.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="Cesta.length > 0">
+          <div class="row">
+            <div class="col col-lg-12" style="height: 600px">
+              <div style="height: 550px; overflow: auto">
+                <div class="row mt-2">
+                  <div class="col col-2"></div>
+                  <div class="col col-8" style="padding: 5px">
+                    <div class="list-group">
+                      <a class="list-group-item list-group-item-action">
+                        <h3 class="list-group-item-heading">
+                          ENVIAR PEDIDO/PRESUPUESTO
+                        </h3>
+                        <p class="list-group-item-text">
+                          Pulse el botón <b>"Enviar Pedido"</b> para enviarlo al
+                          proveedor. Pulse el botón
+                          <b>"Guardar Presupuesto"</b> para guardar el
+                          presupuesto.Una vez que el sistema se ha registrado en
+                          el proveedor, el sistema le presentará la referencia
+                          del pedido o del presupuesto. Pulse el botón
+                          <b>"Borrar Documento"</b> para borrar el contenido y
+                          poder crear un pedido o presupuesto nuevo.
+                        </p>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+
+                <div class="row mt-2">
+                  <div class="col col-2"></div>
+                  <div class="col col-8" style="padding: 5px">
+                    <label>Referencia Tienda/Cliente</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      [(ngModel)]="ReferenciaTienda"
+                    />
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+
+                <div class="row mt-2" *ngIf="TransmitOK == 1">
+                  <div class="col col-2"></div>
+                  <div class="col col-8 lm-success" style="padding: 5px">
+                    <div class="list-group">
+                      <a class="list-group-item list-group-item-action">
+                        <h3 class="list-group-item-heading">
+                          DOCUMENTO ENVIADO
+                        </h3>
+                        <p class="list-group-item-text">
+                          Se ha enviado correctamente el Documento
+                        </p>
+                        <label class="font-weight-bold"
+                          >Número de Documento/Referencia</label
+                        >
+                        <div class="input-group">
+                          <input
+                            type="text"
+                            class="form-control"
+                            [ngModel]="NumeroPedido"
+                            readonly="true"
+                          />
+                          <span class="input-group-btn">
+                            <button
+                              class="btn btn-default"
+                              [class.btn-success]="isCopied1"
+                              type="button"
+                            >
+                              copia
+                            </button>
+                          </span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+
+                <div class="row mt-2" *ngIf="TransmitOK == -1">
+                  <div class="col col-2"></div>
+                  <div class="col col-8 bg-danger" style="padding: 5px">
+                    <div class="list-group">
+                      <a class="list-group-item list-group-item-action">
+                        <h3 class="list-group-item-heading">
+                          DOCUMENTO NO REGISTRADO
+                        </h3>
+                        <p class="list-group-item-text">
+                          No se ha podido registrar el DOCUMENTO.Informe a los
+                          servicios Administrativos
+                        </p>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col col-4">
+                  <button
+                    class="btn btn-warning text-white btn-block"
+                    (click)="BorrarPedido(); NewPage(); staticModal2.hide()"
+                  >
+                    Borrar Documento
+                  </button>
+                </div>
+                <div class="col col-4">
+                  <button
+                    type="button"
+                    (click)="ProcesarPresupuesto()"
+                    class="btn btn-success btn-block"
+                    title="Transmitir Presupuesto"
+                    data-toggle="tooltip"
+                    [hidden]="btnPresupuesto"
+                    data-placement="top"
+                  >
+                    GUARDAR PRESUPUESTO
+                  </button>
+                </div>
+                <div class="col col-4">
+                  <button
+                    type="button"
+                    (click)="ProcesarPedido()"
+                    class="btn btn-success btn-block"
+                    title="Transmitir Pedido"
+                    data-toggle="tooltip"
+                    [hidden]="btnPedido"
+                    data-placement="top"
+                  >
+                    ENVIAR PEDIDO
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="Cesta.length == 0">
+          <p>Su Cesta No Contiene Artículos</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal3="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal3"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header lm-success">
+        <h5 class="modal-title pull-left">Croquis Explicativas</h5>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal3.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 600px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModal3.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal4="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal4"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header lm-success">
+        <h5 class="modal-title pull-left">Selección de Soportes</h5>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal4.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="height: 450px; overflow: auto">
+          <app-menu-select></app-menu-select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModal4.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

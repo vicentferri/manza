@@ -1,0 +1,318 @@
+<div class="container-fluid">
+  <div class="card">
+    <div class="card-header">
+      <h6>
+        <i class="icon-list mt-1"></i>
+        &nbsp;Configuración de Fabricación
+        <div class="pull-right">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <select
+                class="form-control"
+                [(ngModel)]="config.modelo"
+                style="width: 200px"
+              >
+                <option value="1">MODELO ANTIGUO</option>
+                <option value="2">NUEVO MODELO</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-sm" (click)="Apply()">
+              Aplicar
+            </button>
+          </div>
+        </div>
+      </h6>
+    </div>
+
+    <div class="ml-2 mr-2 mt-2">
+      <tabset>
+        <tab>
+          <ng-template tabHeading
+            ><i class="icon-list"></i>&nbsp;Parámetros
+          </ng-template>
+          <div class="card-body card-block">
+            <div class="row">
+              <div class="col col-12">
+                <div class="form-group col col-12">
+                  <div style="float: left; padding: 0.2rem">
+                    <label>Nombre Parametro</label>
+                    <input
+                      class="form-control form-control-sm"
+                      [(ngModel)]="modelAdd.nombre"
+                      style="width: 200px"
+                    />
+                  </div>
+                  <div style="float: left; padding: 0.2rem">
+                    <label>Tipo Parametro</label>
+                    <select
+                      class="form-control form-control-sm"
+                      [(ngModel)]="modelAdd.tipo"
+                      style="width: 200px"
+                    >
+                      <option value="int">int</option>
+                      <option value="varchar(25)" selected>varchar(25)</option>
+                      <option value="decimal(12,2)">decimal(12,2)</option>
+                    </select>
+                  </div>
+                  <div style="float: left; padding: 0.2rem">
+                    <label>Atributo en JSON</label>
+                    <input
+                      class="form-control form-control-sm"
+                      [(ngModel)]="modelAdd.atributo"
+                      style="width: 200px"
+                    />
+                  </div>
+                  <div style="float: left; padding: 0.2rem">
+                    <label>Posición</label>
+
+                    <select
+                      class="form-control form-control-sm"
+                      [(ngModel)]="modelAdd.posicion"
+                      style="width: 200px"
+                    >
+                      <option value="0">No leer ningún valor</option>
+                      <option value="1" selected>leer de valor1</option>
+                      <option value="2">leer de valor2</option>
+                      <option value="3">leer valor1 y valor2</option>
+                    </select>
+                  </div>
+                  <div style="float: left; padding: 0.2rem">
+                    <label>&nbsp;</label>
+                    <button
+                      class="btn btn-secondary btn-block btn-sm"
+                      (click)="AddParameters()"
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col col-12">
+                <jqxGrid
+                  #gridReference2
+                  [auto-create]="false"
+                  (onCellclick)="Cellclick2($event)"
+                  (onCellbeginedit)="cellBeginEditEvent2($event)"
+                  (onCellendedit)="cellEndEditEvent2($event)"
+                ></jqxGrid>
+              </div>
+            </div>
+          </div>
+        </tab>
+        <tab>
+          <ng-template tabHeading
+            ><i class="icon-list"></i>&nbsp;Configuración
+          </ng-template>
+
+          <div class="card-body card-block">
+            <div class="row">
+              <div class="form-group col col-12">
+                <div style="float: left; padding: 0.2rem">
+                  <label>Orden</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.orden"
+                    style="width: 50px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>Sistema</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.sistema"
+                    style="width: 150px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>Elemento</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.atributo"
+                    style="width: 150px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>Atributo</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.valor"
+                    style="width: 150px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>Parámetro 1</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.nombre_parametro1"
+                    style="width: 200px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>Op</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.operacion"
+                    style="width: 40px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>Parámetro 2</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.nombre_parametro2"
+                    style="width: 200px"
+                  />
+                </div>
+
+                <div style="float: left; padding: 0.2rem">
+                  <label>Artículos</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.articulos"
+                    style="width: 100px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>&nbsp;</label>
+                  <button
+                    class="btn btn-secondary btn-sm btn-block"
+                    (click)="Open()"
+                  >
+                    Asignar Artículos
+                  </button>
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>&nbsp;</label>
+                  <button
+                    class="btn btn-secondary btn-sm btn-block"
+                    (click)="Update()"
+                  >
+                    Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="form-group col-12">
+                <jqxGrid
+                  #gridReference
+                  [auto-create]="false"
+                  (onCellclick)="Cellclick($event)"
+                  (onCellbeginedit)="cellBeginEditEvent($event)"
+                  (onCellendedit)="cellEndEditEvent($event)"
+                ></jqxGrid>
+              </div>
+            </div>
+          </div>
+        </tab>
+        <tab>
+          <ng-template tabHeading
+            ><i class="icon-list"></i>&nbsp;Simulación
+          </ng-template>
+          <div class="card-body card-block">
+            <div class="row">
+              <div class="form-group col col-12">
+                <div style="float: left; padding: 0.2rem">
+                  <label>ID Pedido</label>
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model2.idrow"
+                    style="width: 100px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>&nbsp;</label>
+                  <button
+                    class="btn btn-secondary btn-sm btn-block"
+                    (click)="Simulate()"
+                  >
+                    Simular Pedido
+                  </button>
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>&nbsp;</label>
+                  <button
+                    class="btn btn-secondary btn-sm btn-block"
+                    (click)="HojaFabricacion()"
+                  >
+                    Fichero Fabricación
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-3">
+                <jqxGrid #gridReference4 [auto-create]="false"></jqxGrid>
+              </div>
+              <div class="form-group col-9">
+                <jqxGrid #gridReference3 [auto-create]="false"></jqxGrid>
+              </div>
+            </div>
+          </div>
+        </tab>
+      </tabset>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalAdd.hide()"
+        >
+          Cerrar
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="UpdateArticles()">
+          Asignar Artículos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalList="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet2"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div style="height: 600px; overflow: auto"></div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModalList.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,58 @@
+<div class="card card-block">
+    
+  <div class="container-overview panel">
+      <h5><span class="glyphicons glyphicons-shopping-cart"></span>
+          &nbsp;Tarifas de Tejidos
+      </h5>
+      <hr>
+  </div>
+  
+  <div class="row">
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label >Margen</label>
+          <input type="number" class="form-control form-control-sm" 
+                 [ngModelOptions]="{standalone: true}"  
+                 [(ngModel)]="searchmodel.Barras" >
+      </div>
+
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+          <label >Precio m2</label>
+          <input type="number" class="form-control form-control-sm" 
+                 [ngModelOptions]="{standalone: true}"  
+                 [(ngModel)]="searchmodel.Alias" >
+      </div>
+
+      <div class="form-group col-xs-3 col-md-3 col-lg-3">
+          <label >Criterio</label>
+          <select class="form-control form-control-sm" id="cliente" required 
+                    [(ngModel)]="searchmodel.Descripcion" 
+                    [ngModelOptions]="{standalone: true}">
+                    <option [value]="180">Criterio 180</option>
+                    <option [value]="200">Criterio 200</option>
+                    <option [value]="250">Criterio 250</option>
+                    <option [value]="300">Criterio 300</option>
+                    <option [value]="320">Criterio 320</option>
+            </select>
+      </div>
+      <div class="form-group col-xs-1 col-md-1 col-lg-1">
+          <label>&nbsp;</label>
+          <div class="btn btn-default btn-primary-outline btn-block btn-sm" (click)="export();">
+            <span class="glyphicon glyphicon-edit"></span>&nbsp;&nbsp;Export</div>
+      </div>
+      <div class="form-group col-xs-1 col-md-1 col-lg-1">
+          <label>&nbsp;</label>
+          <div class="btn btn-default btn-primary-outline btn-block btn-sm" (click)="search();">
+            <span class="glyphicon glyphicon-edit"></span>&nbsp;&nbsp;Buscar</div>
+      </div>
+  </div>
+ 
+  <div class="row">
+      <div class="form-group col-xs-12 col-md-12 col-lg-12">
+          <jqxGrid #gridReference [auto-create]='false'  ></jqxGrid>
+      </div>
+  </div>
+  
+  
+
+</div>
+

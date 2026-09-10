@@ -1,0 +1,138 @@
+<div class="animated fadeIn">
+
+    <div class='container-fluid'>
+
+
+        <div class="card card-block">
+
+            <div class="container-overview panel">
+                <h4><span class="glyphicons glyphicons-shopping-cart"></span>
+                    &nbsp;Gestión de Expediciones
+                    <div class="pull-right" style="padding-right:10px">
+                        <button class="btn btn-primary btn-sm" (click)="search();" >Refrescar Datos</button>
+                    </div>
+                </h4>
+                <hr>
+            </div>
+
+
+            <div class="row">
+                <div class="col col-md-12">
+                    <div>
+                        <tabset>
+                            <tab heading="AZKAR" (select)="setTipo('19')">
+                                    <jqxGrid #gridReference [auto-create]='false'  ></jqxGrid>
+                            </tab>
+                        </tabset>
+                    </div>
+                    
+                </div>
+            </div>
+
+
+            <div class="row mt-2">
+                <div class="col col-lg-2">
+                    <button class="btn btn-primary btn-block btn-sm" (click)="exportData()" >Obtener Fichero</button>
+                </div>
+                <div class="col col-lg-2">
+                    <button class="btn  btn-success btn-block float-left btn-sm" (click)="Expedicion(1);">Marcar como Expedida</button>
+                </div>
+                <div class="col col-lg-2">
+                    <button class="btn  btn-info btn-block float-left btn-sm" (click)="Expedicion(0);">Marcar como Pendiente</button>
+                </div>
+                <div class="col col-lg-4">
+
+                </div>
+                <div class="col col-lg-2">
+                    <button class="btn  btn-primary btn-block btn-sm" (click)="staticModal.show();Edit();">Editar Selección</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+</div>
+
+
+<div class="modal fade" bsModal #staticModal2="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h4 class="modal-title pull-left">Detalle de Expedición</h4>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="staticModal2.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <div class="row mt-4">
+              <div class="col col-12">
+                  <label>Link del Transporte</label>
+                  <input #bultos class="form-control"  [(ngModel)]="link.url" 
+                      [ngModelOptions]="{standalone: true}" required   />
+
+              </div>
+          </div>
+      </div>
+        <div class="modal-footer">
+                    <button class="btn btn-primary " (click)="staticModal2.hide();myGrid.clearselection();">Cerrar</button>
+                    <button class="btn btn-success " (click)="Expedicion(1);staticModal2.hide();">Realizar la Expedición</button>
+        </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="modal fade" bsModal #staticModal="bs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Detalle de Expedición</h4>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="staticModal.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <div class="row">
+              <div class="col col-12">
+                  <h4>{{dialog.nombre}}&nbsp;{{dialog.albaran}}</h4>
+              </div>
+
+          </div>
+          <div class="row mt-4">
+              <div class="col col-3">
+                  <label>Bultos</label>
+                  <input #bultos class="form-control" type="number" min="0" max="600" [(ngModel)]="dialog.bultos" id="Bultos"
+                      [ngModelOptions]="{standalone: true}" required   />
+
+              </div>
+              <div  class="col col-3">
+                  <label >Peso (Kilos)</label>
+                  <input #peso class="form-control" type="number" min="0" max="600" [(ngModel)]="dialog.peso" id="Peso"
+                      [ngModelOptions]="{standalone: true}" required  />
+
+              </div>
+              <div  class="col col-3">
+                  <label >Volumen</label>
+                  <input #volumen class="form-control" type="number" min="0" max="600" [(ngModel)]="dialog.volumen" id="Volumen"
+                      [ngModelOptions]="{standalone: true}"  required  />
+
+              </div>
+              <div  class="col col-3">
+                  <label>Email</label>
+                  <input #email class="form-control" type="text" min="0" max="600" [(ngModel)]="dialog.email" id="Email"
+                      [ngModelOptions]="{standalone: true}" required   />
+              </div>
+
+          </div>
+      </div>
+        <div class="modal-footer">
+                    <button class="btn btn-primary " (click)="staticModal.hide();myGrid.clearselection();">Cerrar</button>
+                    <button class="btn btn-primary " (click)="Update();staticModal.hide();">Actualizar</button>
+        </div>
+    </div>
+  </div>
+</div>

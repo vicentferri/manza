@@ -1,0 +1,243 @@
+<div class="animated fadeIn">
+  <div class="container-fluid my-3">
+    <div class="card card-block">
+      <div>
+        <div class="container-overview panel">
+          <h4>
+            <span class="glyphicons glyphicons-shopping-cart"></span> &nbsp;<b
+              >Gestión de Pedidos</b
+            >
+            <div class="pull-right">
+              <div *ngIf="model.estado == 0">
+                <div class="bg-primary text-black font-2xl">
+                  &nbsp;EN PROCESO
+                </div>
+              </div>
+              <div *ngIf="model.estado == 1">
+                <div class="bg-success text-black font-2xl">&nbsp;CERRADO</div>
+              </div>
+            </div>
+          </h4>
+        </div>
+
+        <form #iForm="ngForm">
+          <div class="row">
+            <div class="form-group col-xs-1 col-md-1 col-lg-1">
+              <label>Número</label>
+              <input
+                type="text"
+                class="form-control"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="model.numero"
+              />
+            </div>
+            <div class="form-group col-xs-2 col-md-2 col-lg-2">
+              <label>Fecha</label>
+              <input
+                type="date"
+                class="form-control"
+                [ngModelOptions]="{ standalone: true }"
+                [ngModel]="model.fecha | date : 'yyyy-MM-dd'"
+                (change)="onDateChange($event, $event)"
+              />
+            </div>
+            <div class="form-group col-xs-2 col-md-2 col-lg-2">
+              <label>Entrega</label>
+              <input
+                type="date"
+                class="form-control"
+                [ngModelOptions]="{ standalone: true }"
+                [ngModel]="model.entrega | date : 'yyyy-MM-dd'"
+                (change)="onDateChange($event, $event)"
+              />
+            </div>
+            <div class="form-group col-xs-3 col-md-3 col-lg-3">
+              <label>Referencia</label>
+              <input
+                type="text"
+                class="form-control"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="model.referencia"
+              />
+            </div>
+            <div class="form-group col-xs-2 col-md-2 col-lg-2">
+              <label form="almacen">Canal</label>
+              <select
+                class="form-control"
+                id="almacen"
+                required
+                #SelectedAlmacen
+                [(ngModel)]="model.almacen"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option *ngFor="let pow of almacenes" [value]="pow.id">
+                  {{ pow.name }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-2 col-md-2 col-lg-2">
+              <label form="responsable">Responsable</label>
+              <select
+                class="form-control"
+                id="responsable"
+                required
+                #SelectedResponsable
+                [(ngModel)]="model.responsable"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option *ngFor="let pow of responsables" [value]="pow.id">
+                  {{ pow.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-xs-4 col-md-4 col-lg-4">
+              <label>Cliente</label>
+              <div class="input-group">
+                <input
+                  type="text"
+                  class="form-control"
+                  readonly="true"
+                  [ngModelOptions]="{ standalone: true }"
+                  [(ngModel)]="model.nombrecliente"
+                />
+                <span class="input-group-btn">
+                  <button
+                    type="button"
+                    class="btn btn-default"
+                    title="Anterior"
+                    data-toggle="tooltip"
+                    data-placement="top"
+                  >
+                    <i class="fa fa-eyedropper"></i>
+                  </button>
+                </span>
+              </div>
+            </div>
+            <div class="form-group col-xs-4 col-md-4 col-lg-4">
+              <label>Entrega</label>
+              <input
+                type="text"
+                class="form-control"
+                readonly="true"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="model.nombreentrega"
+              />
+            </div>
+            <div class="form-group col-xs-2 col-md-2 col-lg-2">
+              <label form="formapago">Forma Pago</label>
+              <select
+                class="form-control"
+                id="responsable"
+                required
+                #SelectedFormaPago
+                [(ngModel)]="model.formapago"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option *ngFor="let pow of responsables" [value]="pow.id">
+                  {{ pow.name }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-2 col-md-2 col-lg-2">
+              <label form="incoterm">Incoterm</label>
+              <select
+                class="form-control"
+                id="incoterm"
+                required
+                #SelectedIncoterm
+                [(ngModel)]="model.incoterm"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option *ngFor="let pow of responsables" [value]="pow.id">
+                  {{ pow.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Observaciones</label>
+              <input
+                type="textarea"
+                class="form-control"
+                [ngModelOptions]="{ standalone: true }"
+                [(ngModel)]="model.observaciones"
+              />
+            </div>
+          </div>
+        </form>
+
+        <div class="row mt-2">
+          <div class="col col-lg-12">
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-primary btn-block btn-sm"
+                [disabled]="model.estado == 1"
+                (click)="Process()"
+              >
+                Procesar Documento
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-primary btn-block btn-sm"
+                (click)="Search()"
+              >
+                Buscar Pedidos
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-primary btn-block btn-sm"
+                (click)="delId()"
+                [hidden]="model.id == 0"
+              >
+                <span class="glyphicons glyphicon-erase"></span
+                >&nbsp;&nbsp;Borrar Líneas
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-primary btn-block btn-sm"
+                [hidden]="model.id == 0"
+              >
+                <span class="glyphicons glyphicon-edit"></span
+                >&nbsp;&nbsp;Agregar Líneas
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button
+                class="btn btn-primary btn-block btn-sm"
+                (click)="Delete()"
+              >
+                <span class="glyphicons glyphicon-erase"></span
+                >&nbsp;&nbsp;Borrar Pedido
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button class="btn btn-primary btn-block btn-sm" (click)="New()">
+                <span class="glyphicons glyphicon-new-window"></span
+                >&nbsp;&nbsp;Nuevo Pedido
+              </button>
+            </div>
+            <div class="BtnToolBar">
+              <button class="btn btn-primary btn-block btn-sm" (click)="Save()">
+                <span class="glyphicons glyphicon-save"></span
+                >&nbsp;&nbsp;Actualizar Pedido
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <jqxGrid #gridReference [auto-create]="false"></jqxGrid>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

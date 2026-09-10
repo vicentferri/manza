@@ -1,0 +1,41 @@
+.jqx-input-glacier-red {
+  color: #000;
+  background-color: #e83636 !important;
+}
+
+.jqx-input-glacier-red-white {
+  color: #fff;
+  background-color: #e83636 !important;
+}
+
+.jqx-input-glacier-green {
+  color: #000;
+  background-color: #b6ff00;
+}
+.jqx-input-glacier-yellow {
+  color: #000;
+  background-color: #ff0;
+}
+.jqx-input-glacier-green:not(.jqx-grid-cell-hover):not(.jqx-grid-cell-selected),
+.jqx-widget
+  .jqx-input-glacier-green:not(.jqx-grid-cell-hover):not(.jqx-grid-cell-selected) {
+  color: #000;
+  background-color: #b6ff00;
+}
+.jqx-input-glacier-yellow:not(.jqx-grid-cell-hover):not(.jqx-grid-cell-selected),
+.jqx-widget
+  .jqx-input-glacier-yellow:not(.jqx-grid-cell-hover):not(.jqx-grid-cell-selected) {
+  color: #000;
+  background-color: #ff0;
+}
+.jqx-input-glacier-red:not(.jqx-grid-cell-hover):not(.jqx-grid-cell-selected),
+.jqx-widget
+  .jqx-input-glacier-red:not(.jqx-grid-cell-hover):not(.jqx-grid-cell-selected) {
+  color: #000;
+  background-color: #e83636;
+}
+
+input.font-size-large {
+  font-size: large;
+  text-align: right;
+}

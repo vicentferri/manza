@@ -1,0 +1,347 @@
+<div *ngIf="item.TIPO == 1">
+  <div class="card">
+    <div class="card-body">
+      <div class="row mb-4 mt-2 ml-5">
+        <div class="col-sm-4">
+          <h6 class="mb-3">Accionamiento:</h6>
+          <div>
+            {{ item.acc_tipo_text }}&nbsp;{{ item.acc_marca_text }}&nbsp;
+            {{ item.acc_tubo_text }}&nbsp;{{ item.acc_modelo_text }}&nbsp;{{
+              item.acc_posicion_text
+            }}<br />
+            <div [hidden]="item.acc_tipo_text != 'Cadena'">
+              <div [hidden]="item.cad_Tipo != 2">
+                Cadena Metálica:{{ item.cad_Altura }}&nbsp;{{
+                  item.cad_color_text
+                }}
+              </div>
+              <div [hidden]="item.cad_Tipo != 1">
+                Cadena Específica:{{ item.cad_Altura }}&nbsp;{{
+                  item.cad_color_text
+                }}
+              </div>
+              <div [hidden]="item.cad_Tipo != 0">
+                Cadena Contínua:{{ item.cad_Altura }}&nbsp;{{
+                  item.cad_color_text
+                }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <h6 class="mb-3">Tejido:</h6>
+          <div>
+            {{ item.tej_tipo_text }}&nbsp;{{ item.tej_color_text }}&nbsp;{{
+              item.tej_salida_text
+            }}
+          </div>
+          <h6 [hidden]="!item.impresion">
+            Impresion Digital:{{ item.impresion_imagen }}
+          </h6>
+        </div>
+        <div class="col-sm-4">
+          <h6 class="mb-3">Otros:</h6>
+          <div>
+            Soportes:{{ item.sop_tipo_text }}&nbsp;{{ item.sop_color_text }}
+          </div>
+          <div>
+            Tapas:{{ item.tap_tipo_text }}&nbsp;{{ item.tap_color_text }}
+          </div>
+          <div>
+            Contrapeso:{{ item.con_tipo_text }}&nbsp;{{ item.con_color_text }}
+          </div>
+        </div>
+      </div>
+      <div class="row mb-4 mt-2 ml-5">
+        <div class="col-sm-6 col-lg-6 well">
+          <h6 class="mb-3">Instrucciones:({{ item.instrucciones.length }})</h6>
+          {{ item.instrucciones }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="item.TIPO == 2">
+  <div class="card">
+    <div class="card-block">
+      <h4 class="card-title">
+        <div *ngIf="item.TipoJapones == '1'">Mecanismo + Tejido</div>
+        <div *ngIf="item.TipoJapones == '2'">Sólo Tejido</div>
+        <div *ngIf="item.TipoJapones == 3">Solo Mecanismo</div>
+      </h4>
+
+      <div card="card-body">
+        <div class="row">
+          <table class="table table-bordered">
+            <tr>
+              <td>Cantidad</td>
+              <td>Ancho Mecanismo</td>
+              <td>
+                <div *ngIf="item.TipoJapones == 1">
+                  <label>Alto Total</label>
+                </div>
+                <div *ngIf="item.TipoJapones == 2">
+                  <label>Alto Total</label>
+                </div>
+                <div *ngIf="item.TipoJapones == 3">
+                  <label>Altura Mando(cuerda)</label>
+                </div>
+              </td>
+              <td>Número de Vias</td>
+              <td>Num.Portatelas</td>
+              <td>Ancho Portatela</td>
+              <td>Color Mecanismo</td>
+            </tr>
+            <tr>
+              <td>
+                <b>{{ item.PJ_Cantidad_1 }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_Ancho_2 }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_Alto_1 }}</b>
+              </td>
+              <td>
+                <b
+                  ><div *ngIf="item.PJ_NumeroVias_2 == 2">Riel 2 Vias</div>
+                  <div *ngIf="item.PJ_NumeroVias_2 == 3">Riel 3 Vias</div>
+                  <div *ngIf="item.PJ_NumeroVias_2 == 4">Riel 4 Vias</div>
+                  <div *ngIf="item.PJ_NumeroVias_2 == 5">Riel 5 Vias</div></b
+                >
+              </td>
+              <td>
+                <b>{{ item.PJ_NumeroPortatelas }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_Ancho_1 }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_ColorRiel_2 }}</b>
+              </td>
+            </tr>
+            <tr>
+              <td>Posición Mando</td>
+              <td>Recogida</td>
+              <td>Tipo de Soporte</td>
+              <td>Contrapeso</td>
+              <td>Num Lamas</td>
+              <td>Ancho Lama</td>
+              <td>Alto Lama Term.</td>
+            </tr>
+            <tr>
+              <td>
+                <b>{{ item.PJ_PosicionMando_2 }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_TipoRecogida_2 }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_TipoSoporte_2 }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_Contrapeso_1 }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_NumeroLamas }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_AnchoLama }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_AltoLamaTerminada }}</b>
+              </td>
+            </tr>
+            <tr>
+              <td>Número Paños</td>
+              <td>Impresión Digital</td>
+              <td>Tejido</td>
+              <td>Color</td>
+              <td>Estancia</td>
+              <td colspan="3">Observaciones</td>
+            </tr>
+            <tr>
+              <td>{{ item.PJ_NumeroPanos }}</td>
+              <td>
+                {{ item.PJ_ID_Quiero }} <b>{{ item.PJ_ID_Imagen }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_tejidos_text }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_tejidosC_text }}</b>
+              </td>
+              <td>
+                <b>{{ item.PJ_Estancia }}</b>
+              </td>
+              <td colspan="3">
+                <b>{{ item.PJ_Estancia_Obs }}</b>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="row mb-4 mt-2 ml-5">
+          <div class="col-sm-6 col-lg-6 well">
+            <h6 class="mb-3">
+              Instrucciones:({{ item.instrucciones.length }})
+            </h6>
+            {{ item.instrucciones }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="item.TIPO == 3">
+  <div class="card">
+    <div class="card-body">
+      <table class="table table-bordered">
+        <tr>
+          <td [hidden]="!item.PV_SEL_1">
+            <table>
+              <tr>
+                <td><b>Ancho</b></td>
+                <td><b>Alto</b></td>
+                <td><b>Cantidad</b></td>
+                <td><b>Ancho Lama</b></td>
+                <td><b>Pos.Mecanismo</b></td>
+                <td><b>Color Riel</b></td>
+              </tr>
+              <tr>
+                <td>{{ item.PV_Ancho_1 }}&nbsp;cms</td>
+                <td>{{ item.PV_Alto_1 }}&nbsp;cms</td>
+                <td>{{ item.PV_Cantidad_1 }}</td>
+                <td>{{ item.PV_AnchoLama_1 | smtrans }}</td>
+                <td>{{ item.PV_PosicionMecanismo_1 | smtrans }}</td>
+                <td>{{ item.PV_ColorRiel_1 }}</td>
+              </tr>
+              <tr>
+                <td><b>Accionamiento</b></td>
+                <td><b>Tipo de Soporte</b></td>
+                <td><b>Tipo de recogida</b></td>
+                <td><b>Tejido</b></td>
+                <td><b>Color 1</b></td>
+                <td><b>Color 2</b></td>
+              </tr>
+              <tr>
+                <td>{{ item.PV_Accionamiento_1 | smtrans }}</td>
+                <td>{{ item.PV_TipoSoporte_1 | smtrans }}</td>
+                <td>{{ item.PV_TipoRecogida_1 | smtrans }}</td>
+                <td>{{ item.PV_Tejido_text }}</td>
+                <td>{{ item.PV_Tejido_c1_text }}</td>
+                <td>{{ item.PV_Tejido_c2_text }}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td [hidden]="!item.PV_SEL_2">
+            <table>
+              <tr>
+                <td colspan="5"><b>VERTICAL INCLINADO</b></td>
+              </tr>
+              <tr>
+                <td><b>Ancho</b></td>
+                <td><b>Cantidad</b></td>
+                <td><b>Altura Min</b></td>
+                <td><b>Altura Max</b></td>
+                <td><b>Pos.Mecanismo</b></td>
+              </tr>
+
+              <tr>
+                <td>{{ item.PV_Ancho_2 }}&nbsp;cms</td>
+                <td>{{ item.PV_Cantidad_2 }}</td>
+                <td>{{ item.PV_AlturaMin_2 }}&nbsp;cms</td>
+                <td>{{ item.PV_AlturaMax_2 }}&nbsp;cms</td>
+                <td>{{ item.PV_PosicionMecanismo_2 | smtrans }}</td>
+              </tr>
+              <tr>
+                <td><b>Color Riel</b></td>
+                <td><b>Accionamiento</b></td>
+                <td><b>Tipo de Soporte</b></td>
+                <td><b>Tipo de Recogida</b></td>
+              </tr>
+              <tr>
+                <td>{{ item.PV_ColorRiel_2 }}</td>
+                <td>{{ item.PV_Accionamiento_2 | smtrans }}</td>
+                <td>{{ item.PV_TipoSoporte_2 | smtrans }}</td>
+                <td>{{ item.PV_TipoRecogida_2 | smtrans }}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <div class="row mb-4 mt-2 ml-5">
+        <div class="col-sm-6 col-lg-6 well">
+          <h6 class="mb-3">Instrucciones:({{ item.instrucciones.length }})</h6>
+          {{ item.instrucciones }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="item.TIPO == 4">
+  <div class="card">
+    <div class="card-body">
+      <div class="row mb-4 mt-2 ml-5">
+        <table class="table table-bordered">
+          <tr>
+            <td>Junquillo:</td>
+            <td>{{ item.junquillo }}</td>
+            <td>Ancho:</td>
+            <td>{{ item.ancho }}</td>
+            <td>Alto:</td>
+            <td>{{ item.alto }}</td>
+            <td>Cantidad:</td>
+            <td>{{ item.cantidad }}</td>
+          </tr>
+          <tr>
+            <td>Accionamiento</td>
+            <td colspan="7">
+              {{ item.com_acc_tipo_text }}&nbsp;{{ item.com_acc_marca_text }}
+              {{ item.com_acc_tubo_text }}&nbsp;{{ item.com_acc_modelo_text }}
+              {{ item.com_acc_posicion_text }}<br />
+              <div [hidden]="item.acc_tipo_text != 'Cadena'">
+                <div [hidden]="item.com_cad_Tipo == 1">
+                  Cadena Específica: <br />
+                  {{ item.com_cad_Altura }}&nbsp;{{ item.com_cad_color_text }}
+                </div>
+                <div [hidden]="item.com_cad_Tipo == 0">
+                  Cadena Contínua:<br />
+                  {{ item.com_cad_altura_text }}&nbsp;{{
+                    item.com_cad_color_text
+                  }}
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Soportes:</td>
+            <td>
+              {{ item.com_sop_tipo_text }}&nbsp;{{ item.com_sop_color_text }}
+            </td>
+            <td>Tapas</td>
+            <td>
+              {{ item.com_tap_tipo_text }}&nbsp;{{ item.com_tap_color_text }}
+            </td>
+            <td>Tejidos:</td>
+            <td colspan="3">
+              {{ item.com_tej_tipo_text }}&nbsp;{{ item.com_tej_color_text
+              }}<br />
+              {{ item.com_tej_salida_text }}
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="row mb-4 mt-2 ml-5">
+        <div class="col-sm-12 col-lg-12 well">
+          {{ item.instrucciones }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

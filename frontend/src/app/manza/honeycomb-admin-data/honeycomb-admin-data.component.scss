@@ -1,0 +1,162 @@
+// honeycomb-admin-data.component.scss
+
+.color-swatch {
+   width: 40px;
+   height: 40px;
+   border-radius: 4px;
+   border: 2px solid #dee2e6;
+   display: inline-block;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+   font-size: 0.9rem;
+
+   th {
+      white-space: nowrap;
+      font-weight: 600;
+   }
+
+   td {
+      vertical-align: middle;
+   }
+}
+
+.btn-group-sm .btn {
+   padding: 0.25rem 0.5rem;
+   font-size: 0.875rem;
+}
+
+.form-control-sm,
+.form-select-sm {
+   font-size: 0.875rem;
+}
+
+.nav-tabs .nav-link {
+   color: #369cf6;
+   background-color: #dee2e6;
+   border: none;
+   border-bottom: 3px solid transparent;
+
+   &:hover {
+      border-color: transparent;
+      background-color: #f8f9fa;
+   }
+
+   &.active {
+      color: #0d6efd;
+      border-bottom-color: #0d6efd;
+      background-color: #369cf6;
+      font-weight: 600;
+   }
+}
+
+.card {
+   box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.alert {
+   animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+   from {
+      opacity: 0;
+      transform: translateY(-10px);
+   }
+
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+.table-responsive {
+   max-height: 600px;
+   overflow-y: auto;
+}
+
+// Estilos para inputs en tabla
+tr input.form-control-sm {
+   min-width: 150px;
+}
+
+tr select.form-select-sm {
+   min-width: 180px;
+}
+
+// honeycomb-admin-data.component.scss
+
+// ... estilos anteriores ...
+
+// Estilos para tabla de tarifas
+.tarifa-table-container {
+   max-height: 600px;
+   overflow: auto;
+   position: relative;
+   border: 1px solid #dee2e6;
+   border-radius: 0.25rem;
+}
+
+.tarifa-table {
+   margin-bottom: 0;
+   font-size: 0.85rem;
+
+   thead th {
+      background-color: #212529;
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+   }
+
+   tbody td {
+      vertical-align: middle;
+   }
+
+   .precio-cell {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      font-weight: 500;
+   }
+}
+
+// Sticky header y columnas
+.sticky-header th {
+   position: sticky;
+   top: 0;
+   z-index: 10;
+   background-color: #212529 !important;
+}
+
+.sticky-column {
+   position: sticky;
+   left: 0;
+   z-index: 5;
+   background-color: #f8f9fa !important;
+   font-weight: 600;
+}
+
+.sticky-actions {
+   position: sticky;
+   right: 0;
+   z-index: 5;
+   background-color: #f8f9fa !important;
+}
+
+// Inputs en tabla
+.tarifa-table input[type="number"] {
+   font-size: 0.85rem;
+   padding: 0.25rem 0.5rem;
+
+   &::-webkit-inner-spin-button,
+   &::-webkit-outer-spin-button {
+      opacity: 1;
+   }
+}
+
+// Hover effects
+.tarifa-table tbody tr:hover {
+   background-color: #f8f9fa;
+}

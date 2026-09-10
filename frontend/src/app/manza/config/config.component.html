@@ -1,0 +1,549 @@
+<!-- CABECERA-->
+<div class="container-fluid">
+  <div
+    style="width: 100%; background-color: black; color: white; padding: 10px"
+  >
+    <h5>
+      {{ nombreCentro }}
+    </h5>
+  </div>
+  <div class="flex-row d-flex bg-primary">
+    <a class="navbar-brand"></a>
+    <a class="nav-link" (click)="VerPresupuestos()">{{
+      "PRESUPUESTOS" | translate
+    }}</a>
+    <a class="nav-link" (click)="VerPedidos()">{{ "PEDIDOS" | translate }}</a>
+    <a class="nav-link" (click)="VerConfigurador()">{{
+      "CONFIGURADOR" | translate
+    }}</a>
+    <a class="nav-link" (click)="BorrarPedido()">{{ "BORRAR" | translate }}</a>
+    <a class="nav-link" (click)="VerPedido()">{{ "VER" | translate }}</a>
+    <a class="nav-link" (click)="Nueva()">{{ "NUEVA" | translate }}</a>
+    <a
+      class="nav-link"
+      (click)="VerEjecucion(2)"
+      [hidden]="this.bConfigurador == 1"
+      >{{ "AGREGAR" | translate }}</a
+    >
+    <a
+      class="nav-link active"
+      (click)="ShowBtns(); staticModal2.show()"
+      [hidden]="Cesta.length == 0"
+      >{{ "FINALIZAR" | translate }}</a
+    >
+    <a class="nav-link active" (click)="Exit()">&nbsp;Cerrar Sesión&nbsp;</a>
+
+    <a class="navbar-toggler navbar-toggler-right">
+      <select
+        name="idioma"
+        id="idioma"
+        class="form-control form-control-sm"
+        style="width: 125px"
+        [(ngModel)]="Idioma"
+        (change)="ChangeIdioma()"
+      >
+        <option value="es">Español</option>
+        <option value="pt">Portugués</option>
+        <option value="en">English</option>
+        <option value="cat">Catalán</option>
+        <option value="ru">Ruso</option>
+        <option value="zh">Chino</option>
+      </select>
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px 0;">
+
+  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
+    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">{{ "CORTINAS" | translate }}</div>
+    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ NumeroCortinas }}</div>
+  </div>
+
+  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
+    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Total</div>
+    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ TotalCesta | number:'1.2-2' }} €</div>
+    <div style="font-size: 11px; color: #6c757d; margin-top: 2px;">{{ TotalCestaC1 }}</div>
+  </div>
+
+  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
+    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">F. fabricación</div>
+    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ FechaEntregaPedido | date:'dd/MM/yyyy' }}</div>
+  </div>
+
+  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
+    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Entrega estimada</div>
+    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ FechaEntregaPedido | date:'dd/MM/yyyy' }}</div>
+    <div style="font-size: 11px; color: #6c757d; margin-top: 2px;">+ 5d transporte</div>
+  </div>
+
+</div>
+</div>
+
+<!-- CABECERA-->
+
+<!-- PROMOCION-->
+<div class="container">
+  <div
+    class="container-fluid"
+    [hidden]="bConfigurador == 1 || bConfigurador == 2 || bConfigurador == 3"
+  >
+    <div class="row" [hidden]="!Promocion">
+      <div class="col-9 py-2" style="padding-left: 5px">
+        <h4>{{ Promocion_Mensaje }}</h4>
+      </div>
+      <div class="col-3 py-2" style="text-align: right; padding-right: 5px">
+        <h4>
+          <app-ticker [maxDate]="Promocion_Hasta"></app-ticker>
+        </h4>
+      </div>
+    </div>
+    <div class="row" [hidden]="!Promocion || !Promocion_Banner">
+      <div class="col-12" style="padding: 0 5px 8px 5px">
+        <img [src]="Promocion_Banner" alt="Banner promoción"
+          style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 6px; display: block;" />
+      </div>
+    </div>
+
+ 
+      
+      <div class="row mt-2">
+        <div class="col col-12" style="padding-left: 15px">
+          <div style="float: left">
+            <button [ngClass]="classTipo(1)" (click)="Tipo(1)" *ngIf="productos.prod_1">
+              {{ "ENROLLABLES" | translate }}
+            </button>
+            <button [ngClass]="classTipo(2)" (click)="Tipo(2)" *ngIf="productos.prod_2">
+              {{ "PANEL JAPONES" | translate }}
+            </button>
+            <button [ngClass]="classTipo(3)" (click)="Tipo(3)" *ngIf="productos.prod_3">
+              {{ "VERTICAL" | translate }}
+            </button>
+            <button
+              [ngClass]="classTipo(4)"
+              (click)="Tipo(4)" *ngIf="productos.prod_4"
+              [hidden]="Cliente == '1'"
+            >
+              {{ "SOLAR MINI" | translate }}
+            </button>
+            <button
+              [ngClass]="classTipo(4)" 
+              (click)="Tipo(4)"
+              [hidden]="Cliente != '1'" *ngIf="productos.prod_4"
+            >
+              {{ "COMPAC" | translate }}
+            </button>
+            <button
+              [ngClass]="classTipo(7)"
+              (click)="Tipo(7)"
+              [hidden]="Cliente != '1'" *ngIf="productos.prod_7"
+            >
+              {{ "HONEYCOMB" | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+        <!-- PANEL ENROLLABLE -->
+
+          <manza-enrollable
+    *ngIf="TipoCortina == 1 && productos.prod_1"
+    [Cliente]="Cliente"
+    [codeCentro]="codeCentro"
+    [SubCliente]="SubCliente"
+    [ReferenciaTienda]="ReferenciaTienda"
+    (onAdd)="AgregarDesdeHijo($event)">
+  </manza-enrollable>
+
+        <!-- PANEL ENROLLABLE -->
+     
+
+        <!-- PANEL JAPONES -->
+        <manza-japones *ngIf="TipoCortina == 2 && productos.prod_2"
+  [Cliente]="Cliente" [codeCentro]="codeCentro"
+  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+  [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
+  (onAdd)="AgregarDesdeHijo($event)">
+</manza-japones>
+
+        <!-- PANEL JAPONES -->
+   
+
+      <!-- PANEL VERTICAL -->
+       
+      <manza-vertical *ngIf="TipoCortina == 3 && productos.prod_3"
+  [Cliente]="Cliente" [codeCentro]="codeCentro"
+  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+  [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
+  (onAdd)="AgregarDesdeHijo($event)">
+</manza-vertical>
+
+      <!-- PANEL VERTICAL -->
+
+      <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4"
+  [Cliente]="Cliente" [codeCentro]="codeCentro"
+  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+  (onAdd)="AgregarDesdeHijo($event)">
+</manza-compac>
+
+      <!-- HONEYCOMB -->
+      
+        <manza-honeycomb *ngIf="TipoCortina == 7 && productos.prod_7" 
+        [Cliente]="Cliente" [codeCentro]="codeCentro"
+  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+        (onAdd)="AgregarDesdeHijo($event)"></manza-honeycomb>
+      
+      <!-- HONEYCOMB -->
+    </div>
+  </div>
+
+<!-- PROMOCION-->
+
+<!-- CONTENIDO DEL PEDIDO-->
+<div class="container" [hidden]="bConfigurador == 0">
+
+  <!-- Header sticky -->
+  <div class="row g-0 bg-dark text-white align-items-center py-2 px-3 sticky-top">
+    <div class="col">
+      <h6 class="mb-0 fw-bold">{{ "CONTENIDO DEL PEDIDO" | translate }}</h6>
+    </div>
+    <div class="col-auto text-end">
+      <span class="badge bg-secondary me-2">
+        {{ NumeroCortinas }} {{ "CORTINAS" | translate }}
+      </span>
+      <span class="fw-bold me-2">{{ TotalCesta | number }}€</span>
+      <span class="text-muted small me-2">({{ TotalCestaC1 }})</span>
+      <span class="text-muted small">
+        F.Fab. {{ FechaEntregaPedido | date: "dd/MM/yyyy" }}
+      </span>
+    </div>
+  </div>
+
+
+<!-- Barra guardar/recuperar -->
+<div class="row g-0 bg-secondary px-3 py-1 align-items-center">
+  <div class="col-auto">
+    <button class="btn btn-sm btn-light me-2" (click)="GuardarBorrador()">
+      <i class="fas fa-save me-1"></i>&nbsp;{{ "GUARDAR BORRADOR" | translate }}
+    </button>&nbsp;
+    <button class="btn btn-sm btn-outline-light" (click)="RecuperarBorrador()"
+      [disabled]="!hayBorrador">
+      <i class="fas fa-folder-open me-1"></i>&nbsp;{{ "RECUPERAR BORRADOR" | translate }}
+    </button>
+  </div>
+  <div class="col text-end">
+    <small class="text-white-50" *ngIf="hayBorrador">
+      <i class="fas fa-circle text-success me-1" style="font-size: 8px"></i>
+      {{ "BORRADOR GUARDADO" | translate }}
+    </small>
+  </div>
+</div>
+
+  <!-- Cesta vacía -->
+  <div *ngIf="Cesta.length === 0" class="text-center text-muted py-5">
+    <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+    <p>{{ "CESTA VACÍA" | translate }}</p>
+  </div>
+
+  <!-- Items -->
+  <div class="overflow-auto mt-2" style="max-height: calc(100vh - 120px)">
+    <ng-container *ngFor="let item of Cesta; let i = index">
+      <div class="container-fluid px-2 py-1">
+
+        <ng-container [ngSwitch]="item.TipoCortina">
+          <app-preview-1 *ngSwitchCase="1" [item]="item"
+            (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
+          </app-preview-1>
+          <app-preview-2 *ngSwitchCase="2" [item]="item"
+            (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
+          </app-preview-2>
+          <app-preview-3 *ngSwitchCase="3" [item]="item"
+            (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
+          </app-preview-3>
+          <app-preview-4 *ngSwitchCase="4" [item]="item"
+            (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
+          </app-preview-4>
+          <app-preview-7 *ngSwitchCase="7" [item]="item"
+            (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
+          </app-preview-7>
+        </ng-container>
+
+      </div>
+    </ng-container>
+  </div>
+
+</div>
+<!-- CONTENIDO DEL PEDIDO-->
+
+<div
+  class="container-fluid"
+  style="margin-left: 10px; margin-right: 10px"
+  [hidden]="bConfigurador == 0 || bConfigurador == 1 || bConfigurador == 3"
+>
+  <app-budget *ngIf="Cliente != '-1'"
+    [cliente]="Cliente"
+    [codeCentro]="codeCentro"
+    (onLoaded)="BudgetLoaded($event)"
+  ></app-budget>
+</div>
+
+<div
+  class="container-fluid"
+  style="margin-left: 10px; margin-right: 10px"
+  [hidden]="bConfigurador == 0 || bConfigurador == 1 || bConfigurador == 2"
+>
+  <app-bestellungen *ngIf="Cliente != '-1'"
+    [cliente]="Cliente"
+    [codeCentro]="codeCentro"
+  ></app-bestellungen>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal2="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel2"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">
+          {{ "ENVIOPEDIDOPRES" | translate }}
+        </h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="Cerrar(); staticModal2.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="Cesta.length > 0">
+          <div class="row">
+            <div class="col col-lg-12" style="height: 600px">
+              <div style="height: 550px; overflow: auto">
+                <div class="row mt-2">
+                  <div class="col col-2"></div>
+                  <div class="col col-8" style="padding: 5px">
+                    <div class="list-group">
+                      <a class="list-group-item list-group-item-action">
+                        <h5 class="list-group-item-heading">
+                          {{ "ENVIOPEDIDOPRES" | translate }}
+                        </h5>
+                        <p class="list-group-item-text">
+                          {{ "INDICACIONESENVIO" | translate }}
+                        </p>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+
+                <div class="row mt-2">
+                  <div class="col col-2"></div>
+                  <div class="col col-8" style="padding: 5px">
+                    <label>{{ "REFERENCIA TIENDA/CLIENTE" | translate }}</label>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      [(ngModel)]="ReferenciaTienda"
+                    />
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+
+                <div class="row mt-2" *ngIf="TransmitOK == 1">
+                  <div class="col col-2"></div>
+                  <div class="col col-8 bg-primary" style="padding: 5px">
+                    <div class="list-group">
+                      <a class="list-group-item list-group-item-action">
+                        <h3 class="list-group-item-heading">
+                          {{ "DOCUMENTO ENVIADO" | translate }}
+                        </h3>
+                        <p class="list-group-item-text">
+                          {{
+                            "SE HA ENVIADO CORRECTAMENTE EL DOCUMENTO"
+                              | translate
+                          }}
+                        </p>
+                        <label class="font-weight-bold">{{
+                          "NÚMERO DE DOCUMENTO/REFERENCIA" | translate
+                        }}</label>
+                        <div class="input-group">
+                          <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            [ngModel]="NumeroPedido"
+                            readonly="true"
+                          />
+                          <span class="input-group-btn">
+                            <button
+                              class="btn btn-default"
+                              [class.btn-success]="isCopied1"
+                              type="button"
+                            >
+                              copia
+                            </button>
+                          </span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+
+                <div class="row mt-2" *ngIf="TransmitOK == -1">
+                  <div class="col col-2"></div>
+                  <div class="col col-8 bg-danger" style="padding: 5px">
+                    <div class="list-group">
+                      <a class="list-group-item list-group-item-action">
+                        <h3 class="list-group-item-heading">
+                          {{ "DOCUMENTO NO REGISTRADO" | translate }}
+                        </h3>
+                        <p class="list-group-item-text">
+                          {{
+                            "NO SE HA PODIDO REGISTRAR EL DOCUMENTO.INFORME A LOS SERVICIOS ADMINISTRATIVOS"
+                              | translate
+                          }}
+                        </p>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col col-2"></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col col-4">
+                  <button
+                    class="btn btn-warning text-white btn-block btn-sm"
+                    (click)="BorrarPedido(); NewPage(); staticModal2.hide()"
+                  >
+                    {{ "BORRAR DOCUMENTO" | translate }}
+                  </button>
+                </div>
+                <div class="col col-4">
+                  <button
+                    type="button"
+                    (click)="ProcesarPresupuesto()"
+                    class="btn btn-primary btn-block btn-sm"
+                    title="Transmitir Presupuesto"
+                    data-toggle="tooltip"
+                    [hidden]="btnPresupuesto"
+                    data-placement="top"
+                  >
+                    {{ "GUARDAR PRESUPUESTO" | translate }}
+                  </button>
+                </div>
+                <div class="col col-4">
+                  <button
+                    type="button"
+                    (click)="ProcesarPedido()"
+                    class="btn btn-primary btn-block btn-sm"
+                    title="Transmitir Pedido"
+                    data-toggle="tooltip"
+                    [hidden]="btnPedido"
+                    data-placement="top"
+                  >
+                    {{ "ENVIAR PEDIDO" | translate }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="Cesta.length == 0">
+          <p>{{ "SU CESTA NO CONTIENE ARTÍCULOS" | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal3="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal3"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Croquis Explicativas</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal3.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 600px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModal3.hide()"
+        >
+          {{ "CERRAR" | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal4="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal4"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">
+          {{ "SELECCIÓN DE SOPORTES" | translate }}
+        </h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal4.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="height: 450px; overflow: auto"></div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="staticModal4.hide()"
+        >
+          {{ "CERRAR" | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

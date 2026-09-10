@@ -1,0 +1,2777 @@
+<div class="container-fluid">
+  <div class="card card-block">
+    <div>
+      <h6>
+        <i class="icon-list mt-1"></i> &nbsp;{{ title }}
+        <div class="pull-right">
+          <a class="btn btn-default" [routerLink]="['/routes/master/setup']"
+            >Volver</a
+          >
+        </div>
+        <hr />
+      </h6>
+    </div>
+
+    <div class="row mt-2" [hidden]="Filter_Articles == 0">
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Categoria</label>
+        <select
+          class="form-control"
+          id="categoria"
+          required
+          [(ngModel)]="searchmodel.Categoria"
+          [ngModelOptions]="{ standalone: true }"
+          (change)="ChangeFamilia($event)"
+        >
+          <option *ngFor="let pow of categorias" [value]="pow.value">
+            {{ pow.label }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Cod.Barras</label>
+        <input
+          type="number"
+          class="form-control"
+          [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="searchmodel.Barras"
+        />
+      </div>
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Alias</label>
+        <input
+          type="text"
+          class="form-control"
+          [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="searchmodel.Alias"
+        />
+      </div>
+      <div class="form-group col-xs-4 col-md-4 col-lg-4">
+        <label>Descripción</label>
+        <input
+          type="text"
+          class="form-control"
+          id="DesdeFecha"
+          [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="searchmodel.Descripcion"
+        />
+      </div>
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label>Publicados</label><br />
+        <label class="switch switch-text switch-pill switch-lg switch-primary">
+          <input
+            type="checkbox"
+            class="switch-input"
+            [(ngModel)]="searchmodel.publicados"
+          />
+          <span class="switch-label" data-on="SI" data-off="ALL"></span>
+          <span class="switch-handle"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="row mt-2" [hidden]="true">
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label form="Familia">Familia</label>
+        <select
+          class="form-control"
+          id="familia"
+          required
+          #SelectedFamilia
+          [(ngModel)]="searchmodel.familia"
+          [ngModelOptions]="{ standalone: true }"
+          (change)="ChangeFamilia($event)"
+        >
+          <option *ngFor="let pow of familias" [value]="pow.id">
+            {{ pow.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label form="SubFamilia">SubFamilia</label>
+        <select
+          class="form-control"
+          id="familia"
+          required
+          #SelectedSubFamilia
+          [(ngModel)]="searchmodel.subfamilia"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of subfamilias" [value]="pow.id">
+            {{ pow.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label form="Calidad">Calidad</label>
+        <select
+          class="form-control"
+          id="calidad"
+          required
+          #SelectedCalidad
+          [(ngModel)]="searchmodel.calidad"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of calidades" [value]="pow.id">
+            {{ pow.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label form="Composicion">Composición</label>
+        <select
+          class="form-control"
+          id="composicion"
+          required
+          #SelectedComposicion
+          [(ngModel)]="searchmodel.composicion"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of composiciones" [value]="pow.id">
+            {{ pow.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-xs-2 col-md-2 col-lg-2">
+        <label form="Color">Color</label>
+        <select
+          class="form-control"
+          id="color"
+          required
+          #SelectedColor
+          [(ngModel)]="searchmodel.color"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of colores" [value]="pow.id">
+            {{ pow.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row mt-1">
+      <div class="col col-lg-12">
+        <div class="BtnToolBar">
+          <button class="btn btn-secondary btn-block btn-sm" (click)="All(1)">
+            Todos
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button class="btn btn-secondary btn-block btn-sm" (click)="All(0)">
+            Ninguno
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button class="btn btn-secondary btn-block btn-sm" (click)="Export()">
+            Exportar
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            (click)="Publicar(1)"
+          >
+            Publicar
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            (click)="Publicar(0)"
+          >
+            No Publicar
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            [disabled]="canAdd == 0"
+            (click)="Add()"
+          >
+            Agregar
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            [disabled]="canEdit == 0"
+            (click)="Edit()"
+          >
+            Editar
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            [disabled]="canDel == 0"
+            (click)="DeleteSel()"
+          >
+            Borrar
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            (click)="refresh()"
+          >
+            Refrescar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row col-no-pad">
+      <div class="col col-12" style="min-height: 600px">
+        <jqxGrid
+          #gridReference
+          [auto-create]="false"
+          (onFilter)="Filter($event)"
+          (onBindingcomplete)="Bindingcomplete($event)"
+          (onRowclick)="Select($event)"
+          (onCellbeginedit)="cellBeginEditEvent($event)"
+          (onCellendedit)="cellEndEditEvent($event)"
+        >
+        </jqxGrid>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation == 206 || operation == 210">
+      <div class="form-group col-xs-2 col-md-2 col-lg-2 mt-4">
+        <button
+          class="btn btn-secondary btn-block btn-sm"
+          (click)="ArticlesAssign()"
+        >
+          Asignar Articulos
+        </button>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation == 214">
+      <div class="form-group col-xs-2 col-md-2 col-lg-2 mt-4">
+        <button
+          class="btn btn-secondary btn-block btn-sm"
+          (click)="OpenPromProgram()"
+        >
+          Programar Promocion
+        </button>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation == 110">
+      <div class="col col-lg-2">
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            (click)="BulkAssign()"
+          >
+            Actualización Masiva Campos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation == 111">
+      <div class="col col-lg-12">
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            (click)="BulkAssign()"
+          >
+            Actualización Masiva Campos
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm"
+            (click)="AttributesView()"
+          >
+            Ver Atributos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-1" *ngIf="operation == 200">
+      <div class="form-group col-12 card-middle">
+        <div class="BtnToolBar">
+          <label>Opciones de Actualización</label>
+          <select
+            class="form-control form-control-sm"
+            [(ngModel)]="params.param1"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            <option *ngFor="let pow of parametros" [value]="pow.idrow">
+              {{ pow.descripcion }}
+            </option>
+          </select>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm mt-4"
+            (click)="EditSheetSelect()"
+          >
+            Editar Parámetros de Tejidos
+          </button>
+        </div>
+        <div class="BtnToolBar">
+          <button
+            class="btn btn-secondary btn-block btn-sm mt-4"
+            (click)="openImportTarifa()"
+          >
+            Importar Tarifa de Tejido
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation == 200">
+      <div class="row">
+        <div class="col col-12" style="text-align: center">
+          <hr />
+          <h4>Asignación de Tejidos a Productos de Clientes</h4>
+        </div>
+
+        <div class="form-group col-4 mt-2">
+          <label form="Clienteapi">Cliente Destino</label>
+          <select
+            size="18"
+            class="form-control form-control-sm"
+            id="clientedestino"
+            required
+            #SelectedCliente
+            [(ngModel)]="ClienteSeleccionado"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            <option *ngFor="let pow of clientes" [value]="pow.value">
+              {{ pow.label }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group col-8 mt-2">
+          <label>Configuración del Producto</label>
+          <table class="table table-striped table-hoover table-responsive">
+            <thead>
+              <tr>
+                <td>Producto</td>
+                <td>Imp.Digital</td>
+                <td>Dias Fabricación</td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of productos">
+                <td>
+                  <input
+                    type="checkbox"
+                    [checked]="item.sel"
+                    (click)="Sel_1(item)"
+                  />&nbsp;{{ item.name }}
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    [checked]="item.imp"
+                    (click)="Sel_2(item)"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    [(ngModel)]="item.dias"
+                    style="width: 100px"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div>
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="KundeSelect()"
+            >
+              Agregar Tejidos a Cliente
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation == 201">
+      <div class="form-group col-xs-3 col-md-3 col-lg-3">
+        <label form="Clienteapi">Cliente Destino</label>
+        <select
+          class="form-control"
+          id="clientedestino"
+          required
+          #SelectedCliente
+          [(ngModel)]="ClienteSeleccionado"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of clientes" [value]="pow.value">
+            {{ pow.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group col-xs-4 col-md-4 col-lg-4 mt-4">
+        <button
+          class="btn btn-secondary btn-block btn-sm"
+          (click)="Accionamiento_KundeSelect()"
+        >
+          Agregar Accionamiento a Cliente
+        </button>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation === 202">
+      <div class="form-group col-xs-3 col-md-3 col-lg-3">
+        <label>Cliente Destino</label>
+        <select
+          class="form-control form-control-sm"
+          id="clientedestino"
+          required
+          #SelectedCliente
+          (change)="ReloadTejidos()"
+          [(ngModel)]="ClienteSeleccionado"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of clientes" [value]="pow.value">
+            {{ pow.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group col-xs-3 col-md-3 col-lg-3">
+        <label form="Tejidoapi">Tejido Destino</label>
+        <select
+          class="form-control form-control-sm"
+          id="tejidodestino"
+          required
+          #SelectedTejido
+          [(ngModel)]="TejidoSeleccionado"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of tejidos" [value]="pow.id">
+            {{ pow.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group col-xs-3 col-md-3 col-lg-3">
+        <label>&nbsp;</label>
+        <button
+          class="btn btn-secondary btn-block btn-sm"
+          (click)="TejidoSelect()"
+        >
+          Agregar Colores a Tejido
+        </button>
+      </div>
+    </div>
+
+    <div class="row mt-2" *ngIf="operation == 2170">
+      <div class="col col-xs-3 col-md-3 col-lg-3 col-no-pad">
+        <label form="Clienteapi">Cliente</label>
+        <select
+          class="form-control form-control-sm"
+          id="clientedestino"
+          required
+          #SelectedCliente
+          [(ngModel)]="ClienteSeleccionado"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of clientes" [value]="pow.value">
+            {{ pow.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="col col-xs-3 col-md-3 col-lg-3 col-no-pad">
+        <label form="accionamiento">Tipo de Accionamiento</label>
+        <select
+          class="form-control form-control-sm"
+          id="accionamientomarca"
+          required
+          #SelectedAccionamiento
+          [(ngModel)]="AccionamientoSeleccionado"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          <option *ngFor="let pow of accionamientosmarcas" [value]="pow.idrow">
+            {{ pow.descripcion }}
+          </option>
+        </select>
+      </div>
+
+      <div class="col col-xs-3 col-md-3 col-lg-3 col-no-pad">
+        <label form="accionamiento_trad">Nombre para el Cliente</label>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          id="AccionamientoCliente"
+          [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="AccionamientoCliente"
+        />
+      </div>
+
+      <div class="col col-xs-3 col-md-3 col-lg-3 col-no-pad">
+        <br />
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="AccionamientoTipo_KundeSelect()"
+        >
+          Agregar Accionamiento a Cliente
+        </button>
+      </div>
+    </div>
+
+    <div class="card mt-2" *ngIf="operation == 219">
+      <div class="card-header">Agregar Soportes a Cliente</div>
+      <div class="card-body card-block">
+        <div class="row mt-2">
+          <div class="col col-2">
+            <label form="Clienteapi">Cliente</label>
+            <select
+              class="form-control form-control-sm"
+              id="clientedestino"
+              required
+              [(ngModel)]="ClienteSeleccionado"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of clientes" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-2">
+            <label form="soporte">Soporte</label>
+            <select
+              class="form-control form-control-sm"
+              id="soporte"
+              required
+              [(ngModel)]="SoporteSeleccionado"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of soportes" [value]="pow.id">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col col-2">
+            <label form="soporte_trad">Nombre para el Cliente</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="SoporteCliente"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="SoporteCliente"
+            />
+          </div>
+
+          <div class="col col-1 mt-4">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="Soporte_KundeSelect()"
+            >
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-2" *ngIf="operation == 220">
+      <div class="card-header">Agregar Tapas a Cliente</div>
+      <div class="card-body card-block">
+        <div class="row mt-2">
+          <div class="form-group col col-2">
+            <label form="Clienteapi">Cliente</label>
+            <select
+              class="form-control form-control-sm"
+              id="clientedestino"
+              required
+              [(ngModel)]="ClienteSeleccionado"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of clientes" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group col col-2">
+            <label form="tapa">Tapa</label>
+            <select
+              class="form-control form-control-sm"
+              id="soporte"
+              required
+              [(ngModel)]="TapaSeleccionado"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of tapas" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group col col-2">
+            <label form="tapa_trad">Nombre para el Cliente</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="TapaCliente"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="TapaCliente"
+            />
+          </div>
+
+          <div class="form-group col col-2">
+            <button
+              class="btn btn-secondary btn-block btn-sm mt-4"
+              (click)="Tapa_KundeSelect()"
+            >
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-2" *ngIf="operation == 221">
+      <div class="card-header">Agregar Contrapesos a Cliente</div>
+      <div class="card-body card-block">
+        <div class="row mt-2">
+          <div class="form-group col col-2">
+            <label form="Clienteapi">Cliente</label>
+            <select
+              class="form-control"
+              id="clientedestino"
+              required
+              [(ngModel)]="ClienteSeleccionado"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of clientes" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col col-2">
+            <label form="contrapeso">Contrapeso</label>
+            <select
+              class="form-control"
+              id="soporte"
+              required
+              [(ngModel)]="ContrapesoSeleccionado"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of contrapesos" [value]="pow.id">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col col-2">
+            <label form="tapa_trad">Nombre para el Cliente</label>
+            <input
+              type="text"
+              class="form-control"
+              id="ContrapesoCliente"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="ContrapesoCliente"
+            />
+          </div>
+          <div class="form-group col col-2">
+            <button
+              class="btn btn-secondary btn-block btn-sm mt-4"
+              (click)="Contrapeso_KundeSelect()"
+            >
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col col-lg-12">
+        <div *ngIf="operation == 106">
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="VerImagen(); staticModal3.show()"
+            >
+              Ver Imagen de Artículo
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="staticModal8.show()"
+            >
+              Importar Imágenes
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="BorrarImagen()"
+            >
+              Borrar Imágenes
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="OpenClasificacion()"
+            >
+              Clasificación
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="AttributesAssignValues()"
+            >
+              Atributos
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="BulkAssign()"
+            >
+              Actualizar Campos
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="staticSheet.show()"
+            >
+              Importar Ficha Técnica
+            </button>
+          </div>
+
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="Categorias(2)"
+            >
+              -> C2
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="Categorias(3)"
+            >
+              -> C3
+            </button>
+          </div>
+        </div>
+        <div *ngIf="operation == 108">
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="SetDocumentEXP(-2)"
+            >
+              NO Autorizar
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="SetDocumentEXP(2)"
+            >
+              Autorizar y Exportar a ERP
+            </button>
+          </div>
+        </div>
+        <div *ngIf="operation == 114">
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="staticModal10.show()"
+            >
+              Definir Relación por Agrupación
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              [hidden]="true"
+              (click)="Seleccionar_Origen()"
+            >
+              Seleccionar Artículo Origen
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              [hidden]="true"
+              (click)="Seleccionar_Relacion()"
+            >
+              Agregar a Relación
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button class="btn btn-secondary btn-block btn-sm" [hidden]="true">
+              Ver Relación
+            </button>
+          </div>
+        </div>
+        <div *ngIf="operation == 225">
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="AgregarTejidosColores()"
+            >
+              Agregar Colores a Tejidos
+            </button>
+          </div>
+        </div>
+        <div *ngIf="operation == 3106">
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="staticModal2.show()"
+            >
+              Actualizar Genéricos
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="staticModal4.show()"
+            >
+              Tamaño,Ref,Composición
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="staticModal6.show()"
+            >
+              Actualizar Cat.Principal
+            </button>
+          </div>
+          <div class="BtnToolBar">
+            <button
+              class="btn btn-secondary btn-block btn-sm"
+              (click)="staticModal7.show()"
+            >
+              Actualizar Categoria
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalDet="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalDet"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Combinaciones</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModalDet.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div></div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary"
+          (click)="staticModalDet.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          class="btn btn-secondary"
+          (click)="Update(); staticModalDet.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title pull-left">Detalle de Linea</h5>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal.hide(); myGrid.clearselection()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="formGroup" class="form-horizontal">
+          <dynamic-bootstrap-form
+            [group]="formGroup"
+            [model]="formModel"
+          ></dynamic-bootstrap-form>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="staticModal.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="Update(); staticModal.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal2="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal2"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Parámetros Genéricos de Producto</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal2.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #GenericosForm="ngForm">
+          <tabset>
+            <tab heading="Español">
+              <div class="row">
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Características</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.caracteristicas"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Beneficios</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.beneficios"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Recomendado Para</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.recomendado"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>¿Que Aportamos?</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.queaportamos"
+                  ></textarea>
+                </div>
+              </div>
+            </tab>
+            <tab heading="Inglés">
+              <div class="row">
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Características</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.caracteristicas_en"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Beneficios</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.beneficios_en"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Recomendado Para</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.recomendado_en"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>¿Que Aportamos?</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.queaportamos_en"
+                  ></textarea>
+                </div>
+              </div>
+            </tab>
+            <tab heading="Francés">
+              <div class="row">
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Características</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.caracteristicas_fr"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Beneficios</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.beneficios_fr"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Recomendado Para</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.recomendado_fr"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>¿Que Aportamos?</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto.queaportamos_fr"
+                  ></textarea>
+                </div>
+              </div>
+            </tab>
+          </tabset>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal2.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="UpdateGenericos(); staticModal2.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal3="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal3"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Visor de Imagen</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal3.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          style="width: 100%; height: 600px"
+          frameborder="0"
+          [src]="linkDocument"
+        >
+        </iframe>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal3.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal4="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal4"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">
+          Actualización Masiva Tamaño,Ref,Composición
+        </h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal4.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #GenericosForm="ngForm">
+          <tabset>
+            <tab heading="Español">
+              <div class="row">
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Tamaño Cama</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.tamano_l1"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Referencia</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.referencia_l1"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Composición</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.composicion_l1"
+                  ></textarea>
+                </div>
+              </div>
+            </tab>
+            <tab heading="Inglés">
+              <div class="row">
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Tamaño Cama</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.tamano_l2"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Referencia</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.referencia_l2"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Composición</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.composicion_l2"
+                  ></textarea>
+                </div>
+              </div>
+            </tab>
+            <tab heading="Francés">
+              <div class="row">
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Tamaño Cama</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.tamano_l3"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Referencia</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.referencia_l3"
+                  ></textarea>
+                </div>
+                <div class="form-group col-xs-12 col-md-12 col-lg-12">
+                  <label>Composición</label>
+                  <textarea
+                    class="form-control"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="producto2.composicion_l3"
+                  ></textarea>
+                </div>
+              </div>
+            </tab>
+          </tabset>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal4.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="UpdateGenericos2(); staticModal4.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal5="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal5"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title pull-left">Actualización Clasificación</h5>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal5.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #GenericosForm="ngForm">
+          <div class="row">
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Categoría</label>
+              <select
+                class="form-control"
+                id="sel_categoria"
+                required
+                #SelectedCategoria
+                [(ngModel)]="Sel_Categoria"
+                [ngModelOptions]="{ standalone: true }"
+                [disabled]="true"
+                (change)="ChangeCategoria()"
+              >
+                <option *ngFor="let pow of categorias" [value]="pow.value">
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Linea</label>
+              <select
+                class="form-control"
+                id="sel_linea"
+                required
+                #SelectedLinea
+                [(ngModel)]="Sel_Linea"
+                [ngModelOptions]="{ standalone: true }"
+                (change)="ChangeLinea()"
+              >
+                <option *ngFor="let pow of lineasfilter" [value]="pow.value">
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Sublinea</label>
+              <select
+                class="form-control"
+                id="sel_Sublinea"
+                required
+                #SelectedLinea
+                [(ngModel)]="Sel_SubLinea"
+                [ngModelOptions]="{ standalone: true }"
+                (change)="ChangeSubLinea()"
+              >
+                <option *ngFor="let pow of sublineasfilter" [value]="pow.value">
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Opción</label>
+              <select
+                class="form-control"
+                id="sel_Opcion"
+                required
+                #SelectedLinea
+                [(ngModel)]="Sel_Opcion"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option *ngFor="let pow of opcionesfilter" [value]="pow.value">
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Sublinea 2</label>
+              <select
+                class="form-control"
+                id="sel_Sublinea2"
+                required
+                #SelectedLinea2
+                [(ngModel)]="Sel_SubLinea2"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option *ngFor="let pow of sublineasfilter" [value]="pow.value">
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal5.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="UpdateClasificacion(); staticModal5.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal6="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal6"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Actualización Categoria Principal</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal6.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #GenericosForm="ngForm">
+          <div class="row">
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Categoría</label>
+              <select
+                class="form-control"
+                id="sel_categoriam"
+                required
+                #SelectedCategoria
+                [(ngModel)]="Sel_CategoriaM"
+                [ngModelOptions]="{ standalone: true }"
+                (change)="ChangeCategoriaM()"
+              >
+                <option *ngFor="let pow of categoriasm" [value]="pow.value">
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal6.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="UpdateCategoriaPrincipal(); staticModal6.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal7="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal7"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Actualización Categoria</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal7.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #GenericosForm="ngForm">
+          <div class="row">
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Categoría</label>
+              <select
+                class="form-control"
+                id="sel_categoria2"
+                required
+                #SelectedCategoria
+                [(ngModel)]="Sel_Categoria"
+                [ngModelOptions]="{ standalone: true }"
+                (change)="ChangeCategoria()"
+              >
+                <option *ngFor="let pow of categorias" [value]="pow.value">
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal7.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="UpdateCategoria(); staticModal7.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal8="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal8"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Importar Imágenes</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal8.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Número de Imagen</label>
+            <select
+              class="form-control"
+              id="sel_imagen"
+              required
+              #SelectedCategoria
+              [(ngModel)]="Sel_Imagen"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of imagenes" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label><b>Seleccionar Fichero a Importar</b></label>
+            <input
+              id="Imagen_Upload"
+              type="file"
+              placeholder="Subir Imagen"
+              (change)="fileChangeEvent($event)"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal8.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModal10="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModal10"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Articulos Relacionados</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModal10.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col-xs-2 col-md-2 col-lg-2">
+            <label>Origen</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="relacion.from"
+            />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group col-xs-2 col-md-2 col-lg-2">
+            <label>Destino 1</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="relacion.to1"
+            />
+          </div>
+          <div class="form-group col-xs-2 col-md-2 col-lg-2">
+            <label>Destino 2</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="relacion.to2"
+            />
+          </div>
+          <div class="form-group col-xs-2 col-md-2 col-lg-2">
+            <label>Destino 3</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="relacion.to3"
+            />
+          </div>
+          <div class="form-group col-xs-2 col-md-2 col-lg-2">
+            <label>Destino 4</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="relacion.to4"
+            />
+          </div>
+          <div class="form-group col-xs-2 col-md-2 col-lg-2">
+            <label>Destino 5</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="relacion.to5"
+            />
+          </div>
+          <div class="form-group col-xs-2 col-md-2 col-lg-2">
+            <label>Destino 6</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="relacion.to6"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal10.hide(); NoConfirmar_Agrupacion()"
+        >
+          NO Confirmar Relación
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModal10.hide(); Confirmar_Agrupacion()"
+        >
+          Confirmar Relación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAdd="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalAdd"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Adición de Linea</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModalAdd.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #GenericosForm="ngForm">
+          <div class="row">
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Field 1</label>
+              <select
+                class="form-control"
+                id="sel_field1"
+                required
+                #SelectedField1
+                [(ngModel)]="modalDialog.Sel_Field1"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option
+                  *ngFor="let pow of modalDialog.field1"
+                  [value]="pow.value"
+                >
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Field 2</label>
+              <select
+                class="form-control"
+                id="sel_field2"
+                required
+                #SelectedField2
+                [(ngModel)]="modalDialog.Sel_Field2"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option
+                  *ngFor="let pow of modalDialog.field2"
+                  [value]="pow.value"
+                >
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-xs-12 col-md-12 col-lg-12">
+              <label>Field 3</label>
+              <select
+                class="form-control"
+                id="sel_field3"
+                required
+                #SelectedField3
+                [(ngModel)]="modalDialog.Sel_Field3"
+                [ngModelOptions]="{ standalone: true }"
+              >
+                <option
+                  *ngFor="let pow of modalDialog.field3"
+                  [value]="pow.value"
+                >
+                  {{ pow.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModalAdd.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModalAdd.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAssign="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalAssign"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Asignación de Atributos</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModalAssign.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="height: 500px; overflow: auto">
+        <table class="table table-responsive table-striped table-bordered">
+          <tr *ngFor="let item2 of atributos">
+            <td style="width: 40px">
+              <input
+                type="checkbox"
+                [checked]="item2.selected"
+                (change)="attr_changed($event, item2)"
+              />
+            </td>
+            <td>{{ item2.atributo }}</td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModalAssign.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="AttributesUpdate(); staticModalAssign.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalAssignValues="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalAssignValues"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">
+          Asignación de Valores de Atributos
+        </h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModalAssignValues.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="height: 500px; overflow: auto">
+        <table class="table table-responsive table-striped table-bordered">
+          <tr *ngFor="let item2 of atributos">
+            <td>{{ item2.atributo }}</td>
+            <td>
+              <input
+                type="text"
+                style="width: 100%"
+                [(ngModel)]="item2.value"
+              />
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModalAssignValues.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="AttributesUpdateValues(); staticModalAssignValues.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticModalBulk="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalBulk"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Actualización Masiva de Campos</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticModalBulk.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="height: 500px; overflow: auto">
+        <div class="row">
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Campo</label>
+            <select
+              class="form-control"
+              id="sel_campo"
+              required
+              #SelectedCategoria
+              [(ngModel)]="bulk.id"
+              [ngModelOptions]="{ standalone: true }"
+              (change)="SetField()"
+            >
+              <option *ngFor="let pow of fields" [value]="pow.id">
+                {{ pow.description }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Valor</label>
+            <textarea
+              class="form-control"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="bulk.value"
+              style="height: 300px"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticModalBulk.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="BulkUpdateValues(); staticModalBulk.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #staticSheet="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalSheet"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Importar Ficha Técnica</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="staticSheet.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label><b>Seleccionar Hoja Técnica a Importar</b></label>
+            <input
+              id="Imagen_Upload"
+              type="file"
+              placeholder="Subir Hoja"
+              (change)="fileChangeEventSheet($event)"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="staticSheet.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #editSheet="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docModalEdit"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Edición de Parámetros de Tejido</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="EditSheetClose()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="height: 600px; overflow: auto">
+        <div class="row">
+          <div class="col col-12">
+            <label>Opacidad</label>
+            <input class="form-control" [(ngModel)]="model.editorData3" />
+          </div>
+        </div>
+        <div class="row mt-1">
+          <div class="col col-12">
+            <label>Uso Recomendado</label>
+            <!--
+            <ckeditor
+              [(ngModel)]="model.editorData"
+              [editor]="Editor"
+            ></ckeditor>
+          --></div>
+        </div>
+        <div class="row mt-1">
+          <div class="col col-12">
+            <label>Información Técnica</label>
+            <!--
+            <ckeditor
+              [(ngModel)]="model.editorData2"
+              [editor]="Editor2"
+            ></ckeditor>
+          --></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-success btn-sm"
+          (click)="SaveSheetData()"
+        >
+          Actualizar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="EditSheetClose()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #articlesModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel2"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Búsqueda de Artículos</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="articlesModal.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <articles-search
+          [Tipo]="10000"
+          [Pedido]="-1"
+          [Name]="'-1'"
+          [Pos]="0"
+          (onLineAdded)="LineAdded($event)"
+        >
+        </articles-search>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #categoriasModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel2"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h4 class="modal-title pull-left">Categorías</h4>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="categoriasModal.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngFor="let pow of categorias">
+          {{ pow.value }}&nbsp;{{ pow.label }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #usersModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="usersModal"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title pull-left">Alta/Actualización de Usuario</h5>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="usersModal.hide(); myGrid.clearselection()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col col-6">
+            <label>Nombre</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="user_nombre"
+              [(ngModel)]="user.nombre"
+              placeholder="Nombre"
+            />
+          </div>
+          <div class="col col-6">
+            <label>Apellidos</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              id="user_apellidos"
+              [(ngModel)]="user.apellidos"
+              placeholder="Apellidos"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col col-6">
+            <label>Email</label>
+            <input
+              type="email"
+              class="form-control form-control-sm"
+              id="user_email"
+              [(ngModel)]="user.email"
+              placeholder="Email"
+            />
+          </div>
+          <div class="col col-6">
+            <label>Password</label>
+            <input
+              type="password"
+              class="form-control form-control-sm"
+              id="user_password"
+              [(ngModel)]="user.password"
+              placeholder="Password"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col col-12">
+            <label>Ambito</label>
+            <select
+              class="form-control form-control-sm"
+              id="user_ambito"
+              [(ngModel)]="user.ambito"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option value="I">Gestión del ambito Interno</option>
+              <option value="E">Cliente del Ambito Externo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col col-6">
+            <label>Empresa</label>
+            <select
+              class="form-control form-control-sm"
+              id="user_empresa"
+              [(ngModel)]="user.empresa"
+              [ngModelOptions]="{ standalone: true }"
+              (change)="ChangeEmpresa('')"
+            >
+              <option *ngFor="let pow of clientes" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+          <div class="col col-6">
+            <label>Tienda</label>
+            <select
+              class="form-control form-control-sm"
+              id="user_subempresa"
+              [(ngModel)]="user.subempresa"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of entregas" [value]="pow.idrow">
+                {{ pow.nombre }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="usersModal.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="Update(); usersModal.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #tejidoscoloresModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="tejidoscoloresModal"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">Colores de Tejidos</h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="tejidoscoloresModal.hide(); myGrid.clearselection()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <assign-groups #AssignGroups></assign-groups>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="tejidoscoloresModal.hide(); myGrid.clearselection()"
+        >
+          Cerrar
+        </button>
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="Update(); tejidoscoloresModal.hide()"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #promocionesModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="promocionesModal"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">Generación de Promociones</h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="promocionesModal.hide(); myGrid.clearselection()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="height: 500px">
+          <haru-sm-promociones></haru-sm-promociones>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="promocionesModal.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #tarifasModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docTarifasModal"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">Importar Documentos de Tarifa</h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="tarifasModal.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Tejido</label>
+            <select
+              class="form-control"
+              id="sel_imagen"
+              required
+              #SelectedCategoria
+              [(ngModel)]="Sel_Imagen"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of tejidos" [value]="pow.idrow">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Seleccionar Fichero PDF a Importar</label>
+            <input
+              id="Imagen_Upload"
+              type="file"
+              placeholder="Subir Documento"
+              (change)="fileChangeEventTarifa($event)"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="tarifasModal.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #accionamientosModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docAccionamientos"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">
+          Agregar/Editar Mapa de Accionamientos
+        </h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="accionamientosModal.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Cliente</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa"
+              required
+              [(ngModel)]="accionamientosMapa.Cliente"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of clientes" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Producto</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa"
+              required
+              [(ngModel)]="accionamientosMapa.Producto"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of productos" [value]="pow.id">
+                {{ pow.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Accionamientos</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa2"
+              required
+              [(ngModel)]="accionamientosMapa.Accionamiento"
+              [ngModelOptions]="{ standalone: true }"
+              (change)="LoadAccionamientosTipos()"
+            >
+              <option *ngFor="let pow of accionamientos" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-xs-12 col-md-12 col-lg-12">
+            <label>Tipo</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa3"
+              required
+              [(ngModel)]="accionamientosMapa.Modelo"
+              [ngModelOptions]="{ standalone: true }"
+              (change)="LoadAccionamientosModelos()"
+            >
+              <option *ngFor="let pow of accionamientostipos" [value]="pow.id">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-xs-3 col-md-3 col-lg-3">
+            <label>Color/Marca</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa5"
+              required
+              [(ngModel)]="accionamientosMapa.TipoColor"
+              [ngModelOptions]="{ standalone: true }"
+              (change)="LoadAccionamientosModelos()"
+            >
+              <option value="1">COLOR</option>
+              <option value="2">MARCA</option>
+            </select>
+          </div>
+          <div class="form-group col-xs-9 col-md-9 col-lg-9">
+            <label>Color/Modelo</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa4"
+              required
+              [(ngModel)]="accionamientosMapa.Color"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option
+                *ngFor="let pow of accionamientoscolores"
+                [value]="pow.idrow"
+              >
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="Agregar_Accionamiento_Mapa()"
+        >
+          Agregar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="accionamientosModal.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade"
+  bsModal
+  #domiciliosModal="bs-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="true"
+  id="docDomicilios"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h6 class="modal-title pull-left">
+          Agregar/Editar Tiendas de Clientes
+        </h6>
+        <button
+          type="button"
+          class="close pull-right"
+          aria-label="Close"
+          (click)="domiciliosModal.hide()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="form-group col col-12">
+            <label>Cliente</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa"
+              required
+              [(ngModel)]="tiendasClientes.Cliente"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of clientes" [value]="pow.value">
+                {{ pow.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col col-12">
+            <label>Pais</label>
+            <select
+              class="form-control form-control-sm"
+              id="id_accionamientosmapa"
+              required
+              [(ngModel)]="tiendasClientes.Pais"
+              [ngModelOptions]="{ standalone: true }"
+            >
+              <option *ngFor="let pow of paises" [value]="pow.pais">
+                {{ pow.descripcion }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col col-12">
+            <label>Nombre Tienda</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Nombre"
+              placeholder="Nombre Tienda"
+            />
+          </div>
+          <div class="form-group col col-6">
+            <label>Población</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Poblacion"
+              placeholder="Población"
+            />
+          </div>
+          <div class="form-group col col-6">
+            <label>Província</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Provincia"
+              placeholder="Provincia"
+            />
+          </div>
+          <div class="form-group col col-6">
+            <label>Teléfono</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Telefono"
+              placeholder="Telefono"
+            />
+          </div>
+          <div class="form-group col col-6">
+            <label>Email</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Email"
+              placeholder="Email"
+            />
+          </div>
+          <div class="form-group col col-4">
+            <label>Dias Transporte</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.DiasTransporte"
+              placeholder="Dias Transporte"
+            />
+          </div>
+          <div class="form-group col col-4">
+            <label>Cod.Solupyme</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.CodSolupyme"
+              placeholder="Cod Solupyme"
+            />
+          </div>
+          <div class="form-group col col-4">
+            <label>Cod.Centro</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Centro"
+              placeholder="Cod Solupyme"
+            />
+          </div>
+          <div class="form-group col col-4">
+            <label>Usuario</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Usuario"
+              placeholder="Usuario"
+            />
+          </div>
+          <div class="form-group col col-4">
+            <label>Password</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="tiendasClientes.Password"
+              placeholder="Password"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="Agregar_Domicilio()"
+        >
+          Agregar
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="domiciliosModal.hide()"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

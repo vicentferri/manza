@@ -1,0 +1,39 @@
+.sm-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sm-tile {
+  transition: background-color 0.15s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.sm-tile:hover {
+  background-color: #f0f7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+  border-color: #b8d4f5;
+}
+
+.sm-tile .fa {
+  color: #6c757d;
+  margin-bottom: 0.6rem;
+}
+
+.sm-tile:hover .fa {
+  color: #3d7abf;
+}
+
+.sm-tile strong {
+  font-size: 0.8rem;
+}
+
+.sm-tile small {
+  font-size: 0.7rem;
+}

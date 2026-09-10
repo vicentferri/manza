@@ -1,0 +1,20 @@
+{
+  "firma": "APIMANAGER",
+  "firmaID": "003",
+  "host_ip": "192.168.10.99:6900",
+  "host_api_ip": "192.168.10.99:6900",
+  "nh_host_ip": "192.168.10.99:6900",
+  "api_surl": "/api",
+  "__firma": "APIMANAGER",
+  "__firmaID": "003",
+  "__host_ip": "192.168.11.200:6900",
+  "__host_api_ip": "192.168.11.200:6900",
+  "__nh_host_ip": "192.168.11.200:6900",
+  "__api_surl": "/api",
+  "_firma": "SOLARMANES",
+  "_firmaID": "004",
+  "_host_ip": "www.manzasm.com",
+  "_host_api_ip": "www.manzasm.com",
+  "_nh_host_ip": "www.manzasm.com",
+  "_api_surl": "/api/sm"
+}

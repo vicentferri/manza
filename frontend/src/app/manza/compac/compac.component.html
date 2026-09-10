@@ -1,0 +1,241 @@
+<div class="card shadow-sm mt-4">
+  <div class="card-header bg-dark text-white">
+    <h5 class="mb-0">{{ "COMPAC" | translate }}</h5>
+  </div>
+
+  <div class="card-body">
+
+<!-- Dimensiones + perfilería -->
+<div class="row mt-1">
+  <div class="card-body card-block">
+    <div class="row">
+      <div class="col col-12">
+<label>{{ "TIPO DE JUNQUILLO" | translate }}</label>
+      <select name="TipoJunquillo" class="form-control form-control-sm" [(ngModel)]="compac.PC_TipoJunquillo">
+        <option value="JC">{{ "CUADRADO" | translate }}</option>
+        <option value="JR">{{ "REDONDEADO" | translate }}</option>
+      </select>
+      </div>
+    </div>
+   
+    <div class="row">
+      <div class="col col-12">
+      <div style="padding: 0.3em; width: 20%; float: left">
+        <label>{{ "ANCHO INTERIOR" | translate }}</label>
+        <input class="form-control form-control-sm" type="number" [min]="minancho" [max]="maxancho" step=".5"
+          [(ngModel)]="Ancho" id="Compac_ancho" [appMaxdigits]="3"
+          [ngModelOptions]="{ standalone: true }" required
+          (blur)="Ancho_Change()" (keyup.enter)="Next($event, alto4)" />
+          <small class="text-muted">{{ minancho }}-{{ maxancho }} cm</small>
+      </div>
+      <div style="padding: 0.3em; width: 20%; float: left"
+        >
+        <label>{{ "ANCHOEXTERIOR" | translate }}</label>
+        <input #kanchoB class="form-control form-control-sm" type="number" [min]="minancho" [max]="maxancho" step=".5"
+          [(ngModel)]="compac.PC_AnchoB" id="PC_Ancho" [appMaxdigits]="3"
+          [ngModelOptions]="{ standalone: true }" required
+          (blur)="Ancho_Change()" (keyup.enter)="Next($event, alto4)"
+          [disabled]="compac.PC_TipoJunquillo == '-1' || compac.PC_TipoJunquillo == 'JC'" />
+           <small class="text-muted">{{ minancho }}-{{ maxancho }} cm</small>
+      </div>
+      <div style="padding: 0.3em; width: 20%; float: left">
+        <label>{{ "ALTO" | translate }}</label>
+        <input #alto4 class="form-control form-control-sm" type="number" [min]="minalto" [max]="maxalto" step=".5"
+          [(ngModel)]="Alto" id="Compac_Alto" [appMaxdigits]="3"
+          [ngModelOptions]="{ standalone: true }" required />
+           <small class="text-muted">{{ minalto }}-{{ maxalto }} cm</small>
+      </div>
+      <div style="padding: 0.3em; width: 20%; float: left">
+        <label>{{ "CANTIDAD" | translate }}</label>
+        <input #cantidad4 class="form-control form-control-sm" type="number" min="0" max="600"
+          [(ngModel)]="Cantidad" id="Compac_Cantidad" [appMaxdigits]="3"
+          [ngModelOptions]="{ standalone: true }" required />
+      </div>
+      <div style="padding: 0.3em; width: 20%; float: left">
+        <label>{{ "COLORPERFILERIA" | translate }}</label>
+        <select name="ColorPerfileria" class="form-control form-control-sm"
+          [(ngModel)]="compac.PC_ColorPerfileria" (change)="Change_ColorPerfileria()">
+          <option value="-1">{{ "ELEGIR" | translate }}</option>
+          <option value="BLA">{{ "BLA" | translate }}</option>
+          <option value="GRI">{{ "GRI" | translate }}</option>
+          <option value="NEG">{{ "NEG" | translate }}</option>
+          <option value="RAL">{{ "INDICAR RAL" | translate }}</option>
+        </select>
+      </div>
+      </div>
+      <div class="row">
+      <div class="col col-12">
+      <div style="padding: 0.3em; width: 100%; float: left" [hidden]="compac.ShowRal === 0">
+        <label>{{ RalC_Label }}</label>
+        <select name="compac_Ral" class="form-control form-control-sm"
+          [ngModelOptions]="{ standalone: true }" [(ngModel)]="compac.Ral" (change)="ChangeRalC()">
+          <option *ngFor="let pow of items90" [value]="pow.id">{{ pow.text }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Accionamiento -->
+<div class="card mt-2 shadow-sm">
+  <div class="card-header bg-dark text-white">{{ "ACCIONAMIENTO" | translate }}</div>
+  <div class="card-body card-block">
+    <div style="padding: 0.3em; width: 30%; float: left">
+      <label>{{ "COLORCADENA" | translate }}</label>
+      <select name="Compac_Acc_Color" class="form-control form-control-sm"
+        [(ngModel)]="compac.Compac_Acc_Color" (change)="ChangeColorCompac()">
+        <option value="-1">{{ "ELEGIR" | translate }}</option>
+        <option value="BLA">{{ "BLA" | translate }}</option>
+        <option value="NEG">{{ "NEG" | translate }}</option>
+        <option value="GRI">{{ "GRI" | translate }}</option>
+      </select>
+    </div>
+    <div style="padding: 0.3em; width: 20%; float: left">
+      <label>{{ "ALTURACADENA" | translate }}</label>
+      <input type="number" class="form-control form-control-sm" id="Compac_AlturaCadena"
+        step=".5" [ngModelOptions]="{ standalone: true }" [(ngModel)]="AlturaCadena" [appMaxdigits]="3" />
+    </div>
+    <div style="padding: 0.3em; width: 20%; float: left">
+      <label>{{ "POSICIONMANDO" | translate }}:</label>
+      <select name="Compac_Acc_Posicion" class="form-control form-control-sm" [(ngModel)]="compac.Compac_Acc_Posicion">
+        <option value="-1">{{ "ELEGIR" | translate }}</option>
+        <option value="DER">{{ "DERECHA" | translate }}</option>
+        <option value="IZQ">{{ "IZQUIERDA" | translate }}</option>
+      </select>
+    </div>
+    <div style="padding: 0.3em; width: 30%; float: left">
+      <label>{{ "COLORTAPAS" | translate }}:</label>
+      <select name="Compac_Tap_Color" class="form-control form-control-sm" [(ngModel)]="compac.Compac_Tap_Color">
+        <option value="-1">{{ "ELEGIR" | translate }}</option>
+        <option value="BLA">{{ "BLANCO" | translate }}</option>
+        <option value="NEG">{{ "NEGRO" | translate }}</option>
+        <option value="GRI">{{ "GRIS" | translate }}</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Tejido -->
+<div class="card mt-2 shadow-sm">
+  <div class="card-header bg-dark text-white">
+    {{ "SELECCIONDELTEJIDO" | translate }}
+  </div>
+  <div class="card-body card-block">
+    <div class="row">
+      <div class="col-12">
+        <label>{{ "TIPO DE TEJIDO" | translate }}</label>
+        <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+          [(ngModel)]="Tipo4_Opacidad" (change)="ChangeTipo4Opacidad()">
+          <option *ngFor="let pow of TiposTejido_compac" [value]="pow">{{ pow }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row mt-1">
+      <div class="col col-12">
+        <div style="padding: 0.3em; width: 33%; float: left">
+          <label>{{ "IMPRESIONDIGITAL" | translate }}</label>
+          <div class="input-group">
+            <span class="input-group-addon beautiful" style="background-color: white;border:none">
+              <input class="form-control form-control-sm" type="checkbox" name="ImpresionDigital"
+                [(ngModel)]="TIPO4_ID_Quiero" style="width: 20px" (change)="selImpresionDigital_Tipo4()" />
+            </span>
+            <input class="form-control form-control-sm" type="text"
+              [(ngModel)]="TIPO4_ID_Imagen" id="TIPO4_ImpresionDigital" [ngModelOptions]="{ standalone: true }" />
+            <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!TIPO4_ID_Quiero" [hidden]="true"
+              (click)="idSelector.abrir()">
+              <i class="fa fa-picture-o"></i> Seleccionar Imagen
+            </button>
+          </div>
+          <div class="mt-1" *ngIf="TIPO4_ID_Quiero && idSeleccion" style="display: flex; align-items: center; gap: 0.5em;">
+            <img [src]="idSeleccion.previewUrl" style="height: 40px; border: 1px solid #ccc; border-radius: 4px;" />
+            <small class="text-muted">{{ TIPO4_ID_Imagen }}</small>
+            <button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="quitarImpresionDigital()">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+          <small class="text-muted d-block mt-1" *ngIf="TIPO4_ID_Quiero && !idSeleccion">{{ TIPO4_ID_Imagen }}</small>
+        </div>
+        <div style="padding: 0.3em; width: 33%; float: left">
+          <label>{{ "SERIE" | translate }}</label>
+          <div class="input-group">
+            <select name="Tipo4_Tejido" class="form-control form-control-sm"
+              [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_Tejido" (change)="ChangeTipo4Tejido()">
+              <option *ngFor="let pow of tejidos_compac" [value]="pow.id">{{ pow.text }}</option>
+            </select>
+            <span class="input-group-btn">
+              <button class="btn btn-default" type="button">{{ CodigoProv4 }}</button>
+            </span>
+          </div>
+        </div>
+        <div style="padding: 0.3em; width: 34%; float: left">
+          <label>{{ "COLOR" | translate }}</label>
+          <select name="Tipo4_TejidoColor" class="form-control form-control-sm"
+            [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_TejidoColor" (change)="ChangeTipo4Color()">
+            <option *ngFor="let pow of tejidos_compac_colores" [value]="pow.id">{{ pow.text }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estancia -->
+<div class="card mt-1 shadow-sm">
+  <div class="card-header bg-dark text-white">{{ "ESTANCIA" | translate }}</div>
+  <div class="card-body card-block">
+    <div class="row">
+      <div class="col col-4">
+        <label>{{ "ESTANCIA" | translate }}</label>
+        <select name="Tipo4_Estancia" class="form-control form-control-sm"
+          [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_Estancia">
+          <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
+        </select>
+      </div>
+      <div class="col col-6">
+        <label>{{ "OBSERVACIONES" | translate }}</label>
+        <textarea class="form-control form-control-sm"
+          [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_Estancia_Obs"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<br/>
+<!-- Precio y Acciones -->
+    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+      <div *ngIf="precios?.T4_PVP > 0" class="text-start">
+        <h4 class="mb-1 text-primary fw-bold">
+          {{ precios?.T4_PVP | number : '1.2-2' }}&nbsp;€
+          <small class="text-muted">({{ precios?.T4_PVP_C1 }})</small>
+        </h4>
+        <small class="text-muted" *ngIf="precios?.T4_Fecha_Entrega">
+          F.Fab: {{ precios?.T4_Fecha_Entrega }} + {{ precios?.T4_Transporte }}d Trans
+        </small>
+      </div>
+      <div *ngIf="!precios?.T4_PVP || precios?.T4_PVP <= 0" class="text-start">
+        <p class="text-muted mb-0">Calcule el precio para continuar</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button 
+          class="btn btn-primary" 
+          (click)="CheckPrice()"
+          [disabled]="calculando">
+          <span *ngIf="calculando" class="spinner-border spinner-border-sm me-2"></span>
+          {{ calculando ? ('CALCULANDO' | translate) : ('CALCULAR PRECIO' | translate) }}
+        </button>
+        <button 
+          class="btn btn-success" 
+          (click)="Agregar()"
+          [disabled]="!precios?.T4_PVP || precios?.T4_PVP <= 0">
+          <i class="fas fa-plus me-2"></i>
+          {{ "AGREGAR" | translate }}
+        </button>
+      </div>
+    </div>
+
+</div>
+</div>
+
+<app-impresion-digital-selector #idSelector (seleccionado)="onImpresionDigitalSeleccionada($event)"></app-impresion-digital-selector>

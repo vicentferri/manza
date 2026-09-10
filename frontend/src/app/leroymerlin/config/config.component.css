@@ -1,0 +1,35 @@
+
+
+.bottom-align-text {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+.flex-row {
+  flex-direction: row !important; 
+}
+
+
+.align-items-center {
+  align-items: center !important; }
+
+.app {
+    display:flex;
+    flex: 0 0 50px;
+}
+
+nav-link {
+    color: white !important;
+}
+
+card-border-left {
+    border-left: 2px #0000ff;
+}
+
+footer .navbar-fixed-bottom {
+    bottom: 0px;
+    position: absolute;
+    background-color:#333;
+    width:100%;
+}

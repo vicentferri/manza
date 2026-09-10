@@ -1,0 +1,122 @@
+<div style="background: var(--color-background-primary, #fff); border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; font-size: 14px;">
+
+  <!-- Header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 13px; font-weight: 500;">{{ "ENROLLABLE" | translate }} &nbsp;{{ item.cantidad }} × {{ item.ancho }} × {{ item.alto }}</span>
+      <span *ngIf="item.precios.T1_Fecha_Entrega != ''"
+        style="font-size: 12px; color: #6c757d; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 4px; padding: 2px 8px;">
+        F.Fab. {{ item.precios.T1_Fecha_Entrega }}&nbsp;+&nbsp;{{ item.precios.T1_Transporte }}d transporte
+      </span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-sm btn-outline-secondary" (click)="EditLine(item)">{{ "MODIFICAR" | translate }}</button>
+      <button class="btn btn-sm btn-outline-danger" (click)="DeleteLine(item)">{{ "BORRAR" | translate }}</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+    <!-- Columna izquierda: datos -->
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+
+      <!-- Accionamiento -->
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">{{ "ACCIONAMIENTO" | translate }}</div>
+        <div style="font-size: 13px; line-height: 1.6;">
+          {{ item.acc_tipo_text }} {{ item.acc_marca_text }}
+          {{ item.acc_tubo_text }} {{ item.acc_modelo_text }}
+          {{ item.acc_posicion_text }}
+          <div *ngIf="item.acc_tipo_text == 'Cadena'" style="margin-top: 4px; color: #6c757d; font-size: 12px;">
+            <span *ngIf="item.cad_Tipo == 2">{{ "CADENAMETÁLICA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text }}</span>
+            <span *ngIf="item.cad_Tipo == 1">{{ "CADENA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text }}</span>
+            <span *ngIf="item.cad_Tipo == 0">{{ "CADENACONTINUA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tejido -->
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">{{ "TEJIDO" | translate }}</div>
+        <div style="font-size: 13px;">{{ item.tej_tipo_text }} &nbsp;·&nbsp; {{ item.tej_color_text }} &nbsp;·&nbsp; {{ item.tej_salida_text }}</div>
+        <div *ngIf="item.impresion" style="font-size: 12px; color: #6c757d; margin-top: 4px;">
+          {{ "IMPRESION_DIGITAL" | translate }}: {{ item.impresion_imagen }}
+        </div>
+      </div>
+
+      <!-- Otros -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">{{ "OTROS" | translate }}</div>
+        <div style="font-size: 13px;">{{ "SOPORTES" | translate }}: {{ item.sop_tipo_text }} &nbsp;·&nbsp; {{ item.sop_color_text }}</div>
+        <div style="font-size: 13px;">{{ "TAPAS" | translate }}: {{ item.tap_tipo_text }} &nbsp;·&nbsp; {{ item.tap_color_text }}</div>
+        <div style="font-size: 13px;">{{ "CONTRAPESO" | translate }}: {{ item.con_tipo_text }} &nbsp;·&nbsp; {{ item.con_color_text }}</div>
+      </div>
+
+    </div>
+
+    <!-- Columna derecha: precios -->
+    <div style="border-left: 1px solid #dee2e6; padding-left: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 11px; font-weight: 500; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Resumen de precio</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Tej. según tarifa</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T1_Tejido | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T1_Tejido_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T1_Inc_CadenaMetalica > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Incr. cadena metálica</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T1_Inc_CadenaMetalica | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T1_Inc_CadenaMetalica_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T1_Inc_Contrapeso > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Incr. contrapeso</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T1_Inc_Contrapeso | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T1_Inc_Contrapeso_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T1_Inc_Mando > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Incr. mando</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T1_Inc_Mando | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T1_Inc_Mando_C1 }}</div>
+            </div>
+          </div>
+
+          <div *ngIf="item.precios.T1_Inc_Cargador > 0"
+            style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: #6c757d;">Incr.Cargador</span>
+            <div style="text-align: right;">
+              <span>{{ item.precios.T1_Inc_Cargador | number:'1.2-2' }} €</span>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T1_Inc_Cargador_C1 }}</div>
+              <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T1_Inc_Cargador_48 }}</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #dee2e6; margin-top: 16px; padding-top: 12px; display: flex; justify-content: space-between; align-items: baseline;">
+        <span style="font-size: 13px; font-weight: 500; color: #6c757d;">Total</span>
+        <div style="text-align: right;">
+          <div style="font-size: 20px; font-weight: 500;">{{ item.precios.T1_PVP | number:'1.2-2' }} €</div>
+          <div style="font-size: 11px; color: #6c757d;">{{ item.precios.T1_PVP_C1 }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

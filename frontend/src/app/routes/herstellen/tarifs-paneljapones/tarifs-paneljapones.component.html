@@ -1,0 +1,54 @@
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h6>
+        Configuración de Tarifa de Panel Japones(Mecanismo)
+        <div class="pull-right">
+
+        </div>
+      </h6>
+    </div>
+
+    <div class="card-body card-block">
+      <div class="row">
+
+        <div class="col col-6">
+          <table class="table table-striped table-hover table-bordered table-condensed borderless">
+            <tr>
+              <td style="text-align:center"><b>Vias</b></td>
+              <td style="text-align:center"><b>Ancho</b></td>
+              <td style="text-align:center"><b>PVP</b></td>
+              <td style="text-align:center"><b>C1_XXXXXXX</b></td>
+              <td style="text-align:center"><b>Modif</b></td>
+              <td></td>
+            </tr>
+            <tr *ngFor="let item of tarifa">
+              <td style="text-align:center">
+                {{item.vias}}&nbsp;Vias
+              </td>
+              <td style="text-align:center">
+                {{item.ancho}}
+              </td>
+              <td style="text-align:center">
+                <input type="number" class="form-control form-control-sm" style="width:80px;text-align:right"
+                  [(ngModel)]="item.pvp">
+              </td>
+              <td style="text-align:center">
+                <input class="form-control form-control-sm" style="width:100px;text-align:center" [(ngModel)]="item.c1">
+              </td>
+              <td style="text-align:center">
+                {{item.fecha | date:'dd/MM/yyyy'}}
+              </td>
+              <td style="width: 50px">
+                <button class="btn btn-default btn-primary-outline btn-block btn-sm" (click)="AssignItem(item)">
+                  Actualizar
+                </button>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

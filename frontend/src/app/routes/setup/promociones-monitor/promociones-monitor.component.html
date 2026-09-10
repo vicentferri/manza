@@ -1,0 +1,159 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-3">
+            <h6>
+                <i class="fa fa-tag mt-1"></i>&nbsp;{{ title }}
+                <div class="pull-right">
+                    <button type="button" class="btn btn-default btn-sm mr-2" (click)="loadData()" [disabled]="cargando">
+                        <i class="fa fa-refresh" [ngClass]="{ 'fa-spin': cargando }"></i> Actualizar
+                    </button>
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <!-- CARGANDO -->
+        <div *ngIf="cargando" class="text-center py-5 text-muted">
+            <i class="fa fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2 small">Cargando...</p>
+        </div>
+
+        <!-- SIN DATOS -->
+        <div *ngIf="!cargando && grupos.length === 0" class="text-center py-5 text-muted">
+            <i class="fa fa-tag fa-3x mb-2 d-block"></i>
+            No hay promociones activas en este momento.
+        </div>
+
+        <!-- TARJETAS -->
+        <div *ngIf="!cargando && grupos.length > 0">
+
+            <p class="pm-summary small text-muted mb-3">
+                {{ grupos.length }} cliente(s) con promoción activa
+            </p>
+
+            <div *ngFor="let grupo of grupos" class="pm-card mb-4">
+
+                <!-- CABECERA -->
+                <div class="pm-card-header">
+                    <div class="pm-card-title">
+                        <i class="fa fa-building-o mr-1"></i>
+                        <strong>{{ grupo.NomFiscal }}</strong>
+                        <span class="badge badge-success ml-2" style="font-size:10px;letter-spacing:.5px;">ACTIVA</span>
+                    </div>
+                    <div class="pm-card-dates small">
+                        <i class="fa fa-calendar mr-1 text-muted"></i>
+                        <strong>{{ formatDate(grupo.desde) }}</strong>
+                        <i class="fa fa-arrow-right mx-1 text-muted" style="font-size:9px;"></i>
+                        <strong>{{ formatDate(grupo.hasta) }}</strong>
+                    </div>
+                </div>
+
+                <!-- CUERPO -->
+                <div class="pm-card-body">
+
+                    <!-- Detalles de promoción -->
+                    <div class="pm-promo-details">
+                        <div class="pm-detail-item">
+                            <span class="pm-detail-label">Coef. PVP</span>
+                            <span class="pm-detail-value">
+                                {{ grupo.promocion_coeficiente }}%
+                                <i *ngIf="grupo.promocion_modificapvp" class="fa fa-check-circle text-success ml-1" title="Modifica PVP"></i>
+                            </span>
+                        </div>
+                        <div class="pm-detail-item">
+                            <span class="pm-detail-label">Coef. C1</span>
+                            <span class="pm-detail-value">
+                                {{ grupo.promocion_coeficiente2 }}%
+                                <i *ngIf="grupo.promocion_modificapvc" class="fa fa-check-circle text-success ml-1" title="Modifica C1"></i>
+                            </span>
+                        </div>
+                        <div class="pm-detail-item pm-detail-mensaje" *ngIf="grupo.promocion_mensaje">
+                            <span class="pm-detail-label">Mensaje</span>
+                            <span class="pm-detail-value" style="font-size:13px;font-weight:400;font-style:italic;color:#555;">
+                                {{ grupo.promocion_mensaje }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Centros -->
+                    <div class="pm-centros-section">
+                        <p class="small text-muted mb-2">
+                            <i class="fa fa-map-marker mr-1"></i>Centros incluidos ({{ grupo.centros.length }})
+                        </p>
+                        <div class="pm-centros-grid">
+                            <div *ngFor="let centro of grupo.centros" class="pm-centro-item">
+                                <div class="pm-centro-info">
+                                    <span class="badge badge-secondary mr-1" style="font-size:10px;">{{ centro.CENTRO }}</span>
+                                    <span class="small">{{ centro.NOMBRE }}</span>
+                                </div>
+                                <img *ngIf="centro.imagen_banner"
+                                    [src]="getBannerUrl(centro.imagen_banner)"
+                                    class="pm-banner-thumb"
+                                    [title]="centro.NOMBRE"
+                                    alt="banner" />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- PIE: TOGGLE PEDIDOS -->
+                <div class="pm-card-footer">
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="togglePedidos(grupo)">
+                        <i class="fa mr-1"
+                            [ngClass]="grupo.pedidosVisible ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                        {{ grupo.pedidosVisible ? 'Ocultar pedidos' : 'Ver pedidos' }}
+                        <span class="badge badge-light ml-1">{{ getPedidosGrupo(grupo).length }}</span>
+                    </button>
+                </div>
+
+                <!-- PEDIDOS EXPANDIBLES -->
+                <div class="pm-pedidos-section" *ngIf="grupo.pedidosVisible">
+                    <ng-container *ngIf="getPedidosGrupo(grupo) as pedidos">
+
+                        <p *ngIf="pedidos.length === 0" class="text-muted text-center py-3 small mb-0">
+                            <i class="fa fa-inbox mr-1"></i>Sin pedidos en el período de promoción.
+                        </p>
+
+                        <div *ngIf="pedidos.length > 0" class="table-responsive">
+                            <table class="table table-bordered table-hover table-sm pm-pedidos-table mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Centro</th>
+                                        <th>Ref. cliente</th>
+                                        <th class="text-right">Uds.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let p of pedidos">
+                                        <td class="small text-muted">{{ getNombreCentro(grupo, p.cliente_entrega) }}</td>
+                                        <td><strong>{{ p.refcliente }}</strong></td>
+                                        <td class="text-right">
+                                            <span class="badge badge-primary">{{ p.total }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="2" class="text-right small font-weight-bold">Total unidades</td>
+                                        <td class="text-right">
+                                            <span class="badge badge-success">
+                                                {{ sumTotal(pedidos) }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                    </ng-container>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
