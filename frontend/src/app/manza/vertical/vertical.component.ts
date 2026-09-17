@@ -406,11 +406,11 @@ export class VerticalComponent implements OnInit, OnChanges {
    private calcularTejidosCombinados(): void {
       if (this.PV_SEL_1) {
          const combinados = this.Tipo3_TejidoColor1 !== this.Tipo3_TejidoColor2;
-         this.precios.T3_TejidosCombinados = combinados ? 20.51 : 0;
+         this.precios.T3_TejidosCombinados = combinados ? 46.97 : 0;
          this.precios.T3_TejidosCombinados_C1 = combinados
-            ? this.getCombinados_C1(this.precios.T3_Cantidad, 1052)
+            ? this.getCombinados_C1(this.precios.T3_Cantidad, 2472)
             : '';
-         this.Tipo3_Incremento_Tejidos = combinados ? '+ 20.51€ (C1 0001052)' : '';
+         this.Tipo3_Incremento_Tejidos = combinados ? '+ 46.97€ (C1 0002472)' : '';
       }
 
       if (this.PV_SEL_2) {
@@ -435,6 +435,13 @@ export class VerticalComponent implements OnInit, OnChanges {
 
       if (soporte === '-1' || sancho === '0') {
          this.resetSoporte(usaSel1);
+         if (soporte === 'TEC') {
+            if (usaSel1) {
+               this.precios.T3_TipoSoporte_C1 = 'C1 0000000';
+            } else {
+               this.precios.T32_TipoSoporte_C1 = 'C1 0000000';
+            }
+         }
          this.CalculateC1_Tipo3();
          return;
       }
@@ -455,7 +462,16 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    private getSanchoFromSoporte(soporte: string): string {
-      const map: Record<string, string> = { P08: '80', P12: '120', P15: '150' };
+      const map: Record<string, string> = {
+         P08: '80',
+         P10: '100',
+         P12: '120',
+         P14: '140',
+         P15: '150',
+         P19: '190',
+         P21: '210',
+         P23: '230'
+      };
       return map[soporte] || '0';
    }
 
@@ -506,12 +522,32 @@ export class VerticalComponent implements OnInit, OnChanges {
             sancho = "80";
          }
 
+         if (soporte == "P10") {
+            sancho = "100";
+         }
+
          if (soporte == "P12") {
             sancho = "120";
          }
 
+         if (soporte == "P14") {
+            sancho = "140";
+         }
+
          if (soporte == "P15") {
             sancho = "150";
+         }
+
+         if (soporte == "P19") {
+            sancho = "190";
+         }
+
+         if (soporte == "P21") {
+            sancho = "210";
+         }
+
+         if (soporte == "P23") {
+            sancho = "230";
          }
 
          soportes = Number(ancho) / 50.0;
@@ -577,12 +613,32 @@ export class VerticalComponent implements OnInit, OnChanges {
             sancho = "80";
          }
 
+         if (soporte == "P10") {
+            sancho = "100";
+         }
+
          if (soporte == "P12") {
             sancho = "120";
          }
 
+         if (soporte == "P14") {
+            sancho = "140";
+         }
+
          if (soporte == "P15") {
             sancho = "150";
+         }
+
+         if (soporte == "P19") {
+            sancho = "190";
+         }
+
+         if (soporte == "P21") {
+            sancho = "210";
+         }
+
+         if (soporte == "P23") {
+            sancho = "230";
          }
 
          soportes = Number(ancho) / 50.0;
@@ -593,6 +649,11 @@ export class VerticalComponent implements OnInit, OnChanges {
 
          this.precios.T32_TipoSoporte = 0;
          this.precios.T32_NumSoportes = 0;
+
+         if (soporte == "TEC") {
+            this.precios.T32_TipoSoporte_C1 = 'C1 0000000';
+         }
+
          if (sancho != "0") {
 
             this.service.getTarifaAccesorio("1", sancho, soportes).subscribe(
@@ -608,6 +669,7 @@ export class VerticalComponent implements OnInit, OnChanges {
                      this.precios.T32_NumSoportes = 0;
                      this.precios.T32_TipoSoporte_C1 = '';
                   }
+                  this.CalculateC1_Tipo3();
                },
                error => {
 
@@ -658,15 +720,15 @@ export class VerticalComponent implements OnInit, OnChanges {
          var color2 = this.Tipo3_TejidoColor2;
 
          if (color1 != color2) {
-            this.Tipo3_Incremento_Tejidos = "+ 20.51€ (C1 0001052)"
-            this.precios.T3_TejidosCombinados = 20.51;
-            this.precios.T3_TejidosCombinados_C1 = "C1 0001052";
+            this.Tipo3_Incremento_Tejidos = "+ 46.97€ (C1 0002472)";
+            this.precios.T3_TejidosCombinados = 46.97;
+            this.precios.T3_TejidosCombinados_C1 = this.getCombinados_C1(cantidad, 2472);
 
-            if (cantidad == 2) this.precios.T3_TejidosCombinados_C1 = "C1 0002104";
-            if (cantidad == 3) this.precios.T3_TejidosCombinados_C1 = "C1 0003156";
-            if (cantidad == 4) this.precios.T3_TejidosCombinados_C1 = "C1 0004208";
-            if (cantidad == 5) this.precios.T3_TejidosCombinados_C1 = "C1 0005260";
-            if (cantidad == 6) this.precios.T3_TejidosCombinados_C1 = "C1 0006312";
+            if (cantidad == 2) this.precios.T3_TejidosCombinados_C1 = "C1 0004944";
+            if (cantidad == 3) this.precios.T3_TejidosCombinados_C1 = "C1 0007416";
+            if (cantidad == 4) this.precios.T3_TejidosCombinados_C1 = "C1 0009888";
+            if (cantidad == 5) this.precios.T3_TejidosCombinados_C1 = "C1 0012360";
+            if (cantidad == 6) this.precios.T3_TejidosCombinados_C1 = "C1 0014832";
 
          }
          else {

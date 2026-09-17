@@ -188,6 +188,30 @@ export class ConfigComponent implements OnInit {
         if (this.currentUser) {
           this.ambito = this.currentUser.ambito;
         }
+
+        const isInterno = this.currentUser.tipo === 'interno' ||
+                          this.currentUser.ambito === 'I' ||
+                          this.currentUser.isAdmin === true ||
+                          localStorage.getItem('tipoUsuario') === 'interno';
+
+        if (isInterno) {
+          this.UserName = this.currentUser.user || this.currentUser.username || '';
+          this.nombreCentro = this.currentUser.name || 'Solarmanes';
+          this.codeCentro = (this.currentUser.code && this.currentUser.code !== '-1') ? String(this.currentUser.code) : '4';
+          this.Cliente = (this.currentUser.emp && this.currentUser.emp !== -1) ? String(this.currentUser.emp) : '4';
+          this.nombreCentroEmp = this.currentUser.descsubemp || this.currentUser.nombre || this.currentUser.name || 'Solarmanes';
+
+          // Todos los productos habilitados para usuarios internos (admin y empleados)
+          this.productos = {
+            prod_1: true,
+            prod_2: true,
+            prod_3: true,
+            prod_4: true,
+            prod_7: true
+          };
+          return true;
+        }
+
         if (this.currentUser.code) {
 
           console.log(this.currentUser);
@@ -223,28 +247,34 @@ export class ConfigComponent implements OnInit {
     this.service.getdatosPromocion(this.Cliente, this.currentUser.user).subscribe(
       data => {
         console.log(data);
-        this.Promocion_Desde = data[0].desde;
-        this.Promocion_Hasta = data[0].hasta;
-        this.Promocion_Coef1 = data[0].promocion_coeficiente;
-        this.Promocion_Coef2 = data[0].promocion_coeficiente2;
-        this.Promocion_Mensaje = data[0].promocion_mensaje;
-        this.Promocion_Banner = data[0].imagen_banner
-          ? this.service.urlService + '/api/sm' + data[0].imagen_banner
-          : '';
+        if (data && data.length > 0) {
+          this.Promocion_Desde = data[0].desde;
+          this.Promocion_Hasta = data[0].hasta;
+          this.Promocion_Coef1 = data[0].promocion_coeficiente;
+          this.Promocion_Coef2 = data[0].promocion_coeficiente2;
+          this.Promocion_Mensaje = data[0].promocion_mensaje;
+          this.Promocion_Banner = data[0].imagen_banner
+            ? this.service.urlService + '/api/sm' + data[0].imagen_banner
+            : '';
+        }
       },
       error => { console.log(error); }
     );
   }
 
   loadInfoUser() {
-
+    if (!this.UserName) {
+      return;
+    }
     this.service.getUserInfo(this.UserName).subscribe(
       data => {
-        this.productos.prod_1 = data[0].prod_1;
-        this.productos.prod_2 = data[0].prod_2;
-        this.productos.prod_3 = data[0].prod_3;
-        this.productos.prod_4 = data[0].prod_4;
-        this.productos.prod_7 = data[0].prod_7;
+        if (data && data.length > 0) {
+          this.productos.prod_1 = !!data[0].prod_1;
+          this.productos.prod_2 = !!data[0].prod_2;
+          this.productos.prod_3 = !!data[0].prod_3;
+          this.productos.prod_4 = !!data[0].prod_4;
+          this.productos.prod_7 = !!data[0].prod_7;
+        }
       },
       error => {
         console.log(error);
@@ -262,7 +292,7 @@ export class ConfigComponent implements OnInit {
     } else {
       this.service.getPromocionActiva(this.Cliente, this.currentUser.user).subscribe(
         data => {
-          if (data[0].existe == 0) {
+          if (!data || data.length === 0 || data[0].existe == 0) {
             this.Promocion = 0;
           } else {
             this.Promocion = 1;

@@ -497,14 +497,18 @@ function Add_Tipo_3(idrow,values,res){
         PV_Tejido_c2_text = values.PV_Tejido_c2_text;
         Estancia_ID = values.PV_estancia_id_1;
         Estancia = values.PV_estancia_obs_1;
-        PV_ID_Imagen_1 = '';
-        PV_Impresion_1 = 0;
-        if (values.impresion == true)
+        PV_ID_Imagen_1 = values.PV_ID_Imagen_1;
+        PV_Impresion_1 = values.PV_Impresion_1;
+        /*
+        if (values.impresionante == true)
             PV_Impresion_1         = 1;
             else
             PV_Impresion_1         = 0;
-     
+
+
+
             PV_ID_Imagen_1  = values.impresion_imagen;
+        */
     }
  
     var sel2 = values.PV_SEL_2;

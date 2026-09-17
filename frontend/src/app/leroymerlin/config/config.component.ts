@@ -2913,15 +2913,17 @@ export class ConfigComponent implements OnInit, DoCheck {
       var color2 = this.Tipo3_TejidoColor2;
 
       if (color1 != color2) {
-        this.Tipo3_Incremento_Tejidos = "+ 20.51€ (C1 0001052)"
-        this.precios.T3_TejidosCombinados = 20.51;
-        this.precios.T3_TejidosCombinados_C1 = "C1 0001052";
+        this.Tipo3_Incremento_Tejidos = "+ 46.97€ (C1 0002472)";
+        this.precios.T3_TejidosCombinados = 46.97;
+        var cant = (cantidad && cantidad > 0) ? cantidad : 1;
+        var valor = cant * 2472;
+        this.precios.T3_TejidosCombinados_C1 = "C1 " + valor.toString().padStart(7, '0');
 
-        if (cantidad == 2) this.precios.T3_TejidosCombinados_C1 = "C1 0002104";
-        if (cantidad == 3) this.precios.T3_TejidosCombinados_C1 = "C1 0003156";
-        if (cantidad == 4) this.precios.T3_TejidosCombinados_C1 = "C1 0004208";
-        if (cantidad == 5) this.precios.T3_TejidosCombinados_C1 = "C1 0005260";
-        if (cantidad == 6) this.precios.T3_TejidosCombinados_C1 = "C1 0006312";
+        if (cantidad == 2) this.precios.T3_TejidosCombinados_C1 = "C1 0004944";
+        if (cantidad == 3) this.precios.T3_TejidosCombinados_C1 = "C1 0007416";
+        if (cantidad == 4) this.precios.T3_TejidosCombinados_C1 = "C1 0009888";
+        if (cantidad == 5) this.precios.T3_TejidosCombinados_C1 = "C1 0012360";
+        if (cantidad == 6) this.precios.T3_TejidosCombinados_C1 = "C1 0014832";
 
       }
       else {
