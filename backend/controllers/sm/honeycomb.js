@@ -409,6 +409,7 @@ async function honeycomb_obtener_imagen(req, res) {
       'tejido': 'SP_Honeycomb_TipoTejido_Imagen_Get',
       'color': 'SP_Honeycomb_ColorTejido_Imagen_Get',
       'perfil': 'SP_Honeycomb_ColorPerfil_Imagen_Get',
+      'accionamiento': 'SP_Honeycomb_TipoAccionamiento_Imagen_Get',
     };
 
     if (!tiposValidos[tipo]) {
@@ -425,6 +426,8 @@ async function honeycomb_obtener_imagen(req, res) {
       request.input('idColorTejido', sql.Int, id);
     } else if (tipo === 'perfil') {
       request.input('idColorPerfil', sql.Int, id);
+    } else if (tipo === 'accionamiento') {
+      request.input('idTipoAccionamiento', sql.Int, id);
     }
 
     const result = await request.execute(tiposValidos[tipo]);
@@ -450,7 +453,8 @@ async function honeycomb_obtener_imagen(req, res) {
     console.error('Error obteniendo imagen:', error);
     res.status(500).send({ message: 'Error del servidor', error: error.message });
   }
-}
+  }
+
 
 /**
  * POST - Subir/Actualizar imagen (Multipart)
@@ -504,7 +508,8 @@ async function honeycomb_upload_image(req, res) {
     const tiposValidos = {
       'tejido': { sp: 'SP_Honeycomb_TipoTejido_Imagen_Set', param: 'idTipoTejido', paramType: sql.Int },
       'color': { sp: 'SP_Honeycomb_ColorTejido_Imagen_Set', param: 'idColorTejido', paramType: sql.Int },
-      'perfil': { sp: 'SP_Honeycomb_ColorPerfil_Imagen_Set', param: 'idColorPerfil', paramType: sql.Int }
+      'perfil': { sp: 'SP_Honeycomb_ColorPerfil_Imagen_Set', param: 'idColorPerfil', paramType: sql.Int },
+      'accionamiento': { sp: 'SP_Honeycomb_TipoAccionamiento_Imagen_Set', param: 'idTipoAccionamiento', paramType: sql.Int }
     };
 
     if (!tiposValidos[tipo]) {
@@ -570,7 +575,8 @@ async function honeycomb_upload_image_base64(req, res) {
     const tiposValidos = {
       'tejido': { sp: 'SP_Honeycomb_TipoTejido_Imagen_Set', param: 'idTipoTejido', paramType: sql.Int },
       'color': { sp: 'SP_Honeycomb_ColorTejido_Imagen_Set', param: 'idColorTejido', paramType: sql.Int },
-      'perfil': { sp: 'SP_Honeycomb_ColorPerfil_Imagen_Set', param: 'idColorPerfil', paramType: sql.Int }
+      'perfil': { sp: 'SP_Honeycomb_ColorPerfil_Imagen_Set', param: 'idColorPerfil', paramType: sql.Int },
+      'accionamiento': { sp: 'SP_Honeycomb_TipoAccionamiento_Imagen_Set', param: 'idTipoAccionamiento', paramType: sql.Int }
     };
 
     if (!tiposValidos[tipo]) {
@@ -616,7 +622,8 @@ async function honeycomb_delete_image(req, res) {
     const tiposValidos = {
       'tejido': { sp: 'SP_Honeycomb_TipoTejido_Imagen_Delete', param: 'idTipoTejido', paramType: sql.Int },
       'color': { sp: 'SP_Honeycomb_ColorTejido_Imagen_Delete', param: 'idColorTejido', paramType: sql.Int },
-      'perfil': { sp: 'SP_Honeycomb_ColorPerfil_Imagen_Delete', param: 'idColorPerfil', paramType: sql.Int }
+      'perfil': { sp: 'SP_Honeycomb_ColorPerfil_Imagen_Delete', param: 'idColorPerfil', paramType: sql.Int },
+      'accionamiento': { sp: 'SP_Honeycomb_TipoAccionamiento_Imagen_Delete', param: 'idTipoAccionamiento', paramType: sql.Int }
     };
 
     if (!tiposValidos[tipo]) {

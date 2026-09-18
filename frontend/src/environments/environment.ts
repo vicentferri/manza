@@ -1,4 +1,5 @@
 
+/*
 export const environment = {
   production: false,
   firmaID: '004',
@@ -8,6 +9,24 @@ export const environment = {
   nh_documents: 'https://www.manzasm.com',
   export: 'https://www.manzasm.com',
   lm: 'https://www.manzasm.com/lm',
+  api_surl: '/api',
+  footerName: "HARU APIMANAGER",
+  firmaName: "HARU",
+  header: "blue",
+  isBeta: 0,
+  assetsBase: ''
+};
+*/
+
+export const environment = {
+  production: false,
+  firmaID: '004',
+  host_ip: 'https://localhost:3002',
+  host_api_ip: 'https://localhost:3002',
+  nh_host_ip: 'https://localhost:3002',
+  nh_documents: 'https://localhost:3002',
+  export: 'https://localhost:3002',
+  lm: 'https://localhost:3002/lm',
   api_surl: '/api',
   footerName: "HARU APIMANAGER",
   firmaName: "HARU",

@@ -4,12 +4,18 @@ var express = require('express');
 var Auth = require('../middlewares/authenticated');
 
 var multipart = require('connect-multiparty');
-var md_upload = multipart({ uploadDir: './uploads/tarifas' });
-var md_upload_images = multipart({ uploadDir: './uploads/honeycomb' });
 
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
+
+const HONEYCOMB_UPLOAD_DIR = path.join(__dirname, '../uploads/honeycomb');
+if (!fs.existsSync(HONEYCOMB_UPLOAD_DIR)) {
+    fs.mkdirSync(HONEYCOMB_UPLOAD_DIR, { recursive: true });
+}
+
+var md_upload = multipart({ uploadDir: './uploads/tarifas' });
+var md_upload_images = multipart({ uploadDir: './uploads/honeycomb' });
 
 // Directorio donde se guardan los banners
 // Ajusta la ruta al directorio real de uploads del servidor
