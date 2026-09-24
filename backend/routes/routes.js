@@ -237,6 +237,11 @@ api.get('/paises',PaisesController.Load);
 var ExportGrid = require('../controllers/export/export');
 api.post('/export_grid',ExportGrid.export_grid);
 
+/* Alias: el frontend llama a /api/domicilios en vez de /api/sm/domicilios */
+
+var SMClientesController = require('../controllers/sm/clientes');
+api.post('/domicilios', SMClientesController.domicilios);
+api.post('/domicilios_del', SMClientesController.domicilios_del);
 
 module.exports = api;
 

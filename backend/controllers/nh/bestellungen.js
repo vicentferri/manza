@@ -341,7 +341,7 @@ function bestellungen_zustand_customer(req,res)
            if (customer == 2)
            {
           var query =  " select '' as refcliente,idrow,filename,id,date,name,lastname,business,nif,address,city,province,postcode,country,phone,estado,descestado,dias ";
-              query += " ,detalles,prod_ok,prod_reason,referencia,fabricacion,IMD from vw_cd_bestellungen_cue  ";
+              query += " ,detalles,prod_ok,prod_reason,referencia,fabricacion,IMD,cliente_solarmanes from vw_cd_bestellungen_cue  ";
               
               if (desde != null && hasta != null)
               {
@@ -368,7 +368,7 @@ function bestellungen_zustand_customer(req,res)
           if (customer == 2)
           {
           var query =  " select '' as refcliente,idrow,filename,id,date,name,lastname,business,nif,address,city,province,postcode,country,phone,estado,descestado,dias ";
-              query += " ,detalles,prod_ok,prod_reason,referencia,fabricacion,IMD from vw_cd_bestellungen_cue where estado="+zustand;
+              query += " ,detalles,prod_ok,prod_reason,referencia,fabricacion,IMD,cliente_solarmanes from vw_cd_bestellungen_cue where estado="+zustand;
                if (desde != null && hasta != null)
               {
                   query += " and (cast(date as datetime) >='"+desde+"' and cast(date as datetime) <='"+hasta+"')";
