@@ -1151,7 +1151,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          if (this.esCadenaExt === 2) {
             const pos = this.getPos(this.alturaCadenaM, parseInt(this.Tipo1_AlturaCadenaM));
             if (pos >= 0) alturaCadena = this.alturaCadenaM[pos].text;
-            colorCadena = '-1';
+            colorCadena = 'Metálica';
          }
       }
 
@@ -1463,7 +1463,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                if (pos >= 0) {
                   alturaCadena = this.alturaCadenaM[pos].text;
                }
-               colorCadena = "-1";
+               colorCadena = "Metálica";
             }
          }
 

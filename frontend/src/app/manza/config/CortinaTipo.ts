@@ -36,6 +36,7 @@ export class CortinaTipo {
     tap_color_text!: string;
 
     cad_color_text!: string;
+    cad_altura_text!: string;
     cad_Altura!: string;
     cad_Tipo!: number;
 
@@ -398,6 +399,7 @@ export class CortinaTipo {
         /* TIPO DE CADENA*/
         this.cad_color_text = colorCadena;
         this.cad_Altura = alturaCadena;
+        this.cad_altura_text = alturaCadena;
         this.cad_Tipo = cadenaTipo;
 
         this.con_color_id = con_color_id;

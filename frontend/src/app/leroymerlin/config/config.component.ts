@@ -1805,7 +1805,7 @@ export class ConfigComponent implements OnInit, DoCheck {
           if (pos >= 0) {
             alturaCadena = this.alturaCadenaM[pos].text;
           }
-          colorCadena = "-1";
+          colorCadena = "Metálica";
 
         }
       }
