@@ -639,7 +639,13 @@ export class MasterComponent implements OnInit {
 
         this.service.HTTP_Get('/sm/clientesapi').subscribe(
             data => {
-                this.clientes = data.Table;
+                this.clientes = [];
+                var values = data.Table || [];
+                if (values.length > 0) {
+                    values.forEach(element => {
+                        this.clientes.push({ 'value': element.idrow, 'label': element.descripcion });
+                    });
+                }
                 this.clientes.push({ 'value': '-1', 'label': 'Seleccionar Cliente' });
             },
             error => {
