@@ -38,6 +38,16 @@ export class EnrollableComponent implements OnInit, OnChanges {
    Cantidad: string = '1';
    SubTipoCortina: number = 1;
 
+   // Límites de Tarifa y Tejido
+   tarifaMinAncho: number = 100;
+   tarifaMaxAncho: number = 380;
+   tarifaMinAlto: number = 100;
+   tarifaMaxAlto: number = 300;
+   maxAnchoPermitido: number = 380;
+   anchoInvalido: boolean = false;
+   altoInvalido: boolean = false;
+   mensajeErrorMedidas: string = '';
+
    idLinea = "";
 
    // Tejido
@@ -234,6 +244,14 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Guia = '-1';
       this.Tipo1_GuiaC = 'BLA';
       this.Tipo1_GuiaRAL = '';
+      this.tarifaMinAncho = 100;
+      this.tarifaMaxAncho = 380;
+      this.tarifaMinAlto = 100;
+      this.tarifaMaxAlto = 300;
+      this.maxAnchoPermitido = 380;
+      this.anchoInvalido = false;
+      this.altoInvalido = false;
+      this.mensajeErrorMedidas = '';
       this.resetPrecios();
       this.load_Tejidos();
    }
@@ -248,6 +266,102 @@ export class EnrollableComponent implements OnInit, OnChanges {
          T1_PVP: 0, T1_PVP_C1: '', T1_Fecha_Entrega: '', T1_Transporte: '',
          T1_Inc_Cargador: 0, T1_Inc_Cargador_C1: '', T1_Inc_Cargador_48: 0,
       };
+   }
+
+   // ─── LÍMITES DE TARIFA Y VALIDACIÓN DE MEDIDAS ──────────────────────────────
+
+   load_TarifaLimites(): void {
+      if (this.Tipo1_Tejido === '-1' || !this.Cliente || parseInt(this.Cliente) <= 0) {
+         this.tarifaMinAncho = 100;
+         this.tarifaMaxAncho = 380;
+         this.tarifaMinAlto = 100;
+         this.tarifaMaxAlto = 300;
+         this.actualizarMaxAnchoPermitido();
+         return;
+      }
+
+      const marca = (this.Tipo1_Marca && this.Tipo1_Marca !== '-1') ? this.Tipo1_Marca : '1';
+      const impresion = this.ID_Quiero ? 1 : 0;
+      const subTipo = this.SubTipoCortina;
+
+      this.service.getTarifaLimites(this.Cliente, subTipo, this.Tipo1_Tejido, marca, impresion).subscribe(
+         (data: any) => {
+            if (data && data.length > 0) {
+               const lim = data[0];
+               this.tarifaMinAncho = Number(lim.min_ancho) || 100;
+               this.tarifaMaxAncho = Number(lim.max_ancho) || 380;
+               this.tarifaMinAlto = Number(lim.min_alto) || 100;
+               this.tarifaMaxAlto = Number(lim.max_alto) || 300;
+               this.actualizarMaxAnchoPermitido();
+               this.ValidarMedidas(false);
+            }
+         },
+         error => {
+            console.error('Error cargando límites de tarifa:', error);
+         }
+      );
+   }
+
+   actualizarMaxAnchoPermitido(): void {
+      if (this.Tipo1_AnchoMaximo > 0 && this.Tipo1_AnchoMaximo < this.tarifaMaxAncho) {
+         this.maxAnchoPermitido = this.Tipo1_AnchoMaximo;
+      } else {
+         this.maxAnchoPermitido = this.tarifaMaxAncho;
+      }
+   }
+
+   ValidarMedidas(silent: boolean = false): boolean {
+      this.anchoInvalido = false;
+      this.altoInvalido = false;
+      this.mensajeErrorMedidas = '';
+      let valido = true;
+
+      if (this.Ancho !== '') {
+         const ancho = parseFloat(this.Ancho);
+         if (isNaN(ancho)) {
+            this.anchoInvalido = true;
+            valido = false;
+         } else if (ancho > this.maxAnchoPermitido) {
+            this.anchoInvalido = true;
+            valido = false;
+            let msg = `El ancho (${ancho} cm) supera el máximo permitido de ${this.maxAnchoPermitido} cm`;
+            if (this.Tipo1_AnchoMaximo > 0 && this.Tipo1_AnchoMaximo < this.tarifaMaxAncho) {
+               msg += ` (limitado por el ancho del tejido a ${this.Tipo1_AnchoMaximo} cm).`;
+            } else {
+               msg += ` según la tarifa del tejido.`;
+            }
+            this.mensajeErrorMedidas = msg;
+            if (!silent) this.toaster.warning(msg, 'Medida excedida');
+         } else if (ancho < this.tarifaMinAncho) {
+            this.anchoInvalido = true;
+            valido = false;
+            const msg = `El ancho (${ancho} cm) es inferior al mínimo permitido (${this.tarifaMinAncho} cm).`;
+            this.mensajeErrorMedidas = msg;
+            if (!silent) this.toaster.warning(msg, 'Medida inferior');
+         }
+      }
+
+      if (this.Alto !== '') {
+         const alto = parseFloat(this.Alto);
+         if (isNaN(alto)) {
+            this.altoInvalido = true;
+            valido = false;
+         } else if (alto > this.tarifaMaxAlto) {
+            this.altoInvalido = true;
+            valido = false;
+            const msg = `El alto (${alto} cm) supera el máximo de la tarifa (${this.tarifaMaxAlto} cm).`;
+            this.mensajeErrorMedidas = msg;
+            if (!silent) this.toaster.warning(msg, 'Medida excedida');
+         } else if (alto < this.tarifaMinAlto) {
+            this.altoInvalido = true;
+            valido = false;
+            const msg = `El alto (${alto} cm) es inferior al mínimo de la tarifa (${this.tarifaMinAlto} cm).`;
+            this.mensajeErrorMedidas = msg;
+            if (!silent) this.toaster.warning(msg, 'Medida inferior');
+         }
+      }
+
+      return valido;
    }
 
    // ─── CARGA DE DATOS ───────────────────────────────────────────────────────────
@@ -624,6 +738,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       }
       const pos = this.getPos(this.tejidos, tejido);
       if (pos >= 0) this.CodigoProv = this.tejidos[pos].codigoprov;
+      this.load_TarifaLimites();
    }
 
    ChangeTejidoColor(): void {
@@ -647,6 +762,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
                const posTej = this.getPos(this.tejidos, tejido);
                if (posTej >= 0) this.CodigoProv = this.tejidos[posTej].codigoprov;
             }
+            this.actualizarMaxAnchoPermitido();
+            this.ValidarMedidas();
          }
       }
    }
@@ -671,6 +788,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.load_Contrapesos_GEN();
       this.load_Cajones();
       this.load_Guias();
+      this.load_TarifaLimites();
    }
 
    ChangeTipo1Color(): void {
@@ -790,6 +908,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.idSeleccion = null;
          this.ID_Imagen = '';
       }
+      this.load_TarifaLimites();
    }
 
    abrirSelectorImpresionDigital(): void {
@@ -820,10 +939,16 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.SubTipoCortina = value;
       this.load_Tejidos();
       this.load_Accionamientos();
+      this.load_TarifaLimites();
    }
 
    Ancho_Change(): void {
+      this.ValidarMedidas();
       this.Tarifa_Contrapeso();
+   }
+
+   Alto_Change(): void {
+      this.ValidarMedidas();
    }
 
    // ─── TARIFAS ─────────────────────────────────────────────────────────────────
@@ -944,56 +1069,21 @@ export class EnrollableComponent implements OnInit, OnChanges {
    // ─── VALIDACIÓN ──────────────────────────────────────────────────────────────
 
    CheckValidity(control: any) {
-
-      //this.alertShow = false;
-      //this.alertMsg = "";
-      var strMessage = "";
-      var bretValue = true;
-
-      var ancho = 0;
-      var alto = 0;
-      var minancho = 0;
-      var maxancho = 0;
-      var minalto = 0;
-      var maxalto = 0;
-
-
-
-      if (this.Ancho == "") this.Ancho = "";
-      if (this.Alto == "") this.Alto = "";
-
-      ancho = Number.parseFloat(this.Ancho);
-      alto = Number.parseFloat(this.Alto);
-      minancho = 60;
-      maxancho = 380;
-      minalto = 60;
-      maxalto = 300;
-
-      if (ancho < minancho || ancho > maxancho) {
-         strMessage = "El ancho en este tipo de cortina NO puede ser inferior a " + minancho.toString() + " cm ni superior a " + maxancho.toString() + " cm ";
-         bretValue = false;
-
-      }
-
-      if (bretValue && (alto < minalto || alto > maxalto)) {
-         strMessage = "El alto en este tipo de cortina NO puede ser inferior a " + minalto.toString() + " cm ni superior a " + maxalto.toString() + " cm ";
-         bretValue = false;
-      }
-
-
-
-
-
-      if (!bretValue)
-         this.toaster.error(strMessage, 'ATENCION');
-
-      return bretValue;
+      return this.ValidarMedidas(false);
    }
 
    NewPage() {
 
       this.CodigoProv = "";
       this.Tipo1_AnchoMaximo = -1;
+      this.tarifaMinAncho = 100;
+      this.tarifaMaxAncho = 380;
+      this.tarifaMinAlto = 100;
+      this.tarifaMaxAlto = 300;
+      this.maxAnchoPermitido = 380;
+      this.anchoInvalido = false;
+      this.altoInvalido = false;
+      this.mensajeErrorMedidas = '';
       this.esCadenaExt = -1;
       this.Tipo1_Contrapeso_Label = "Tipo:";
       this.Tipo1_RadioMando_Label = "Mando:";
@@ -1049,6 +1139,10 @@ export class EnrollableComponent implements OnInit, OnChanges {
    T1Check(): { Proceed: number; Message: string } {
       let iProceed = 1;
       let strMessage = '';
+
+      if (!this.ValidarMedidas(true)) {
+         return { Proceed: 0, Message: this.mensajeErrorMedidas || 'Las medidas no son válidas para esta tarifa/tejido' };
+      }
 
       if (parseInt(this.Tipo1_Tejido) === -1) { iProceed = 0; strMessage = 'Debe Seleccionar el Tipo de Tejido'; }
       if (parseInt(this.Tipo1_TejidoColor) === -1 && iProceed) { iProceed = 0; strMessage = 'Debe Seleccionar el Color del Tejido'; }

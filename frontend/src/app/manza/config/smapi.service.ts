@@ -160,6 +160,11 @@ export class SMAPIService {
         return this.HTTP_Get(url);
     }
 
+    getTarifaLimites(cliente: string, producto: number, tejido: string, marca: string = '1', impresion: number = 0) {
+        const url = this.urlService + '/api/lm/tarifa_limites/' + cliente + '/' + producto + '/' + tejido + '/' + marca + '/' + impresion;
+        return this.HTTP_Get(url);
+    }
+
     getTejidosColor(id: number, cliente: number, subcliente: string) {
         var url: string = this.urlTejidosC + '/' + cliente + '/' + id + '/' + subcliente;
         return this.HTTP_Get(url);

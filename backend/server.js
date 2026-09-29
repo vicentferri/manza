@@ -1,9 +1,3 @@
-'use strict'
-
-const html = __dirname + '/dist/';
-
-
-
 var https = require('https');
 var fs = require('fs');
 var path = require('path');
@@ -14,6 +8,12 @@ var sql = require('mssql');
 var cors = require("cors");
 
 var app = express();
+
+const html = fs.existsSync(__dirname + '/dist/')
+    ? __dirname + '/dist/'
+    : (fs.existsSync(path.normalize(__dirname + '/../frontend/dist/manza/'))
+        ? path.normalize(__dirname + '/../frontend/dist/manza/')
+        : __dirname + '/dist/');
 
 var options = {
     key : fs.readFileSync('./Certificado/manzasm.key'),
@@ -35,12 +35,12 @@ app.use(cors({
   }));
 app.use(express.static(html));
 
-var porth = 8080;
+var porth = 3001;
 
 var config = {
     user : 'sa',
     password: 'Cq4iz5Tsq9',
-    server : '92.222.16.22',
+    server : 'localhost',
     database : 'SOLARMANES_DEV',
     language : 'es',
     options : {
@@ -65,6 +65,10 @@ var connection = sql.connect(config, function (err) {
 
 module.exports = connection;
 
+app.get('/api', function(req, res){
+    res.json({ status: 'ok', message: 'API SolarManes Backend Online' });
+});
+
 /* Generell API*/
 app.use('/api',master_routes);
 
@@ -87,7 +91,16 @@ app.use(function(req, res, next){
     if (ext !== ''){
         return next();
     }
-    fs.createReadStream(html + 'index.html').pipe(res);
+    var indexPath = path.join(html, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        var stream = fs.createReadStream(indexPath);
+        stream.on('error', function(err){
+            if (!res.headersSent) res.status(500).send(err.message);
+        });
+        stream.pipe(res);
+    } else {
+        res.status(200).send('API SolarManes Backend Online');
+    }
 });
 
 
