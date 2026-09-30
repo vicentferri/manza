@@ -3,22 +3,20 @@
     <div class="card-header">
       <h6>
         <i class="icon-list mt-1"></i>
-        &nbsp;Configuración de Fabricación Solarmanes
+        &nbsp;Configuración de Fabricación
         <div class="pull-right">
-          <div class="input-group mb-3">
+          <div class="input-group input-group-sm fab-sistema">
             <div class="input-group-prepend">
-              <select
-                class="form-control"
-                [(ngModel)]="config.modelosm"
-                style="width: 200px"
-              >
-                <option value="1">MODELO ANTIGUO</option>
-                <option value="2">NUEVO MODELO</option>
-              </select>
+              <span class="input-group-text">Sistema</span>
             </div>
-            <button class="btn btn-secondary btn-sm" (click)="Apply()">
-              Aplicar
-            </button>
+            <select
+              class="form-control form-control-sm"
+              [(ngModel)]="sistema"
+              (change)="ChangeSistema()"
+              style="width: 200px"
+            >
+              <option *ngFor="let s of sistemas" [value]="s.sistema">{{ s.descripcion }}</option>
+            </select>
           </div>
         </div>
       </h6>
@@ -26,157 +24,160 @@
 
     <div class="ml-2 mr-2 mt-2">
       <tabset>
+        <!-- ======================= PARAMETROS ======================= -->
         <tab>
           <ng-template tabHeading
             ><i class="icon-list"></i>&nbsp;Parámetros
           </ng-template>
           <div class="card-body card-block">
-            <div class="row" *ngIf="false">
-              <div class="col col-12">
-                <div class="form-group col col-12">
-                  <div style="float: left; padding: 0.2rem">
-                    <label>Nombre Parametro</label>
-                    <input
-                      class="form-control form-control-sm"
-                      [(ngModel)]="modelAdd.nombre"
-                      style="width: 200px"
-                    />
-                  </div>
-                  <div style="float: left; padding: 0.2rem">
-                    <label>Tipo Parametro</label>
-                    <select
-                      class="form-control form-control-sm"
-                      [(ngModel)]="modelAdd.tipo"
-                      style="width: 200px"
-                    >
-                      <option value="int">int</option>
-                      <option value="varchar(25)" selected>varchar(25)</option>
-                      <option value="decimal(12,2)">decimal(12,2)</option>
-                    </select>
-                  </div>
-                  <div style="float: left; padding: 0.2rem">
-                    <label>Atributo en JSON</label>
-                    <input
-                      class="form-control form-control-sm"
-                      [(ngModel)]="modelAdd.atributo"
-                      style="width: 200px"
-                    />
-                  </div>
-                  <div style="float: left; padding: 0.2rem">
-                    <label>Posición</label>
-
-                    <select
-                      class="form-control form-control-sm"
-                      [(ngModel)]="modelAdd.posicion"
-                      style="width: 200px"
-                    >
-                      <option value="0">No leer ningún valor</option>
-                      <option value="1" selected>leer de valor1</option>
-                      <option value="2">leer de valor2</option>
-                      <option value="3">leer valor1 y valor2</option>
-                    </select>
-                  </div>
-                  <div style="float: left; padding: 0.2rem">
-                    <label>&nbsp;</label>
-                    <button
-                      class="btn btn-secondary btn-block btn-sm"
-                      (click)="AddParameters()"
-                    >
-                      Agregar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col col-12">
-                <jqxGrid
-                  #gridReference2
-                  [auto-create]="false"
-                  (onCellclick)="Cellclick2($event)"
-                  (onCellbeginedit)="cellBeginEditEvent2($event)"
-                  (onCellendedit)="cellEndEditEvent2($event)"
-                ></jqxGrid>
-              </div>
-            </div>
-          </div>
-        </tab>
-        <tab>
-          <ng-template tabHeading
-            ><i class="icon-list"></i>&nbsp;Configuración
-          </ng-template>
-
-          <div class="card-body card-block">
             <div class="row">
               <div class="form-group col col-12">
+                <div style="float: left; padding: 0.2rem">
+                  <label>Nombre</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="modelParam.name"
+                    placeholder="@NOMBRE"
+                    style="width: 200px"
+                  />
+                </div>
+                <div style="float: left; padding: 0.2rem">
+                  <label>Tipo</label>
+                  <select
+                    class="form-control form-control-sm"
+                    [(ngModel)]="modelParam.tipo"
+                    (change)="erroresParametro = []"
+                    style="width: 150px"
+                  >
+                    <option value="COLUMNA">Dato del pedido</option>
+                    <option value="FORMULA">Fórmula</option>
+                  </select>
+                </div>
+                <div style="float: left; padding: 0.2rem" *ngIf="modelParam.tipo == 'COLUMNA'">
+                  <label>Columna</label>
+                  <select
+                    class="form-control form-control-sm"
+                    [(ngModel)]="modelParam.origen"
+                    style="width: 250px"
+                  >
+                    <option *ngFor="let c of columnas" [value]="c.name">{{ c.name }}</option>
+                  </select>
+                </div>
+                <div style="float: left; padding: 0.2rem" *ngIf="modelParam.tipo == 'FORMULA'">
+                  <label>Fórmula</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="erroresParametro.length > 0"
+                    [(ngModel)]="modelParam.origen"
+                    (ngModelChange)="erroresParametro = []"
+                    placeholder="@ANCHO -- 1.5"
+                    style="width: 250px"
+                  />
+                </div>
                 <div style="float: left; padding: 0.2rem">
                   <label>Orden</label>
                   <input
                     type="number"
                     class="form-control form-control-sm"
-                    [(ngModel)]="model.orden"
-                    style="width: 40px"
-                  />
-                </div>
-                <div style="float: left; padding: 0.2rem">
-                  <label>Tipo</label>
-                  <input
-                    class="form-control form-control-sm"
-                    [(ngModel)]="model.sistema"
-                    style="width: 150px"
-                  />
-                </div>
-                <div style="float: left; padding: 0.2rem">
-                  <label>Elemento</label>
-                  <input
-                    class="form-control form-control-sm"
-                    [(ngModel)]="model.atributo"
-                    style="width: 150px"
-                  />
-                </div>
-                <div style="float: left; padding: 0.2rem">
-                  <label>Artículos</label>
-                  <input
-                    class="form-control form-control-sm"
-                    [(ngModel)]="model.articulos"
-                    style="width: 100px"
+                    [(ngModel)]="modelParam.orden"
+                    style="width: 70px"
                   />
                 </div>
                 <div style="float: left; padding: 0.2rem">
                   <label>&nbsp;</label>
                   <button
-                    class="btn btn-secondary btn-sm btn-block"
-                    (click)="Open()"
+                    class="btn btn-primary btn-block btn-sm"
+                    (click)="SaveParameter()"
                   >
-                    Asignar Artículos
-                  </button>
-                </div>
-                <div style="float: left; padding: 0.2rem">
-                  <label>&nbsp;</label>
-                  <button
-                    class="btn btn-secondary btn-sm btn-block"
-                    (click)="Update()"
-                  >
-                    Agregar
+                    Guardar
                   </button>
                 </div>
               </div>
             </div>
-
+            <div class="row" *ngIf="erroresParametro.length > 0">
+              <div class="col col-12">
+                <div class="fab-mensaje-error" *ngFor="let e of erroresParametro">
+                  <i class="fa fa-exclamation-circle"></i> {{ e }}
+                </div>
+              </div>
+            </div>
             <div class="row">
-              <div class="form-group col-12">
+              <div class="col col-12">
+                <small class="text-muted">
+                  Un parámetro con el mismo nombre se sobrescribe. Las fórmulas se calculan en orden y
+                  solo pueden usar parámetros con un orden menor: <b>++</b> suma, <b>--</b> resta, <b>**</b> multiplica,
+                  <b>*R</b> multiplica y redondea arriba (p. ej. <code>@ANCHO -- 1.5</code>, <code>@ALTO ** 2</code>).
+                  Pulse una fila para editarla.
+                </small>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col col-12">
                 <jqxGrid
-                  #gridReference
+                  #gridReference2
                   [auto-create]="false"
-                  (onCellclick)="Cellclick($event)"
-                  (onCellbeginedit)="cellBeginEditEvent($event)"
-                  (onCellendedit)="cellEndEditEvent($event)"
+                  (onCellclick)="Cellclick2($event)"
                 ></jqxGrid>
               </div>
             </div>
           </div>
         </tab>
-        <tab>
+
+        <!-- ======================= REGLAS ======================= -->
+        <tab (selectTab)="alMostrarReglas()">
+          <ng-template tabHeading
+            ><i class="icon-list"></i>&nbsp;Reglas
+            <span class="badge badge-danger ml-1" *ngIf="reglasConErrores > 0" title="Reglas con errores">{{ reglasConErrores }}</span>
+          </ng-template>
+          <div class="card-body card-block">
+            <div class="fab-toolbar">
+              <button class="btn btn-primary btn-sm" (click)="NuevaRegla()">
+                <i class="fa fa-plus"></i>&nbsp;Nueva regla
+              </button>
+              <div class="fab-columnas">
+                <button class="btn btn-outline-secondary btn-sm" (click)="menuColumnas = !menuColumnas"
+                  title="Ocultar o mostrar columnas (solo cambia la vista)">
+                  <i class="fa fa-columns"></i>&nbsp;Columnas
+                  <span class="badge badge-secondary ml-1" *ngIf="columnasOcultas.length > 0">{{ columnasOcultas.length }} ocultas</span>
+                </button>
+                <div class="fab-columnas-menu" *ngIf="menuColumnas">
+                  <label class="fab-columnas-item" *ngFor="let c of columnasOcultables">
+                    <input type="checkbox" [checked]="!estaOculta(c)" (change)="CambiarColumna(c, $event.target.checked)" />
+                    {{ c.nombre }}
+                  </label>
+                  <div class="fab-columnas-pie">
+                    <a class="fab-link" (click)="MostrarTodas()">Mostrar todas</a>
+                  </div>
+                </div>
+              </div>
+              <span class="fab-aviso-error" *ngIf="reglasConErrores > 0">
+                <i class="fa fa-exclamation-triangle"></i>
+                {{ reglasConErrores }} {{ reglasConErrores == 1 ? 'regla tiene' : 'reglas tienen' }} errores
+                (pase el ratón por el icono <i class="fa fa-exclamation-triangle"></i> para ver el detalle)
+              </span>
+              <small class="text-muted fab-toolbar-ayuda">
+                Doble clic en una fila para editarla.
+                Si un cliente tiene reglas propias, se usan solo las suyas; si no, las de <b>Todos</b>.
+              </small>
+            </div>
+            <div class="row mt-2">
+              <div class="form-group col-12">
+                <div class="fab-grid">
+                  <jqxGrid
+                    #gridReference
+                    [auto-create]="false"
+                    (onCellclick)="Cellclick($event)"
+                    (onRowdoubleclick)="Rowdoubleclick($event)"
+                    (onBindingcomplete)="ajustarColumnas()"
+                  ></jqxGrid>
+                </div>
+              </div>
+            </div>
+          </div>
+        </tab>
+
+        <!-- ======================= SIMULACION ======================= -->
+        <tab (selectTab)="alMostrarSimulacion()">
           <ng-template tabHeading
             ><i class="icon-list"></i>&nbsp;Simulación
           </ng-template>
@@ -194,30 +195,31 @@
                 </div>
                 <div style="float: left; padding: 0.2rem">
                   <label>&nbsp;</label>
-                  <button
-                    class="btn btn-secondary btn-sm btn-block"
-                    (click)="Simulate()"
-                  >
+                  <button class="btn btn-primary btn-sm btn-block" (click)="Simulate()">
                     Simular Pedido
                   </button>
                 </div>
                 <div style="float: left; padding: 0.2rem">
                   <label>&nbsp;</label>
-                  <button
-                    class="btn btn-secondary btn-sm btn-block"
-                    (click)="HojaFabricacion()"
-                  >
+                  <button class="btn btn-secondary btn-sm btn-block" (click)="HojaFabricacion()">
                     Fichero Fabricación
                   </button>
                 </div>
+                <div style="float: left; padding: 0.2rem 0.5rem">
+                  <label>&nbsp;</label>
+                  <small class="text-muted d-block mt-1">
+                    Simular recalcula y <b>guarda</b> la fabricación del pedido.
+                  </small>
+                </div>
               </div>
             </div>
-            <div class="row">
+
+            <div class="row mt-2">
               <div class="form-group col-3">
-                <jqxGrid #gridReference4 [auto-create]="false"></jqxGrid>
+                <jqxGrid #gridReference4 [auto-create]="false" (onBindingcomplete)="ajustarColumnasSimulacion()"></jqxGrid>
               </div>
               <div class="form-group col-9">
-                <jqxGrid #gridReference3 [auto-create]="false"></jqxGrid>
+                <jqxGrid #gridReference3 [auto-create]="false" (onBindingcomplete)="ajustarColumnasSimulacion()"></jqxGrid>
               </div>
             </div>
           </div>
@@ -227,57 +229,210 @@
   </div>
 </div>
 
+<!-- ======================= VENTANA DE REGLA ======================= -->
 <div
   class="modal fade"
   bsModal
-  #staticModalAdd="bs-modal"
+  #modalRegla="bs-modal"
+  [config]="{ backdrop: 'static' }"
   tabindex="-1"
   role="dialog"
-  aria-labelledby="myModalLabel"
   aria-hidden="true"
-  id="docModalDet"
 >
-  <div class="modal-dialog modal-lg" role="document">
+  <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
-      <div class="modal-body">
-        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
+      <div class="modal-header">
+        <h5 class="modal-title">{{ tituloRegla }} <small class="text-muted">· {{ sistema }}</small></h5>
+        <button type="button" class="close" (click)="modalRegla.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body fab-regla">
+
+        <!-- Datos generales -->
+        <div class="fab-seccion">
+          <div class="form-row">
+            <div class="col-md-4">
+              <label>Cliente</label>
+              <select class="form-control form-control-sm" [(ngModel)]="regla.cliente">
+                <option value="">Todos (regla general)</option>
+                <option *ngFor="let c of clientes" [value]="c.idrow">{{ c.descripcion }}</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label>Orden</label>
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="regla.orden"
+                title="Posición del componente en la hoja y en el XML" />
+            </div>
+            <div class="col-md-6">
+              <label>Elemento</label>
+              <input class="form-control form-control-sm" [(ngModel)]="regla.atributo" maxlength="50"
+                placeholder="PERFIL, TAPAS, VARILLA…" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Condiciones -->
+        <div class="fab-seccion">
+          <div class="fab-seccion-titulo">¿Cuándo se aplica?</div>
+          <div class="fab-condicion" *ngFor="let c of regla.condiciones; let i = index">
+            <div class="fab-condicion-op">
+              <select *ngIf="i > 0" class="form-control form-control-sm" [(ngModel)]="regla.operaciones[i - 1]"
+                title="Unión con la condición anterior">
+                <option value="Y">Y</option>
+                <option value="O">O</option>
+              </select>
+              <span *ngIf="i == 0" class="fab-condicion-si">Si</span>
+            </div>
+
+            <ng-container *ngIf="c.modo == 'guiado'">
+              <select class="form-control form-control-sm fab-condicion-param" [(ngModel)]="c.parametro">
+                <option value="">— sin condición —</option>
+                <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+              </select>
+              <ng-container *ngIf="c.parametro">
+                <select class="form-control form-control-sm fab-condicion-oper" [(ngModel)]="c.operador">
+                  <option *ngFor="let o of operadoresCondicion" [value]="o.valor">{{ o.texto }}</option>
+                </select>
+                <input *ngIf="c.operador != 'entre'" class="form-control form-control-sm fab-condicion-valor"
+                  [(ngModel)]="c.valor" placeholder="valor" />
+                <ng-container *ngIf="c.operador == 'entre'">
+                  <input class="form-control form-control-sm fab-condicion-num" [(ngModel)]="c.desde" placeholder="desde" />
+                  <span class="fab-condicion-y">y</span>
+                  <input class="form-control form-control-sm fab-condicion-num" [(ngModel)]="c.hasta" placeholder="hasta" />
+                </ng-container>
+              </ng-container>
+            </ng-container>
+
+            <input *ngIf="c.modo == 'texto'" class="form-control form-control-sm fab-code-input fab-condicion-texto"
+              [class.is-invalid]="erroresCondicion(i).length > 0"
+              [(ngModel)]="c.texto" placeholder="@PARAMETRO == valor" />
+
+            <a class="fab-link" (click)="CambiarModoCondicion(c)">
+              {{ c.modo == 'guiado' ? 'escribir a mano' : 'usar desplegables' }}
+            </a>
+
+            <div class="fab-mensaje-error fab-condicion-error" *ngFor="let e of erroresCondicion(i)">
+              <i class="fa fa-exclamation-circle"></i> {{ e }}
+            </div>
+          </div>
+          <div class="fab-resumen"><i class="fa fa-info-circle"></i> {{ resumenRegla() }}</div>
+        </div>
+
+        <!-- Artículos y consumo -->
+        <div class="fab-seccion">
+          <div class="fab-seccion-titulo">
+            ¿Qué añade?
+            <button class="btn btn-outline-primary btn-sm float-right" (click)="AbrirBuscador()">
+              <i class="fa fa-search"></i>&nbsp;Añadir artículos
+            </button>
+          </div>
+
+          <div class="form-check mb-2" *ngIf="regla.articulos.length > 1">
+            <input class="form-check-input" type="checkbox" id="consumoComun" [(ngModel)]="consumoComun" />
+            <label class="form-check-label" for="consumoComun">Mismo consumo para todos los artículos</label>
+          </div>
+
+          <div class="fab-consumo fab-consumo-comun" *ngIf="consumoComun && regla.articulos.length > 0">
+            <label>Consumo</label>
+            <ng-container *ngTemplateOutlet="editorConsumo; context: { $implicit: consumoTodos, articulo: regla.articulos[0] }"></ng-container>
+          </div>
+
+          <table class="table table-sm fab-tabla-articulos" *ngIf="regla.articulos.length > 0">
+            <thead>
+              <tr>
+                <th style="width: 80px">Código</th>
+                <th>Descripción</th>
+                <th style="width: 70px">Unidad</th>
+                <th *ngIf="!consumoComun">Consumo</th>
+                <th style="width: 40px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of regla.articulos; let i = index">
+                <td class="fab-code">{{ a.cod_sol || a.idrow }}</td>
+                <td>{{ a.descripcion }}</td>
+                <td>{{ a.descUnidad }}</td>
+                <td *ngIf="!consumoComun">
+                  <ng-container *ngTemplateOutlet="editorConsumo; context: { $implicit: a.consumo, articulo: a }"></ng-container>
+                </td>
+                <td class="text-center">
+                  <i class="fa fa-trash fab-accion fab-accion-borrar" title="Quitar" (click)="QuitarArticulo(i)"></i>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="text-muted" *ngIf="regla.articulos.length == 0">
+            Sin artículos. Pulse <b>Añadir artículos</b>.
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
-        <button
-          class="btn btn-secondary btn-sm"
-          (click)="staticModalAdd.hide()"
-        >
-          Cerrar
-        </button>
-        <button class="btn btn-secondary btn-sm" (click)="UpdateArticles()">
-          Asignar Artículos
+        <div class="fab-mensaje-error mr-auto" *ngIf="erroresVentana().length > 0">
+          <i class="fa fa-exclamation-circle"></i> {{ erroresVentana()[0] }}
+          <span *ngIf="erroresVentana().length > 1"> (y {{ erroresVentana().length - 1 }} más)</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" (click)="modalRegla.hide()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="GuardarRegla()"
+          [disabled]="guardandoRegla || erroresVentana().length > 0">
+          <i class="fa fa-save"></i>&nbsp;Guardar
         </button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Editor de un consumo (tipo + campos) -->
+<ng-template #editorConsumo let-consumo let-articulo="articulo">
+  <div class="fab-consumo-editor">
+    <select class="form-control form-control-sm fab-consumo-tipo" [(ngModel)]="consumo.tipo">
+      <option value="numero">Cantidad fija</option>
+      <option value="parametro">Valor de un parámetro</option>
+      <option value="operacion">Parámetro con operación</option>
+      <option value="texto">Escribir a mano</option>
+    </select>
+    <input *ngIf="consumo.tipo == 'numero'" class="form-control form-control-sm fab-consumo-num" [(ngModel)]="consumo.numero" />
+    <select *ngIf="consumo.tipo == 'parametro' || consumo.tipo == 'operacion'" class="form-control form-control-sm fab-consumo-param"
+      [(ngModel)]="consumo.parametro">
+      <option value="">— parámetro —</option>
+      <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+    </select>
+    <ng-container *ngIf="consumo.tipo == 'operacion'">
+      <select class="form-control form-control-sm fab-consumo-oper" [(ngModel)]="consumo.operador">
+        <option *ngFor="let o of operadoresConsumo" [value]="o.valor">{{ o.texto }}</option>
+      </select>
+      <input class="form-control form-control-sm fab-consumo-num" [(ngModel)]="consumo.numero" />
+    </ng-container>
+    <input *ngIf="consumo.tipo == 'texto'" class="form-control form-control-sm fab-code-input fab-consumo-texto"
+      [(ngModel)]="consumo.texto" placeholder="@ANCHO -- 1.5" />
+    <span class="fab-consumo-unidad" *ngIf="unidadConsumo(articulo)">{{ unidadConsumo(articulo) }}</span>
+    <div class="fab-mensaje-error" *ngFor="let e of erroresConsumo(consumo)">
+      <i class="fa fa-exclamation-circle"></i> {{ e }}
+    </div>
+  </div>
+</ng-template>
+
+<!-- Buscador de artículos -->
 <div
   class="modal fade"
   bsModal
-  #staticModalList="bs-modal"
+  #staticModalAdd="bs-modal"
+  [config]="{ backdrop: 'static', keyboard: false }"
   tabindex="-1"
   role="dialog"
   aria-labelledby="myModalLabel"
   aria-hidden="true"
-  id="docModalDet2"
+  id="docModalDet"
 >
-  <div class="modal-dialog modal-lg" role="document">
+  <div class="modal-dialog modal-lg fab-buscador" role="document">
     <div class="modal-content">
       <div class="modal-body">
-        <div style="height: 600px; overflow: auto"></div>
+        <search-artikel [editable]="0" #SearchArtikel></search-artikel>
       </div>
       <div class="modal-footer">
-        <button
-          class="btn btn-secondary btn-sm"
-          (click)="staticModalList.hide()"
-        >
+        <button class="btn btn-secondary btn-sm" (click)="CerrarBuscador()">
           Cerrar
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="UpdateArticles()">
+          Añadir seleccionados
         </button>
       </div>
     </div>

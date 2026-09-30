@@ -504,6 +504,22 @@ var HoneyCombController = require('../controllers/sm/honeycomb');
 smapi.delete('/honeycomb_delete_image/:tipo/:id', HoneyCombController.honeycomb_delete_image);
 
 smapi.get('/honeycomb_obtener_tarifa', HoneyCombController.honeycomb_obtener_tarifa);
+
+/* FABRICACION POR REGLAS (motor v3: HoneyComb y futuros sistemas) - pantalla artikeln_fab_cd_v3 */
+var FabricacionReglasController = require('../controllers/sm/fabricacion_reglas');
+smapi.get('/fabricacion/sistemas', Auth.ensureAuth, FabricacionReglasController.sistemas);
+smapi.get('/fabricacion/clientes', Auth.ensureAuth, FabricacionReglasController.clientes);
+smapi.get('/fabricacion/articulos', Auth.ensureAuth, FabricacionReglasController.articulos);
+smapi.get('/fabricacion/reglas', Auth.ensureAuth, FabricacionReglasController.reglas);
+smapi.post('/fabricacion/reglas', Auth.ensureAuth, FabricacionReglasController.regla_add);
+smapi.post('/fabricacion/reglas/update', Auth.ensureAuth, FabricacionReglasController.regla_update);
+smapi.post('/fabricacion/reglas/save', Auth.ensureAuth, FabricacionReglasController.regla_save);
+smapi.post('/fabricacion/reglas/delete', Auth.ensureAuth, FabricacionReglasController.regla_delete);
+smapi.get('/fabricacion/parametros', Auth.ensureAuth, FabricacionReglasController.parametros);
+smapi.get('/fabricacion/columnas', Auth.ensureAuth, FabricacionReglasController.columnas);
+smapi.post('/fabricacion/parametros', Auth.ensureAuth, FabricacionReglasController.parametro_edit);
+smapi.post('/fabricacion/parametros/delete', Auth.ensureAuth, FabricacionReglasController.parametro_delete);
+smapi.post('/fabricacion/simular', Auth.ensureAuth, FabricacionReglasController.simular);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);

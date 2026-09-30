@@ -1,0 +1,332 @@
+/* Tabla de reglas: estilos acotados a .fab-grid para no afectar a otros jqxGrid */
+
+.fab-grid ::ng-deep .jqx-grid-column-header {
+  font-weight: 600;
+}
+
+.fab-grid ::ng-deep .fab-cell {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fab-grid ::ng-deep .fab-center {
+  justify-content: center;
+}
+
+.fab-grid ::ng-deep .fab-code {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  color: #1f3a5f;
+}
+
+.fab-grid ::ng-deep .fab-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.fab-grid ::ng-deep .fab-op-y {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.fab-grid ::ng-deep .fab-op-o {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.fab-grid ::ng-deep .fab-op-none {
+  color: #b0b0b0;
+}
+
+.fab-grid ::ng-deep .fab-todos {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.fab-grid ::ng-deep .fab-cliente {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.fab-grid ::ng-deep .fab-error {
+  color: #c62828;
+}
+
+.fab-grid ::ng-deep .fab-ok {
+  color: #43a047;
+}
+
+.fab-grid ::ng-deep .fab-ko {
+  color: #e53935;
+}
+
+.fab-grid ::ng-deep .fab-accion {
+  cursor: pointer;
+  color: #607d8b;
+  margin: 0 5px;
+  font-size: 14px;
+}
+
+.fab-grid ::ng-deep .fab-accion:hover {
+  color: #1565c0;
+}
+
+.fab-grid ::ng-deep .fab-accion-borrar:hover {
+  color: #c62828;
+}
+
+/* Barra superior de la pestaña Reglas */
+.fab-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.fab-toolbar > * {
+  margin-right: 12px;
+}
+
+.fab-aviso-error {
+  color: #c62828;
+  font-size: 12px;
+}
+
+.fab-toolbar-ayuda {
+  margin-left: auto;
+}
+
+.fab-mensaje-error {
+  color: #c62828;
+  font-size: 12px;
+}
+
+/* Ventana de regla */
+.modal-xl {
+  max-width: 1140px;
+}
+
+.fab-regla label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  color: #546e7a;
+}
+
+.fab-seccion {
+  border: 1px solid #e3e8ec;
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.fab-seccion-titulo {
+  font-weight: 600;
+  color: #37474f;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.fab-condicion {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.fab-condicion > * {
+  margin-right: 6px;
+}
+
+.fab-condicion-op {
+  width: 60px;
+}
+
+.fab-condicion-si {
+  font-weight: 600;
+  color: #546e7a;
+  padding-left: 6px;
+}
+
+.fab-condicion-param {
+  width: 220px;
+}
+
+.fab-condicion-oper {
+  width: 170px;
+}
+
+.fab-condicion-valor {
+  width: 220px;
+}
+
+.fab-condicion-num {
+  width: 90px;
+}
+
+.fab-condicion-texto {
+  width: 500px;
+}
+
+.fab-condicion-y {
+  color: #546e7a;
+}
+
+.fab-condicion-error {
+  width: 100%;
+  padding-left: 66px;
+}
+
+.fab-link {
+  font-size: 12px;
+  color: #1565c0;
+  cursor: pointer;
+}
+
+.fab-resumen {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #f5f8fa;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #37474f;
+}
+
+.fab-code,
+.fab-code-input {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.fab-tabla-articulos {
+  margin-bottom: 0;
+}
+
+.fab-tabla-articulos td {
+  vertical-align: middle;
+}
+
+.fab-accion {
+  cursor: pointer;
+  color: #607d8b;
+}
+
+.fab-accion-borrar:hover {
+  color: #c62828;
+}
+
+.fab-consumo-comun {
+  margin-bottom: 8px;
+}
+
+.fab-consumo-editor {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.fab-consumo-editor > * {
+  margin-right: 6px;
+}
+
+.fab-consumo-tipo {
+  width: 190px;
+}
+
+.fab-consumo-param {
+  width: 190px;
+}
+
+.fab-consumo-oper {
+  width: 170px;
+}
+
+.fab-consumo-num {
+  width: 90px;
+}
+
+.fab-consumo-texto {
+  width: 260px;
+}
+
+.fab-consumo-unidad {
+  font-size: 12px;
+  color: #78909c;
+}
+
+.fab-consumo-editor .fab-mensaje-error {
+  width: 100%;
+}
+
+/* Buscador de artículos: ancho para ver todas sus columnas (~1.640 px) sin pasar del 96 % de la pantalla;
+   los resultados se desplazan dentro y el pie (Añadir) queda siempre visible */
+.fab-buscador {
+  width: 96vw;
+  max-width: 1700px;
+}
+
+.fab-buscador .modal-body {
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+/* Panel para ocultar columnas de la tabla de reglas */
+.fab-columnas {
+  position: relative;
+}
+
+.fab-columnas-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  margin-top: 4px;
+  padding: 8px 12px;
+  min-width: 190px;
+  background: #fff;
+  border: 1px solid #d8dee3;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.fab-columnas-item {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 3px 0;
+  font-size: 13px;
+  font-weight: normal;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fab-columnas-item input {
+  margin-right: 8px;
+}
+
+.fab-columnas-pie {
+  border-top: 1px solid #eceff1;
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+/* Cabecera: etiqueta "Sistema" y desplegable con la misma altura y tamaño de letra */
+.fab-sistema > .input-group-prepend > .input-group-text,
+.fab-sistema > select.form-control.form-control-sm {
+  height: 30px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.fab-sistema > .input-group-prepend > .input-group-text {
+  padding-top: 0;
+  padding-bottom: 0;
+}

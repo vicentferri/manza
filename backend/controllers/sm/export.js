@@ -47,6 +47,9 @@ function getDetail_ID(req,res){
         sqlquery += " union ";
         sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol ";
         sqlquery += " from SOL_PEDIDOS_COLA_TIPO_4_FABRICACION where idrow=(select id from SOL_PEDIDOS_COLA_TIPO_4 where idrow="+id+")";
+        sqlquery += " union ";
+        sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol ";
+        sqlquery += " from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION where idrow=(select id from SOL_PEDIDOS_COLA_TIPO_7 where idrow="+id+")";
         sqlquery += " order by orden ";
     }     
 
@@ -102,7 +105,10 @@ function getDetail(req, res) {
                     sqlquery += " union ";
                     sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol from SOL_PEDIDOS_COLA_TIPO_4_FABRICACION where idrow in ( ";
                     sqlquery += "select id from SOL_PEDIDOS_COLA_TIPO_4 where idrow in (select id from sol_pedidos_cola_lineas where idrow="+id+"))";
-                }     
+                    sqlquery += " union ";
+                    sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION where idrow in ( ";
+                    sqlquery += "select id from SOL_PEDIDOS_COLA_TIPO_7 where idrow in (select id from sol_pedidos_cola_lineas where idrow="+id+" and tipo=7))";
+                }
 
                
                
