@@ -8,7 +8,7 @@
               <img
                 alt="Logo"
                 class="card-image-top"
-                src="/assets/img/logo_sm.jpg"
+                src="/assets/img/Login-ManzaSM.png"
                 style="width: 200px"
               />
             </div>
@@ -26,6 +26,7 @@
                   placeholder="e-mail del Usuario"
                   [(ngModel)]="model.username"
                   #username="ngModel"
+                  (keyup.enter)="Login()"
                   required
                 />
               </div>
@@ -37,6 +38,7 @@
                   placeholder="Password"
                   [(ngModel)]="model.password"
                   #password="ngModel"
+                  (keyup.enter)="Login()"
                   required
                 />
               </div>

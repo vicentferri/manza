@@ -1,0 +1,8 @@
+.navbar-brand,
+:host ::ng-deep .navbar-brand {
+  background-color: #000000 !important;
+  background-image: url('/assets/img/ManzaSM.png') !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: auto !important;
+}
