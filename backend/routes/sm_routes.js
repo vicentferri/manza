@@ -356,6 +356,9 @@ smapi.post('/grupos_del', GruposTejidosController.grupostejidos_del);
 smapi.post('/tejidosgrupos', GruposTejidosController.grupostejidos_tejidos);
 smapi.post('/tejidosgrupos_del', GruposTejidosController.grupostejidos_tejidos_del);
 smapi.get('/tejidosgrupos/:idrow', GruposTejidosController.tejidosgrupo);
+smapi.get('/tejidos_grupos_all', GruposTejidosController.tejidos_grupos_all);
+smapi.post('/tejidosgrupos_asignar', GruposTejidosController.tejidosgrupos_asignar);
+smapi.post('/tejidosgrupos_quitar', GruposTejidosController.tejidosgrupos_quitar);
 
 
 
