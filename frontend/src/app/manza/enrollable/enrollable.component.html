@@ -29,7 +29,7 @@
     </div>
 
     <!-- Dimensiones y Cantidad -->
-    <div class="row g-3 mb-4 mt-2">
+    <div class="row g-3 mb-2 mt-2">
       <div class="col-md-4">
         <label class="form-label fw-semibold"
           >{{ "ANCHO" | translate }} (cm)</label
@@ -37,16 +37,20 @@
         <input
           #ancho
           class="form-control"
+          [class.is-invalid]="anchoInvalido"
           type="number"
-          min="100"
-          max="600"
+          [min]="tarifaMinAncho"
+          [max]="maxAnchoPermitido"
           step="0.5"
           [(ngModel)]="Ancho"
           (change)="Ancho_Change()"
           (blur)="Ancho_Change()"
           (keyup.enter)="Next($event, alto)"
         />
-        <small class="text-muted">100-600 cm</small>
+        <small [ngClass]="anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">
+          {{ tarifaMinAncho }}-{{ maxAnchoPermitido }} cm
+          <span *ngIf="Tipo1_AnchoMaximo > 0 && Tipo1_AnchoMaximo < tarifaMaxAncho"> (limitado por tejido a {{ Tipo1_AnchoMaximo }} cm)</span>
+        </small>
       </div>
       <div class="col-md-4">
         <label class="form-label fw-semibold"
@@ -55,14 +59,19 @@
         <input
           #alto
           class="form-control"
+          [class.is-invalid]="altoInvalido"
           type="number"
-          min="100"
-          max="600"
-          step=".5"
+          [min]="tarifaMinAlto"
+          [max]="tarifaMaxAlto"
+          step="0.5"
           [(ngModel)]="Alto"
+          (change)="Alto_Change()"
+          (blur)="Alto_Change()"
           (keyup.enter)="Next($event, cantidad)"
         />
-        <small class="text-muted">100-600 cm</small>
+        <small [ngClass]="altoInvalido ? 'text-danger fw-bold' : 'text-muted'">
+          {{ tarifaMinAlto }}-{{ tarifaMaxAlto }} cm
+        </small>
       </div>
       <div class="col-md-4">
         <label class="form-label fw-semibold">{{
@@ -77,6 +86,16 @@
           [(ngModel)]="Cantidad"
         />
         <small class="text-muted">1-600 uds</small>
+      </div>
+    </div>
+
+    <!-- Alerta de medidas fuera de tarifa -->
+    <div class="row mb-2" *ngIf="mensajeErrorMedidas && (anchoInvalido || altoInvalido)">
+      <div class="col-12">
+        <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center" style="font-size: 13px;">
+          <i class="fa fa-exclamation-triangle text-danger me-2" style="font-size: 16px;"></i>
+          <span>{{ mensajeErrorMedidas }}</span>
+        </div>
       </div>
     </div>
 

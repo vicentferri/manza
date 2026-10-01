@@ -48,6 +48,9 @@ lmapi.get('/tejidos_producto_id/:cli/:pro/:subcli',LM.tejidos_producto_id);
 lmapi.get('/tejidos_producto/:cli/:pro',LM.tejidos_producto);
 lmapi.get('/tejidos_producto_id/:cli/:pro',LM.tejidos_producto_id);
 
+lmapi.get('/tarifa_limites/:cli/:pro/:tejido/:marca/:impresion',LM.tarifa_limites);
+lmapi.get('/tarifa_limites/:cli/:pro/:tejido',LM.tarifa_limites);
+
 lmapi.get('/tapas/:cli',LM.tapas);
 lmapi.get('/tapas_gen/:cli/:tipo',LM.tapas_gen);
 lmapi.get('/tapasC/:cli/:id',LM.tapasC);
