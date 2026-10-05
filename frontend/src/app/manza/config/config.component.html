@@ -120,22 +120,15 @@
             </button>
             <button
               [ngClass]="classTipo(4)"
-              (click)="Tipo(4)" *ngIf="productos.prod_4"
-              [hidden]="Cliente == '1'"
-            >
-              {{ "SOLAR MINI" | translate }}
-            </button>
-            <button
-              [ngClass]="classTipo(4)" 
               (click)="Tipo(4)"
-              [hidden]="Cliente != '1'" *ngIf="productos.prod_4"
+              *ngIf="productos.prod_4"
             >
-              {{ "COMPAC" | translate }}
+              {{ (!isInterno && (Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}
             </button>
             <button
               [ngClass]="classTipo(7)"
               (click)="Tipo(7)"
-              [hidden]="Cliente != '1'" *ngIf="productos.prod_7"
+              *ngIf="productos.prod_7"
             >
               {{ "HONEYCOMB" | translate }}
             </button>
@@ -259,7 +252,7 @@
           <app-preview-3 *ngSwitchCase="3" [item]="item"
             (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
           </app-preview-3>
-          <app-preview-4 *ngSwitchCase="4" [item]="item"
+          <app-preview-4 *ngSwitchCase="4" [item]="item" [Cliente]="Cliente"
             (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
           </app-preview-4>
           <app-preview-7 *ngSwitchCase="7" [item]="item"

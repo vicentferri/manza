@@ -491,7 +491,7 @@ export class CompacComponent implements OnInit, OnChanges {
       );
 
       this.onAdd.emit(tipo);
-      const message = this.translation.get('AGREGADO COMPAC A CESTA');
+      const message = this.translation.get((this.Cliente == '1' || this.Cliente == '5') ? 'AGREGADA CORTINA COMPAC A CESTA' : 'AGREGADA CORTINA SOLAR MINI A CESTA');
       this.toaster.success(message, 'Cesta');
       this.reset();
    }
