@@ -1,5 +1,14 @@
 <nav class="sidebar-nav">
 
+  <!-- Ocultar menú (se vuelve a mostrar desde el botón de la cabecera) -->
+  <ul class="nav">
+    <li class="nav-item">
+      <a class="nav-link sm-sidebar-hide" href="#" (click)="hideSidebar($event)" title="Ocultar menú">
+        <i class="fa fa-angle-double-left"></i>Ocultar menú
+      </a>
+    </li>
+  </ul>
+
   <!-- ─── 1. CONFIGURACIÓN ─────────────────────────────────────────────────── -->
   <ul class="nav" *ngIf="isAdmin() || canAny(['config_clientes','config_clientes_gestion','config_promociones','config_campos','config_articulos','config_pedidos','config_presupuestos'])">
     <li class="nav-item nav-dropdown" routerLinkActive="open" appNavDropdown>

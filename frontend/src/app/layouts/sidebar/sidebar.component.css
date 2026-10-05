@@ -1,0 +1,98 @@
+/*
+ * Jerarquía visual del menú lateral:
+ *  - Nivel 1 (Configuración, Tarifas, Fabricación...): cabecera de sección, mayúsculas, fondo más claro.
+ *  - Nivel 2 (submenús): fondo más oscuro, sangrado, texto más pequeño y una guía vertical a la izquierda.
+ * Los selectores son largos a propósito para ganar en especificidad a los estilos globales de GenesisUI.
+ */
+
+/* ── Botón "Ocultar menú" ─────────────────────────────────────────────── */
+.sidebar-nav .nav .nav-item .nav-link.sm-sidebar-hide {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-nav .nav .nav-item .nav-link.sm-sidebar-hide i {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Nivel 1: secciones ───────────────────────────────────────────────── */
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-link.nav-dropdown-toggle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid transparent;
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-link.nav-dropdown-toggle i {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown.open > .nav-link.nav-dropdown-toggle {
+  background: rgba(255, 255, 255, 0.13);
+  border-left: 3px solid #36a9e1 !important;
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown.open > .nav-link.nav-dropdown-toggle i {
+  color: #36a9e1;
+}
+
+/* ── Nivel 2: submenús ────────────────────────────────────────────────── */
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-dropdown-items {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-dropdown-items .nav-link {
+  position: relative;
+  padding: 0.5rem 1rem 0.5rem 2.6rem;
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border-left: 3px solid transparent;
+}
+
+/* Guía vertical + punto que marcan que el elemento cuelga de la sección */
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-dropdown-items .nav-link::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1.35rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-dropdown-items .nav-link::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(1.35rem - 3px);
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-dropdown-items .nav-link:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-dropdown-items .nav-link.active {
+  color: #fff;
+  font-weight: 600;
+  background: rgba(54, 169, 225, 0.18);
+  border-left: 3px solid #36a9e1 !important;
+}
+
+.sidebar-nav .nav .nav-item.nav-dropdown > .nav-dropdown-items .nav-link.active::after {
+  background: #36a9e1;
+}

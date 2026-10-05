@@ -1,9 +1,12 @@
 import { Component, OnInit } from '@angular/core';
+import { restoreSidebarState } from '../shared/sidebar-state';
 
 
 @Component({
   selector: 'app-dashboard',
-  templateUrl: './full-layout.component.html'
+  templateUrl: './full-layout.component.html',
+  // Animación al ocultar/mostrar el menú lateral (clase 'sidebar-hidden' en <body>)
+  styles: ['.app-body .sidebar { transition: margin-left .25s ease-in-out; }']
 })
 export class FullLayoutComponent implements OnInit {
 
@@ -20,5 +23,7 @@ export class FullLayoutComponent implements OnInit {
     this.status.isopen = !this.status.isopen;
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    restoreSidebarState();
+  }
 }
