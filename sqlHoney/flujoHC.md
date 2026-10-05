@@ -5,7 +5,8 @@ configurador hasta que sale en el XML de producción. Incluye todas las tablas, 
 funciones y endpoints que intervienen, y el registro de cambios hechos en la base de datos.
 
 > Estado verificado en `SOLARMANES_DEV` el 2026-09-30. Scripts en `sqlHoney/` (01 a 06).
-> Para configurar reglas, ver `GUIA_CONFIGURACION_FABRICACION.md`; para desplegar, `REGISTRO_CAMBIOS.md`.
+> Para configurar reglas, ver `GUIA_CONFIGURACION_FABRICACION.md`; para desplegar, `REGISTRO_CAMBIOS.md`;
+> diagramas (flujo, modelo de datos, procedimientos y plantilla para otros productos), `diagramaFabricacionV3.md`.
 
 ---
 

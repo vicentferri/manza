@@ -26,6 +26,9 @@ idéntica a la de DEV, así que el script es válido tal cual.
 
 Copias de las versiones anteriores en `backup/` (DEV 2026-09-29).
 
+Documentación: `flujoHC.md` (funcionamiento), `diagramaFabricacionV3.md` (diagramas y plantilla para otros
+productos), `GUIA_CONFIGURACION_FABRICACION.md` (uso de la pantalla).
+
 ## Código
 
 - `backend/controllers/sm/fabricacion_reglas.js` (nuevo) y rutas `/api/sm/fabricacion/*` en
