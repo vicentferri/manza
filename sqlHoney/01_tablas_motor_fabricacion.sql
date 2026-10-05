@@ -11,6 +11,8 @@
    - SOL_ARTICULOS_FABRICACION_RELACION_V2.cliente: regla para un cliente
      (SOL_CLIENTES.idrow) o NULL = todos. Si un cliente tiene reglas propias
      en un sistema, sustituyen a las generales.
+   - SOL_FABRICACION_PARAMETROS.valores_*: catálogo opcional de donde salen los
+     valores posibles de un parámetro (desplegable en las condiciones de la pantalla).
    - SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS: valores calculados por línea HoneyComb.
    Idempotente. En bases donde existía la versión anterior
    (SOL_ARTICULOS_HONEYCOMB_FABRICACION_PARAMETROS) migra sus filas y la elimina.
@@ -89,6 +91,31 @@ using (values
 on t.sistema = 'HONEYCOMB' and t.name = s.name
 when not matched then
 	insert(sistema, name, tipo, origen, orden) values('HONEYCOMB', s.name, s.tipo, s.origen, s.orden);
+go
+
+/* ---------------- CATALOGO DE VALORES POSIBLES DE CADA PARAMETRO ----------------
+   Opcional. valores_tabla = catálogo; valores_valor = columna con el valor que se
+   compara en la condición (id o texto); valores_texto = columna que se muestra. */
+if col_length('dbo.SOL_FABRICACION_PARAMETROS', 'valores_tabla') is null
+	alter table dbo.SOL_FABRICACION_PARAMETROS add
+		valores_tabla sysname null,
+		valores_valor sysname null,
+		valores_texto sysname null
+go
+
+update p set valores_tabla = v.tabla, valores_valor = v.valor, valores_texto = v.texto
+from dbo.SOL_FABRICACION_PARAMETROS p
+join (values
+	('@TEJIDO_TIPO_ID',   'SOL_ARTICULOS_HONEYCOMB_TIPOSTEJIDO',        'idTipoTejido',        'TipoTejido'),
+	('@TEJIDO_TIPO',      'SOL_ARTICULOS_HONEYCOMB_TIPOSTEJIDO',        'TipoTejido',          'TipoTejido'),
+	('@TEJIDO_COLOR_ID',  'SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO',      'idColorTejido',       'ColorTejido'),
+	('@TEJIDO_COLOR',     'SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO',      'ColorTejido',         'ColorTejido'),
+	('@COLOR_PERFIL_ID',  'SOL_ARTICULOS_HONEYCOMB_COLORESPERFIL',      'idColorPerfil',       'ColorPerfil'),
+	('@COLOR_PERFIL',     'SOL_ARTICULOS_HONEYCOMB_COLORESPERFIL',      'ColorPerfil',         'ColorPerfil'),
+	('@ACCIONAMIENTO_ID', 'SOL_ARTICULOS_HONEYCOMB_TIPOSACCIONAMIENTO', 'idTipoAccionamiento', 'TipoAccionamiento'),
+	('@ACCIONAMIENTO',    'SOL_ARTICULOS_HONEYCOMB_TIPOSACCIONAMIENTO', 'TipoAccionamiento',   'TipoAccionamiento')
+) as v(name, tabla, valor, texto) on p.sistema = 'HONEYCOMB' and p.name = v.name
+where p.valores_tabla is null
 go
 
 /* ---------------- CLIENTE EN LAS REGLAS ---------------- */

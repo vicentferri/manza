@@ -330,3 +330,14 @@
   padding-top: 0;
   padding-bottom: 0;
 }
+
+/* Botón + para encadenar operaciones en el consumo */
+.fab-consumo-mas {
+  padding: 0 8px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.fab-consumo-editor .fab-accion {
+  font-size: 13px;
+}

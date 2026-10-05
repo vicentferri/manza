@@ -194,6 +194,52 @@ go
 
 /* ---------------- PARAMETROS ---------------- */
 
+if object_id('dbo.sp_fabricacion_parametros_valores') is not null
+	drop procedure dbo.sp_fabricacion_parametros_valores
+go
+
+/* Valores posibles de los parámetros del sistema que tienen catálogo (valores_*).
+   Devuelve (name, valor, texto). Las tablas y columnas se comprueban contra
+   sys.columns antes de usarlas; las que no existen se ignoran. */
+create procedure [dbo].[sp_fabricacion_parametros_valores]
+(
+	@sistema varchar(50)
+)
+as
+begin
+	set nocount on
+
+	declare @resultado table(name varchar(50), valor varchar(255), texto varchar(255))
+	declare @name varchar(50), @tabla sysname, @valor sysname, @texto sysname
+	declare @sql nvarchar(max)
+
+	declare itValores cursor local forward_only for
+	select p.name, p.valores_tabla, p.valores_valor, p.valores_texto
+	from SOL_FABRICACION_PARAMETROS p
+	where p.sistema = @sistema
+	  and p.valores_tabla is not null
+	  and exists (select 1 from sys.columns c where c.object_id = object_id('dbo.' + p.valores_tabla) and c.name = p.valores_valor)
+	  and exists (select 1 from sys.columns c where c.object_id = object_id('dbo.' + p.valores_tabla) and c.name = p.valores_texto)
+	open itValores
+	fetch next from itValores into @name, @tabla, @valor, @texto
+	while @@fetch_status = 0
+	begin
+		set @sql = N'select distinct @name, upper(ltrim(rtrim(cast(' + quotename(@valor) + N' as varchar(255))))), '
+		         + N'upper(ltrim(rtrim(cast(' + quotename(@texto) + N' as varchar(255))))) '
+		         + N'from dbo.' + quotename(@tabla) + N' where ' + quotename(@valor) + N' is not null'
+
+		insert into @resultado(name, valor, texto)
+		execute sp_executesql @sql, N'@name varchar(50)', @name
+
+		fetch next from itValores into @name, @tabla, @valor, @texto
+	end
+	close itValores
+	deallocate itValores
+
+	select name, valor, texto from @resultado order by name, texto, valor
+end
+go
+
 if object_id('dbo.sp_fabricacion_parametro_edit') is not null
 	drop procedure dbo.sp_fabricacion_parametro_edit
 go

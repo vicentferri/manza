@@ -8,11 +8,11 @@ preparado para migrar otros sistemas (catálogo de sistemas) y para fabricacione
 
 | Script | Qué hace | DEV | TEST | PROD |
 |---|---|---|---|---|
-| `01_tablas_motor_fabricacion.sql` | `SOL_FABRICACION_SISTEMAS` (alta HONEYCOMB), `SOL_FABRICACION_PARAMETROS` (+11 parámetros base HoneyComb), columna `cliente` en `SOL_ARTICULOS_FABRICACION_RELACION_V2`, `SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS` | ✅ 2026-09-29 | ⏳ | ⏳ |
+| `01_tablas_motor_fabricacion.sql` | `SOL_FABRICACION_SISTEMAS` (alta HONEYCOMB), `SOL_FABRICACION_PARAMETROS` (+11 parámetros base HoneyComb), columna `cliente` en `SOL_ARTICULOS_FABRICACION_RELACION_V2`, `SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS`, columnas `valores_tabla/valor/texto` en `SOL_FABRICACION_PARAMETROS` (catálogo de valores posibles, enlazado para los 8 parámetros de tejido, perfil y accionamiento) | ✅ 2026-10-05 | ⏳ | ⏳ |
 | `02_sol_pedidos_cola_tipo_7_add.sql` | Crea la línea tipo 7 en `SOL_PEDIDOS_COLA_LINEAS`; `TIPO_7.idrow` = id de línea | ✅ 2026-09-29 | ⏳ | ⏳ |
 | `03_migracion_lineas_tipo_7.sql` | Repunta las filas `TIPO_7` antiguas (idrow = pedido) a una línea nueva | ✅ 2026-09-29 (2 filas) | ⏳ | ⏳ |
-| `04_temp_sp_fabricacion_tipo_7.sql` | Motor genérico (`fn_fabricacion_condicion`, `sp_fabricacion_evaluar`, `sp_fabricacion_reglas_parametros`, `sp_fabricacion_reglas_aplicar`) y el nuevo `temp_sp_fabricacion_tipo_7` | ✅ 2026-09-29 | ⏳ | ⏳ |
-| `05_sps_configuracion_fabricacion.sql` | SPs de reglas/parámetros (`sp_fabricacion_regla_*`, `sp_fabricacion_parametro_*`), limitados a sistemas del catálogo | ✅ 2026-09-29 | ⏳ | ⏳ |
+| `04_temp_sp_fabricacion_tipo_7.sql` | Motor genérico (`fn_fabricacion_condicion`, `fn_fabricacion_pos_operador`, `sp_fabricacion_evaluar` con cadenas de operaciones, `sp_fabricacion_reglas_parametros`, `sp_fabricacion_reglas_aplicar`) y el nuevo `temp_sp_fabricacion_tipo_7` | ✅ 2026-09-29 | ⏳ | ⏳ |
+| `05_sps_configuracion_fabricacion.sql` | SPs de reglas/parámetros (`sp_fabricacion_regla_*`, `sp_fabricacion_parametro_*`, `sp_fabricacion_parametros_valores`), limitados a sistemas del catálogo | ✅ 2026-10-05 | ⏳ | ⏳ |
 | `06_sp_fichero_produccion_2.sql` | Bloque XML `articulo = 7` → `<Articulo>22000</Articulo>` | ✅ 2026-09-29 | ⏳ | ⏳ |
 
 Scripts idempotentes. Ejecutar con `SET QUOTED_IDENTIFIER ON` (ya incluido; el motor usa métodos XML).
@@ -35,7 +35,8 @@ Copias de las versiones anteriores en `backup/` (DEV 2026-09-29).
   simulación, XML). Tabla de reglas de solo lectura con acciones (editar / duplicar / borrar), columna de estado
   con validación, ventana de edición con desplegables y ajuste de columnas al contenido.
   `fabricacion-reglas.util.ts` (nuevo): interpretación, reconstrucción y validación de condiciones y consumos.
-- Endpoints añadidos: `/fabricacion/articulos`, `/fabricacion/reglas/save` (`sp_fabricacion_regla_edit`).
+- Endpoints añadidos: `/fabricacion/articulos`, `/fabricacion/reglas/save` (`sp_fabricacion_regla_edit`),
+  `/fabricacion/parametros/valores` (`sp_fabricacion_parametros_valores`: desplegable de valores en las condiciones).
 
 ## Cómo funciona
 

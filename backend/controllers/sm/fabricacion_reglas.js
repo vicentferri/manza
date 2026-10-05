@@ -259,6 +259,20 @@ async function parametros(req, res) {
   }
 }
 
+/* Valores posibles de los parámetros que tienen catálogo (desplegable de las condiciones) */
+async function parametros_valores(req, res) {
+  try {
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
+      .execute('sp_fabricacion_parametros_valores');
+    res.status(200).send({ Table: result.recordset });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 async function columnas(req, res) {
   try {
     const pool = await sql.connect();
@@ -398,6 +412,7 @@ module.exports = {
   regla_update,
   regla_delete,
   parametros,
+  parametros_valores,
   columnas,
   parametro_edit,
   parametro_delete,

@@ -165,7 +165,7 @@ Pedido de prueba en DEV (`PRUEBA-HC-CLAUDE`), cliente **1 · Leroy Merlin**, una
 | Tabla | Qué guarda |
 |---|---|
 | **`SOL_FABRICACION_SISTEMAS`** | Catálogo de sistemas que usan el motor de reglas. Una fila por sistema. Hoy solo `HONEYCOMB`. Columnas: `sistema` (PK), `descripcion`, `tipo_linea` (7), `tabla_origen` (`SOL_PEDIDOS_COLA_TIPO_7`: de dónde se leen los datos del pedido), `tabla_fabricacion` y `tabla_parametros` (dónde se escribe el resultado), `procedimiento` (`temp_sp_fabricacion_tipo_7`: el que genera la fabricación), `activo`. La pantalla solo deja editar reglas y parámetros de sistemas **activos** de este catálogo. |
-| **`SOL_FABRICACION_PARAMETROS`** | Parámetros de cada sistema: las variables que usan las reglas. Columnas: `sistema`, `name` (`@ANCHO`…), `tipo` (`COLUMNA` = columna de la `tabla_origen`; `FORMULA` = cálculo sobre parámetros anteriores), `origen` (nombre de la columna o la fórmula), `orden` (orden de cálculo). Único por (`sistema`, `name`). HoneyComb trae 11 de serie: cantidad, ancho, alto y tejido, color de perfil y accionamiento, cada uno como id y como texto. |
+| **`SOL_FABRICACION_PARAMETROS`** | Parámetros de cada sistema: las variables que usan las reglas. Columnas: `sistema`, `name` (`@ANCHO`…), `tipo` (`COLUMNA` = columna de la `tabla_origen`; `FORMULA` = cálculo sobre parámetros anteriores), `origen` (nombre de la columna o la fórmula), `orden` (orden de cálculo), y opcionalmente `valores_tabla`, `valores_valor`, `valores_texto`: el catálogo del que salen sus valores posibles (p. ej. `@COLOR_PERFIL_ID` → `SOL_ARTICULOS_HONEYCOMB_COLORESPERFIL`, `idColorPerfil`, `ColorPerfil`), que la pantalla ofrece como desplegable en las condiciones "igual a". Único por (`sistema`, `name`). HoneyComb trae 11 de serie: cantidad, ancho, alto y tejido, color de perfil y accionamiento, cada uno como id y como texto. |
 | **`SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS`** | Valores de los parámetros calculados para cada línea HoneyComb en la última generación. Columnas: `idrow` (→ `SOL_PEDIDOS_COLA_TIPO_7.id`), `idpedido` (Pos de la línea), `parametro`, `valor`. Sirve para revisar por qué una regla se cumple o no; es lo que muestra Simulación a la izquierda. Equivale a `SOL_CORTINADECOR_LINES_PARAMETERS` de CortinaDecor. |
 
 ### 5.2 Tablas existentes que cambian
@@ -216,7 +216,8 @@ parámetros que se pasa a las funciones de condición y consumo. Es el mismo tip
 | **`sp_fabricacion_reglas_parametros(@sistema, @id)`** | Calcula los parámetros de una línea. Lee la fila `@id` de la `tabla_origen` del sistema (con `FOR XML RAW`) y recorre `SOL_FABRICACION_PARAMETROS` por `orden`: un `COLUMNA` toma el valor de la columna (en mayúsculas y sin espacios en los extremos); un `FORMULA` se calcula con `sp_fabricacion_evaluar` usando los parámetros ya calculados. Devuelve (`name`, `type`, `value`). |
 | **`sp_fabricacion_reglas_aplicar(@sistema, @cliente, @parametros)`** | Aplica las reglas del sistema. Si `@cliente` tiene alguna regla propia en ese sistema, usa **solo las suyas**; si no, las de cliente NULL (Todos). Para cada regla, por `orden`: evalúa hasta 4 condiciones con `fn_fabricacion_condicion`, encadenadas de izquierda a derecha (`O` = OR; `Y` o `-` = AND; las vacías se ignoran; sin condiciones aplica siempre). Si aplica, por cada artículo calcula el consumo con `sp_fabricacion_evaluar` (lista posicional separada por `;`; uno solo vale para todos; vacío = 1). Devuelve (`orden`, `articulo`, `consumo`, `idregla`). No escribe en ninguna tabla. |
 | **`fn_fabricacion_condicion(@condicion, @parametros)`** | Devuelve 1 si se cumple una condición y 0 si no. Quita los espacios y detecta el operador en el mismo orden que CortinaDecor: `a <= @P <= b` → `fn_fabricacion_intervalo`; `<=` → `fn_fabricacion_valor_menor_igual`; `<<` → `…_valor_menor`; `==` → `fn_fabricacion_igual`; `>=` → `…_valor_mayor_igual`; `>>` → `…_valor_mayor`. |
-| **`sp_fabricacion_evaluar(@expresion, @parametros, @resultado OUT)`** | Calcula un consumo o una fórmula. Quita los espacios. Un parámetro solo (`@ANCHO`) devuelve su valor, o -1 si no es numérico. El resto lo resuelve `sp_fabricacion_tag`. Añade a `sp_fabricacion_tag` dos correcciones: el caso del parámetro solo (que allí daba -1) y las expresiones de 3 términos con espacios (que allí daban 0). |
+| **`fn_fabricacion_pos_operador(@texto, @desde)`** | Posición del primer operador de consumo (`++`, `--`, `**`, `*R`) a partir de `@desde`; la usa `sp_fabricacion_evaluar` para trocear cadenas. |
+| **`sp_fabricacion_evaluar(@expresion, @parametros, @resultado OUT)`** | Calcula un consumo o una fórmula. Quita los espacios. Un parámetro solo (`@ANCHO`) devuelve su valor, o -1 si no es numérico. El resto lo resuelve `sp_fabricacion_tag`. Añade a `sp_fabricacion_tag` dos correcciones: el caso del parámetro solo (que allí daba -1) y las expresiones de 3 términos con espacios (que allí daban 0). Además admite **cadenas de operaciones** sobre un parámetro (`@ANCHO -- 1.5 ** 2 ++ 10`), que se calculan de izquierda a derecha en el orden escrito, sin prioridad de `**`. Una sola operación se sigue resolviendo con `sp_fabricacion_tag`, igual que antes. |
 
 ### 6.3 Funciones existentes que usa el motor (compartidas con CortinaDecor, sin cambios)
 
@@ -241,6 +242,7 @@ Todos trabajan solo con sistemas **activos** de `SOL_FABRICACION_SISTEMAS`. No p
 | `sp_fabricacion_regla_borrar` | Borra una regla de un sistema del catálogo. | filas borradas |
 | `sp_fabricacion_parametro_edit` | Alta o modificación de un parámetro. Valida el nombre (`@` + letras, números o `_`), el tipo, que la columna exista en la `tabla_origen` y que la fórmula no esté vacía. | 1 OK · -1 nombre · -2 tipo · -3 columna · -4 fórmula · -5 sistema |
 | `sp_fabricacion_parametro_borrar` | Borra un parámetro de un sistema. | filas borradas |
+| `sp_fabricacion_parametros_valores` | Valores posibles de los parámetros con catálogo (`valores_tabla/valor/texto`). Comprueba tabla y columnas en `sys.columns` antes de consultarlas. | (`name`, `valor`, `texto`) |
 
 ---
 
@@ -262,6 +264,7 @@ sesión. Rutas en `backend/routes/sm_routes.js`.
 | `POST /fabricacion/reglas/update` | `{idrow, campo, valor}` | Cambio de un campo → `sp_fabricacion_regla_update`. | `{message:'OK'}` / 400 |
 | `POST /fabricacion/reglas/delete` | `{idrow}` | Borrado → `sp_fabricacion_regla_borrar`. | `{message:'OK'}` / 404 |
 | `GET /fabricacion/parametros?sistema=X` | sistema | Parámetros del sistema por orden. | `{Table:[{idrow, name, tipo, origen, orden}]}` |
+| `GET /fabricacion/parametros/valores?sistema=X` | sistema | Valores posibles de los parámetros con catálogo (desplegable de las condiciones) → `sp_fabricacion_parametros_valores`. | `{Table:[{name, valor, texto}]}` |
 | `GET /fabricacion/columnas?sistema=X` | sistema | Columnas de la `tabla_origen` (para parámetros de tipo Dato del pedido). | `{Table:[{name}]}` |
 | `POST /fabricacion/parametros` | `{sistema, name, tipo, origen, orden}` | Alta o modificación → `sp_fabricacion_parametro_edit`. | `{message:'OK'}` / 400 con motivo |
 | `POST /fabricacion/parametros/delete` | `{sistema, name}` | Borrado → `sp_fabricacion_parametro_borrar`. | `{message:'OK'}` / 404 |
@@ -330,7 +333,7 @@ La lógica de interpretación y validación de condiciones y consumos está en
 
 ## 10. Limitaciones conocidas
 
-- **Fórmulas:** solo operan un parámetro con números. No se puede hacer `@ANCHO ** @ALTO`, así que el consumo del tejido en m² necesitaría un parámetro calculado nuevo (`@M2`).
+- **Fórmulas y consumos:** operan un parámetro con números (admiten cadenas: `@ANCHO -- 1.5 ** 2`, de izquierda a derecha). No se puede hacer `@ANCHO ** @ALTO`, así que el consumo del tejido en m² necesitaría un parámetro calculado nuevo (`@M2`).
 - **Presupuestos:** `/api/lm/budget_hinzu2` no guarda líneas tipo 7.
 - **Precio con cantidad > 1:** cada `<Detalles>` lleva el total de la línea (`T7_PVP_C1`), igual que el tipo 1. Pendiente de confirmar con el ERP.
 - **Datos antiguos:** el pedido 16866 tiene accionamiento id 4 ("CON MOTOR"), que no existe en el catálogo actual.

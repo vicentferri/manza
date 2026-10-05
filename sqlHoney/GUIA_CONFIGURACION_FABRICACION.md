@@ -45,9 +45,9 @@ Cada regla dice: *si se cumplen estas condiciones, añade estos artículos con e
 | Cliente | **Todos** (regla general) o un cliente concreto. Ver "Reglas por cliente" abajo. |
 | Orden | Posición del componente en la hoja y en el XML (C1, C2…). |
 | Elemento | Texto libre descriptivo (PERFIL, TEJIDO, CORDÓN…). |
-| Condición 1-4 | `@P == VALOR`, `@P >> 10`, `@P >= 10`, `@P << 10`, `@P <= 10`, `10 <= @P <= 20` |
+| Condición 1-4 | `@P == VALOR`, `@P >> 10`, `@P >= 10`, `@P << 10`, `@P <= 10`, `10 <= @P <= 20`. Con "igual a" y un parámetro de tejido, color de perfil o accionamiento, el valor se elige en un desplegable con las opciones del configurador (en los `_ID`: `1 · BLANCO RAL 9016`). |
 | Op | Unión con la condición anterior: `Y` (y), `O` (o). `-` también cuenta como *y*. |
-| Consumo | Uno por artículo separado por `;`. Si hay uno solo vale para todos. Vacío = 1. |
+| Consumo | Uno por artículo separado por `;`. Si hay uno solo vale para todos. Vacío = 1. En "Parámetro con operación", el botón **+** añade más operaciones (`@ANCHO -- 1.5 ** 2`); se calculan **de izquierda a derecha**, en el orden escrito: (ancho − 1,5) × 2. |
 | Artículos | Ids separados por coma. Botón **Asignar Artículos** para buscarlos. |
 
 Reglas prácticas:

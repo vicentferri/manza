@@ -516,6 +516,7 @@ smapi.post('/fabricacion/reglas/update', Auth.ensureAuth, FabricacionReglasContr
 smapi.post('/fabricacion/reglas/save', Auth.ensureAuth, FabricacionReglasController.regla_save);
 smapi.post('/fabricacion/reglas/delete', Auth.ensureAuth, FabricacionReglasController.regla_delete);
 smapi.get('/fabricacion/parametros', Auth.ensureAuth, FabricacionReglasController.parametros);
+smapi.get('/fabricacion/parametros/valores', Auth.ensureAuth, FabricacionReglasController.parametros_valores);
 smapi.get('/fabricacion/columnas', Auth.ensureAuth, FabricacionReglasController.columnas);
 smapi.post('/fabricacion/parametros', Auth.ensureAuth, FabricacionReglasController.parametro_edit);
 smapi.post('/fabricacion/parametros/delete', Auth.ensureAuth, FabricacionReglasController.parametro_delete);

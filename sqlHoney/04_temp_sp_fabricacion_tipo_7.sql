@@ -3,7 +3,8 @@
    Replica la metodología de sp_fabricacion_mrp_cd (CortinaDecor), genérico
    por sistema (SOL_FABRICACION_SISTEMAS):
      - fn_fabricacion_condicion ........ evalúa una condición
-     - sp_fabricacion_evaluar .......... evalúa un consumo / fórmula
+     - fn_fabricacion_pos_operador ..... busca operadores de consumo
+     - sp_fabricacion_evaluar .......... evalúa un consumo / fórmula (admite cadenas de operaciones)
      - sp_fabricacion_reglas_parametros  construye los parámetros de una línea
      - sp_fabricacion_reglas_aplicar ... aplica las reglas del sistema/cliente
      - temp_sp_fabricacion_tipo_7 ...... HoneyComb: une lo anterior con las
@@ -61,9 +62,40 @@ end
 go
 
 /* ---------------------------------------------------------------------
+   fn_fabricacion_pos_operador: posición del primer operador de consumo
+   (++, --, **, *R) en @texto a partir de @desde; 0 si no hay ninguno.
+   --------------------------------------------------------------------- */
+if object_id('dbo.fn_fabricacion_pos_operador') is not null
+	drop function dbo.fn_fabricacion_pos_operador
+go
+
+create function [dbo].[fn_fabricacion_pos_operador]
+(
+	@texto varchar(255),
+	@desde int
+)
+returns int
+as
+begin
+	declare @pos int = 0, @p int
+
+	set @p = charindex('++', @texto, @desde) if @p > 0 and (@pos = 0 or @p < @pos) set @pos = @p
+	set @p = charindex('--', @texto, @desde) if @p > 0 and (@pos = 0 or @p < @pos) set @pos = @p
+	set @p = charindex('**', @texto, @desde) if @p > 0 and (@pos = 0 or @p < @pos) set @pos = @p
+	set @p = charindex('*R', @texto, @desde) if @p > 0 and (@pos = 0 or @p < @pos) set @pos = @p
+
+	return @pos
+end
+go
+
+/* ---------------------------------------------------------------------
    sp_fabricacion_evaluar: evalúa una expresión de consumo/fórmula.
-   Añade a sp_fabricacion_tag el caso de un parámetro sin operador
-   ('@ANCHO'), que sp_fabricacion_tag devuelve como -1.
+   Añade a sp_fabricacion_tag:
+     - un parámetro sin operador ('@ANCHO'), que sp_fabricacion_tag devuelve como -1;
+     - cadenas de varias operaciones ('@ANCHO -- 1.5 ** 2 ++ 10'), que se aplican
+       de izquierda a derecha, en el orden escrito (sin prioridad de **):
+       ++ suma, -- resta, ** multiplica, *R multiplica y redondea hacia arriba.
+   Una sola operación sigue resolviéndose con sp_fabricacion_tag, como antes.
    --------------------------------------------------------------------- */
 if object_id('dbo.sp_fabricacion_evaluar') is not null
 	drop procedure dbo.sp_fabricacion_evaluar
@@ -79,14 +111,20 @@ as
 begin
 	set nocount on
 	declare @valor varchar(255)
+	declare @pos int
+	declare @resto varchar(255)
+	declare @op char(2)
+	declare @numero decimal(18,6)
+	declare @acumulado decimal(18,6)
 
 	/* Sin espacios: la forma de 3 términos (0.01 ** @ALTO ** 2) falla con espacios en sp_fabricacion_tag */
 	set @expresion = replace(isnull(@expresion,''), ' ', '')
 	set @resultado = null
 
-	if left(@expresion, 1) = '@'
-	   and charindex('++', @expresion) = 0 and charindex('--', @expresion) = 0
-	   and charindex('**', @expresion) = 0 and charindex('*R', @expresion) = 0
+	set @pos = dbo.fn_fabricacion_pos_operador(@expresion, 1)
+
+	/* Parámetro sin operador */
+	if left(@expresion, 1) = '@' and @pos = 0
 	begin
 		select @valor = value from @parametros where upper(name) = upper(@expresion)
 		set @valor = replace(@valor, ',', '.')
@@ -94,9 +132,45 @@ begin
 			set @resultado = cast(@valor as decimal(12,2))
 		else
 			set @resultado = -1
+		return
 	end
-	else
-		execute sp_fabricacion_tag @expresion, @parametros, @resultado out
+
+	/* Cadena de dos o más operaciones sobre un parámetro: de izquierda a derecha */
+	if left(@expresion, 1) = '@' and @pos > 1 and dbo.fn_fabricacion_pos_operador(@expresion, @pos + 2) > 0
+	begin
+		select @valor = replace(value, ',', '.') from @parametros where upper(name) = upper(left(@expresion, @pos - 1))
+		set @acumulado = try_cast(@valor as decimal(18,6))
+		if @acumulado is null
+		begin
+			set @resultado = -1
+			return
+		end
+
+		set @resto = substring(@expresion, @pos, 255)
+		while len(@resto) > 0
+		begin
+			set @op = left(@resto, 2)
+			set @pos = dbo.fn_fabricacion_pos_operador(@resto, 3)
+			set @numero = try_cast(replace(case when @pos > 0 then substring(@resto, 3, @pos - 3) else substring(@resto, 3, 255) end, ',', '.') as decimal(18,6))
+			if @numero is null
+			begin
+				set @resultado = -1
+				return
+			end
+
+			if @op = '++' set @acumulado = @acumulado + @numero
+			if @op = '--' set @acumulado = @acumulado - @numero
+			if @op = '**' set @acumulado = @acumulado * @numero
+			if @op = '*R' set @acumulado = ceiling(@acumulado * @numero)
+
+			set @resto = case when @pos > 0 then substring(@resto, @pos, 255) else '' end
+		end
+
+		set @resultado = cast(@acumulado as decimal(12,2))
+		return
+	end
+
+	execute sp_fabricacion_tag @expresion, @parametros, @resultado out
 end
 go
 

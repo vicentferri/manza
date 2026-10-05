@@ -77,9 +77,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
   /* Columnas de la tabla de reglas que se pueden ocultar (solo visualmente) */
   columnasOcultables: ColumnaOcultable[] = [
+    { nombre: 'Orden', campos: ['orden'] },
     { nombre: 'Sistema', campos: ['sistema'] },
     { nombre: 'Cliente', campos: ['cliente_nombre'] },
-    { nombre: 'Orden', campos: ['orden'] },
     { nombre: 'Elemento', campos: ['atributo'] },
     { nombre: 'Condición 1', campos: ['nombre_parametro1'] },
     { nombre: 'Condición 2', campos: ['operacion', 'nombre_parametro2'] },
@@ -90,6 +90,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
   ];
   columnasOcultas: string[] = this.leerColumnasOcultas();
   menuColumnas = false;
+
+  /* Valores posibles de los parámetros con catálogo: { '@COLOR_PERFIL_ID': [{valor, texto}] } */
+  valoresParametro: { [nombre: string]: { valor: string, texto: string }[] } = {};
 
   /* Errores de validación por regla (idrow) */
   erroresReglas: { [idrow: number]: ErroresRegla } = {};
@@ -285,10 +288,10 @@ export class ArtikelnFacCdV3Component implements OnInit {
     columns: [
       { text: '', datafield: 'acciones', width: 86, sortable: false, filterable: false, menu: false, cellsrenderer: this.renderAcciones },
       { text: '', datafield: 'idrow', width: 40, filterable: false, menu: false, cellsrenderer: this.renderEstado },
+      { text: 'Orden', datafield: 'orden', width: 60, minwidth: 60, filtertype: 'textbox', cellsrenderer: this.renderCentro },
       { text: 'Sistema', datafield: 'sistema', width: 100, minwidth: 70, filtertype: 'textbox', cellsrenderer: this.renderTexto },
       /* Filtro de texto: con 'checkedlist' jqxGrid deja la fila de filtros a medias y falla al cambiar anchos */
       { text: 'Cliente', datafield: 'cliente_nombre', width: 120, minwidth: 120, filtertype: 'textbox', cellsrenderer: this.renderCliente },
-      { text: 'Orden', datafield: 'orden', width: 60, minwidth: 60, filtertype: 'textbox', cellsrenderer: this.renderCentro },
       { text: 'Elemento', datafield: 'atributo', width: 120, minwidth: 80, filtertype: 'textbox', cellsrenderer: this.renderTexto },
       { text: 'Condición 1', datafield: 'nombre_parametro1', width: 180, minwidth: 100, filtertype: 'textbox', cellsrenderer: this.renderCodigo },
       { text: 'Op', datafield: 'operacion', width: 45, minwidth: 45, filtertype: 'textbox', cellsrenderer: this.renderOperador },
@@ -512,6 +515,61 @@ export class ArtikelnFacCdV3Component implements OnInit {
   ChangeSistema() {
     this.loadColumnas();
     this.loadParameters();
+    this.loadValoresParametros();
+  }
+
+  loadValoresParametros() {
+    this.service.HTTP_Get('/sm/fabricacion/parametros/valores' + this.querySistema()).subscribe(
+      data => {
+        let valores = {};
+        data.Table.forEach(v => {
+          let nombre = String(v.name).toUpperCase();
+          (valores[nombre] = valores[nombre] || []).push({ valor: String(v.valor), texto: String(v.texto) });
+        });
+        this.valoresParametro = valores;
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error));
+      });
+  }
+
+  /* El valor de una condición se elige de una lista si el parámetro tiene catálogo y el operador es "igual a" */
+  tieneValores(c: Condicion): boolean {
+    return c.operador == '==' && !!this.valoresParametro[String(c.parametro).toUpperCase()];
+  }
+
+  /* Opciones de la lista; si la regla tiene un valor que ya no está en el catálogo, se añade para no perderlo */
+  opcionesValor(c: Condicion): { valor: string, texto: string }[] {
+    let lista = this.valoresParametro[String(c.parametro).toUpperCase()] || [];
+    let actual = String(c.valor || '').trim();
+    if (actual != '' && !lista.some(v => v.valor.toUpperCase() == actual.toUpperCase())) {
+      return [{ valor: actual, texto: actual + ' (no está en el catálogo)' }].concat(lista);
+    }
+    return lista;
+  }
+
+  /* En los parámetros de id se muestra el número y su nombre: "1 · BLANCO RAL 9016" */
+  etiquetaValor(v: { valor: string, texto: string }): string {
+    return v.valor.toUpperCase() == v.texto.toUpperCase() ? v.texto : v.valor + ' · ' + v.texto;
+  }
+
+  trackValor(indice: number, v: { valor: string }) {
+    return v.valor;
+  }
+
+  /* Al elegir otro parámetro, se ajusta el valor a como está escrito en el catálogo (o se vacía si no está) */
+  CambiarParametroCondicion(c: Condicion) {
+    if (this.tieneValores(c)) {
+      let encontrado = this.valoresParametro[String(c.parametro).toUpperCase()]
+        .find(v => v.valor.toUpperCase() == String(c.valor || '').trim().toUpperCase());
+      c.valor = encontrado ? encontrado.valor : '';
+    }
+  }
+
+  textoValor(parametro: string, valor: string): string {
+    let lista = this.valoresParametro[String(parametro).toUpperCase()] || [];
+    let encontrado = lista.find(v => v.valor.toUpperCase() == String(valor || '').trim().toUpperCase());
+    return encontrado && encontrado.valor.toUpperCase() != encontrado.texto.toUpperCase() ? ' (' + encontrado.texto + ')' : '';
   }
 
   loadClientes() {
@@ -834,8 +892,15 @@ export class ArtikelnFacCdV3Component implements OnInit {
     };
   }
 
+  /* Orden propuesto para una regla nueva: el más alto de las reglas del sistema + 10 (10 si no hay ninguna) */
+  siguienteOrden(): number {
+    let ordenes = (this.source.localdata || []).map(r => Number(r.orden) || 0);
+    return (ordenes.length > 0 ? Math.max(...ordenes) : 0) + 10;
+  }
+
   NuevaRegla() {
     this.regla = this.reglaVacia();
+    this.regla.orden = this.siguienteOrden();
     this.consumoComun = true;
     this.consumoTodos = consumoVacio();
     this.tituloRegla = 'Nueva regla';
@@ -940,6 +1005,16 @@ export class ArtikelnFacCdV3Component implements OnInit {
     this.regla.articulos.splice(i, 1);
   }
 
+  /* Añade otra operación a la cadena del consumo (se calculan de izquierda a derecha) */
+  AnadirOperacion(consumo: Consumo) {
+    consumo.extra = consumo.extra || [];
+    consumo.extra.push({ operador: '**', numero: '' });
+  }
+
+  QuitarOperacion(consumo: Consumo, indice: number) {
+    consumo.extra.splice(indice, 1);
+  }
+
   unidadConsumo(articulo: ArticuloRegla) {
     return articulo && articulo.unidad == 3 ? 'cm (se guarda en m)' : (articulo && articulo.descUnidad ? articulo.descUnidad : '');
   }
@@ -996,6 +1071,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
     if (consumo.tipo == 'operacion' && String(consumo.numero).trim() == '') {
       return ['Indique el número'];
     }
+    if (consumo.tipo == 'operacion' && (consumo.extra || []).some(e => String(e.numero).trim() == '')) {
+      return ['Indique el número de todas las operaciones'];
+    }
     return validarConsumo(buildConsumo(consumo), this.nombresParametros);
   }
 
@@ -1027,7 +1105,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
         let op = OPERADORES_CONDICION.find(o => o.valor == c.operador);
         frase = c.operador == 'entre'
           ? c.parametro + ' entre ' + c.desde + ' y ' + c.hasta
-          : c.parametro + ' ' + (op ? op.texto : c.operador) + ' ' + c.valor;
+          : c.parametro + ' ' + (op ? op.texto : c.operador) + ' ' + c.valor + (c.operador == '==' ? this.textoValor(c.parametro, c.valor) : '');
       }
       partes.push((partes.length > 0 ? (this.regla.operaciones[i - 1] == 'O' ? ' O ' : ' Y ') : '') + frase);
     });

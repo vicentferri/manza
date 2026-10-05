@@ -3,6 +3,7 @@
  * Replica lo que aceptan fn_fabricacion_condicion y sp_fabricacion_evaluar (SQL):
  *   Condición: @P == valor | @P >> n | @P >= n | @P << n | @P <= n | a <= @P <= b
  *   Consumo:   n | @P | @P ++ n | @P -- n | @P ** n | @P *R n | a ** @P ** b | a *R @P *R b
+ *              y cadenas @P op n op n ... (se calculan de izquierda a derecha)
  * Los espacios se ignoran; los decimales se escriben con punto (se acepta coma).
  */
 
@@ -20,11 +21,14 @@ export interface Condicion {
 
 export type TipoConsumo = 'numero' | 'parametro' | 'operacion' | 'texto';
 
+export type OperadorConsumo = '++' | '--' | '**' | '*R';
+
 export interface Consumo {
   tipo: TipoConsumo;
   numero: string;
   parametro: string;
-  operador: '++' | '--' | '**' | '*R';
+  operador: OperadorConsumo;
+  extra: { operador: OperadorConsumo, numero: string }[];   /* operaciones siguientes de la cadena */
   texto: string;
 }
 
@@ -51,7 +55,9 @@ const RE_INTERVALO = new RegExp('^(' + NUMERO + ')<=(' + PARAM + ')<=(' + NUMERO
 const RE_BINARIA = new RegExp('^(' + PARAM + ')(==|>>|>=|<<|<=)(.+)$');
 const RE_NUMERO = new RegExp('^' + NUMERO + '$');
 const RE_PARAM = new RegExp('^' + PARAM + '$');
-const RE_OPERACION = new RegExp('^(' + PARAM + ')(\\+\\+|--|\\*\\*|\\*R)(' + NUMERO + ')$');
+const OPERADOR = '(\\+\\+|--|\\*\\*|\\*R)';
+const RE_OPERACION = new RegExp('^(' + PARAM + ')((?:' + OPERADOR + NUMERO + ')+)$');
+const RE_PASO = new RegExp(OPERADOR + '(' + NUMERO + ')', 'g');
 const RE_TRES_TERMINOS = new RegExp('^(' + NUMERO + ')(\\*\\*|\\*R)(' + PARAM + ')\\2(' + NUMERO + ')$');
 
 function sinEspacios(texto: string): string {
@@ -150,7 +156,7 @@ export function validarCondicion(texto: string, parametros: string[]): string[] 
 /* ---------------- CONSUMOS ---------------- */
 
 export function consumoVacio(): Consumo {
-  return { tipo: 'numero', numero: '1', parametro: '', operador: '--', texto: '' };
+  return { tipo: 'numero', numero: '1', parametro: '', operador: '--', extra: [], texto: '' };
 }
 
 export function parseConsumo(texto: string): Consumo {
@@ -170,10 +176,17 @@ export function parseConsumo(texto: string): Consumo {
   }
   const m = RE_OPERACION.exec(limpio);
   if (m) {
+    const pasos: { operador: OperadorConsumo, numero: string }[] = [];
+    let paso: RegExpExecArray;
+    RE_PASO.lastIndex = 0;
+    while ((paso = RE_PASO.exec(m[2])) !== null) {
+      pasos.push({ operador: paso[1] as OperadorConsumo, numero: numero(paso[2]) });
+    }
     c.tipo = 'operacion';
     c.parametro = m[1].toUpperCase();
-    c.operador = m[2] as any;
-    c.numero = numero(m[3]);
+    c.operador = pasos[0].operador;
+    c.numero = pasos[0].numero;
+    c.extra = pasos.slice(1);
     return c;
   }
   c.tipo = 'texto';
@@ -185,7 +198,8 @@ export function buildConsumo(c: Consumo): string {
   switch (c.tipo) {
     case 'numero': return numero(c.numero);
     case 'parametro': return c.parametro;
-    case 'operacion': return c.parametro + ' ' + c.operador + ' ' + numero(c.numero);
+    case 'operacion': return c.parametro + ' ' + c.operador + ' ' + numero(c.numero)
+      + (c.extra || []).map(e => ' ' + e.operador + ' ' + numero(e.numero)).join('');
     default: return String(c.texto || '').trim();
   }
 }
