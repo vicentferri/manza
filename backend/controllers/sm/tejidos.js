@@ -47,7 +47,7 @@ var request = new sql.Request();
 function tejidos_cliente_producto(req,res)
 {
     let sqlquery = "select tab.idrow,tab.cliente,cli.NomFiscal,tab.producto,tab.tejido,tab.impresion,tab.diasfabricacion,";
-    sqlquery += "dbo.fn_TipoArticulo(tab.producto) as descproducto,tej.descripcion from  [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos_clientes_productos] tab ";
+    sqlquery += "dbo.fn_TipoArticulo(tab.producto) as descproducto,tej.descripcion from  [dbo].[sol_articulos_tejidos_clientes_productos] tab ";
     sqlquery += " inner join NH_CLIENTES cli on cli.IdCliente = tab.CLIENTE ";
     sqlquery += " inner join SOL_ARTICULOS_TEJIDOS tej on tej.idrow = tab.tejido ";
     new sql.Request().query(sqlquery, (err2,result) => {
@@ -540,7 +540,7 @@ function tejidos_colores(req,res)
 
 function tejidos_atributos(req,res)
 {
-    var sqlquery = "SELECT [idrow],[tejido],[Ntejido],[color],[Ncolor],[cliente],[Ncliente],[descripcion],[anchomax],[impresiondigital],[codigoprov] FROM [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_ATRIBUTOS]";
+    var sqlquery = "SELECT [idrow],[tejido],[Ntejido],[color],[Ncolor],[cliente],[Ncliente],[descripcion],[anchomax],[impresiondigital],[codigoprov] FROM [dbo].[SOL_ARTICULOS_TEJIDOS_ATRIBUTOS]";
     new sql.Request().query(sqlquery, (err2,result) => {
 
         if (err2 == null){

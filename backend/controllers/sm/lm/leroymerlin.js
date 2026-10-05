@@ -39,7 +39,7 @@ function estancias(req,res){
 
   var cliente = req.params.cli;
   
-  var query = "select idrow,descripcion from [solarmanes_dev].[dbo].[sol_articulos_estancias]";
+  var query = "select idrow,descripcion from [dbo].[sol_articulos_estancias]";
 	ExecuteSQL(query,res);
 }
 
@@ -49,7 +49,7 @@ function cajones(req,res){
   var tipo = req.params.tipo;
 
   
-   var query = "select idrow,descripcion from [solarmanes_dev].[dbo].[vw_articulos_cajones] where cliente="+cliente+" and grupo = (select grupo from sol_articulos_accionamientos_tipos tip where tip.id = "+tipo+")";
+   var query = "select idrow,descripcion from [dbo].[vw_articulos_cajones] where cliente="+cliente+" and grupo = (select grupo from sol_articulos_accionamientos_tipos tip where tip.id = "+tipo+")";
   ExecuteSQL(query,res);
   
   
@@ -61,7 +61,7 @@ function cajones(req,res){
 function cajon_cliente(req,res){
 
    
-   var query = "select idrow,(select descripcion from SOL_ARTICULOS_CAJONES where idrow = [solarmanes_dev].[dbo].[SOL_ARTICULOS_CAJONES_CLIENTES].idrow) as descajon,cliente, (select dbo.AT_Cliente(cliente)) as descliente,(select dgrupo from SOL_ARTICULOS_CAJONES where idrow = [solarmanes_dev].[dbo].[SOL_ARTICULOS_CAJONES_CLIENTES].idrow) as Grupo from [solarmanes_dev].[dbo].[SOL_ARTICULOS_CAJONES_CLIENTES]";
+   var query = "select idrow,(select descripcion from SOL_ARTICULOS_CAJONES where idrow = [dbo].[SOL_ARTICULOS_CAJONES_CLIENTES].idrow) as descajon,cliente, (select dbo.AT_Cliente(cliente)) as descliente,(select dgrupo from SOL_ARTICULOS_CAJONES where idrow = [dbo].[SOL_ARTICULOS_CAJONES_CLIENTES].idrow) as Grupo from [dbo].[SOL_ARTICULOS_CAJONES_CLIENTES]";
    ExecuteSQL(query,res);
   }
 
@@ -145,7 +145,7 @@ function cajon_cliente_del(req,res)
 function cajon(req,res){
 
    
-    var query = "select idrow,descripcion,grupo,(select descripcion from sol_grupo_modelo where idrow = grupo) as desgrupo from [solarmanes_dev].[dbo].[sol_articulos_cajones]";
+    var query = "select idrow,descripcion,grupo,(select descripcion from sol_grupo_modelo where idrow = grupo) as desgrupo from [dbo].[sol_articulos_cajones]";
     ExecuteSQL(query,res);
    }
    
@@ -206,7 +206,7 @@ function cajones_del(req,res){
    let operation = body.operation;
 
    if (operation == 0){
-      let query = "delete from [solarmanes_dev].[dbo].[sol_articulos_cajones] where idrow=" + ids; 
+      let query = "delete from [dbo].[sol_articulos_cajones] where idrow=" + ids; 
       ExecuteSQL_OK(query,res);
    }
 
@@ -217,14 +217,14 @@ function guias(req,res){
   var cliente = req.params.cli;
   var tipo = req.params.tipo
   
-  var query = "select idrow,descripcion from [solarmanes_dev].[dbo].[sol_articulos_guias] where grupo = (select grupo from sol_articulos_accionamientos_tipos tip where tip.id = "+tipo+")";
+  var query = "select idrow,descripcion from [dbo].[sol_articulos_guias] where grupo = (select grupo from sol_articulos_accionamientos_tipos tip where tip.id = "+tipo+")";
   ExecuteSQL(query,res);
 }
 
 function guia(req,res){
 
       
-   var query = "select idrow,descripcion,grupo,(select descripcion from sol_grupo_modelo where idrow = grupo) as desgrupo from [solarmanes_dev].[dbo].[sol_articulos_guias]";
+   var query = "select idrow,descripcion,grupo,(select descripcion from sol_grupo_modelo where idrow = grupo) as desgrupo from [dbo].[sol_articulos_guias]";
    ExecuteSQL(query,res);
  }
 
@@ -285,7 +285,7 @@ function guias_del(req,res){
    let operation = body.operation;
 
    if (operation == 0){
-      let query = "delete from [solarmanes_dev].[dbo].[sol_articulos_guias] where idrow=" + ids; 
+      let query = "delete from [dbo].[sol_articulos_guias] where idrow=" + ids; 
       ExecuteSQL_OK(query,res);
    }
 
@@ -307,7 +307,7 @@ function accion(req,res){
      } 
      else 
      {
-        var query = "select idrow as id,descripcion as text from [solarmanes_dev].[dbo].[vw_accionamientos_cliente] where cliente="+cliente+" and producto="+producto;
+        var query = "select idrow as id,descripcion as text from [dbo].[vw_accionamientos_cliente] where cliente="+cliente+" and producto="+producto;
         ExecuteSQL(query,res);
      }     
 }
@@ -322,7 +322,7 @@ function accion_gen(req,res){
      } 
      else 
      {
-        var query = "select idrow as id,descripcion as text from SOL_ARTICULOS_ACCIONAMIENTOS where not idrow in (select idrow  from [solarmanes_dev].[dbo].[vw_accionamientos_cliente] where cliente="+cliente+")";
+        var query = "select idrow as id,descripcion as text from SOL_ARTICULOS_ACCIONAMIENTOS where not idrow in (select idrow  from [dbo].[vw_accionamientos_cliente] where cliente="+cliente+")";
         ExecuteSQL(query,res);
      }     
 }
@@ -343,7 +343,7 @@ function accionT(req,res){
      else 
      {
         /* MODIFIED VFF 17.12.2019 */
-        var query = "select id,TipoCliente as text,mando from [solarmanes_dev].[dbo].[vw_accionamientosmarcas_clientes] where idrow="+idrow+" and cliente="+cliente+" and producto="+tipo;
+        var query = "select id,TipoCliente as text,mando from [dbo].[vw_accionamientosmarcas_clientes] where idrow="+idrow+" and cliente="+cliente+" and producto="+tipo;
         query += " order by TipoCliente";
 
         ExecuteSQL(query,res);
@@ -364,7 +364,7 @@ function accionT_gen(req,res){
      {
         /* MODIFIED VFF 17.12.2019 */
         var query = "select id,descripcion as text,mando from sol_articulos_accionamientos_tipos where idrow="+idrow+" and not id in ";
-        query += "(select id from [solarmanes_dev].[dbo].[vw_accionamientosmarcas_clientes] where idrow="+idrow+" and cliente="+cliente+")";
+        query += "(select id from [dbo].[vw_accionamientosmarcas_clientes] where idrow="+idrow+" and cliente="+cliente+")";
         ExecuteSQL(query,res);
       }
 }
@@ -387,8 +387,8 @@ function accionC(req,res){
      {
         if (cliente == 1 || cliente ==5) 
         {
-          var query = "select distinct(descripcion) as text,idrow as id,pvp as precio,c1,isnull(codigo_48,'') codigo_48 from [solarmanes_dev].[dbo].[vw_accionamientos_colores] where cliente="+cliente+" and tipoidrow="+acc+" and id="+tipo+" and producto="+produc;
-          query += "and not idrow in (select id from [solarmanes_dev].[dbo].[SOL_ARTICULOS_COLORES_MARCAS_CLIENTES_EXCLUIDOS] where cliente="+cliente+")";
+          var query = "select distinct(descripcion) as text,idrow as id,pvp as precio,c1,isnull(codigo_48,'') codigo_48 from [dbo].[vw_accionamientos_colores] where cliente="+cliente+" and tipoidrow="+acc+" and id="+tipo+" and producto="+produc;
+          query += "and not idrow in (select id from [dbo].[SOL_ARTICULOS_COLORES_MARCAS_CLIENTES_EXCLUIDOS] where cliente="+cliente+")";
         } 
         else 
         {
@@ -426,7 +426,7 @@ function lacados(req,res){
   else 
   {
      
-       var query = "select distinct(descripcion) as text,id,pvp as precio,c1 from [solarmanes_dev].[dbo].[SOL_ARTICULOS_INCREMENTOS_LACADOS]";
+       var query = "select distinct(descripcion) as text,id,pvp as precio,c1 from [dbo].[SOL_ARTICULOS_INCREMENTOS_LACADOS]";
        
      
 
@@ -450,12 +450,12 @@ function accionC_gen(req,res){
      {
         if (cliente == 1 || cliente == 5) 
         {
-          var query = "select distinct(descripcion) as text,idrow as id from [solarmanes_dev].[dbo].[vw_accionamientos_colores] where tipoidrow="+acc+" and id="+tipo;
-          query += "and not idrow in (select id from [solarmanes_dev].[dbo].[SOL_ARTICULOS_COLORES_MARCAS_CLIENTES_EXCLUIDOS] where cliente="+cliente+")";
+          var query = "select distinct(descripcion) as text,idrow as id from [dbo].[vw_accionamientos_colores] where tipoidrow="+acc+" and id="+tipo;
+          query += "and not idrow in (select id from [dbo].[SOL_ARTICULOS_COLORES_MARCAS_CLIENTES_EXCLUIDOS] where cliente="+cliente+")";
         } 
         else 
         {
-          var query = "select distinct(descripcion) as text,idrow as id from [solarmanes_dev].[dbo].[vw_accionamientos_colores] where tipoidrow="+acc+" and id="+tipo;
+          var query = "select distinct(descripcion) as text,idrow as id from [dbo].[vw_accionamientos_colores] where tipoidrow="+acc+" and id="+tipo;
         }
         
 
@@ -478,7 +478,7 @@ function soportes(req,res)
      } 
      else 
      {
-      var query = "select id,traduccion as text  from [solarmanes_dev].[dbo].[vw_soportes_clientes] where cliente="+cliente;
+      var query = "select id,traduccion as text  from [dbo].[vw_soportes_clientes] where cliente="+cliente;
         ExecuteSQL(query,res);
     }
 }
@@ -518,7 +518,7 @@ function soportesC(req,res)
      } 
      else 
      {
-       var query = "select idrow as id,color as text from [solarmanes_dev].[dbo].[vw_articulos_soportes_colores] where id="+id+" and cliente ="+cliente;
+       var query = "select idrow as id,color as text from [dbo].[vw_articulos_soportes_colores] where id="+id+" and cliente ="+cliente;
         ExecuteSQL(query,res);
     }
 }
@@ -574,7 +574,7 @@ function contrapesoC(req,res)
      } 
      else 
      {
-        var query = "select id,color as text from [SOLARMANES_DEV].[dbo].[vw_contrapesos_colores] where contrapeso=" + id + " and cliente =" + cliente; 
+        var query = "select id,color as text from [dbo].[vw_contrapesos_colores] where contrapeso=" + id + " and cliente =" + cliente; 
         ExecuteSQL(query,res);
     }
 }
@@ -594,12 +594,12 @@ function tejidos_producto(req,res)
    }
    else 
     {
-      var query = "select TEJIDO as id,Ntejido as text,isnull(codigoprov,'') as codigoprov,opacidad from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES_PRODUCTOS] where CLIENTE="+cliente+" and PRODUCTO="+producto;
+      var query = "select TEJIDO as id,Ntejido as text,isnull(codigoprov,'') as codigoprov,opacidad from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES_PRODUCTOS] where CLIENTE="+cliente+" and PRODUCTO="+producto;
       query += " order by Ntejido";
      
       if (subcli == 2)
       {
-        var query = "select TEJIDO as id,Ntejido as text,isnull(codigoprov2,'') as codigoprov,opacidad from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES_PRODUCTOS] where CLIENTE="+cliente+" and PRODUCTO="+producto;
+        var query = "select TEJIDO as id,Ntejido as text,isnull(codigoprov2,'') as codigoprov,opacidad from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES_PRODUCTOS] where CLIENTE="+cliente+" and PRODUCTO="+producto;
         query += " order by Ntejido";
       }
      
@@ -621,13 +621,13 @@ function tejidos_producto_id(req,res)
    else 
     {
       
-      var query = "select id,descripcion as text,codigoprov,(select opacidad from SOL_ARTICULOS_TEJIDOS where idrow=SOL_ARTICULOS_TEJIDOS_CLIENTES.id) as opacidad from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
-      query += "(select tejido from  [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos_clientes_productos] where impresion=1 and cliente="+cliente+" and producto = "+producto+") order by descripcion ";
+      var query = "select id,descripcion as text,codigoprov,(select opacidad from SOL_ARTICULOS_TEJIDOS where idrow=SOL_ARTICULOS_TEJIDOS_CLIENTES.id) as opacidad from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
+      query += "(select tejido from  [dbo].[sol_articulos_tejidos_clientes_productos] where impresion=1 and cliente="+cliente+" and producto = "+producto+") order by descripcion ";
       
       if (subcli == 2)
       {
-        var query = "select id,descripcion as text,codigoprov2 as codigoprov,(select opacidad from SOL_ARTICULOS_TEJIDOS where idrow=SOL_ARTICULOS_TEJIDOS_CLIENTES.id) as opacidad from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
-      query += "(select tejido from  [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos_clientes_productos] where impresion=1 and cliente="+cliente+" and producto = "+producto+") order by descripcion ";
+        var query = "select id,descripcion as text,codigoprov2 as codigoprov,(select opacidad from SOL_ARTICULOS_TEJIDOS where idrow=SOL_ARTICULOS_TEJIDOS_CLIENTES.id) as opacidad from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
+      query += "(select tejido from  [dbo].[sol_articulos_tejidos_clientes_productos] where impresion=1 and cliente="+cliente+" and producto = "+producto+") order by descripcion ";
       }
      
      
@@ -649,7 +649,7 @@ function tejidos(req,res)
      } 
      else 
      {
-        var query = "select id,descripcion as text,codigoprov from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] ";
+        var query = "select id,descripcion as text,codigoprov from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] ";
         query += " where cliente="+cliente+" order by descripcion";
         ExecuteSQL(query,res);
     }
@@ -669,12 +669,12 @@ function tejidosC(req,res)
      {
       if (cliente == 1 || cliente == 5)
         {
-          var query = "select color as id,descripcion as text,ancmax,color_hex,isnull(codigoprov,'') as codigoprov from [SOLARMANES_DEV].[dbo].[vw_tejidos_colores] where tejido="+id;
+          var query = "select color as id,descripcion as text,ancmax,color_hex,isnull(codigoprov,'') as codigoprov from [dbo].[vw_tejidos_colores] where tejido="+id;
           query += " and cliente="+cliente+" order by color";
 
           if (subcliente == 2)
           {
-            var query = "select color as id,descripcion as text,ancmax,color_hex,isnull(codigoprov2,'') as codigoprov from [SOLARMANES_DEV].[dbo].[vw_tejidos_colores] where tejido="+id;
+            var query = "select color as id,descripcion as text,ancmax,color_hex,isnull(codigoprov2,'') as codigoprov from [dbo].[vw_tejidos_colores] where tejido="+id;
             query += " and cliente="+cliente+" order by color";  
           }
         } 
@@ -701,13 +701,13 @@ function tejidosCID(req,res)
      {
       if (cliente == 1 || cliente == 5)
         {
-          var query = "select color as id,descripcion as text,ancmax,color_hex,codigoprov from [SOLARMANES_DEV].[dbo].[vw_tejidos_colores] ";
+          var query = "select color as id,descripcion as text,ancmax,color_hex,codigoprov from [dbo].[vw_tejidos_colores] ";
           query +=" where impresiondigital=1 and impresiondigital2=1 and tejido="+id;
           query += " order by color";
 
           if (subcliente == 2)
           {
-            var query = "select color as id,descripcion as text,ancmax,color_hex,codigoprov2 as codigoprov from [SOLARMANES_DEV].[dbo].[vw_tejidos_colores] ";
+            var query = "select color as id,descripcion as text,ancmax,color_hex,codigoprov2 as codigoprov from [dbo].[vw_tejidos_colores] ";
             query +=" where impresiondigital=1 and impresiondigital2=1 and tejido="+id;
             query += " order by color";
             }
@@ -735,7 +735,7 @@ function tapas(req,res)
      } 
      else 
      {
-      var query = "select id,traduccion as text from [solarmanes_dev].[dbo].[vw_tapas_clientes] where cliente="+cliente+" order by traduccion";
+      var query = "select id,traduccion as text from [dbo].[vw_tapas_clientes] where cliente="+cliente+" order by traduccion";
         ExecuteSQL(query,res);
     }
 }
@@ -775,7 +775,7 @@ function tapasC(req,res)
      } 
      else 
      {
-        var query = "select id,color as text from [solarmanes_dev].[dbo].[vw_articulos_tapas] where idrow="+id;
+        var query = "select id,color as text from [dbo].[vw_articulos_tapas] where idrow="+id;
         ExecuteSQL(query,res);
     }
 }
@@ -791,7 +791,7 @@ function posMando(req,res)
      } 
      else 
      {
-        var query = " select idrow as id,descripcion as text from [solarmanes_dev].[dbo].[SOL_ARTICULOS_POSICIONMANDO]";
+        var query = " select idrow as id,descripcion as text from [dbo].[SOL_ARTICULOS_POSICIONMANDO]";
         ExecuteSQL(query,res);
     }
 }
@@ -807,7 +807,7 @@ function salTejido(req,res)
      } 
      else 
      {
-        var query = "select idrow as id,descripcion as text from [solarmanes_dev].[dbo].[sol_articulos_salidatejido]";
+        var query = "select idrow as id,descripcion as text from [dbo].[sol_articulos_salidatejido]";
         ExecuteSQL(query,res);
     }
 }
@@ -823,7 +823,7 @@ function radiomandos(req,res)
      } 
      else 
      {
-        var query = "select  id,descripcion as text,precio,c1 from [SOLARMANES_DEV].[dbo].[sol_articulos_accionamientos_radio_tipo_cliente] where cliente=1 order by descripcion";
+        var query = "select  id,descripcion as text,precio,c1 from [dbo].[sol_articulos_accionamientos_radio_tipo_cliente] where cliente=1 order by descripcion";
         ExecuteSQL(query,res);
     }
 }
@@ -861,8 +861,8 @@ function tubos(req,res)
      } 
      else 
      {
-        var query =  "select idrow as id,descripcion as text,anchomax as ancmax from [solarmanes_dev].[dbo].[sol_articulos_tubos] ";
-        //query  += " where not idrow in (select id from [solarmanes_dev].[dbo].[sol_articulos_tubos_clientes_excluidos] where cliente="+cliente+") "; 
+        var query =  "select idrow as id,descripcion as text,anchomax as ancmax from [dbo].[sol_articulos_tubos] ";
+        //query  += " where not idrow in (select id from [dbo].[sol_articulos_tubos_clientes_excluidos] where cliente="+cliente+") "; 
         ExecuteSQL(query,res);
     }
 }
@@ -878,7 +878,7 @@ function altCadena(req,res)
      } 
      else 
      {
-        var query =  "select value as id,descripcion as text from [solarmanes_dev].[dbo].[sol_articulos_accionamientos_cadena] where tipo='C' order by value";
+        var query =  "select value as id,descripcion as text from [dbo].[sol_articulos_accionamientos_cadena] where tipo='C' order by value";
         ExecuteSQL(query,res);
     }
 }
@@ -894,7 +894,7 @@ function altCadenaM(req,res)
      } 
      else 
      {
-        var query =  "select value as id,descripcion as text from [solarmanes_dev].[dbo].[sol_articulos_accionamientos_cadena] where tipo='M' order by value";
+        var query =  "select value as id,descripcion as text from [dbo].[sol_articulos_accionamientos_cadena] where tipo='M' order by value";
         ExecuteSQL(query,res);
     }
 }
@@ -907,7 +907,7 @@ function existePromocion(req,res)
 
     if (cliente != null && centro != null)
     {
-     var query = "select count(*) as existe from [solarmanes_dev].[dbo].[vw_nh_clientes_promociones] ";
+     var query = "select count(*) as existe from [dbo].[vw_nh_clientes_promociones] ";
      query += "where idcliente="+cliente+" and usuario="+centro+" and promocion_activa=1";
      query += " and desde<=getdate()";
      ExecuteSQL(query,res);
@@ -921,7 +921,7 @@ function datosPromocion(req,res)
     var centro  = req.params.cent;
     if (cliente != null && centro != null)
     {
-     var query = "select promocion_coeficiente,promocion_coeficiente2,promocion_modificapvp,promocion_modificapvc,desde,hasta,promocion_mensaje,imagen_banner from [solarmanes_dev].[dbo].[vw_nh_clientes_promociones] where idcliente="+cliente+" and usuario="+centro+" and promocion_activa=1";
+     var query = "select promocion_coeficiente,promocion_coeficiente2,promocion_modificapvp,promocion_modificapvc,desde,hasta,promocion_mensaje,imagen_banner from [dbo].[vw_nh_clientes_promociones] where idcliente="+cliente+" and usuario="+centro+" and promocion_activa=1";
     } 
     ExecuteSQL(query,res);
 }
@@ -953,15 +953,15 @@ function tejidos_producto_web(req,res)
    else 
     {
       /*
-      var query = "select id,descripcion as text,isnull(ovov,'') as codigoprov from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
-      query += "(select tejido from  [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos_clientes_productos] where cliente="+cliente+" and producto = "+producto+") ";
+      var query = "select id,descripcion as text,isnull(ovov,'') as codigoprov from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
+      query += "(select tejido from  [dbo].[sol_articulos_tejidos_clientes_productos] where cliente="+cliente+" and producto = "+producto+") ";
       query += " and not id in (14,15,18,32,42,51,59) order by descripcion ";
      */
      var query = "select cli.id,cli.descripcion as text,isnull(cli.codigoprov,'') as codigoprov,tej.opacidad,tej.info_tecnica,tej.uso_recomendado ";
-    query += " from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] cli ";
-    query += " inner join [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos] tej on tej.idrow = cli.id ";
+    query += " from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] cli ";
+    query += " inner join [dbo].[sol_articulos_tejidos] tej on tej.idrow = cli.id ";
     query += " where cli.cliente="+cliente+" and cli.id in ";
-    query += " (select tejido from  [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos_clientes_productos] ";
+    query += " (select tejido from  [dbo].[sol_articulos_tejidos_clientes_productos] ";
     query += " where cliente="+cliente+" and producto = 1) ";
     query += " and not cli.id in (14,15,18,32,42,51,59) order by cli.descripcion ";
 
@@ -983,15 +983,15 @@ function tejidos_producto_id_web(req,res)
    else 
     {
       /*
-      var query = "select id,descripcion as text,codigoprov from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
-      query += "(select tejido from  [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos_clientes_productos] where impresion=1 and cliente="+cliente+" and producto = "+producto+") ";
+      var query = "select id,descripcion as text,codigoprov from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] where cliente="+cliente+" and id in ";
+      query += "(select tejido from  [dbo].[sol_articulos_tejidos_clientes_productos] where impresion=1 and cliente="+cliente+" and producto = "+producto+") ";
       query += " and not id in (14,15,18,32,42,51,59) order by descripcion ";
       */
       var query = "select cli.id,cli.descripcion as text,isnull(cli.codigoprov,'') as codigoprov,tej.opacidad,tej.info_tecnica,tej.uso_recomendado ";
-    query += " from [SOLARMANES_DEV].[dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] cli ";
-    query += " inner join [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos] tej on tej.idrow = cli.id ";
+    query += " from [dbo].[SOL_ARTICULOS_TEJIDOS_CLIENTES] cli ";
+    query += " inner join [dbo].[sol_articulos_tejidos] tej on tej.idrow = cli.id ";
     query += " where cli.cliente="+cliente+" and cli.id in ";
-    query += " (select tejido from  [SOLARMANES_DEV].[dbo].[sol_articulos_tejidos_clientes_productos] ";
+    query += " (select tejido from  [dbo].[sol_articulos_tejidos_clientes_productos] ";
     query += " where impresion=1 and cliente="+cliente+" and producto = 1) ";
     query += " and not cli.id in (14,15,18,32,42,51,59) order by cli.descripcion ";
       ExecuteSQL(query,res);

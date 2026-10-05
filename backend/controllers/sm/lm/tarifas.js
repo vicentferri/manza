@@ -23,7 +23,7 @@ function ExecuteSQL(query,res)
 
 function C1_Multiply_Perform(c1,mult)
 {
-    var sqlquery = "select [solarmanes_dev].[dbo].[C1_Multiply] ('"+c1+"',"+mult+") as res";
+    var sqlquery = "select [dbo].[C1_Multiply] ('"+c1+"',"+mult+") as res";
     new sql.Request().query(sqlquery, (err2,result) => {
         if (err2 == null)
         {
@@ -39,7 +39,7 @@ function C1_Multiply_Perform(c1,mult)
 
 function C1_Sum_Perform(c1,c2)
 {
-    var sqlquery = "select [solarmanes_dev].[dbo].[C1_Sum] ('"+c1+"',"+c2+") as res";
+    var sqlquery = "select [dbo].[C1_Sum] ('"+c1+"',"+c2+") as res";
     new sql.Request().query(sqlquery, (err2,result) => {
         if (err2 == null)
         {
@@ -71,7 +71,7 @@ function C1_Multiply(req,res){
      } 
      else 
      {
-        var query = "select [solarmanes_dev].[dbo].[C1_Multiply] ('"+c1+"',"+mult+") as res";
+        var query = "select [dbo].[C1_Multiply] ('"+c1+"',"+mult+") as res";
         ExecuteSQL(query,res);
       }
  
@@ -102,7 +102,7 @@ function C1_Sumatory(req,res){
 
     var url = c1 + "+" + c2 + "+" + c3 + "+" + c4 + "+" + c5 + "+" + c6 +  "+" + c7 + "+" + c8; 
 
-    var query = "select [solarmanes_dev].[dbo].[C1_SumValues] ('"+url+"') as res";
+    var query = "select [dbo].[C1_SumValues] ('"+url+"') as res";
   
     ExecuteSQL(query,res);
   

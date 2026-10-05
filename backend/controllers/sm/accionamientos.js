@@ -294,7 +294,7 @@ function accionamientos_filter(req,res){
 
 function accionamientos_clientes(req,res)
 {
-    var sqlquery = "select idrow,descCliente,descripcion,producto,Nproducto from [solarmanes_dev].[dbo].[vw_accionamientos_cliente]";
+    var sqlquery = "select idrow,descCliente,descripcion,producto,Nproducto from [dbo].[vw_accionamientos_cliente]";
      new sql.Request().query(sqlquery, (err2,result) => {
 
                 if (err2 == null){
@@ -307,7 +307,7 @@ function accionamientos_clientes(req,res)
 
 function accionamientosmarcas_clientes(req,res)
 {
-    var sqlquery = "select id,idrow,cliente,Accionamiento,descCliente,Tipo,TipoCliente,iddel,producto,Nproducto from [solarmanes_dev].[dbo].[vw_accionamientosmarcas_clientes]";
+    var sqlquery = "select id,idrow,cliente,Accionamiento,descCliente,Tipo,TipoCliente,iddel,producto,Nproducto from [dbo].[vw_accionamientosmarcas_clientes]";
      new sql.Request().query(sqlquery, (err2,result) => {
 
                 if (err2 == null){
@@ -358,7 +358,7 @@ function accionamientosmarcas_clientes_del(req,res)
 /*
 function accionamientostipo(req,res)
 {
-    var sqlquery = "select id,accionamiento from [solarmanes_dev].[dbo].[vw_accionamientostipos] group by id,accionamiento";
+    var sqlquery = "select id,accionamiento from [dbo].[vw_accionamientostipos] group by id,accionamiento";
      new sql.Request().query(sqlquery, (err2,result) => {
 
                 if (err2 == null){
@@ -375,7 +375,7 @@ function accionamientostipo_config(req,res)
 
     var id = (req.query.id === undefined) ? -1 : req.query.id;
 
-    var sqlquery = "select id,idrow,accionamiento,tipo,grupo,(select descripcion from sol_grupo_modelo where idrow = grupo) as desgrupo,mando from [solarmanes_dev].[dbo].[vw_accionamientostipos]";
+    var sqlquery = "select id,idrow,accionamiento,tipo,grupo,(select descripcion from sol_grupo_modelo where idrow = grupo) as desgrupo,mando from [dbo].[vw_accionamientostipos]";
 
 
     if (id != '-1'){
@@ -397,7 +397,7 @@ function grupo_modelo(req,res)
 
     var id = (req.query.id === undefined) ? -1 : req.query.id;
 
-    var sqlquery = "select idrow,descripcion,modelo,(select descripcion from SOLARMANES_CARACTERISTICA_MODELO where tag = modelo) as desmodelo from [solarmanes_dev].[dbo].[sol_grupo_modelo]";
+    var sqlquery = "select idrow,descripcion,modelo,(select descripcion from SOLARMANES_CARACTERISTICA_MODELO where tag = modelo) as desmodelo from [dbo].[sol_grupo_modelo]";
 
 
     if (id != '-1'){
@@ -421,7 +421,7 @@ function grupo_modelo(req,res)
 
 function accionamientos_marcas(req,res)
 {
-    var sqlquery = "select id as idrow,(Accionamiento + '-' + Marca) as descripcion from [solarmanes_dev].[dbo].[vw_accionamientos_marcas] order by Accionamiento";
+    var sqlquery = "select id as idrow,(Accionamiento + '-' + Marca) as descripcion from [dbo].[vw_accionamientos_marcas] order by Accionamiento";
       new sql.Request().query(sqlquery, (err2,result) => {
 
                 if (err2 == null){
@@ -436,7 +436,7 @@ function accionamientos_marcas(req,res)
 function accionamientos_modelos(req,res)
 {
     var tipo = req.params.tipo;
-    var sqlquery = "select distinct(descripcion) as tipo,idrow from [solarmanes_dev].[dbo].[vw_accionamientos_colores] where tipoidrow=3 and id="+tipo;
+    var sqlquery = "select distinct(descripcion) as tipo,idrow from [dbo].[vw_accionamientos_colores] where tipoidrow=3 and id="+tipo;
     new sql.Request().query(sqlquery, (err2,result) => {
 
                 if (err2 == null){

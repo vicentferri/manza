@@ -940,7 +940,7 @@ function bestellungen_entrega(req,res)
     if (cliente != null && entrega != null)
     {
      var query = "select idrow,month(fecha) as mes,fecha,referencia,refcliente,estado,dias,refcliente,case when estado=0 then 'Pendiente' when estado=100 then 'Finalizado'";
-     query += " when estado=3 then 'En Producción' end as descEstado from [solarmanes_dev].[dbo].[vw_cola_pedidos] where cliente_entrega = "+entrega+" and cliente="+cliente;
+     query += " when estado=3 then 'En Producción' end as descEstado from [dbo].[vw_cola_pedidos] where cliente_entrega = "+entrega+" and cliente="+cliente;
      query += "group by idrow,fecha,referencia,estado,dias,refcliente order by fecha desc";
      ExecuteSQL(query,res);
     }
@@ -960,7 +960,7 @@ function bestellungen_entrega_post(req,res)
     if (cliente != null && entrega != null)
     {
      var query = "select idrow,month(fecha) as mes,fecha,referencia,estado,dias,refcliente,case when estado=0 then 'Pendiente' when estado=100 then 'Finalizado'";
-     query += " when estado=3 then 'En Producción' end as descEstado from [solarmanes_dev].[dbo].[vw_cola_pedidos] ";
+     query += " when estado=3 then 'En Producción' end as descEstado from [dbo].[vw_cola_pedidos] ";
      query += " where cliente_entrega = "+entrega+" and cliente="+cliente;
      query += " and estado="+estado;
      query += " and fecha>='"+desde+"' and fecha<='"+hasta+"'";
@@ -988,7 +988,7 @@ function budget_entrega(req,res)
 
     if (cliente != null && entrega != null)
     {
-     var query = "select idrow,month(fecha) as mes,fecha,referencia,estado,dias,refcliente,fec_validez from [solarmanes_dev].[dbo].[vw_cola_presupuestos] where cliente_entrega = "+entrega+" and cliente="+cliente;
+     var query = "select idrow,month(fecha) as mes,fecha,referencia,estado,dias,refcliente,fec_validez from [dbo].[vw_cola_presupuestos] where cliente_entrega = "+entrega+" and cliente="+cliente;
      query += "group by idrow,fecha,referencia,estado,dias,refcliente,fec_validez order by fecha desc";
      ExecuteSQL(query,res);
     }

@@ -97,7 +97,7 @@ function tapasclientes(req,res)
 
 function tapasclientescolores(req,res)
 {
-    var sqlquery = "SELECT [tapas],[idrow],[id],[color],idtapa,tamano,dgrupo FROM [SOLARMANES_DEV].[dbo].[vw_articulos_tapas] order by tapas";
+    var sqlquery = "SELECT [tapas],[idrow],[id],[color],idtapa,tamano,dgrupo FROM [dbo].[vw_articulos_tapas] order by tapas";
      new sql.Request().query(sqlquery, (err2,result) => {
 
                     if (err2 == null){

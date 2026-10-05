@@ -801,8 +801,8 @@ function budget_hinzu(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_1] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select * from [dbo].[SOL_PRESUPUESTOS_COLA_TIPO_1] where idrow ";
+ 	query += " in (select id from [dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
  	ExecuteSQL(query,res);
  }
 
@@ -810,8 +810,8 @@ function budget_herunterladen_T2(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_2] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select * from [dbo].[SOL_PRESUPUESTOS_COLA_TIPO_2] where idrow ";
+ 	query += " in (select id from [dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
  	ExecuteSQL(query,res);
  }
 
@@ -819,8 +819,8 @@ function budget_herunterladen_T2(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_3] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select * from [dbo].[SOL_PRESUPUESTOS_COLA_TIPO_3] where idrow ";
+ 	query += " in (select id from [dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
  	ExecuteSQL(query,res);
  }
 
@@ -828,8 +828,8 @@ function budget_herunterladen_T4(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_4] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select * from [dbo].[SOL_PRESUPUESTOS_COLA_TIPO_4] where idrow ";
+ 	query += " in (select id from [dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
  	ExecuteSQL(query,res);
  }
 
@@ -841,7 +841,7 @@ function budget_entrega(req,res)
 
     if (cliente != null && entrega != null)
     {
-     var query = "select idrow,month(fecha) as mes,fecha,referencia,estado,dias,refcliente,fec_validez from [solarmanes_dev].[dbo].[vw_cola_presupuestos] where cliente_entrega = "+entrega+" and cliente="+cliente;
+     var query = "select idrow,month(fecha) as mes,fecha,referencia,estado,dias,refcliente,fec_validez from [dbo].[vw_cola_presupuestos] where cliente_entrega = "+entrega+" and cliente="+cliente;
      query += "group by idrow,fecha,referencia,estado,dias,refcliente,fec_validez order by fecha desc";
      
      ExecuteSQL(query,res);
@@ -862,7 +862,7 @@ function budget_entrega_post(req,res)
     if (cliente != null && entrega != null)
     {
      var query = "select idrow,month(fecha) as mes,fecha,referencia,estado,dias,refcliente,fec_validez";
-     query += " from [solarmanes_dev].[dbo].[vw_cola_presupuestos] ";
+     query += " from [dbo].[vw_cola_presupuestos] ";
      query += " where cliente_entrega = "+entrega+" and cliente="+cliente;
      query += " and fecha>='"+desde+"' and fecha<='"+hasta+"'";
      if (referencia != "")

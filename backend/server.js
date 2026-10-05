@@ -35,13 +35,23 @@ app.use(cors({
   }));
 app.use(express.static(html));
 
-var porth = 3001;
+// Configuración por entorno: backend/.env (no versionado) sobreescribe los valores de producción.
+// Formato: CLAVE=valor por línea. Ver .env.example.
+var envFile = path.join(__dirname, '.env');
+if (fs.existsSync(envFile)) {
+    fs.readFileSync(envFile, 'utf8').split(/\r?\n/).forEach(function (line) {
+        var m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+        if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2];
+    });
+}
+
+var porth = parseInt(process.env.PORT || '8080');
 
 var config = {
-    user : 'sa',
-    password: 'Cq4iz5Tsq9',
-    server : 'localhost',
-    database : 'SOLARMANES_DEV',
+    user : process.env.DB_USER || 'sa',
+    password: process.env.DB_PASSWORD || 'Cq4iz5Tsq9',
+    server : process.env.DB_SERVER || '92.222.16.22',
+    database : process.env.DB_NAME || 'SOLARMANES_DEV',
     language : 'es',
     options : {
         encrypt : false,
