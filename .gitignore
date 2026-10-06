@@ -42,3 +42,4 @@ speed-measure-plugin.json
 
 # --- Secretos / config local ---
 .env
+backend/uploads/
