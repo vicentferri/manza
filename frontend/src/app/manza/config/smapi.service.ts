@@ -160,8 +160,13 @@ export class SMAPIService {
         return this.HTTP_Get(url);
     }
 
-    getTarifaLimites(cliente: string, producto: number, tejido: string, marca: string = '1', impresion: number = 0) {
-        const url = this.urlService + '/api/lm/tarifa_limites/' + cliente + '/' + producto + '/' + tejido + '/' + marca + '/' + impresion;
+    // Límites de fabricación (no de tarifa). params: tipo, subtipo, acc, modelo, tejido, color
+    getLimitesFabricacion(params: { [k: string]: any }) {
+        const query = Object.keys(params)
+            .filter(k => params[k] !== null && params[k] !== undefined && params[k] !== '' && params[k] !== '-1' && params[k] !== -1)
+            .map(k => k + '=' + encodeURIComponent(params[k]))
+            .join('&');
+        const url = this.urlService + '/api/lm/limites_fabricacion?' + query;
         return this.HTTP_Get(url);
     }
 

@@ -37,19 +37,19 @@
         <input
           #ancho
           class="form-control"
-          [class.is-invalid]="anchoInvalido"
+          [class.is-invalid]="medidas.anchoInvalido"
           type="number"
-          [min]="tarifaMinAncho"
-          [max]="maxAnchoPermitido"
+          [attr.min]="medidas.lim.min_ancho"
+          [attr.max]="medidas.lim.max_ancho"
           step="0.5"
           [(ngModel)]="Ancho"
           (change)="Ancho_Change()"
           (blur)="Ancho_Change()"
           (keyup.enter)="Next($event, alto)"
         />
-        <small [ngClass]="anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">
-          {{ tarifaMinAncho }}-{{ maxAnchoPermitido }} cm
-          <span *ngIf="Tipo1_AnchoMaximo > 0 && Tipo1_AnchoMaximo < tarifaMaxAncho"> (limitado por tejido a {{ Tipo1_AnchoMaximo }} cm)</span>
+        <small [ngClass]="medidas.anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">
+          {{ medidas.rangoAncho }}
+          <span *ngIf="medidas.lim.origen_max_ancho == 'COLOR'"> (limitado por el ancho del rollo)</span>
         </small>
       </div>
       <div class="col-md-4">
@@ -59,18 +59,18 @@
         <input
           #alto
           class="form-control"
-          [class.is-invalid]="altoInvalido"
+          [class.is-invalid]="medidas.altoInvalido"
           type="number"
-          [min]="tarifaMinAlto"
-          [max]="tarifaMaxAlto"
+          [attr.min]="medidas.lim.min_alto"
+          [attr.max]="medidas.lim.max_alto"
           step="0.5"
           [(ngModel)]="Alto"
           (change)="Alto_Change()"
           (blur)="Alto_Change()"
           (keyup.enter)="Next($event, cantidad)"
         />
-        <small [ngClass]="altoInvalido ? 'text-danger fw-bold' : 'text-muted'">
-          {{ tarifaMinAlto }}-{{ tarifaMaxAlto }} cm
+        <small [ngClass]="medidas.altoInvalido ? 'text-danger fw-bold' : 'text-muted'">
+          {{ medidas.rangoAlto }}
         </small>
       </div>
       <div class="col-md-4">
@@ -89,12 +89,12 @@
       </div>
     </div>
 
-    <!-- Alerta de medidas fuera de tarifa -->
-    <div class="row mb-2" *ngIf="mensajeErrorMedidas && (anchoInvalido || altoInvalido)">
+    <!-- Alerta de medidas fuera de los límites de fabricación -->
+    <div class="row mb-2" *ngIf="medidas.mensaje">
       <div class="col-12">
         <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center" style="font-size: 13px;">
           <i class="fa fa-exclamation-triangle text-danger me-2" style="font-size: 16px;"></i>
-          <span>{{ mensajeErrorMedidas }}</span>
+          <span>{{ medidas.mensaje }}</span>
         </div>
       </div>
     </div>

@@ -113,11 +113,35 @@ app.use(function(req, res, next){
     }
 });
 
+// Errores lanzados dentro de una ruta: se registran y se responde JSON sin la traza
+// (la página por defecto de Express enseña rutas y código del servidor).
+app.use(function(err, req, res, next){
+    console.error('[ruta]', req.method, req.originalUrl, err);
+    if (res.headersSent) return next(err);
+    var status = err.status || 500;
+    res.status(status).json({message:'KO', error: status < 500 ? 'Petición no válida' : 'Error interno del servidor'});
+});
 
 
 
+
+
+// Red de seguridad: un error no capturado dentro de un callback (p. ej. una línea mal formada
+// en un controlador) se registra y no tumba el servidor para todos los usuarios.
+process.on('uncaughtException', function (err) {
+    console.error('[uncaughtException]', new Date().toISOString(), err);
+});
+process.on('unhandledRejection', function (reason) {
+    console.error('[unhandledRejection]', new Date().toISOString(), reason);
+});
 
 var httpsServer = https.createServer(options, app);
+
+// Si no se puede escuchar (puerto ocupado, certificado...), salir: un proceso sin puerto no sirve.
+httpsServer.on('error', function (err) {
+    console.error('[server]', err.message);
+    process.exit(1);
+});
 
 httpsServer.listen(porth, function(){
       console.log('Port:' + porth);

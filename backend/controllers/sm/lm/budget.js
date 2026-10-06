@@ -1,6 +1,7 @@
 'use strict'
 
 var sql = require('mssql');
+var Medidas = require('./medidas');
 var fs = require('fs');
 var path = require('path');
  
@@ -102,8 +103,8 @@ function Add_Tipo_1(idrow,values){
     var request = new sql.Request();
      request.input('id',sql.Int,id);   
      request.input('idrow',sql.Int,idrow);
-     request.input('ancho',sql.Int,ancho);
-     request.input('alto',sql.Int,alto);
+     request.input('ancho',sql.Decimal(12,2),ancho);
+     request.input('alto',sql.Decimal(12,2),alto);
      request.input('cantidad',sql.Int,cantidad);
      request.input('acc_tipo_id',sql.Int,acc_tipo_id);
      request.input('acc_tipo_text',sql.VarChar(250),acc_tipo_text);
@@ -274,15 +275,15 @@ function Add_Tipo_2(idrow,values){
         request.input('id',sql.Int,id);   
         request.input('idrow',sql.Int,idrow);
         request.input('TipoJapones',sql.Int,PJ_TipoJapones);
-        request.input('PJ_Ancho_1',sql.Int,PJ_Ancho_1);
-        request.input('PJ_Alto_1',sql.Int,PJ_Alto_1);
+        request.input('PJ_Ancho_1',sql.Decimal(12,2),PJ_Ancho_1);
+        request.input('PJ_Alto_1',sql.Decimal(12,2),PJ_Alto_1);
         request.input('PJ_Cantidad_1',sql.Int,PJ_Cantidad_1);
         request.input('PJ_Contrapeso_1',PJ_Contrapeso_1);
         request.input('pj_tejidos_id',sql.Int,pj_tejidos_id);
         request.input('pj_tejidos_text',sql.VarChar(250),pj_tejidos_text);
         request.input('pj_tejidosC_id',sql.Int,pj_tejidosC_id);
         request.input('pj_tejidosC_text',sql.VarChar(250),pj_tejidosC_text);
-        request.input('PJ_Ancho_2',sql.Int,PJ_Ancho_2);
+        request.input('PJ_Ancho_2',sql.Decimal(12,2),PJ_Ancho_2);
         request.input('PJ_NumeroVias_2',sql.VarChar(250),PJ_NumeroVias_2);
         request.input('PJ_PosicionMando_2',sql.VarChar(250),PJ_PosicionMando_2);
         request.input('PJ_TipoRecogida_2',sql.VarChar(250),PJ_TipoRecogida_2);
@@ -458,8 +459,8 @@ var request = new sql.Request();
   request.input('id',sql.Int,id);
   request.input('idrow',sql.Int,idrow);
   request.input('PV_SEL_1',sql.Int,isel1);
-  request.input('PV_Ancho_1',sql.Int,PV_Ancho_1);
-  request.input('PV_Alto_1',sql.Int,PV_Alto_1);
+  request.input('PV_Ancho_1',sql.Decimal(12,2),PV_Ancho_1);
+  request.input('PV_Alto_1',sql.Decimal(12,2),PV_Alto_1);
   request.input('PV_Cantidad_1',sql.Int,PV_Cantidad_1);
   request.input('PV_AnchoLama_1',sql.VarChar(250),PV_AnchoLama_1);
   request.input('PV_PosicionMecanismo_1',sql.VarChar(250),PV_PosicionMecanismo_1);
@@ -474,10 +475,10 @@ var request = new sql.Request();
   request.input('PV_Tejido_c2_id',sql.VarChar(250),PV_Tejido_c2_id);
   request.input('PV_Tejido_c2_text',sql.VarChar(250),PV_Tejido_c2_text);
   request.input('PV_SEL_2',sql.Int,isel2);
-  request.input('PV_Ancho_2',sql.Int,PV_Ancho_2);
+  request.input('PV_Ancho_2',sql.Decimal(12,2),PV_Ancho_2);
   request.input('PV_Cantidad_2',sql.Int,PV_Cantidad_2);
-  request.input('PV_AlturaMin_2',sql.Int,PV_AlturaMin_2);
-  request.input('PV_AlturaMax_2',sql.Int,PV_AlturaMax_2);
+  request.input('PV_AlturaMin_2',sql.Decimal(12,2),PV_AlturaMin_2);
+  request.input('PV_AlturaMax_2',sql.Decimal(12,2),PV_AlturaMax_2);
   request.input('PV_AnchoLama_2',sql.VarChar(250),PV_AnchoLama_2);
   request.input('PV_PosicionMecanismo_2',sql.VarChar(250),PV_PosicionMecanismo_2);
   request.input('PV_ColorRiel_2',sql.VarChar(250),PV_ColorRiel_2 );
@@ -591,9 +592,9 @@ function Add_Tipo_4(idrow,values){
     request.input('id',sql.Int,id);
     request.input('idrow',sql.Int,idrow);
     request.input('junquillo',sql.VarChar(50),junquillo);
-    request.input('ancho',sql.Int,ancho);
-    request.input('ancho2',sql.Int,ancho2);
-    request.input('alto',sql.Int,alto);
+    request.input('ancho',sql.Decimal(12,2),ancho);
+    request.input('ancho2',sql.Decimal(12,2),ancho2);
+    request.input('alto',sql.Decimal(12,2),alto);
     request.input('cantidad',sql.Int,cantidad);
     request.input('acc_tipo_id',sql.VarChar(50),acc_tipo_id);
     request.input('acc_tipo_text',sql.VarChar(250),acc_tipo_text);
@@ -707,6 +708,7 @@ function budget_hinzu(req,res)
         console.log(err);
       }
  
+      if (!recordsets) { if (!res.headersSent) res.json({message:'ko'}); return; }
       if (recordsets.returnValue)
       {
           idPedido = recordsets.returnValue;
@@ -717,13 +719,21 @@ function budget_hinzu(req,res)
       
          if (idPedido > 0)
          {
+             try {
              for (var i=0, len = jsonIN.length; i<len;i++)
-           	 {
+             {
                 var tipo = jsonIN[i].TipoCortina;               
+                jsonIN[i].precios = jsonIN[i].precios || {};
                 if (tipo == 1) Add_Tipo_1(idPedido,jsonIN[i]);
                 if (tipo == 2) Add_Tipo_2(idPedido,jsonIN[i]);  
                 if (tipo == 3) Add_Tipo_3(idPedido,jsonIN[i]);
                 if (tipo == 4) Add_Tipo_4(idPedido,jsonIN[i]);
+             }
+             } catch (e) {
+               // Una línea mal formada no debe tumbar el servidor ni dejar la petición colgada.
+               console.log(e);
+               if (!res.headersSent) res.status(500).json({message:'KO', error:'Datos de línea no válidos'});
+               return;
              }
 
               SaveLog(idPedido+'_'+referencia+".json",jsonIN);
@@ -764,6 +774,7 @@ function budget_hinzu(req,res)
         console.log(err);
       }
  
+      if (!recordsets) { if (!res.headersSent) res.json({message:'ko'}); return; }
       if (recordsets.returnValue)
       {
           idPedido = recordsets.returnValue;
@@ -774,13 +785,21 @@ function budget_hinzu(req,res)
       
          if (idPedido > 0)
          {
+             try {
              for (var i=0, len = jsonIN.length; i<len;i++)
              {
                 var tipo = jsonIN[i].TipoCortina;               
+                jsonIN[i].precios = jsonIN[i].precios || {};
                 if (tipo == 1) Add_Tipo_1(idPedido,jsonIN[i]);
                 if (tipo == 2) Add_Tipo_2(idPedido,jsonIN[i]);  
                 if (tipo == 3) Add_Tipo_3(idPedido,jsonIN[i]);
                 if (tipo == 4) Add_Tipo_4(idPedido,jsonIN[i]);
+             }
+             } catch (e) {
+               // Una línea mal formada no debe tumbar el servidor ni dejar la petición colgada.
+               console.log(e);
+               if (!res.headersSent) res.status(500).json({message:'KO', error:'Datos de línea no válidos'});
+               return;
              }
 
               SaveLog(idPedido+'_'+referencia+".json",jsonIN);
@@ -972,10 +991,25 @@ function budget_image(req,res){
 
 
  
+// Antes de guardar se vuelven a comprobar las medidas de fabricación (como en calculate_prices):
+// la valoración ya lo hizo, pero el guardado no puede fiarse de lo que llega en la cesta.
+// Se comprueba antes de crear la cabecera, para no dejar documentos a medias.
+function conMedidas(guardar) {
+  return function (req, res) {
+    Medidas.validarLineas(req.body, req.params.cli).then(function (error) {
+      if (error) res.json({ message: 'KO_MEDIDAS', error: error });
+      else guardar(req, res);
+    }).catch(function (err) {
+      console.log(err);
+      res.status(500).send({ message: 'KO', error: 'No se pudieron comprobar las medidas de fabricación' });
+    });
+  };
+}
+
 module.exports = {
 	budget,
-    budget_hinzu,
-    budget_hinzu2,
+    budget_hinzu: conMedidas(budget_hinzu),
+    budget_hinzu2: conMedidas(budget_hinzu2),
     budget_entrega,
     budget_entrega_post,
     budget_image,

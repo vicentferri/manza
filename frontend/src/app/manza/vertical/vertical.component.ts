@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { SMAPIService } from '../config/smapi.service';
+import { MedidasFabricacion } from '../config/MedidasFabricacion';
 import { CortinaTipo } from '../config/CortinaTipo';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
@@ -31,6 +32,10 @@ export class VerticalComponent implements OnInit, OnChanges {
 
    VerticalInclinada: string = '0';
    TipoVertical: string = '1'; // 1=Tejido+Riel, 2=Solo Tejido, 3=Solo Riel
+
+   // Límites de fabricación (no de tarifa) de la vertical normal; la inclinada no tiene límites definidos
+   medidas: MedidasFabricacion = new MedidasFabricacion(this.service, () => this.Cliente);
+   medidasInc: MedidasFabricacion = new MedidasFabricacion(this.service, () => this.Cliente); // vertical inclinada
 
    idLinea = "";
 
@@ -212,6 +217,39 @@ export class VerticalComponent implements OnInit, OnChanges {
 
       this.CodigoProv31 = "";
       this.CodigoProv32 = "";
+      this.medidas.reset();
+      this.load_LimitesFabricacion();
+   }
+
+   load_LimitesFabricacion(): void {
+      this.medidas.cargar({ tipo: 3, subtipo: this.TipoVertical }, () => ({ ancho: this.PV_Ancho_1, alto: this.PV_Alto_1 }));
+      // Inclinada = subtipo 4. Su resultado se calcula al vuelo en los getters inc*.
+      this.medidasInc.cargar({ tipo: 3, subtipo: 4 }, () => ({ ancho: '', alto: '' }));
+   }
+
+   // Vertical inclinada: ancho del riel y alturas mínima y máxima con los mismos límites.
+   get incAncho() { return this.medidasInc.comprobar(this.PV_Ancho_2, ''); }
+   get incAlturaMin() { return this.medidasInc.comprobar('', this.PV_AlturaMin_2, 'La altura mínima'); }
+   get incAlturaMax() { return this.medidasInc.comprobar('', this.PV_AlturaMax_2, 'La altura máxima'); }
+   get incOrdenInvalido(): boolean {
+      const amin = parseFloat(this.PV_AlturaMin_2), amax = parseFloat(this.PV_AlturaMax_2);
+      return amin > 0 && amax > 0 && amin > amax;
+   }
+   get incMensaje(): string {
+      if (!this.PV_SEL_2) return '';
+      if (this.incOrdenInvalido)
+         return `La altura mínima (${String(this.PV_AlturaMin_2).replace('.', ',')} cm) no puede ser mayor que la máxima (${String(this.PV_AlturaMax_2).replace('.', ',')} cm).`;
+      return this.incAncho.mensaje || this.incAlturaMin.mensaje || this.incAlturaMax.mensaje;
+   }
+
+   // Solo tejido: no se valida el ancho (no hay riel); solo riel: no se valida el alto.
+   ValidarMedidas(silent: boolean = false): boolean {
+      if (!this.PV_SEL_1) return true;
+      const ancho = this.TipoVertical == '2' ? '' : this.PV_Ancho_1;
+      const alto = this.TipoVertical == '3' ? '' : this.PV_Alto_1;
+      const ok = this.medidas.validar(ancho, alto);
+      if (!ok && !silent) this.toaster.warning(this.medidas.mensaje, 'Medida no fabricable');
+      return ok;
    }
 
    reset(): void {
@@ -241,6 +279,8 @@ export class VerticalComponent implements OnInit, OnChanges {
       this.Accesorios_Verticales = '';
       this.resetPrecios();
       this.load_PV_Tejidos();
+      // Los campos vuelven a su valor inicial: hay que pedir los límites de esa combinación
+      this.load_LimitesFabricacion();
    }
 
    resetPrecios(): void {
@@ -770,47 +810,6 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    // ─── VALIDACIÓN ──────────────────────────────────────────────────────────────
-   CheckValidity(control: any) {
-
-      //this.alertShow = false;
-      //this.alertMsg = "";
-      var strMessage = "";
-      var bretValue = true;
-
-      var ancho = 0;
-      var alto = 0;
-      var minancho = 0;
-      var maxancho = 0;
-      var minalto = 0;
-      var maxalto = 0;
-
-      if (this.PV_Ancho_1 == "") this.PV_Ancho_1 = "0";
-      if (this.PV_Alto_1 == "") this.PV_Alto_1 = "0";
-
-      ancho = Number.parseFloat(this.PV_Ancho_1);
-      alto = Number.parseFloat(this.PV_Alto_1);
-      minancho = 100;
-      maxancho = 290;
-      minalto = 100;
-      maxalto = 400;
-
-      if (ancho < minancho || ancho > maxancho) {
-         strMessage = "El ancho en este tipo de cortina NO puede ser inferior a " + minancho.toString() + " cm ni superior a " + maxancho.toString() + " cm ";
-         bretValue = false;
-
-      }
-
-      if (bretValue && (alto < minalto || alto > maxalto)) {
-         strMessage = "El alto en este tipo de cortina NO puede ser inferior a " + minalto.toString() + " cm ni superior a " + maxalto.toString() + " cm ";
-         bretValue = false;
-      }
-
-
-      if (!bretValue)
-         this.toaster.error(strMessage, 'ATENCION');
-
-      return bretValue;
-   }
 
    T3Check(): { Proceed: number; Message: string } {
       let iProceed = 1;
@@ -827,6 +826,7 @@ export class VerticalComponent implements OnInit, OnChanges {
          if (iProceed && this.TipoVertical !== '2' && this.PV_TipoSoporte_1 === '-1') { iProceed = 0; strMessage = 'Debe seleccionar el Soporte (Vertical)'; }
          if (iProceed && this.TipoVertical !== '3' && parseInt(this.Tipo3_Tejido) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Tejido (Vertical)'; }
          if (iProceed && this.TipoVertical !== '3' && parseInt(this.Tipo3_TejidoColor1) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Color del Tejido (Vertical)'; }
+         if (iProceed && !this.ValidarMedidas(true)) { iProceed = 0; strMessage = this.medidas.mensaje; }
       }
 
       if (iProceed && this.PV_SEL_2) {
@@ -836,6 +836,7 @@ export class VerticalComponent implements OnInit, OnChanges {
          if (iProceed && this.PV_AnchoLama_2 === '-1') { iProceed = 0; strMessage = 'Debe seleccionar el Ancho de Lama (Inclinada)'; }
          if (iProceed && this.PV_TipoSoporte_2 === '-1') { iProceed = 0; strMessage = 'Debe seleccionar el Soporte (Vertical Inclinada)'; }
          if (iProceed && parseInt(this.Tipo3_Tejido_2) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Tejido (Vertical Inclinada)'; }
+         if (iProceed && this.incMensaje) { iProceed = 0; strMessage = this.incMensaje; }
       }
 
       return { Proceed: iProceed, Message: strMessage };
@@ -998,6 +999,7 @@ export class VerticalComponent implements OnInit, OnChanges {
          // Vertical_Add_T2 no guarda un tejido propio para T2 en el CortinaTipo,
          // así que no hay nada que restaurar para Tipo3_Tejido_2/TejidoColor*_2.
       }
+      this.load_LimitesFabricacion();
    }
 
    // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -1303,13 +1305,18 @@ export class VerticalComponent implements OnInit, OnChanges {
                      console.log(data);
 
 
-                     if (data.message === "OK") {
+                     if (data.message === "KO_MEDIDAS") {
+                        // Medida fuera de los límites de fabricación (validado en backend antes de valorar)
+                        this.toaster.error(data.error, "Medida no fabricable");
+                        this.idLinea = "";
+                     }
+                     else if (data.message === "OK") {
                         pvp = data.v1;
                         code_c1 = data.v2;
                         this.idLinea = data.idLinea;
                         if (pvp == -99) {
                            msg_c1 = code_c1;
-                           this.toaster.error(msg_c1, "Error medidas")
+                           this.toaster.error(msg_c1, "Medida sin tarifa")
                            pvp = 0;
                            code_c1 = "";
                            this.idLinea = "";

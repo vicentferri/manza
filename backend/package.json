@@ -12,7 +12,8 @@
   "contributors": [],
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "test:medidas": "node test/medidas/banco.js"
   },
   "dependencies": {
     "bcrypt-nodejs": "0.0.3",

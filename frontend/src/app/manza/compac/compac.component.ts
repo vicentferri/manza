@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { SMAPIService } from '../config/smapi.service';
+import { MedidasFabricacion } from '../config/MedidasFabricacion';
 import { CortinaTipo } from '../config/CortinaTipo';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
@@ -30,10 +31,9 @@ export class CompacComponent implements OnInit, OnChanges {
    Alto: string = '';
    Cantidad: string = '1';
    AlturaCadena: number = 0;
-   minancho = 40;
-   maxancho = 120;
-   minalto = 60;
-   maxalto = 220;
+   // Límites de fabricación (no de tarifa)
+   medidas: MedidasFabricacion = new MedidasFabricacion(this.service, () => this.Cliente);
+   anchoBInvalido = false;
 
    // Compac object
    compac = {
@@ -149,6 +149,9 @@ export class CompacComponent implements OnInit, OnChanges {
    }
 
    NewPage() {
+      this.medidas.reset();
+      this.anchoBInvalido = false;
+      this.load_LimitesFabricacion();
       this.compac.PC_TipoJunquillo = "JC";
       this.compac.PC_AnchoB = "0";
       this.TIPO4_ID_Quiero = false;
@@ -198,6 +201,8 @@ export class CompacComponent implements OnInit, OnChanges {
       this.RalC_Label = 'RAL:';
       this.resetPrecios();
       this.load_Compac_Tejidos();
+      // Los campos vuelven a su valor inicial: hay que pedir los límites de esa combinación
+      this.load_LimitesFabricacion();
    }
 
    resetPrecios(): void {
@@ -266,18 +271,19 @@ export class CompacComponent implements OnInit, OnChanges {
 
    ChangeTipo4Tejido(): void {
       this.CodigoProv4 = '';
+      this.load_LimitesFabricacion();
       const tejido = parseInt(this.Tipo4_Tejido);
       if (tejido > 0) {
          const pos = this.getPos(this.tejidos_compac, tejido);
          if (pos >= 0) this.CodigoProv4 = this.tejidos_compac[pos].codigoprov || '';
          if (this.TIPO4_ID_Quiero) {
             this.service.getTejidosColorID(tejido, parseInt(this.Cliente), this.SubCliente).subscribe(
-               data => { this.tejidos_compac_colores = data; if (data.length > 0) this.Tipo4_TejidoColor = data[0].id.toString(); },
+               data => { this.tejidos_compac_colores = data; if (data.length > 0) this.Tipo4_TejidoColor = data[0].id.toString(); this.load_LimitesFabricacion(); },
                error => console.log(error)
             );
          } else {
             this.service.getTejidosColor(tejido, parseInt(this.Cliente), this.SubCliente).subscribe(
-               data => { this.tejidos_compac_colores = data; if (data.length > 0) this.Tipo4_TejidoColor = data[0].id.toString(); },
+               data => { this.tejidos_compac_colores = data; if (data.length > 0) this.Tipo4_TejidoColor = data[0].id.toString(); this.load_LimitesFabricacion(); },
                error => console.log(error)
             );
          }
@@ -303,6 +309,7 @@ export class CompacComponent implements OnInit, OnChanges {
 
    ChangeTipo4Color() {
 
+      this.load_LimitesFabricacion();
       var color = this.Tipo4_TejidoColor;
 
       var pos2 = this.getPos(this.tejidos_compac_colores, color);
@@ -370,7 +377,11 @@ export class CompacComponent implements OnInit, OnChanges {
    }
 
    Ancho_Change(): void {
-      this.CheckValidity();
+      this.ValidarMedidas();
+   }
+
+   load_LimitesFabricacion(): void {
+      this.medidas.cargar({ tipo: 4, tejido: this.Tipo4_Tejido, color: this.Tipo4_TejidoColor }, () => ({ ancho: this.Ancho, alto: this.Alto }));
    }
 
 
@@ -393,40 +404,19 @@ export class CompacComponent implements OnInit, OnChanges {
 
 
    // ─── VALIDACIÓN ──────────────────────────────────────────────────────────────
-   CheckValidity() {
-
-      //this.alertShow = false;
-      //this.alertMsg = "";
-      var strMessage = "";
-      var bretValue = true;
-
-      var ancho = 0;
-      var alto = 0;
-
-
-      if (this.Ancho == "") this.Ancho = "0";
-      if (this.Alto == "") this.Alto = "0";
-
-      ancho = Number.parseFloat(this.Ancho);
-      alto = Number.parseFloat(this.Alto);
-
-
-      if (ancho > 0 && (ancho < this.minancho || ancho > this.maxancho)) {
-         strMessage = "El ancho en este tipo de cortina NO puede ser inferior a " + this.minancho.toString() + " cm ni superior a " + this.maxancho.toString() + " cm ";
-         bretValue = false;
-
+   // Ancho interior + alto; con junquillo redondeado (JR) también el ancho exterior.
+   ValidarMedidas(silent: boolean = false): boolean {
+      let okB = true;
+      let msgB = '';
+      if (this.compac.PC_TipoJunquillo === 'JR') {
+         okB = this.medidas.validar(this.compac.PC_AnchoB, null);
+         msgB = this.medidas.mensaje;
       }
-
-      if (bretValue && (alto > 0 && (alto < this.minalto || alto > this.maxalto))) {
-         strMessage = "El alto en este tipo de cortina NO puede ser inferior a " + this.minalto.toString() + " cm ni superior a " + this.maxalto.toString() + " cm ";
-         bretValue = false;
-      }
-
-
-      if (!bretValue)
-         this.toaster.error(strMessage, 'ATENCION');
-
-      return bretValue;
+      this.anchoBInvalido = !okB;
+      const ok = this.medidas.validar(this.Ancho, this.Alto);
+      if (!this.medidas.mensaje && msgB) this.medidas.mensaje = msgB.replace('El ancho', 'El ancho exterior');
+      if (!(ok && okB) && !silent) this.toaster.warning(this.medidas.mensaje, 'Medida no fabricable');
+      return ok && okB;
    }
 
    translate(msg: string, title: string) {
@@ -450,7 +440,7 @@ export class CompacComponent implements OnInit, OnChanges {
       if (iProceed && parseInt(this.Tipo4_Tejido) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Tejido'; }
       if (iProceed && parseInt(this.Tipo4_TejidoColor) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Color del Tejido'; }
 
-      this.CheckValidity();
+      if (iProceed && !this.ValidarMedidas(true)) { iProceed = 0; strMessage = this.medidas.mensaje; }
 
       return { Proceed: iProceed, Message: strMessage };
    }
@@ -571,6 +561,7 @@ export class CompacComponent implements OnInit, OnChanges {
             this.tejidos_compac_colores = data;
             const posColor = this.getPos(data, item.com_tej_color_id);
             this.Tipo4_TejidoColor = posColor >= 0 ? data[posColor].id.toString() : (data.length > 0 ? data[0].id.toString() : '-1');
+            this.load_LimitesFabricacion();
          },
          error => console.log(error)
       );
@@ -756,13 +747,18 @@ export class CompacComponent implements OnInit, OnChanges {
                console.log(data);
 
 
-               if (data.message === "OK") {
+               if (data.message === "KO_MEDIDAS") {
+                  // Medida fuera de los límites de fabricación (validado en backend antes de valorar)
+                  this.toaster.error(data.error, "Medida no fabricable");
+                  this.idLinea = "";
+               }
+               else if (data.message === "OK") {
                   pvp = data.v1;
                   code_c1 = data.v2;
                   this.idLinea = data.idLinea;
                   if (pvp == -99) {
                      msg_c1 = code_c1;
-                     this.toaster.error(msg_c1, "Error medidas")
+                     this.toaster.error(msg_c1, "Medida sin tarifa")
                      pvp = 0;
                      code_c1 = "";
                      this.idLinea = "";

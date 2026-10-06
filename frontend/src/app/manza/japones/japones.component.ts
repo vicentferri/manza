@@ -4,6 +4,7 @@ import { CortinaTipo } from '../config/CortinaTipo';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { SMAPIService } from '../config/smapi.service';
+import { MedidasFabricacion } from '../config/MedidasFabricacion';
 import { Tipo } from '../config/Tipo';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
@@ -33,6 +34,9 @@ export class JaponesComponent implements OnInit, OnChanges {
 
    // Tipo
    TipoJapones: string = '1'; // 1=Mecanismo+Tejido, 2=Solo Tejido, 3=Solo Mecanismo
+
+   // Límites de fabricación (no de tarifa)
+   medidas: MedidasFabricacion = new MedidasFabricacion(this.service, () => this.Cliente);
 
    // Mecanismo
    PJ_Cantidad_1: string = '1';
@@ -122,56 +126,6 @@ export class JaponesComponent implements OnInit, OnChanges {
       }
    }
 
-   CheckValidity(control: any) {
-
-      //this.alertShow = false;
-      //this.alertMsg = "";
-      var strMessage = "";
-      var bretValue = true;
-
-      var ancho = 0;
-      var alto = 0;
-      var minancho = 0;
-      var maxancho = 0;
-      var minalto = 0;
-      var maxalto = 0;
-
-
-      if (this.PJ_Ancho_1 == "") this.PJ_Ancho_1 = "";
-      if (this.PJ_Alto_1 == "") this.PJ_Alto_1 = "";
-
-      ancho = Number.parseFloat(this.PJ_Ancho_1);
-      alto = Number.parseFloat(this.PJ_Alto_1);
-      minancho = 60;
-      maxancho = 200;
-      minalto = 100;
-      maxalto = 300;
-
-      if (ancho < minancho || ancho > maxancho) {
-         strMessage = "El ancho en este tipo de cortina NO puede ser inferior a " + minancho.toString() + " cm ni superior a " + maxancho.toString() + " cm ";
-         bretValue = false;
-
-      }
-
-      if (bretValue && (alto < minalto || alto > maxalto)) {
-         strMessage = "El alto en este tipo de cortina NO puede ser inferior a " + minalto.toString() + " cm ni superior a " + maxalto.toString() + " cm ";
-         bretValue = false;
-      }
-
-      ancho = Number.parseFloat(this.PJ_Ancho_2);
-      minancho = 150;
-      maxancho = 325;
-      if (ancho < minancho || ancho > maxancho) {
-         strMessage = "El ancho en este tipo de cortina NO puede ser inferior a " + minancho.toString() + " cm ni superior a " + maxancho.toString() + " cm ";
-         bretValue = false;
-
-      }
-
-      if (!bretValue)
-         this.toaster.error(strMessage, 'ATENCION');
-
-      return bretValue;
-   }
 
    // ─── RESET ───────────────────────────────────────────────────────────────────
 
@@ -210,6 +164,8 @@ export class JaponesComponent implements OnInit, OnChanges {
       this.Accesorios_Japones = '';
       this.resetPrecios();
       this.load_PJ_Tejidos();
+      // Los campos vuelven a su valor inicial: hay que pedir los límites de esa combinación
+      this.load_LimitesFabricacion();
    }
 
    resetPrecios(): void {
@@ -298,7 +254,30 @@ export class JaponesComponent implements OnInit, OnChanges {
       this.Tipo2_Estancia_Obs = "";
       this.Tipo21_Estancia = "-1";
       this.Tipo21_Estancia_Obs = "";
+      this.medidas.reset();
+      this.load_LimitesFabricacion();
+   }
 
+   // Composición 2 (solo tejido): ancho/alto de lama, limitado también por el ancho del rollo del color.
+   // Composiciones 1 y 3: ancho del mecanismo y alto total / altura de mando.
+   private medidasActuales(): { ancho: any; alto: any } {
+      return this.TipoJapones == '2'
+         ? { ancho: this.PJ_AnchoLama, alto: this.PJ_AltoLamaTerminada }
+         : { ancho: this.PJ_Ancho_2, alto: this.PJ_Alto_1 };
+   }
+
+   load_LimitesFabricacion(): void {
+      const params = this.TipoJapones == '2'
+         ? { tipo: 2, subtipo: 2, tejido: this.Tipo2_Tejido, color: this.Tipo2_TejidoColor }
+         : { tipo: 2, subtipo: this.TipoJapones };
+      this.medidas.cargar(params, () => this.medidasActuales());
+   }
+
+   ValidarMedidas(silent: boolean = false): boolean {
+      const m = this.medidasActuales();
+      const ok = this.medidas.validar(m.ancho, m.alto);
+      if (!ok && !silent) this.toaster.warning(this.medidas.mensaje, 'Medida no fabricable');
+      return ok;
    }
 
    ResetPrices(): void {
@@ -324,6 +303,7 @@ export class JaponesComponent implements OnInit, OnChanges {
 
       this.Tipo2_NumeroVias_Label = "Número Vias:";
       this.Tipo2_TipoSoporte_Label = "Tipo de Soporte";
+      this.load_LimitesFabricacion();
    }
 
    ChangeNumeroPortatelas() {
@@ -367,6 +347,7 @@ export class JaponesComponent implements OnInit, OnChanges {
             this.load_PJ_TejidosColores(tejido, 1);
          }
       }
+      this.load_LimitesFabricacion();
    }
 
    ChangeTipo2Color() {
@@ -388,7 +369,7 @@ export class JaponesComponent implements OnInit, OnChanges {
          }
 
       }
-
+      this.load_LimitesFabricacion();
    }
 
    CombinarColores(): void {
@@ -580,6 +561,8 @@ export class JaponesComponent implements OnInit, OnChanges {
          if (iProceed && this.PJ_AltoLamaTerminada === '') { iProceed = 0; strMessage = 'Debe indicar el Alto de Lama Terminada'; }
       }
 
+      if (iProceed && !this.ValidarMedidas(true)) { iProceed = 0; strMessage = this.medidas.mensaje; }
+
       return { Proceed: iProceed, Message: strMessage };
    }
 
@@ -748,6 +731,7 @@ export class JaponesComponent implements OnInit, OnChanges {
          if (this.PJ_NumeroLamas >= 4) { loadColorSlot(4, item.Tipo2_TejidoColor_4); }
          if (this.PJ_NumeroLamas >= 5) { loadColorSlot(5, item.Tipo2_TejidoColor_5); }
       }
+      this.load_LimitesFabricacion();
    }
 
    // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -1099,13 +1083,18 @@ export class JaponesComponent implements OnInit, OnChanges {
                console.log(data);
 
 
-               if (data.message === "OK") {
+               if (data.message === "KO_MEDIDAS") {
+                  // Medida fuera de los límites de fabricación (validado en backend antes de valorar)
+                  this.toaster.error(data.error, "Medida no fabricable");
+                  this.idLinea = "";
+               }
+               else if (data.message === "OK") {
                   pvp = data.v1;
                   code_c1 = data.v2;
                   this.idLinea = data.idLinea;
                   if (pvp == -99) {
                      msg_c1 = code_c1;
-                     this.toaster.error(msg_c1, "Error medidas")
+                     this.toaster.error(msg_c1, "Medida sin tarifa")
                      pvp = 0;
                      code_c1 = "";
                      this.idLinea = "";

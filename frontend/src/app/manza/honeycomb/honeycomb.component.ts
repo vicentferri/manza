@@ -7,13 +7,15 @@ import { takeUntil } from 'rxjs/operators';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { CortinaTipo } from '../config/CortinaTipo';
+import { SMAPIService } from '../config/smapi.service';
+import { MedidasFabricacion } from '../config/MedidasFabricacion';
 
 
 @Component({
   selector: 'manza-honeycomb',
   templateUrl: './honeycomb.component.html',
   styleUrls: ['./honeycomb.component.scss'],
-  providers: [HoneycombService],
+  providers: [HoneycombService, SMAPIService],
 })
 export class HoneycombComponent implements OnInit, OnDestroy {
 
@@ -84,11 +86,15 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     private service: HoneycombService,
     private imageCacheService: ImageCacheService,
     private toaster: ToastrService,
-    private translation: TranslationService
+    private translation: TranslationService,
+    private smapi: SMAPIService
   ) { }
+
+  medidas: MedidasFabricacion = new MedidasFabricacion(this.smapi, () => this.Cliente);
 
   ngOnInit() {
     this.loadData();
+    this.medidas.cargar({ tipo: 7 }, () => ({ ancho: this.model.Ancho, alto: this.model.Alto }));
   }
 
   ngOnDestroy() {
@@ -219,10 +225,12 @@ export class HoneycombComponent implements OnInit, OnDestroy {
 
   ChangeAncho(value: any) {
     this.model.Ancho = value;
+    this.medidas.validar(this.model.Ancho, this.model.Alto);
   }
 
   ChangeAlto(value: any) {
     this.model.Alto = value;
+    this.medidas.validar(this.model.Ancho, this.model.Alto);
   }
 
   ChangeCantidad(value: any) {
@@ -260,6 +268,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     if (this.model.ColorTejido === '') { iProceed = 0; strMessage = 'Debe indicar el Color del Tejido'; }
     if (this.model.ColorPerfil === '') { iProceed = 0; strMessage = 'Debe indicar el Color del Perfil'; }
     */
+    if (iProceed && !this.medidas.validar(this.model.Ancho, this.model.Alto)) { iProceed = 0; strMessage = this.medidas.mensaje; }
 
     return { Proceed: iProceed, Message: strMessage };
   }

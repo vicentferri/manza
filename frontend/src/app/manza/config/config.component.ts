@@ -395,6 +395,12 @@ export class ConfigComponent implements OnInit {
             this.NumeroPedido = data.referencia;
             this.TransmitOK = 1;
             this.toaster.success('Agregado PEDIDO Satisfactoriamente', 'Agregar Pedido');
+          } else if (data.message == "KO_MEDIDAS") {
+            // El servidor vuelve a comprobar las medidas al guardar: no se ha creado nada
+            this.TransmitOK = 0;
+            this.btnPedido = 0;
+            this.btnPresupuesto = 0;
+            this.toaster.error(data.error, 'Medida no fabricable');
           } else {
             this.NumeroPedido = "ERROR";
             this.TransmitOK = -1;
@@ -424,6 +430,11 @@ export class ConfigComponent implements OnInit {
             this.NumeroPedido = data.referencia;
             this.TransmitOK = 1;
             this.toaster.success('Agregado PRESUPUESTO Satisfactoriamente', 'Agregar PRESUPUESTO');
+          } else if (data.message == "KO_MEDIDAS") {
+            this.TransmitOK = 0;
+            this.btnPedido = 0;
+            this.btnPresupuesto = 0;
+            this.toaster.error(data.error, 'Medida no fabricable');
           } else {
             this.NumeroPedido = "ERROR";
             this.TransmitOK = -1;

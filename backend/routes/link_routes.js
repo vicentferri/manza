@@ -5,6 +5,7 @@ var express = require('express');
 
 var multipart = require('connect-multiparty');
 var LM = require('../controllers/sm/lm/leroymerlin');
+var Medidas = require('../controllers/sm/lm/medidas');
 var Best = require('../controllers/sm/lm/bestellungen');
 var Budget = require('../controllers/sm/lm/budget');
 var TarifasController = require('../controllers/sm/lm/tarifas');
@@ -48,8 +49,7 @@ lmapi.get('/tejidos_producto_id/:cli/:pro/:subcli',LM.tejidos_producto_id);
 lmapi.get('/tejidos_producto/:cli/:pro',LM.tejidos_producto);
 lmapi.get('/tejidos_producto_id/:cli/:pro',LM.tejidos_producto_id);
 
-lmapi.get('/tarifa_limites/:cli/:pro/:tejido/:marca/:impresion',LM.tarifa_limites);
-lmapi.get('/tarifa_limites/:cli/:pro/:tejido',LM.tarifa_limites);
+lmapi.get('/limites_fabricacion',Medidas.limites_fabricacion);
 
 lmapi.get('/tapas/:cli',LM.tapas);
 lmapi.get('/tapas_gen/:cli/:tipo',LM.tapas_gen);

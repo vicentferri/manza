@@ -36,18 +36,22 @@
         </div>
         <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
           <label>{{ "ANCHOMECANISMO" | translate }}</label>
-          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+          <input class="form-control form-control-sm" type="number" step=".5"
+            [attr.min]="medidas.lim.min_ancho" [attr.max]="medidas.lim.max_ancho" [class.is-invalid]="medidas.anchoInvalido"
             [(ngModel)]="PJ_Ancho_2" name="PJ_Ancho_2" id="PJ_Ancho_2"
-            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }"
-            (change)="Tarifa_Japones_Mecanismo()" (blur)="Tarifa_Japones_Mecanismo()" required />
+            [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }"
+            (change)="Tarifa_Japones_Mecanismo()" (blur)="Tarifa_Japones_Mecanismo(); ValidarMedidas()" required />
+          <small [ngClass]="medidas.anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidas.rangoAncho }}</small>
         </div>
         <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
           <label *ngIf="TipoJapones == '1'">{{ "ALTURATOTAL" | translate }}</label>
           <label *ngIf="TipoJapones == '3'">{{ "ALTURAMANDO" | translate }}</label>
-          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+          <input class="form-control form-control-sm" type="number" step=".5"
+            [attr.min]="medidas.lim.min_alto" [attr.max]="medidas.lim.max_alto" [class.is-invalid]="medidas.altoInvalido"
             [(ngModel)]="PJ_Alto_1" id="PJ_Alto_1"
-            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required
-            (change)="Tarifa_Japones_Mecanismo()" (blur)="Tarifa_Japones_Mecanismo()" />
+            [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }" required
+            (change)="Tarifa_Japones_Mecanismo()" (blur)="Tarifa_Japones_Mecanismo(); ValidarMedidas()" />
+          <small [ngClass]="medidas.altoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidas.rangoAlto }}</small>
         </div>
         <div class="col-2 pt-2" [hidden]="TipoJapones == '2'">
           <label>{{ "NUMEROVIAS" | translate }}</label>
@@ -72,7 +76,7 @@
           <label>{{ "ANCHOPORTATELAS" | translate }}</label>
           <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
             [(ngModel)]="PJ_Ancho_1" id="PJ_Ancho_1"
-            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required />
+            [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }" required />
         </div>
       </div>
 
@@ -140,15 +144,25 @@
         </div>
         <div class="col col-2 pt-2" [hidden]="TipoJapones == '3'">
           <label>{{ "ANCHOLAMA" | translate }}</label>
-          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+          <input class="form-control form-control-sm" type="number" step=".5"
+            [attr.min]="TipoJapones == '2' ? medidas.lim.min_ancho : null" [attr.max]="TipoJapones == '2' ? medidas.lim.max_ancho : null"
+            [class.is-invalid]="TipoJapones == '2' && medidas.anchoInvalido"
             [(ngModel)]="PJ_AnchoLama" [disabled]="!(TipoJapones == '2')"
-            id="PJ_AnchoLama" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required />
+            id="PJ_AnchoLama" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }" required
+            (blur)="ValidarMedidas()" />
+          <small *ngIf="TipoJapones == '2'" [ngClass]="medidas.anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">
+            {{ medidas.rangoAncho }}<span *ngIf="medidas.lim.origen_max_ancho == 'COLOR'"> (rollo)</span>
+          </small>
         </div>
         <div class="col col-2 pt-2" [hidden]="TipoJapones == '3'">
           <label>{{ "ALTOLAMATERM" | translate }}</label>
-          <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
+          <input class="form-control form-control-sm" type="number" step=".5"
+            [attr.min]="TipoJapones == '2' ? medidas.lim.min_alto : null" [attr.max]="TipoJapones == '2' ? medidas.lim.max_alto : null"
+            [class.is-invalid]="TipoJapones == '2' && medidas.altoInvalido"
             [(ngModel)]="PJ_AltoLamaTerminada" id="PJ_AltoLamaTerminada"
-            [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required />
+            [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }" required
+            (blur)="ValidarMedidas()" />
+          <small *ngIf="TipoJapones == '2'" [ngClass]="medidas.altoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidas.rangoAlto }}</small>
         </div>
         <div class="col col-3 pt-2">
           <label>{{ "ESTANCIA" | translate }}</label>

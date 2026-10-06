@@ -13,13 +13,14 @@
           #ancho
           class="form-control"
           type="number"
-          min="30"
-          max="130"
-          step="0.1"
+          [attr.min]="medidas.lim.min_ancho"
+          [attr.max]="medidas.lim.max_ancho"
+          step="0.5"
+          [class.is-invalid]="medidas.anchoInvalido"
           [(ngModel)]="model.Ancho"
           (change)="ChangeAncho(ancho.value)"
         />
-        <small class="text-muted">30-130 cm</small>
+        <small [ngClass]="medidas.anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidas.rangoAncho || '30-130 cm' }}</small>
       </div>
       <div class="col-md-4">
         <label class="form-label fw-semibold">{{ "ALTO" | translate }} (cm)</label>
@@ -27,13 +28,14 @@
           #alto
           class="form-control"
           type="number"
-          min="30"
-          max="280"
-          step="0.1"
+          [attr.min]="medidas.lim.min_alto"
+          [attr.max]="medidas.lim.max_alto"
+          step="0.5"
+          [class.is-invalid]="medidas.altoInvalido"
           [(ngModel)]="model.Alto"
           (change)="ChangeAlto(alto.value)"
         />
-        <small class="text-muted">30-280 cm</small>
+        <small [ngClass]="medidas.altoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidas.rangoAlto || '30-280 cm' }}</small>
       </div>
       <div class="col-md-4">
         <label class="form-label fw-semibold">{{ "CANTIDAD" | translate }}</label>

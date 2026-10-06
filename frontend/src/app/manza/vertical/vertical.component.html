@@ -23,7 +23,7 @@
           <div class="col-12">
             <label>Selección de Componente</label>
             <select name="TipoVertical" class="form-control form-control-sm" [(ngModel)]="TipoVertical"
-              style="width: 100%">
+              style="width: 100%" (change)="load_LimitesFabricacion()">
               <option value="1">{{ "TEJIDOMASRIEL" | translate }}</option>
               <option value="2">{{ "SOLOTEJIDO" | translate }}</option>
               <option value="3">{{ "SOLORIEL" | translate }}</option>
@@ -34,17 +34,19 @@
         <div class="row g-3 mb-4 mt-2">
           <div class="col-md-4" [hidden]="!PV_SEL_1">
             <label [hidden]="TipoVertical == '2'">{{ "ANCHO" | translate }}</label>
-            <input #pv_ancho_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_Ancho_1" id="PV_Ancho_1" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }"
-              required (keyup.enter)="Next($event, pv_alto_1)" [hidden]="TipoVertical == '2'" />
-            <small class="text-muted">0-600 cm</small>
+            <input #pv_ancho_1 class="form-control form-control-sm" type="number" step=".5"
+              [attr.min]="medidas.lim.min_ancho" [attr.max]="medidas.lim.max_ancho" [class.is-invalid]="medidas.anchoInvalido"
+              [(ngModel)]="PV_Ancho_1" id="PV_Ancho_1" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }"
+              required (keyup.enter)="Next($event, pv_alto_1)" (blur)="ValidarMedidas()" [hidden]="TipoVertical == '2'" />
+            <small [hidden]="TipoVertical == '2'" [ngClass]="medidas.anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidas.rangoAncho }}</small>
           </div>
           <div class="col-md-4" [hidden]="!PV_SEL_1">
             <label [hidden]="TipoVertical == '3'">{{ "ALTO" | translate }}</label>
-            <input #pv_alto_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_Alto_1" id="PV_Alto_1" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required
-              (keyup.enter)="Next($event, pv_cantidad_1)" [hidden]="TipoVertical == '3'" />
-            <small class="text-muted">0-600 cm</small>
+            <input #pv_alto_1 class="form-control form-control-sm" type="number" step=".5"
+              [attr.min]="medidas.lim.min_alto" [attr.max]="medidas.lim.max_alto" [class.is-invalid]="medidas.altoInvalido"
+              [(ngModel)]="PV_Alto_1" id="PV_Alto_1" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }" required
+              (keyup.enter)="Next($event, pv_cantidad_1)" (blur)="ValidarMedidas()" [hidden]="TipoVertical == '3'" />
+            <small [hidden]="TipoVertical == '3'" [ngClass]="medidas.altoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidas.rangoAlto }}</small>
           </div>
           <div class="col-md-4" [hidden]="!PV_SEL_1">
             <label>{{ "CANTIDAD" | translate }}</label>
@@ -201,9 +203,12 @@
         <div class="row">
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "ANCHO" | translate }}</label>
-            <input #pv_ancho_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_Ancho_2" id="PV_Ancho_2" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }"
+            <input #pv_ancho_2 class="form-control form-control-sm" type="number" step=".5"
+              [attr.min]="medidasInc.lim.min_ancho" [attr.max]="medidasInc.lim.max_ancho"
+              [class.is-invalid]="PV_SEL_2 && incAncho.anchoInvalido"
+              [(ngModel)]="PV_Ancho_2" id="PV_Ancho_2" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }"
               required (change)="Vertical_Angle()" />
+            <small [ngClass]="PV_SEL_2 && incAncho.anchoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidasInc.rangoAncho }}</small>
           </div>
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "CANTIDAD" | translate }}</label>
@@ -212,16 +217,28 @@
           </div>
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "ALTURAMINIMA" | translate }}</label>
-            <input #pv_alturamin_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_AlturaMin_2" id="PV_AlturaMin_2" [appMaxdigits]="3"
+            <input #pv_alturamin_2 class="form-control form-control-sm" type="number" step=".5"
+              [attr.min]="medidasInc.lim.min_alto" [attr.max]="medidasInc.lim.max_alto"
+              [class.is-invalid]="PV_SEL_2 && (incAlturaMin.altoInvalido || incOrdenInvalido)"
+              [(ngModel)]="PV_AlturaMin_2" id="PV_AlturaMin_2" [appMaxdigits]="5"
               [ngModelOptions]="{ standalone: true }" required (keyup.enter)="Next($event, pv_alturamax_2)"
               (change)="Vertical_Angle()" />
+            <small [ngClass]="PV_SEL_2 && incAlturaMin.altoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidasInc.rangoAlto }}</small>
           </div>
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "ALTURAMAXIMA" | translate }}</label>
-            <input #pv_alturamax_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_AlturaMax_2" id="PV_AlturaMax_2" [appMaxdigits]="3"
+            <input #pv_alturamax_2 class="form-control form-control-sm" type="number" step=".5"
+              [attr.min]="medidasInc.lim.min_alto" [attr.max]="medidasInc.lim.max_alto"
+              [class.is-invalid]="PV_SEL_2 && (incAlturaMax.altoInvalido || incOrdenInvalido)"
+              [(ngModel)]="PV_AlturaMax_2" id="PV_AlturaMax_2" [appMaxdigits]="5"
               [ngModelOptions]="{ standalone: true }" required (change)="Vertical_Angle()" />
+            <small [ngClass]="PV_SEL_2 && incAlturaMax.altoInvalido ? 'text-danger fw-bold' : 'text-muted'">{{ medidasInc.rangoAlto }}</small>
+          </div>
+          <div class="col-12 pt-2" *ngIf="incMensaje">
+            <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center" style="font-size: 13px;">
+              <i class="fa fa-exclamation-triangle text-danger me-2" style="font-size: 16px;"></i>
+              <span>{{ incMensaje }}</span>
+            </div>
           </div>
 
           <div class="col-4 pt-2" [hidden]="!PV_SEL_2">

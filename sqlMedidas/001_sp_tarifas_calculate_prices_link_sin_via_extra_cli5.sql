@@ -146,8 +146,8 @@ begin
 			begin
 				-- ----------------------------------------------------------------------
 				-- 1. INCREMENTO BASE DEL MOTOR:
-				--  PVP: 62,00 ?
-				--  C1: 'C1 0004000'
+				-- • PVP: 62,00 €
+				-- • C1: 'C1 0004000'
 				-- ----------------------------------------------------------------------
 				set @v1 = @v1 + 62.00
 				set @v2_inc = 'C1 0004000'
@@ -155,9 +155,9 @@ begin
 
 				-- ----------------------------------------------------------------------
 				-- 2. VARIABLE MANDO:
-				--  0 = Sin mando (no suma nada)
-				--  1 = Mando de 1 canal   (PVP  31,00 ? | C1: 'C1 0002000')
-				--  6 = Mando de 6 canales (PVP  76,80 ? | C1: 'C1 0004042')
+				-- • 0 = Sin mando (no suma nada)
+				-- • 1 = Mando de 1 canal   (PVP  31,00 € | C1: 'C1 0002000')
+				-- • 6 = Mando de 6 canales (PVP  76,80 € | C1: 'C1 0004042')
 				-- ----------------------------------------------------------------------
 				if @mando = 1
 				begin
@@ -174,8 +174,8 @@ begin
 
 				-- ----------------------------------------------------------------------
 				-- 3. VARIABLE CARGADOR:
-				--  0 = Sin cargador (no suma nada)
-				--  1 = Con cargador       (PVP  31,00 ? | C1: 'C1 0002000')
+				-- • 0 = Sin cargador (no suma nada)
+				-- • 1 = Con cargador       (PVP  31,00 € | C1: 'C1 0002000')
 				-- ----------------------------------------------------------------------
 				if @cargador = 1
 				begin
@@ -186,8 +186,8 @@ begin
 
 				-- ----------------------------------------------------------------------
 				-- 4. VARIABLE SMART HOME (NÚCLEO INTELIGENTE):
-				--  0 = Sin núcleo inteligente (no suma nada)
-				--  1 = Con núcleo inteligente (PVP 136,84 ? | C1: 'C1 0007202')
+				-- • 0 = Sin núcleo inteligente (no suma nada)
+				-- • 1 = Con núcleo inteligente (PVP 136,84 € | C1: 'C1 0007202')
 				-- ----------------------------------------------------------------------
 				if @nucleo = 1
 				begin
