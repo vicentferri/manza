@@ -4,16 +4,16 @@
 --   1. dbo.fn_medida_txt: medida -> texto sin ceros sobrantes (150 / 150,5) para las descripciones.
 --   2. 30 columnas int -> decimal(12,2) en 9 tablas (temp/pedidos/presupuestos de vertical y compac,
 --      presupuestos de enrollable, SOL_PRESUPUESTOS_COLA_LINEAS y pedidos de Honeycomb). Las demás ya eran decimal.
---   3. 16 procedimientos: parámetros de medida int -> decimal(12,2) (tipos 1, 3, 4, 6 y 7); descripciones con
+--   3. 15 procedimientos: parámetros de medida int -> decimal(12,2) (tipos 1, 3, 4 y 6); descripciones con
 --      fn_medida_txt; ancho de lama del panel (lo que se tarifa) int -> decimal(12,2) en temp_sp_fabricacion_tipo_2_tarifa
 --      y sp_tarifas_calculate_prices3_AT. El resto del cuerpo de cada SP es idéntico al de TEST.
 --   4. sp_refreshview de las vistas que dependen de esas tablas.
 -- Generado desde SOLARMANES_TEST. Antes de aplicarlo en DEV/PROD, comprobar que esos SP son iguales a los de TEST
--- Comparado con SOLARMANES_DEV local: 15 de los 16 SP son iguales (salvo una línea en blanco).
--- sol_pedidos_cola_tipo_7_add NO: DEV tiene la versión nueva de Honeycomb (rama honeyComb_v3,
--- sqlHoney/02_sol_pedidos_cola_tipo_7_add.sql, que además crea la línea en SOL_PEDIDOS_COLA_LINEAS).
--- En DEV no ejecutar el bloque de ese SP tal cual: cambiar solo @ancho/@alto a decimal(12,2) en su versión.
--- Y el 02 de Honeycomb debe pasar también @ancho/@alto a decimal(12,2), o al aplicarlo volverá a cortar decimales.
+-- Honeycomb: sol_pedidos_cola_tipo_7_add NO está en este script (2026-10-06). Lo gestiona la rama
+-- honeyComb_v3 (sqlHoney/02_sol_pedidos_cola_tipo_7_add.sql, con @ancho/@alto decimal(12,2)), para que
+-- los dos scripts no se pisen. Aquí solo se cambian las columnas de SOL_PEDIDOS_COLA_TIPO_7.
+-- (En TEST ya se aplicó una versión anterior de este script que sí lo incluía: ver backup_004.)
+-- Comparado con SOLARMANES_DEV local, los 15 SP de este script son iguales a los de TEST (salvo una línea en blanco).
 -- Copia de seguridad del estado anterior: backup_004_medidas_decimales_TEST_antes.sql
 -- Ejecutar con: sqlcmd -S localhost -U sa -P ... -C -d <BD> -f 65001 -b -i 004_medidas_decimales.sql
 SET NOCOUNT ON;
@@ -2775,81 +2775,6 @@ CREATE OR ALTER PROCEDURE [dbo].[sol_presupuestos_cola_tipo_6_add]
 	end
 GO
 
--- ===== sol_pedidos_cola_tipo_7_add
-
--- =============================================
--- SP: sol_pedidos_cola_tipo_7_add
--- =============================================
-CREATE OR ALTER PROCEDURE sol_pedidos_cola_tipo_7_add
-    @id                   INT,
-    @idrow                INT,
-    @ancho                decimal(12,2),
-    @alto                 decimal(12,2),
-    @cantidad             INT,
-    @tej_tipo_id          INT,
-    @tej_tipo_text        VARCHAR(250),
-    @tej_color_id         INT,
-    @tej_color_text       VARCHAR(250),
-    @color_perfil_id      INT,
-    @color_perfil_text    VARCHAR(250),
-    @hc_accionamiento_id  INT,
-    @hc_accionamiento_text VARCHAR(250),
-    @T7_PVP               DECIMAL(12,2),
-    @T7_PVP_C1            VARCHAR(25),
-    @T7_Fecha_Entrega     VARCHAR(25),
-    @T7_Transporte        VARCHAR(25)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF @id = 0
-    BEGIN
-        -- INSERT
-        INSERT INTO SOL_PEDIDOS_COLA_TIPO_7 (
-            idrow, ancho, alto, cantidad,
-            tej_tipo_id, tej_tipo_text,
-            tej_color_id, tej_color_text,
-            color_perfil_id, color_perfil_text,
-            hc_accionamiento_id, hc_accionamiento_text,
-            T7_PVP, T7_PVP_C1, T7_Fecha_Entrega, T7_Transporte
-        )
-        VALUES (
-            @idrow, @ancho, @alto, @cantidad,
-            @tej_tipo_id, @tej_tipo_text,
-            @tej_color_id, @tej_color_text,
-            @color_perfil_id, @color_perfil_text,
-            @hc_accionamiento_id, @hc_accionamiento_text,
-            @T7_PVP, @T7_PVP_C1, @T7_Fecha_Entrega, @T7_Transporte
-        );
-
-        SELECT SCOPE_IDENTITY() AS idrow;
-    END
-    ELSE
-    BEGIN
-        -- UPDATE
-        UPDATE SOL_PEDIDOS_COLA_TIPO_7 SET
-            ancho                 = @ancho,
-            alto                  = @alto,
-            cantidad              = @cantidad,
-            tej_tipo_id           = @tej_tipo_id,
-            tej_tipo_text         = @tej_tipo_text,
-            tej_color_id          = @tej_color_id,
-            tej_color_text        = @tej_color_text,
-            color_perfil_id       = @color_perfil_id,
-            color_perfil_text     = @color_perfil_text,
-            hc_accionamiento_id   = @hc_accionamiento_id,
-            hc_accionamiento_text = @hc_accionamiento_text,
-            T7_PVP                = @T7_PVP,
-            T7_PVP_C1             = @T7_PVP_C1,
-            T7_Fecha_Entrega      = @T7_Fecha_Entrega,
-            T7_Transporte         = @T7_Transporte
-        WHERE id = @id;
-
-        SELECT @id AS id;
-    END
-END;
-GO
-
 -- Vistas que dependen de las tablas cambiadas
 DECLARE @v sysname;
 DECLARE cv CURSOR LOCAL FAST_FORWARD FOR
@@ -2867,7 +2792,7 @@ WHERE c.system_type_id = 56 AND t.name IN ('SOL_PRESUPUESTOS_COLA_TIPO_1','SOL_P
   AND c.name IN ('ancho','alto','ancho2','PV_Ancho_1','PV_Alto_1','PV_Ancho_2','PV_AlturaMin_2','PV_AlturaMax_2')
 UNION ALL
 SELECT 'parametro int', o.name, p.name FROM sys.parameters p JOIN sys.objects o ON o.object_id = p.object_id
-WHERE p.system_type_id = 56 AND o.name IN ('sol_temp_pedidos_cola_tipo_1_add','sp_sol_pedidos_cola_tipo_1_add','sp_sol_presupuestos_cola_tipo_1_add','sol_temp_pedidos_cola_tipo_2_add','sol_presupuestos_cola_tipo_2_add','sol_temp_pedidos_cola_tipo_3_add','sol_pedidos_cola_tipo_3_add','sol_presupuestos_cola_tipo_3_add','sol_temp_pedidos_cola_tipo_4_add','sol_pedidos_cola_tipo_4_add','sol_presupuestos_cola_tipo_4_add','temp_sp_fabricacion_tipo_2_tarifa','sp_tarifas_calculate_prices3_AT','sol_pedidos_cola_tipo_6_add','sol_presupuestos_cola_tipo_6_add','sol_pedidos_cola_tipo_7_add')
+WHERE p.system_type_id = 56 AND o.name IN ('sol_temp_pedidos_cola_tipo_1_add','sp_sol_pedidos_cola_tipo_1_add','sp_sol_presupuestos_cola_tipo_1_add','sol_temp_pedidos_cola_tipo_2_add','sol_presupuestos_cola_tipo_2_add','sol_temp_pedidos_cola_tipo_3_add','sol_pedidos_cola_tipo_3_add','sol_presupuestos_cola_tipo_3_add','sol_temp_pedidos_cola_tipo_4_add','sol_pedidos_cola_tipo_4_add','sol_presupuestos_cola_tipo_4_add','temp_sp_fabricacion_tipo_2_tarifa','sp_tarifas_calculate_prices3_AT','sol_pedidos_cola_tipo_6_add','sol_presupuestos_cola_tipo_6_add')
   AND p.name IN ('@ancho','@alto','@ancho2','@PV_Ancho_1','@PV_Alto_1','@PV_Ancho_2','@PV_AlturaMin_2','@PV_AlturaMax_2','@ancholama');
 SELECT dbo.fn_medida_txt(150) AS m150, dbo.fn_medida_txt(150.5) AS m1505, dbo.fn_medida_txt(45.25) AS m4525;
 GO
