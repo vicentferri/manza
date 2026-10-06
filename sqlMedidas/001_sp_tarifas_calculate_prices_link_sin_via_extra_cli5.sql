@@ -1,5 +1,8 @@
 -- 001 · 2026-10-05 · Igualar TEST con DEV: el cliente 5 (Leroy Web) deja de sumar una vía extra.
 -- Repetible (CREATE OR ALTER). Ejecutar con: sqlcmd -f 65001 -d <BD> -i este_fichero
+-- Opciones con las que se crean los objetos (sqlcmd trae QUOTED_IDENTIFIER desactivado por defecto)
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
 GO
 CREATE OR ALTER PROCEDURE [dbo].[sp_tarifas_calculate_prices_link]
 (

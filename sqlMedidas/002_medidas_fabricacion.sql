@@ -22,6 +22,9 @@
 --      (mínimo = el mayor de los mínimos, máximo = el menor de los máximos).
 --   3. El ancmax del color (ancho del rollo, límite físico) se aplica siempre, a cualquier cliente.
 -- Para dar de alta un cliente: insertar sus filas (o copiar las del cliente 1 cambiando el cliente).
+-- Opciones con las que se crean los objetos (sqlcmd trae QUOTED_IDENTIFIER desactivado por defecto)
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
 GO
 
 IF OBJECT_ID('dbo.sol_medidas_fabricacion') IS NULL

@@ -17,6 +17,9 @@
 -- Copia de seguridad del estado anterior: backup_004_medidas_decimales_TEST_antes.sql
 -- Ejecutar con: sqlcmd -S localhost -U sa -P ... -C -d <BD> -f 65001 -b -i 004_medidas_decimales.sql
 SET NOCOUNT ON;
+-- Opciones con las que se crean los objetos (sqlcmd trae QUOTED_IDENTIFIER desactivado por defecto)
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
 GO
 
 CREATE OR ALTER FUNCTION dbo.fn_medida_txt (@m decimal(12,2))

@@ -530,6 +530,10 @@ async function suiteEsquema() {
   var t2 = await q("select definition d from sys.sql_modules where object_id = object_id('dbo.temp_sp_fabricacion_tipo_2_tarifa')");
   check(/declare @ancholama decimal/i.test(t2[0].d), 'temp_sp_fabricacion_tipo_2_tarifa guarda el ancho de lama con decimales', '');
 
+  // sqlcmd trae QUOTED_IDENTIFIER desactivado: un script lanzado sin activarlo deja los SP distintos del resto
+  var opciones = await q("select o.name from sys.sql_modules m join sys.objects o on o.object_id = m.object_id where m.uses_ansi_nulls = 0 or m.uses_quoted_identifier = 0");
+  check(opciones.length === 0, 'Todos los SP y funciones tienen ANSI_NULLS y QUOTED_IDENTIFIER activados', opciones.map(function (o) { return o.name; }).join(', '));
+
   var txts = await q("select dbo.fn_medida_txt(150) a, dbo.fn_medida_txt(150.5) b, dbo.fn_medida_txt(45.25) c, dbo.fn_medida_txt(0) d, dbo.fn_medida_txt(null) e, dbo.fn_medida_txt(280.50) f, dbo.fn_medida_txt(1000) g");
   var tx0 = txts[0];
   check(tx0.a === '150' && tx0.b === '150,5' && tx0.c === '45,25' && tx0.d === '0' && tx0.e === null && tx0.f === '280,5' && tx0.g === '1000',
