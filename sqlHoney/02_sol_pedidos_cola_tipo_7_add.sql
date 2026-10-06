@@ -5,6 +5,8 @@
    esa línea, igual que los tipos 1-4. Antes idrow era el id del pedido y el
    tipo 7 no existía para el router, la hoja de fabricación ni el XML.
    El parámetro @idrow sigue siendo el id del pedido (no cambia el backend).
+   2026-10-06: @ancho/@alto pasan a DECIMAL(12,2) (medidas de 0,5 en 0,5 cm; rama
+   cambios_configurador, scripts sqlMedidas/004 y 005). Igual que el resto de SP de alta.
    ===================================================================== */
 set ansi_nulls on
 go
@@ -15,8 +17,8 @@ go
 alter procedure [dbo].[sol_pedidos_cola_tipo_7_add]
     @id                   INT,
     @idrow                INT,
-    @ancho                INT,
-    @alto                 INT,
+    @ancho                DECIMAL(12,2),
+    @alto                 DECIMAL(12,2),
     @cantidad             INT,
     @tej_tipo_id          INT,
     @tej_tipo_text        VARCHAR(250),

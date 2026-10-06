@@ -9,7 +9,7 @@ preparado para migrar otros sistemas (catálogo de sistemas) y para fabricacione
 | Script | Qué hace | DEV | TEST | PROD |
 |---|---|---|---|---|
 | `01_tablas_motor_fabricacion.sql` | `SOL_FABRICACION_SISTEMAS` (alta HONEYCOMB), `SOL_FABRICACION_PARAMETROS` (+11 parámetros base HoneyComb), columna `cliente` en `SOL_ARTICULOS_FABRICACION_RELACION_V2`, `SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS`, columnas `valores_tabla/valor/texto` en `SOL_FABRICACION_PARAMETROS` (catálogo de valores posibles, enlazado para los 8 parámetros de tejido, perfil y accionamiento) | ✅ 2026-10-05 | ⏳ | ⏳ |
-| `02_sol_pedidos_cola_tipo_7_add.sql` | Crea la línea tipo 7 en `SOL_PEDIDOS_COLA_LINEAS`; `TIPO_7.idrow` = id de línea | ✅ 2026-09-29 | ⏳ | ⏳ |
+| `02_sol_pedidos_cola_tipo_7_add.sql` | Crea la línea tipo 7 en `SOL_PEDIDOS_COLA_LINEAS`; `TIPO_7.idrow` = id de línea. **2026-10-06:** `@ancho`/`@alto` pasan de `INT` a `DECIMAL(12,2)` (medidas de 0,5 en 0,5 cm, rama `cambios_configurador`) | ✅ 2026-09-29 · ✅ 2026-10-06 (decimales) | ⏳ | ⏳ |
 | `03_migracion_lineas_tipo_7.sql` | Repunta las filas `TIPO_7` antiguas (idrow = pedido) a una línea nueva | ✅ 2026-09-29 (2 filas) | ⏳ | ⏳ |
 | `04_temp_sp_fabricacion_tipo_7.sql` | Motor genérico (`fn_fabricacion_condicion`, `fn_fabricacion_pos_operador`, `sp_fabricacion_evaluar` con cadenas de operaciones, `sp_fabricacion_reglas_parametros`, `sp_fabricacion_reglas_aplicar`) y el nuevo `temp_sp_fabricacion_tipo_7` | ✅ 2026-09-29 | ⏳ | ⏳ |
 | `05_sps_configuracion_fabricacion.sql` | SPs de reglas/parámetros (`sp_fabricacion_regla_*`, `sp_fabricacion_parametro_*`, `sp_fabricacion_parametros_valores`), limitados a sistemas del catálogo | ✅ 2026-10-05 | ⏳ | ⏳ |
@@ -17,6 +17,12 @@ preparado para migrar otros sistemas (catálogo de sistemas) y para fabricacione
 
 Scripts idempotentes. Ejecutar con `SET QUOTED_IDENTIFIER ON` (ya incluido; el motor usa métodos XML).
 Con sqlcmd: `sqlcmd -S ... -d <BD> -I -f 65001 -b -i <script>`.
+
+**Relación con la rama `cambios_configurador`** (2026-10-06): esa rama pasa a `decimal(12,2)` las columnas
+`ancho`/`alto` de `SOL_PEDIDOS_COLA_TIPO_7` (`sqlMedidas/004`) y los parámetros de este SP (`sqlMedidas/005`, que lee
+la definición que haya en la BD y solo cambia esos dos tipos, sin traer el cuerpo). El 02 ya lleva `DECIMAL(12,2)`,
+así que el orden de aplicación entre las dos ramas da igual. Hasta que se aplique el 004, las columnas siguen en
+`int` y el decimal se redondea al guardar, como hasta ahora.
 
 **Orden de despliegue:** los SQL 01→06 y el backend a la vez que el frontend. El script 02 debe ir junto al 03
 para que no convivan pedidos nuevos y antiguos con distinto significado de `idrow`.
