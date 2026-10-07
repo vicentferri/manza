@@ -14,11 +14,12 @@ const sql = require('mssql');
 
 const CAMPOS_REGLA = ['orden', 'cliente', 'atributo', 'articulos', 'consumo',
   'nombre_parametro1', 'nombre_parametro2', 'nombre_parametro3', 'nombre_parametro4',
-  'operacion', 'operacion2', 'operacion3'];
+  'operacion', 'operacion2', 'operacion3', 'param_ancho', 'param_alto'];
 
 const ERRORES_REGLA = {
   '-1': 'Sistema no válido',
-  '-2': 'Cliente no válido'
+  '-2': 'Cliente no válido',
+  '-3': 'El parámetro de ancho o alto del componente no existe'
 };
 
 const ERRORES_PARAMETRO = {
@@ -128,7 +129,8 @@ async function reglas(req, res) {
         select r.idrow, r.sistema, r.cliente, isnull(c.descripcion, 'Todos') as cliente_nombre,
                r.orden, r.atributo, r.articulos, dbo.fn_fabricacion_articulos_detalle(r.articulos) as detalle,
                r.nombre_parametro1, r.operacion, r.nombre_parametro2, r.operacion2,
-               r.nombre_parametro3, r.operacion3, r.nombre_parametro4, r.consumo
+               r.nombre_parametro3, r.operacion3, r.nombre_parametro4, r.consumo,
+               isnull(r.param_ancho, '') as param_ancho, isnull(r.param_alto, '') as param_alto
         from SOL_ARTICULOS_FABRICACION_RELACION_V2 r
         join SOL_FABRICACION_SISTEMAS s on s.sistema = r.sistema and s.activo = 1
         left join SOL_CLIENTES c on c.idrow = r.cliente
@@ -159,6 +161,8 @@ async function regla_add(req, res) {
       .input('operacion3', sql.Char(1), operador(body.operacion3))
       .input('nombre_parametro4', sql.VarChar(50), texto(body.nombre_parametro4, 50))
       .input('consumo', sql.VarChar(255), texto(body.consumo, 255))
+      .input('param_ancho', sql.VarChar(50), texto(body.param_ancho, 50))
+      .input('param_alto', sql.VarChar(50), texto(body.param_alto, 50))
       .execute('sp_fabricacion_regla_add');
     if (result.returnValue > 0) {
       res.status(200).send({ message: 'OK', idrow: result.returnValue });
@@ -195,6 +199,8 @@ async function regla_save(req, res) {
       .input('operacion3', sql.Char(1), operador(body.operacion3))
       .input('nombre_parametro4', sql.VarChar(50), texto(body.nombre_parametro4, 50))
       .input('consumo', sql.VarChar(255), texto(body.consumo, 255))
+      .input('param_ancho', sql.VarChar(50), texto(body.param_ancho, 50))
+      .input('param_alto', sql.VarChar(50), texto(body.param_alto, 50))
       .execute('sp_fabricacion_regla_edit');
     if (result.returnValue === 1) {
       res.status(200).send({ message: 'OK', idrow: idrow });
@@ -258,10 +264,15 @@ async function parametros(req, res) {
     const result = await pool.request()
       .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
       .query(`
-        select idrow, name, tipo, origen, orden, busqueda, tabla
-        from SOL_FABRICACION_PARAMETROS
-        where sistema = @sistema
-        order by orden, idrow`);
+        select p.idrow, p.name, p.tipo, p.origen, p.orden, p.busqueda, p.tabla,
+               case when p.tipo = 'BUSQUEDA' and exists (
+                      select 1 from SOL_FABRICACION_BUSQUEDAS b
+                      where b.busqueda = p.busqueda and (b.sistema is null or b.sistema = p.sistema)
+                        and upper(b.tabla) = 'ARTICULOS' and upper(b.resultado) = 'IDROW')
+                    then 1 else 0 end as devuelve_articulo
+        from SOL_FABRICACION_PARAMETROS p
+        where p.sistema = @sistema
+        order by p.orden, p.idrow`);
     res.status(200).send({ Table: result.recordset });
   } catch (err) {
     console.error(err);

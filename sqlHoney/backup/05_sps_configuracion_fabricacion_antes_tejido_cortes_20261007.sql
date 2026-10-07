@@ -21,38 +21,11 @@ go
 
 /* ---------------- REGLAS ---------------- */
 
-if object_id('dbo.fn_fabricacion_parametro_medida') is not null
-	drop function dbo.fn_fabricacion_parametro_medida
-go
-
-/* Parámetro del que sale el ancho / alto del componente de una regla (param_ancho / param_alto):
-   vacío -> NULL (medida de la línea); un parámetro del sistema -> su nombre (@NOMBRE);
-   cualquier otra cosa -> '?' (no válido) */
-create function [dbo].[fn_fabricacion_parametro_medida]
-(
-	@sistema varchar(50),
-	@valor varchar(255)
-)
-returns varchar(50)
-as
-begin
-	set @valor = upper(ltrim(rtrim(isnull(@valor, ''))))
-	if @valor = ''
-		return null
-	if left(@valor, 1) <> '@'
-		set @valor = '@' + @valor
-	if exists (select 1 from SOL_FABRICACION_PARAMETROS where sistema = @sistema and name = @valor)
-		return left(@valor, 50)
-	return '?'
-end
-go
-
 if object_id('dbo.sp_fabricacion_regla_add') is not null
 	drop procedure dbo.sp_fabricacion_regla_add
 go
 
-/* Devuelve el idrow creado, -1 sistema no válido, -2 cliente no válido,
-   -3 parámetro de ancho / alto del componente que no existe en el sistema */
+/* Devuelve el idrow creado, -1 sistema no válido, -2 cliente no válido */
 create procedure [dbo].[sp_fabricacion_regla_add]
 (
 	@sistema varchar(50),
@@ -67,9 +40,7 @@ create procedure [dbo].[sp_fabricacion_regla_add]
 	@nombre_parametro3 varchar(50),
 	@operacion3 char(1),
 	@nombre_parametro4 varchar(50),
-	@consumo varchar(255),
-	@param_ancho varchar(50) = null,
-	@param_alto varchar(50) = null
+	@consumo varchar(255)
 )
 as
 begin
@@ -81,17 +52,12 @@ begin
 	if @cliente is not null and not exists (select 1 from SOL_CLIENTES where idrow = @cliente)
 		return -2
 
-	set @param_ancho = dbo.fn_fabricacion_parametro_medida(@sistema, @param_ancho)
-	set @param_alto  = dbo.fn_fabricacion_parametro_medida(@sistema, @param_alto)
-	if @param_ancho = '?' or @param_alto = '?'
-		return -3
-
 	insert into SOL_ARTICULOS_FABRICACION_RELACION_V2(orden, sistema, cliente, atributo, valor, articulos,
 		nombre_parametro1, operacion, nombre_parametro2, operacion2,
-		nombre_parametro3, operacion3, nombre_parametro4, consumo, param_ancho, param_alto)
+		nombre_parametro3, operacion3, nombre_parametro4, consumo)
 	values(isnull(@orden,0), @sistema, @cliente, isnull(@atributo,''), '', @articulos,
 		@nombre_parametro1, isnull(nullif(upper(@operacion),''),'-'), @nombre_parametro2, isnull(nullif(upper(@operacion2),''),'-'),
-		@nombre_parametro3, isnull(nullif(upper(@operacion3),''),'-'), @nombre_parametro4, @consumo, @param_ancho, @param_alto)
+		@nombre_parametro3, isnull(nullif(upper(@operacion3),''),'-'), @nombre_parametro4, @consumo)
 
 	return scope_identity()
 end
@@ -146,13 +112,6 @@ begin
 	else if @campo = 'operacion2'        update SOL_ARTICULOS_FABRICACION_RELACION_V2 set operacion2 = @valor where idrow = @idrow
 	else if @campo = 'operacion3'        update SOL_ARTICULOS_FABRICACION_RELACION_V2 set operacion3 = @valor where idrow = @idrow
 	else if @campo = 'consumo'           update SOL_ARTICULOS_FABRICACION_RELACION_V2 set consumo = @valor where idrow = @idrow
-	else if @campo in ('param_ancho', 'param_alto')
-	begin
-		set @valor = dbo.fn_fabricacion_parametro_medida((select sistema from SOL_ARTICULOS_FABRICACION_RELACION_V2 where idrow = @idrow), @valor)
-		if @valor = '?' return 0
-		if @campo = 'param_ancho' update SOL_ARTICULOS_FABRICACION_RELACION_V2 set param_ancho = @valor where idrow = @idrow
-		else update SOL_ARTICULOS_FABRICACION_RELACION_V2 set param_alto = @valor where idrow = @idrow
-	end
 	else return 0
 
 	return 1
@@ -164,8 +123,7 @@ if object_id('dbo.sp_fabricacion_regla_edit') is not null
 go
 
 /* Guarda la regla completa (ventana de edición).
-   Devuelve 1 OK, 0 regla no encontrada, -1 sistema no válido, -2 cliente no válido,
-   -3 parámetro de ancho / alto del componente que no existe en el sistema */
+   Devuelve 1 OK, 0 regla no encontrada, -1 sistema no válido, -2 cliente no válido */
 create procedure [dbo].[sp_fabricacion_regla_edit]
 (
 	@idrow int,
@@ -181,9 +139,7 @@ create procedure [dbo].[sp_fabricacion_regla_edit]
 	@nombre_parametro3 varchar(50),
 	@operacion3 char(1),
 	@nombre_parametro4 varchar(50),
-	@consumo varchar(255),
-	@param_ancho varchar(50) = null,
-	@param_alto varchar(50) = null
+	@consumo varchar(255)
 )
 as
 begin
@@ -194,11 +150,6 @@ begin
 
 	if @cliente is not null and not exists (select 1 from SOL_CLIENTES where idrow = @cliente)
 		return -2
-
-	set @param_ancho = dbo.fn_fabricacion_parametro_medida(@sistema, @param_ancho)
-	set @param_alto  = dbo.fn_fabricacion_parametro_medida(@sistema, @param_alto)
-	if @param_ancho = '?' or @param_alto = '?'
-		return -3
 
 	/* Solo reglas de sistemas del catálogo, y sin cambiar de sistema */
 	if not exists (select 1 from SOL_ARTICULOS_FABRICACION_RELACION_V2 where idrow = @idrow and sistema = @sistema)
@@ -216,9 +167,7 @@ begin
 		nombre_parametro3 = @nombre_parametro3,
 		operacion3        = isnull(nullif(upper(@operacion3),''),'-'),
 		nombre_parametro4 = @nombre_parametro4,
-		consumo           = @consumo,
-		param_ancho       = @param_ancho,
-		param_alto        = @param_alto
+		consumo           = @consumo
 	where idrow = @idrow
 
 	return 1

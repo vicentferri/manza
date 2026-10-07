@@ -30,9 +30,9 @@ Son las variables que pueden usar las reglas. Ya existen:
 
 - **Dato del pedido**: lee una columna del pedido HoneyComb.
 - **Fórmula**: cálculo sobre parámetros anteriores (menor *Orden*). Operadores: `++` suma, `--` resta,
-  `**` multiplica, `*R` multiplica y redondea arriba, `*T` multiplica y deja 2 decimales sin redondear. Se puede operar
+  `**` multiplica, `*R` multiplica y redondea arriba, `*T` multiplica y deja 4 decimales sin redondear. Se puede operar
   con números o con otros parámetros. Ejemplos: `@ANCHO -- 1.5` (ancho de corte), `@ALTO ** 2`,
-  `@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001` (cm² → m² con 2 decimales).
+  `@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001` (cm² → m² con 4 decimales: 99 × 140 cm = 1,3860 m²).
 - **Búsqueda**: toma el valor de otro parámetro (*parámetro de entrada*) y lo busca en un catálogo de la lista. Ej.:
   `@TEJIDO_COLOR_ID` → *Color de tejido HoneyComb -> Referencia* da el código Solupyme del tejido, y ese código →
   *Código Solupyme -> id del artículo* da el artículo. Las búsquedas disponibles las da de alta informática.
@@ -87,7 +87,8 @@ Los artículos HoneyComb del ERP están en `SOL_ARTICULOS_HONEYCOMB_ARTICULO` (p
 ### Artículo según el pedido (tejido)
 
 Para no escribir una regla por cada color, el artículo puede salir del pedido: en la ventana de la regla,
-**+ Artículo según el pedido…** y elegir un parámetro de tipo Búsqueda (p. ej. `@TEJIDO_ARTICULO`).
+**+ Artículo según el pedido…** y elegir el parámetro. Solo se ofrecen las búsquedas que dan el id de un artículo
+(p. ej. `@TEJIDO_ARTICULO`); los pasos intermedios, como `@TEJIDO_REFERENCIA`, no.
 
 Configuración del tejido HoneyComb en DEV:
 
@@ -95,17 +96,27 @@ Configuración del tejido HoneyComb en DEV:
 |---|---|---|
 | `@TEJIDO_REFERENCIA` | Búsqueda | `@TEJIDO_COLOR_ID` → Referencia del color (admin-data) |
 | `@TEJIDO_ARTICULO` | Búsqueda | `@TEJIDO_REFERENCIA` → id del artículo Solupyme |
-| `@TEJIDO_ANCHO` | Fórmula | `@ANCHO -- 5` (descuento de ancho de la HoneyComb) |
+| `@TEJIDO_ANCHO` | Fórmula | `@ANCHO -- n`: ancho de corte (descuento de ancho de la HoneyComb) |
 | `@TEJIDO_ALTO` | Tabla de valores | `@ALTO` → tabla `ALTO_PLIEGUES` (cm de tejido plegado) |
-| `@TEJIDO_M2` | Fórmula | `@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001` |
 
-Regla: orden 350, elemento TEJIDO, sin condiciones, artículo `@TEJIDO_ARTICULO`, consumo `@TEJIDO_M2`.
+Regla: orden 350, elemento TEJIDO, sin condiciones, artículo `@TEJIDO_ARTICULO`,
+consumo `@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001` (m²) y, en **Medidas del componente**, Ancho `@TEJIDO_ANCHO` y
+Alto `@TEJIDO_ALTO`.
+
+### Medidas del componente (fichero de producción)
+
+Cada componente va al XML con un ancho y un alto (`<Cn_P1>` y `<Cn_P2>`, en metros). Por defecto son los de la cortina.
+Si el componente se corta a otra medida, en la ventana de la regla, sección **Medidas del componente**, se elige de qué
+parámetro sale cada una (en cm). El tejido lleva así su ancho de corte y sus pliegues, como el tejido de CortinaDecor.
+Si el parámetro no se puede calcular (p. ej. un alto fuera de la tabla de pliegues), la medida va vacía (0), nunca la de
+la cortina.
 
 - Si el color no tiene Referencia, o el código no existe en Solupyme, sale la línea **SIN ARTÍCULO** (en rojo en la
   simulación y en la hoja; no va al XML). Se corrige en *HoneyComb → Datos → Colores de Tejido*, donde las Referencias
   que no existen salen en rojo. Para poner la Referencia: editar el color, pulsar la **lupa** junto al campo,
   buscar por código o descripción (p. ej. `honeycomb opaco`) y pulsar el artículo. Guardar la fila.
-- Para cambiar el descuento de ancho basta con editar `@TEJIDO_ANCHO`; vale para todos los tejidos.
+- Para cambiar el descuento de ancho basta con editar `@TEJIDO_ANCHO`; vale para todos los tejidos y cambia a la vez
+  los m² y el ancho de corte del XML.
 
 ## 3. Pestaña Tablas
 
@@ -118,7 +129,7 @@ Tablas *clave → valor* por sistema (p. ej. `ALTO_PLIEGUES`: altura → cm de t
 
 1. Poner el **ID del pedido** y pulsar **Simular Pedido**.
 2. Izquierda: valores de los parámetros de cada línea. Derecha: componentes generados.
-3. **Fichero Fabricación** descarga el XML (`<Articulo>22000</Articulo>` por cada unidad).
+3. **Fichero Fabricación** descarga el XML (`<Articulo>220.00</Articulo>` por cada unidad).
 
 Qué revisar:
 - Que salgan todos los componentes esperados y ninguno de más.

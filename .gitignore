@@ -39,3 +39,6 @@ yarn-error.log
 chrome-profiler-events.json
 speed-measure-plugin.json
 *.zip
+
+# Configuracion local (credenciales)
+.env

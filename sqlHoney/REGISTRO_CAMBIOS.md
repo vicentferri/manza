@@ -13,7 +13,7 @@ preparado para migrar otros sistemas (catálogo de sistemas) y para fabricacione
 | `03_migracion_lineas_tipo_7.sql` | Repunta las filas `TIPO_7` antiguas (idrow = pedido) a una línea nueva | ✅ 2026-09-29 (2 filas) | ⏳ | ⏳ |
 | `04_temp_sp_fabricacion_tipo_7.sql` | Motor genérico (`fn_fabricacion_condicion`, `fn_fabricacion_pos_operador`, `sp_fabricacion_evaluar` con cadenas de operaciones, `sp_fabricacion_reglas_parametros`, `sp_fabricacion_reglas_aplicar`) y el nuevo `temp_sp_fabricacion_tipo_7`. **2026-10-06 (tejido):** operandos que son parámetros (`@A ** @B`), operación `*T`, parámetros `BUSQUEDA`/`TABLA`, artículo dinámico (`@PARAM` en Artículos) con línea `SIN ARTÍCULO` si no se resuelve, `fn_fabricacion_articulos_detalle` | ✅ 2026-09-29 · ✅ 2026-10-06 (tejido) | ⏳ | ⏳ |
 | `05_sps_configuracion_fabricacion.sql` | SPs de reglas/parámetros (`sp_fabricacion_regla_*`, `sp_fabricacion_parametro_*`, `sp_fabricacion_parametros_valores`), limitados a sistemas del catálogo. **2026-10-06 (tejido):** `sp_fabricacion_parametro_edit` admite `BUSQUEDA`/`TABLA`; nuevos `sp_fabricacion_tabla_guardar` / `_borrar` | ✅ 2026-10-05 · ✅ 2026-10-06 (tejido) | ⏳ | ⏳ |
-| `06_sp_fichero_produccion_2.sql` | Bloque XML `articulo = 7` → `<Articulo>22000</Articulo>`. **2026-10-06:** las líneas sin artículo (`SIN ARTÍCULO`) no van al XML | ✅ 2026-09-29 · ✅ 2026-10-06 | ⏳ | ⏳ |
+| `06_sp_fichero_produccion_2.sql` | Bloque XML `articulo = 7` → `<Articulo>220.00</Articulo>` (hasta 2026-10-06: `22000`). **2026-10-06:** las líneas sin artículo (`SIN ARTÍCULO`) no van al XML | ✅ 2026-09-29 · ✅ 2026-10-06 | ⏳ | ⏳ |
 | `07_datos_tabla_alto_pliegues_honeycomb.sql` | Datos: tabla `HONEYCOMB / ALTO_PLIEGUES` de `honeycombAltura.xlsx` (alto 30-280 cm → cm de tejido, 251 filas). Solo carga si no existe | ✅ 2026-10-06 | ⏳ | ⏳ |
 
 Scripts idempotentes. Ejecutar con `SET QUOTED_IDENTIFIER ON` (ya incluido; el motor usa métodos XML).
@@ -207,7 +207,122 @@ El `temp_sp_fabricacion_tipo_7` anterior leía `sol_pedidos_cola_tipo_4` y hací
   - fabricación y XML de los 8 pedidos de referencia, idénticos antes y después.
 - **Importar Excel** en la pestaña Tablas, probado en el navegador: 251 filas sin guardar.
 
+## Medidas de corte del tejido en el XML (2026-10-07)
+
+**Problema:** el tejido de la HoneyComb iba al XML (`<Cn_P1>` / `<Cn_P2>`) con el ancho y el alto de la cortina, como todos los
+componentes. En CortinaDecor (`sp_fabricacion_mrp_cd`), en cambio, el tejido lleva sus propias medidas de corte.
+- Comprobado en un pedido real: cortina de 287 × 272,5; el tejido lleva 282,5 × 297,5; el resto de componentes, 2,87 × 2,73.
+
+**Solución** (DEV ✅ · TEST ⏳ · PROD ⏳):
+- `01`: dos columnas nuevas en `SOL_ARTICULOS_FABRICACION_RELACION_V2`, `param_ancho` y `param_alto`. Indican el parámetro del que sale el ancho / alto (cm) de la fila de la regla. Si son NULL, se usan las medidas de la línea, como antes.
+- `04`:
+  - `sp_fabricacion_reglas_aplicar` devuelve esas medidas (`ancho, alto, con_ancho, con_alto`);
+  - `temp_sp_fabricacion_tipo_7` las guarda en la fila. Si el parámetro no se puede calcular, la medida queda vacía (0 en el XML), nunca la de la cortina.
+- `05`:
+  - nueva `fn_fabricacion_parametro_medida`;
+  - `sp_fabricacion_regla_add/edit` aceptan `@param_ancho/@param_alto`, opcionales;
+  - `regla_update` acepta los campos `param_ancho/param_alto`;
+  - un parámetro inexistente devuelve -3.
+- Backend (`fabricacion_reglas.js`) y pantalla: sección **Medidas del componente** en la ventana de la regla.
+- Configuración DEV:
+  - regla del tejido: consumo `@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001`, ancho `@TEJIDO_ANCHO`, alto `@TEJIDO_ALTO`;
+  - borrado el parámetro `@TEJIDO_M2`, porque el consumo va en la regla.
+- **Resultado:**
+  - en el pedido 19090 el tejido pasa de `P1=1,000000 P2=1,000000` a `P1=0,990000 P2=1,400000`;
+  - el `FACTOR` (m²) y la hoja de fabricación son idénticos en los 9 pedidos de referencia;
+  - el resto de componentes no cambian.
+- **A confirmar con producción / ERP:** que esperan en `P1`/`P2` del tejido el ancho de corte y los pliegues.
+
+**Además: orden de las líneas del XML.**
+- `sp_fichero_produccion_2` devolvía las líneas con `select value from @CSV` sin `order by`, y SQL Server no garantiza ese orden.
+- En DEV, el último bloque del pedido 16866 salió al principio (XML roto).
+- `06`: columna `n identity` y `order by n`. Afecta a todos los productos, y es la misma salida pero siempre en orden.
+- `sp_fichero_produccion_cd_2_V2` (CortinaDecor) tiene el mismo problema y no se ha tocado.
+
+**Copias de seguridad:**
+- `backup/01_..._antes_tejido_cortes_20261007.sql`
+- `backup/04_..._antes_tejido_cortes_20261007.sql`
+- `backup/05_..._antes_tejido_cortes_20261007.sql`
+- `backup/06_..._antes_orden_xml_20261007.sql`
+
+**Tests** (79 OK, 1 FALLO conocido: alto > 280 cm):
+- medidas en el motor aislado, en los controladores, en el pedido de principio a fin y en la validación de la pantalla;
+- XML en orden en todos los pedidos de muestra.
+- Se encontró y corrigió en la pantalla:
+  - los campos nuevos no estaban en `datafields` del grid;
+  - por eso, al guardar la regla se habrían borrado las medidas.
+
+## Consumos con 4 decimales (2026-10-07)
+
+**Decisión:** el consumo del tejido se trunca a **4 decimales** (antes 2). Ejemplo: 99 × 140 cm = 13.860 cm² = **1,3860 m²** (antes 1,38).
+
+**Cambio** (DEV ✅ · TEST ⏳ · PROD ⏳):
+- `04`: `*T` trunca a 4 decimales. El resultado de `sp_fabricacion_evaluar`, los parámetros FORMULA, el consumo de las reglas y de los componentes pasan de `decimal(12,2)` a `decimal(18,4)`. Antes todo el camino redondeaba a 2 decimales, aunque la tabla de fabricación ya guardaba 6. Copia: `backup/04_..._antes_4_decimales_20261007.sql`.
+- Un resultado de 1.000.000 o más devuelve -1. No cabe en la columna `consumo` (`decimal(12,6)`) y daría un error de SQL al guardar. Pasaba ya con valores entre 1 millón y 10.000 millones.
+- Pantalla: el texto de `*T` pasa a *4 decimales, sin redondear*.
+- Los parámetros FORMULA se guardan ahora con 4 decimales (`99.0000`; antes `99.00`).
+- Las condiciones siguen comparando con 2 decimales.
+
+**Efecto en los pedidos de referencia:**
+- El tejido pasa de 1,38 a 1,386 m² (pedido 19090) y de 2,49 a 2,499 (17076).
+- El `FACTOR` del XML pasa a `1,386000`.
+- Lo demás no cambia en ningún pedido, ni en la HoneyComb ni en los demás tipos.
+- Una regla con operaciones de más de 2 decimales (p. ej. `@ANCHO ** 0.0133`) ahora da 1,995 y no 2,00.
+- **A confirmar con producción / ERP:** que aceptan m² con 4 decimales.
+
+## Decisiones sobre `sp_fichero_produccion_2` (2026-10-07)
+
+`sp_fichero_produccion_2` genera el XML de producción de **todos** los productos de SM (tipos 1, 2, 3, 4 y 7), así que cualquier cambio es sobre un objeto compartido.
+
+**Decisión: se mantiene el orden garantizado de las líneas del XML.**
+- Cambio: `@CSV` lleva una columna `n identity` y el resultado final se devuelve con `order by n`.
+- Motivo: sin `order by`, SQL Server no garantiza el orden. En DEV, el final del pedido 16866 (`</Detalles></root>`) salió al principio y el XML quedó roto.
+- Efecto en los demás productos: ninguno en el contenido. Con 19 pedidos reales de todos los tipos, el contenido es idéntico al del procedimiento original, comparando las líneas ordenadas.
+- Copias de seguridad:
+  - `backup/sp_fichero_produccion_2_DEV_20260929.sql`: versión original, anterior a la HoneyComb;
+  - `backup/06_sp_fichero_produccion_2_antes_tejido_20261006.sql`;
+  - `backup/06_sp_fichero_produccion_2_antes_orden_xml_20261007.sql`: justo antes del orden.
+- Pendiente: `sp_fichero_produccion_cd_2_V2` (CortinaDecor) tiene el mismo riesgo y no se ha tocado.
+
+**Decisión: el código de producto de la HoneyComb en el XML pasa de `22000` a `220.00`.**
+- Es el valor de `<Articulo>` de cada `<Detalles>` HoneyComb.
+- Copia: `backup/06_sp_fichero_produccion_2_antes_codigo_220_20261007.sql`.
+- Comprobado en los 9 pedidos de referencia: solo cambia ese código. Los pedidos sin HoneyComb no cambian.
+- **A confirmar con el ERP:** que existe el producto `220.00`.
+
+## Sección del XML: clasificación del artículo (2026-10-07)
+
+**Problema:** la etiqueta `Cn_SECCION` del XML de la HoneyComb salía de `articulos.seccion`, vacío en 25 de los ~28 artículos HoneyComb.
+- El XML llevaba `0` en casi todos los componentes.
+- CortinaDecor (`sp_fabricacion_mrp_cd`) y el enrollable de SM (la fabricación real) la sacan de `articulos.clasificacion` y ponen `99` si está vacía.
+
+**Qué es cada campo** (deducido de los datos; no hay tabla que explique `clasificacion`):
+- `articulos.clasificacion` es la categoría del material:
+  - 01 perfilería y piezas principales;
+  - 02 tejido y mano de obra de corte;
+  - 03 termosellado;
+  - 04 piezas pequeñas y accesorios;
+  - 05 seguridad infantil y empaquetado;
+  - 06 embalaje.
+- `articulos.seccion` es otra cosa: el producto (`SOL_SECCIONES`: Enrollables, Verticales, Compac, Menorca...). La HoneyComb no figura ahí.
+
+**Cambio** (DEV ✅ · TEST ⏳ · PROD ⏳):
+- `04`: `seccion = isnull(clasificacion,'99')` en la fila de fabricación HoneyComb. Copia: `backup/04_..._antes_seccion_20261007.sql`.
+- Comprobado en los 9 pedidos de referencia: en la hoja y en el XML solo cambia la sección; los tipos 1-4 no cambian.
+- Ejemplo (pedido 19090):
+  - tejido 04759: `SECCION=02` (antes 0);
+  - perfilería, cordón y cinta: 01;
+  - tornillería y piezas: 04;
+  - fleje y precinto: 06 (antes 7);
+  - etiqueta de producción: 04 (antes 7).
+- Esos tres artículos se comparten con Menorca: tenían `seccion = 7`, ahora llevan su clasificación, como en CortinaDecor.
+- **A confirmar con quien lleve el ERP:** qué hace el ERP con `SECCION`. Cambia el valor en casi todos los componentes de la HoneyComb.
+
 ## Pendiente / supuestos a confirmar
+
+- `[preexistente]` En el tipo 3 (vertical), si `TipoLama` es NULL, la línea que abre `<Detalles>` sale NULL y el XML queda roto.
+  - En DEV pasa en los pedidos de prueba 17051, 17052, 17057, 17062 y 17063.
+- `[preexistente]` `sp_fichero_produccion_cd_2_V2` (CortinaDecor) devuelve las líneas del XML sin `order by`. Es el mismo riesgo que se ha corregido en `sp_fichero_produccion_2`.
 
 - **DECIDIR — alto fuera de `ALTO_PLIEGUES` (> 280 cm):**
   - Hoy el tejido sale con consumo `-1` en la hoja (en rojo) **y en el XML de producción**. Es el FALLO de la sección 5.

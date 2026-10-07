@@ -222,15 +222,3 @@ begin
 	)
 end
 go
-
-/* ---------------- MEDIDAS PROPIAS DEL COMPONENTE (2026-10-07) ----------------
-   Parámetro del que sale el ancho / alto (cm) de la fila de fabricación de la regla
-   (p. ej. el tejido: @TEJIDO_ANCHO = ancho de corte, @TEJIDO_ALTO = pliegues).
-   Van al XML en <Cn_P1>/<Cn_P2>, como el tejido de CortinaDecor (mrp_cd).
-   NULL = el ancho / alto de la línea del pedido, como hasta ahora. */
-if col_length('dbo.SOL_ARTICULOS_FABRICACION_RELACION_V2', 'param_ancho') is null
-	alter table dbo.SOL_ARTICULOS_FABRICACION_RELACION_V2 add param_ancho varchar(50) null
-go
-if col_length('dbo.SOL_ARTICULOS_FABRICACION_RELACION_V2', 'param_alto') is null
-	alter table dbo.SOL_ARTICULOS_FABRICACION_RELACION_V2 add param_alto varchar(50) null
-go

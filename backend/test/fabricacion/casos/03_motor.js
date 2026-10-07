@@ -115,7 +115,7 @@ module.exports = async function (inf) {
       eq([p['@ANCHO'], p['@ALTO'], p['@COLOR_ID'], p['@COLOR']], ['100', '20', '8', 'BEIGE'], 'columnas');
       eq([p['@REF'], p['@ART'], p['@REF_NOMBRE']], ['04810', A, '04810'], 'búsquedas en cadena');
       eq([p['@T'], p['@T_DEC']], ['2.00', '3.00'], 'tabla: 20 exacto; 20,5 -> fila siguiente (30)');
-      eq([p['@F'], p['@M2']], ['95.00', '1.90'], 'fórmulas con parámetros de tabla');
+      eq([p['@F'], p['@M2']], ['95.0000', '1.9000'], 'fórmulas con parámetros de tabla');
     });
 
     await inf.test('BUSQUEDA: solo usa búsquedas del sistema o generales, y una mal definida no da error', async () => {
@@ -155,13 +155,13 @@ module.exports = async function (inf) {
         eq(p['@T'], esperado, 'alto ' + alto);
       }
       const p = await parametros(ctx, { alto: 31 });
-      eq(p['@M2'], '-1.00', 'consumo que usa una tabla sin fila: -1');
+      eq(p['@M2'], '-1.0000', 'consumo que usa una tabla sin fila: -1');
       eq([p['@T_TXT'], p['@T_NO']], [null, null], 'entrada de texto / tabla inexistente');
     });
 
     await inf.test('FORMULA con un parámetro que aún no se ha calculado (orden menor): -1', async () => {
       const p = await parametros(ctx, { alto: 20 });
-      eq(p['@ANTES'], '-1.00');
+      eq(p['@ANTES'], '-1.0000');
     });
 
     /* Reglas */
@@ -236,6 +236,22 @@ module.exports = async function (inf) {
       const x = await aplicar(1, valores);
       const ordenes = x.map(f => f.orden);
       eq(ordenes, ordenes.slice().sort((a, b) => a - b), 'ordenado');
+    });
+
+    await inf.test('Medidas propias del componente (param_ancho / param_alto): valor del parámetro o, si no hay, las de la línea', async () => {
+      const ambas = await regla(null, 150, 'MEDIDAS', String(ctx.a1), null, null, null, null, null, '1');
+      const soloAncho = await regla(null, 160, 'SOLO_ANCHO', String(ctx.a1), null, null, null, null, null, '1');
+      const sinValor = await regla(null, 170, 'SIN_VALOR', String(ctx.a1), null, null, null, null, null, '1');
+      await E.q(`update SOL_ARTICULOS_FABRICACION_RELACION_V2 set param_ancho = '@F', param_alto = '@T' where idrow = @a
+        update SOL_ARTICULOS_FABRICACION_RELACION_V2 set param_ancho = '@f' where idrow = @b
+        update SOL_ARTICULOS_FABRICACION_RELACION_V2 set param_ancho = '@COLOR', param_alto = '@NO_EXISTE' where idrow = @c`,
+        { a: ambas, b: soloAncho, c: sinValor });
+      const x = await aplicar(1, Object.assign({}, valores, { '@F': '95.00', '@T': '2.00' }));
+      const m = (id) => x.filter(f => f.idregla === id).map(f => [f.ancho === null ? null : Number(f.ancho), f.alto === null ? null : Number(f.alto), f.con_ancho, f.con_alto]);
+      eq(m(ambas), [[95, 2, true, true]], 'ancho y alto de sus parámetros');
+      eq(m(soloAncho), [[95, null, true, false]], 'solo ancho (el alto será el de la línea)');
+      eq(m(sinValor), [[null, null, true, true]], 'parámetro de texto / inexistente: vacío, no la medida de la línea');
+      eq(m(r.fijo), [[null, null, false, false]], 'regla sin medidas');
     });
 
     await inf.test('Texto de Artículos en la pantalla (fn_fabricacion_articulos_detalle)', async () => {

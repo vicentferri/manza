@@ -31,9 +31,9 @@ function declararParametros() {
 async function evaluar(expresiones) {
   const texto = declararParametros() + `
     declare @e table(n int, expr varchar(255))
-    declare @r table(n int, valor decimal(12,2), error nvarchar(4000))
+    declare @r table(n int, valor decimal(18,4), error nvarchar(4000))
     ${expresiones.map((x, i) => 'insert into @e values (' + i + ', ' + literal(x) + ')').join('\n')}
-    declare @n int = 0, @x varchar(255), @v decimal(12,2)
+    declare @n int = 0, @x varchar(255), @v decimal(18,4)
     while @n < ${expresiones.length}
     begin
       select @x = expr from @e where n = @n
@@ -92,18 +92,19 @@ module.exports = async function (inf, util) {
   const esperados = {
     '400': 400, '1,5': 1.5, '@ANCHO': 150, '@ancho': 150, '@DEC': 88.15, '@COMA': 1.5, '@CERO': 0,
     '@ANCHO -- 0': 150, '@ANCHO -- 5': 145, '@ANCHO ++ 2.5': 152.5, '@ANCHO ** 2': 300,
-    '@ANCHO *R 0.013': 2, '@DEC *R 1': 89, '@ANCHO *T 0.0133': 1.99, '@ANCHO *T 0.0001': 0.01,
-    '@ANCHO ** 0.0133': 2.00, /* 1,995 redondeado a 2 decimales al final; mrp_cd daba 1,50 (0,0133 -> 0,01) */
+    '@ANCHO *R 0.013': 2, '@DEC *R 1': 89, '@ANCHO *T 0.0133': 1.995, '@ANCHO *T 0.0001': 0.015,
+    '@ANCHO ** 0.0133': 1.995, /* mrp_cd daba 1,50 (0,0133 -> 0,01); desde 2026-10-07 se guardan 4 decimales */
     '@ANCHO -- 1.5 ** 2': 297, '@ANCHO ** 2 -- 1.5': 298.5, '@ANCHO -- 1.5 ** 2 ++ 10': 307,
-    '@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001': 3.07, '@tejido_ancho**@tejido_alto*t0,0001': 3.07,
+    '@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001': 3.074, '@tejido_ancho**@tejido_alto*t0,0001': 3.074,
     '@ANCHO -- 1,5': 148.5, '@ANCHO--1,5**2': 297, '@ANCHO ** @COMA': 225, '@COMA ** 2': 3,
     '0.01 ** @ALTO ** 2': 4, '0,01 ** @ALTO ** 2': 4, '0.013 *R @ANCHO *R 1': 2,
-    '@ANCHO -- -5': 155, '@ANCHO ++ -5': 145, '@ANCHO -- 5 *T 0.01': 1.45, '@ANCHO ++ 0.005 *T 1': 150,
-    '@ANCHO *R 0': 0, '@ANCHO -- 151': -1 /* -1 legítimo: es el resultado de la operación */
+    '@ANCHO -- -5': 155, '@ANCHO ++ -5': 145, '@ANCHO -- 5 *T 0.01': 1.45, '@ANCHO ++ 0.005 *T 1': 150.005,
+    '@ANCHO *R 0': 0, '@ANCHO -- 151': -1 /* -1 legítimo: es el resultado de la operación */,
+    '@ANCHO ** 6000': 900000, '@ANCHO ** -6000': -900000
   };
   const invalidos = ['', 'abc', '@NO_EXISTE', '@ANCHO ** @NO_EXISTE', '@ANCHO -- abc', '@ANCHO -- 1 **', '@ANCHO //2',
     '@ANCHO *X 2', '@COLOR', '@COLOR ** 2', '@VACIO', '@VACIO -- 1', '@ANCHO ** @VACIO', '@DOLAR', '@PUNTO', '@EXP',
-    '-- 5', '@ANCHO ** 1000000000', '@ANCHO ** 1000000000 -- 1', '@ANCHO ** 100000000000 -- 1', '@ANCHO ++ 1e5',
+    '-- 5', '@ANCHO ** 10000', '@ANCHO ** 1000000000', '@ANCHO ** 1000000000 -- 1', '@ANCHO ** 100000000000 -- 1', '@ANCHO ++ 1e5',
     '@ANCHO -- $', '@ANCHO ** .'];
 
   const res = await evaluar(Object.keys(esperados).concat(invalidos));
@@ -120,17 +121,22 @@ module.exports = async function (inf, util) {
     eq(malos, [], 'expresiones que no dan -1');
   });
 
-  await inf.test('*T trunca (no redondea) y *R redondea hacia arriba', async () => {
+  await inf.test('*T trunca a 4 decimales (no redondea) y *R redondea hacia arriba', async () => {
     /* Los operandos se calculan con 6 decimales (0.0000666 -> 0.000067) */
-    const r = await evaluar(['@ANCHO *T 0.013333', '@ANCHO *R 0.013333', '@DEC *T 0.1', '@DEC *R 0.1', '@ANCHO *T 0.000066']);
-    num(r['@ANCHO *T 0.013333'].valor, 1.99, '150 x 0,013333 = 1,99995 -> *T');
+    const r = await evaluar(['@ANCHO *T 0.013333', '@ANCHO *R 0.013333', '@DEC *T 0.1', '@DEC *R 0.1', '@ANCHO *T 0.000066',
+      '@ANCHO *T 0.01333333', '@ANCHO *T 0.00001', '@DEC *T 0.11', '@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.00001']);
+    num(r['@ANCHO *T 0.013333'].valor, 1.9999, '150 x 0,013333 = 1,99995 -> *T (4 decimales)');
     num(r['@ANCHO *R 0.013333'].valor, 2, '-> *R');
-    num(r['@DEC *T 0.1'].valor, 8.81, '88,15 x 0,1 = 8,815 -> *T');
+    num(r['@DEC *T 0.1'].valor, 8.815, '88,15 x 0,1 = 8,815 -> *T');
     num(r['@DEC *R 0.1'].valor, 9, '-> *R');
-    num(r['@ANCHO *T 0.000066'].valor, 0, '150 x 0,000066 = 0,0099 -> *T');
+    num(r['@ANCHO *T 0.000066'].valor, 0.0099, '150 x 0,000066 = 0,0099 -> *T');
+    num(r['@ANCHO *T 0.01333333'].valor, 1.9999, '150 x 0,01333333 = 1,9999995 -> 1,9999 (no 2,0000)');
+    num(r['@ANCHO *T 0.00001'].valor, 0.0015, '150 x 0,00001 = 0,0015 -> *T');
+    num(r['@DEC *T 0.11'].valor, 9.6965, '88,15 x 0,11 = 9,6965');
+    num(r['@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.00001'].valor, 0.3074, '145 x 212 x 0,00001 = 0,3074');
   });
 
-  await inf.test('Una operación válida da lo mismo que la función antigua (sp_fabricacion_tag) con números de 2 decimales', async () => {
+  await inf.test('Una operación válida da lo mismo que la función antigua (sp_fabricacion_tag) con números de 2 decimales (la antigua redondea a 2)', async () => {
     const ops = ['++', '--', '**', '*R'];
     const numeros = ['0', '1', '1.5', '0.25', '33.33', '2'];
     const exprs = [];
@@ -144,7 +150,8 @@ module.exports = async function (inf, util) {
       begin select @x = expr from @e where n = @n set @v = null exec sp_fabricacion_tag @x, @p, @v out insert into @r values (@n, @v) set @n = @n + 1 end
       select n, valor from @r order by n`;
     const antiguo = await E.filas(texto);
-    const distintos = antiguo.filter(f => Number(f.valor) !== Number(nuevo[exprs[f.n]].valor))
+    /* La antigua deja 2 decimales (redondea); la nueva guarda 4: se comparan a 2 decimales */
+    const distintos = antiguo.filter(f => Math.abs(Number(f.valor) - Number(nuevo[exprs[f.n]].valor)) > 0.0051)
       .map(f => exprs[f.n] + ': antes ' + f.valor + ', ahora ' + nuevo[exprs[f.n]].valor);
     eq(distintos, [], 'diferencias con sp_fabricacion_tag (' + exprs.length + ' casos)');
   });
@@ -190,7 +197,7 @@ module.exports = async function (inf, util) {
     const numericos = ['@ANCHO', '@ALTO', '@TEJIDO_ANCHO', '@TEJIDO_ALTO', '@DEC', '@COMA', '@CERO'];
     /* El frontend no conoce los valores (texto, vacío) ni el rango del resultado (desbordamiento): solo la sintaxis */
     const corpus = Object.keys(esperados).concat(invalidos)
-      .filter(x => !/@(COLOR|VACIO|DOLAR|PUNTO|EXP)\b/i.test(x) && !/\d{9,}/.test(x));
+      .filter(x => !/@(COLOR|VACIO|DOLAR|PUNTO|EXP)\b/i.test(x) && !/\d{9,}/.test(x) && x !== '@ANCHO ** 10000');
     const r = await evaluar(corpus);
     const incoherentes = [];
     corpus.forEach(x => {

@@ -1,14 +1,12 @@
 /* =====================================================================
    06 - sp_fichero_produccion_2: bloque HoneyComb (articulo = 7)
    Único cambio respecto a la versión anterior (backup/sp_fichero_produccion_2_DEV_20260929.sql):
-   se añade el bloque "if @articulo = 7" que genera <Articulo>220.00</Articulo>
+   se añade el bloque "if @articulo = 7" que genera <Articulo>22000</Articulo>
    con los componentes de SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.
    2026-10-06: las líneas sin artículo (articulo NULL, aviso "SIN ARTÍCULO") no se envían al XML.
    2026-10-07: las líneas del XML se devuelven en el orden en que se escriben (columna n + order by).
    Antes salían con "select value from @CSV" sin orden, que SQL Server no garantiza: en DEV el
    último bloque de un pedido salió al principio (XML roto). Afecta a todos los productos.
-   2026-10-07: el código del producto HoneyComb en el XML pasa de 22000 a 220.00 (formato de los códigos
-   de producto del ERP, como API.001 o la lama 000.00).
    El resto del procedimiento queda idéntico.
    ===================================================================== */
 set ansi_nulls on
@@ -420,7 +418,7 @@ begin
 
 					set @strPrecio = isnull(replace(@c1,'.',','),'0')
 
-					insert into @CSV(value) values('<Detalles><Articulo>220.00</Articulo><Descripcion>' + @descripcion + '</Descripcion><DescCliente>' + @descripcionCLI + '</DescCliente>')
+					insert into @CSV(value) values('<Detalles><Articulo>22000</Articulo><Descripcion>' + @descripcion + '</Descripcion><DescCliente>' + @descripcionCLI + '</DescCliente>')
 					insert into @CSV(value) values('<Unidades>1</Unidades><Ancho>' + @ancho + '</Ancho>')
 					insert into @CSV(value) values('<Alto>' + @alto  + '</Alto><Precio>'+@strPrecio+'</Precio><Tienda>'+cast(@Tienda as varchar)+'</Tienda>')
 

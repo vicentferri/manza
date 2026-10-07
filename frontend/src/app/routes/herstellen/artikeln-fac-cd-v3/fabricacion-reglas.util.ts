@@ -5,7 +5,7 @@
  *   Consumo:   n | @P | @P ++ n | @P -- n | @P ** n | @P *R n | @P *T n | a ** @P ** b | a *R @P *R b
  *              y cadenas @P op x op x ... (se calculan de izquierda a derecha), donde x es
  *              un número o un parámetro (@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001)
- *   *T: multiplica y deja 2 decimales sin redondear.
+ *   *T: multiplica y deja 4 decimales sin redondear.
  *   Artículos: ids o @PARAMETRO (artículo según el pedido, p. ej. @TEJIDO_ARTICULO).
  * Los espacios se ignoran; los decimales se escriben con punto (se acepta coma).
  */
@@ -49,7 +49,7 @@ export const OPERADORES_CONSUMO = [
   { valor: '++', texto: 'más' },
   { valor: '**', texto: 'por' },
   { valor: '*R', texto: 'por (redondeo arriba)' },
-  { valor: '*T', texto: 'por (2 decimales, sin redondear)' },
+  { valor: '*T', texto: 'por (4 decimales, sin redondear)' },
 ];
 
 const NUMERO = '-?\\d+(?:[.,]\\d+)?';
@@ -259,7 +259,9 @@ export interface ErroresRegla {
   campos: { [campo: string]: string[] };
 }
 
-export function validarRegla(regla: any, parametros: string[]): ErroresRegla {
+/* parametrosArticulo (opcional): los parámetros que dan un id de artículo; si se pasa, un artículo
+   según el pedido tiene que ser uno de ellos (p. ej. @TEJIDO_ARTICULO, no @TEJIDO_REFERENCIA) */
+export function validarRegla(regla: any, parametros: string[], parametrosArticulo?: string[]): ErroresRegla {
   const campos: { [campo: string]: string[] } = {};
   const agregar = (campo: string, errores: string[]) => {
     if (errores.length > 0) {
@@ -278,6 +280,14 @@ export function validarRegla(regla: any, parametros: string[]): ErroresRegla {
   /* Artículo según el pedido: el parámetro tiene que existir */
   articulos.filter(a => RE_PARAM.test(a) && !existeParametro(a, parametros))
     .forEach(a => agregar('articulos', ['El parámetro ' + a.toUpperCase() + ' no existe']));
+  if (parametrosArticulo) {
+    articulos.filter(a => RE_PARAM.test(a) && existeParametro(a, parametros) && !existeParametro(a, parametrosArticulo))
+      .forEach(a => agregar('articulos', ['El parámetro ' + a.toUpperCase() + ' no da un artículo (use una búsqueda que devuelva el id del artículo)']));
+  }
+
+  /* Medidas propias del componente (XML P1/P2): si se indican, el parámetro tiene que existir */
+  [regla.param_ancho, regla.param_alto].map(p => String(p || '').trim()).filter(p => p !== '' && !existeParametro(p, parametros))
+    .forEach(p => agregar('medidas', ['El parámetro ' + p.toUpperCase() + ' no existe']));
 
   const consumos = String(regla.consumo || '').split(';');
   consumos.forEach(c => agregar('consumo', validarConsumo(c, parametros)));

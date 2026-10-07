@@ -132,6 +132,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
   regla = this.reglaVacia();
   tituloRegla = '';
   consumoComun = true;
+  medidasAbiertas = false;   /* sección "Medidas del componente" de la ventana de la regla: plegada salvo que la regla ya las tenga */
   consumoTodos: Consumo = consumoVacio();
   guardandoRegla = false;
 
@@ -160,6 +161,8 @@ export class ArtikelnFacCdV3Component implements OnInit {
       { name: 'operacion2', type: 'string' },
       { name: 'operacion3', type: 'string' },
       { name: 'consumo', type: 'string' },
+      { name: 'param_ancho', type: 'string' },   /* sin declarar aquí, el grid los quita de la fila y al guardar se perderían */
+      { name: 'param_alto', type: 'string' },
     ],
     localdata: null
   };
@@ -780,7 +783,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
         this.erroresReglas = {};
         this.reglasConErrores = 0;
         data.Table.forEach(r => {
-          let errores = validarRegla(r, this.nombresParametros);
+          let errores = validarRegla(r, this.nombresParametros, this.parametrosArticulo());
           this.erroresReglas[r.idrow] = errores;
           if (errores.total > 0) {
             this.reglasConErrores++;
@@ -988,6 +991,8 @@ export class ArtikelnFacCdV3Component implements OnInit {
       condiciones: [condicionVacia(), condicionVacia(), condicionVacia(), condicionVacia()] as Condicion[],
       operaciones: ['Y', 'Y', 'Y'] as string[],
       articulos: [] as ArticuloRegla[],
+      param_ancho: '',   /* medidas propias del componente (XML Cn_P1 / Cn_P2); vacío = las de la línea */
+      param_alto: '',
     };
   }
 
@@ -998,6 +1003,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
   }
 
   NuevaRegla() {
+    this.medidasAbiertas = false;
     this.regla = this.reglaVacia();
     this.regla.orden = this.siguienteOrden();
     this.consumoComun = true;
@@ -1030,6 +1036,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
       .map(c => parseCondicion(c));
     regla.operaciones = [fila.operacion, fila.operacion2, fila.operacion3]
       .map(o => String(o || '').toUpperCase() == 'O' ? 'O' : 'Y');
+    regla.param_ancho = String(fila.param_ancho || '').toUpperCase();
+    regla.param_alto = String(fila.param_alto || '').toUpperCase();
+    this.medidasAbiertas = regla.param_ancho !== '' || regla.param_alto !== '';
 
     let ids = String(fila.articulos || '').replace(/;/g, ',').split(',').map(a => a.trim()).filter(a => a !== '');
     let consumos = String(fila.consumo || '').trim() == '' ? [] : String(fila.consumo).split(';');
@@ -1065,9 +1074,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
     };
   }
 
-  /* Parámetros que pueden dar un artículo: las búsquedas */
+  /* Parámetros que dan un artículo: las búsquedas cuyo resultado es el id de ARTICULOS (no las de un paso intermedio, como la Referencia) */
   parametrosArticulo(): string[] {
-    return this.parametros.filter(p => p.tipo == 'BUSQUEDA').map(p => p.name);
+    return this.parametros.filter(p => p.devuelve_articulo == 1).map(p => p.name);
   }
 
   AnadirArticuloDinamico(parametro: string) {
@@ -1218,6 +1227,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
     else {
       this.regla.articulos.forEach(a => this.erroresConsumo(a.consumo).forEach(e => errores.push('Consumo de ' + (a.cod_sol || a.idrow) + ': ' + e)));
     }
+    [this.regla.param_ancho, this.regla.param_alto]
+      .filter(p => p && !this.nombresParametros.some(n => String(n).toUpperCase() == String(p).toUpperCase()))
+      .forEach(p => errores.push('Medidas del componente: el parámetro ' + p + ' no existe'));
     return errores;
   }
 
@@ -1279,6 +1291,8 @@ export class ArtikelnFacCdV3Component implements OnInit {
       operacion3: ops[2],
       nombre_parametro4: compactas[3],
       consumo: this.textoConsumo(),
+      param_ancho: this.regla.param_ancho || '',
+      param_alto: this.regla.param_alto || '',
     };
 
     this.guardandoRegla = true;

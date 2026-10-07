@@ -5,10 +5,6 @@
      - fn_fabricacion_condicion ........ evalúa una condición
      - fn_fabricacion_pos_operador ..... busca operadores de consumo
      - sp_fabricacion_evaluar .......... evalúa un consumo / fórmula (admite cadenas de operaciones)
-   2026-10-07 (sección): la SECCION del XML sale de articulos.clasificacion (01 perfilería, 02 tejido,
-   04 piezas, 06 embalaje...) y '99' si está vacía, como sp_fabricacion_mrp_cd (CortinaDecor) y el
-   enrollable de SM. Antes salía de articulos.seccion (producto, tabla SOL_SECCIONES), vacío en casi
-   todos los artículos HoneyComb, y el XML llevaba 0.
    2026-10-07 (robustez): condiciones, fórmulas y artículos mal escritos o con
    valores no numéricos dan "no se cumple" / -1 / se ignoran, nunca un error
    que pare la fabricación del pedido. Comprobado por backend/test/fabricacion.
@@ -22,7 +18,7 @@
    y un procedimiento como temp_sp_fabricacion_tipo_7 con sus tablas.
    2026-10-06 (tejido): requiere las tablas nuevas de 01 (busquedas, tablas de valores).
      - Operaciones con parámetros como operando (@A ** @B) y *T (multiplica y
-       deja 4 decimales sin redondear; 2 hasta el 2026-10-07).
+       deja 2 decimales sin redondear).
      - Parámetros BUSQUEDA y TABLA.
      - Artículo dinámico en la regla (@PARAMETRO en Artículos). Si no se resuelve
        a un artículo existente, se genera una línea sin artículo con el aviso
@@ -140,16 +136,12 @@ go
    Forma: operando (operador operando)*, de izquierda a derecha, en el orden
    escrito (sin prioridad de **). Operando: número (punto o coma decimal) o
    @PARAMETRO. Operadores: ++ suma, -- resta, ** multiplica, *R multiplica y
-   redondea hacia arriba, *T multiplica y deja 4 decimales sin redondear
-   (1,94887 -> 1,9488). Ejemplos: 400, @ANCHO, @ANCHO -- 1.5 ** 2,
+   redondea hacia arriba, *T multiplica y deja 2 decimales sin redondear
+   (1,9488 -> 1,94). Ejemplos: 400, @ANCHO, @ANCHO -- 1.5 ** 2,
    @TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001, 0.01 ** @ALTO ** 2.
    Si algo no se puede calcular (parámetro inexistente, vacío o no numérico,
    operando mal escrito, resultado fuera de rango) devuelve -1, nunca un error:
    un error pararía la fabricación de todo el pedido.
-   2026-10-07 (4 decimales): el resultado y el consumo pasan de decimal(12,2) a decimal(18,4) en
-   todo el motor (esta función, parámetros FORMULA, reglas y componentes); *T trunca a 4 decimales.
-   La fabricación ya guardaba el consumo con 6. Antes todo se redondeaba a 2 decimales por el camino.
-   Un resultado de 1.000.000 o más (no cabe en la columna consumo, decimal(12,6)) devuelve -1.
    2026-10-07: ya no usa sp_fabricacion_tag (que da error con coma decimal o
    valores no numéricos, devuelve 0 con un parámetro de texto o vacío y redondea
    los números a 2 decimales: @ANCHO ** 0.0133 daba 1,50 en vez de 2,00).
@@ -162,7 +154,7 @@ create procedure [dbo].[sp_fabricacion_evaluar]
 (
 	@expresion varchar(255),
 	@parametros dbo.Parameters3Type readonly,
-	@resultado decimal(18,4) output
+	@resultado decimal(12,2) output
 )
 as
 begin
@@ -213,18 +205,14 @@ begin
 		if @op = '--' set @acumulado = try_cast(@acumulado - @numero as decimal(18,6))
 		if @op = '**' set @acumulado = try_cast(@acumulado * @numero as decimal(18,6))
 		if @op = '*R' set @acumulado = try_cast(ceiling(@acumulado * @numero) as decimal(18,6))
-		if @op = '*T' set @acumulado = try_cast(round(@acumulado * @numero, 4, 1) as decimal(18,6))
+		if @op = '*T' set @acumulado = try_cast(round(@acumulado * @numero, 2, 1) as decimal(18,6))
 		if @acumulado is null
 			return
 
 		set @resto = case when @pos > 0 then substring(@resto, @pos, 255) else '' end
 	end
 
-	/* La columna consumo de la fabricación es decimal(12,6): por encima de 999.999 daría un error de SQL al guardar */
-	if abs(@acumulado) >= 1000000
-		return
-
-	set @resultado = isnull(try_cast(@acumulado as decimal(18,4)), -1)
+	set @resultado = isnull(try_cast(@acumulado as decimal(12,2)), -1)
 end
 go
 
@@ -259,7 +247,7 @@ begin
 	declare @ptipo varchar(10)
 	declare @porigen varchar(255)
 	declare @pvalor varchar(255)
-	declare @calculado decimal(18,4)
+	declare @calculado decimal(12,2)
 	declare @pbusqueda varchar(50)
 	declare @ptabla varchar(50)
 	declare @entrada varchar(255)
@@ -406,7 +394,7 @@ as
 begin
 	set nocount on
 
-	declare @resultado table(orden int, articulo int, consumo decimal(18,4), idregla int, aviso varchar(255),
+	declare @resultado table(orden int, articulo int, consumo decimal(12,2), idregla int, aviso varchar(255),
 	                         ancho decimal(12,2), alto decimal(12,2), con_ancho bit, con_alto bit)
 	declare @clienteReglas int = null
 
@@ -429,7 +417,7 @@ begin
 	declare @art varchar(50)
 	declare @artpos int
 	declare @expr varchar(255)
-	declare @consumido decimal(18,4)
+	declare @consumido decimal(12,2)
 	declare @pancho varchar(50), @palto varchar(50)
 	declare @vancho decimal(12,2), @valto decimal(12,2)
 
@@ -563,7 +551,7 @@ if @real <> 1
 
 declare @sistema varchar(50) = 'HONEYCOMB'
 declare @parametros as dbo.Parameters3Type
-declare @componentes table(orden int, articulo int, consumo decimal(18,4), idregla int, aviso varchar(255),
+declare @componentes table(orden int, articulo int, consumo decimal(12,2), idregla int, aviso varchar(255),
                            ancho decimal(12,2), alto decimal(12,2), con_ancho bit, con_alto bit)
 declare @lineas table(pos int, idLinea int)
 
@@ -641,7 +629,7 @@ begin
 		descUnidad  = (select descripcion from SOL_ARTICULOS_UNIDADES where SOL_ARTICULOS_UNIDADES.unidad = SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.unidad),
 		cod_sol     = (select cod_solupyme from articulos where articulos.idrow = SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.articulo),
 		fam_sol     = (select fam_solupyme from articulos where articulos.idrow = SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.articulo),
-		seccion     = (select isnull(clasificacion,'99') from articulos where articulos.idrow = SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.articulo)
+		seccion     = (select isnull(seccion,'') from articulos where articulos.idrow = SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.articulo)
 		where idrow = @id and articulo is not null
 
 	end

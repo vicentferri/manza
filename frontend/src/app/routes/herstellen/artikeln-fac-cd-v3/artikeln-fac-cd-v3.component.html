@@ -145,7 +145,7 @@
                 <small class="text-muted">
                   Un parámetro con el mismo nombre se sobrescribe. Los parámetros se calculan en orden y
                   solo pueden usar parámetros con un orden menor. Fórmulas: <b>++</b> suma, <b>--</b> resta, <b>**</b> multiplica,
-                  <b>*R</b> multiplica y redondea arriba, <b>*T</b> multiplica y deja 2 decimales sin redondear; se puede operar
+                  <b>*R</b> multiplica y redondea arriba, <b>*T</b> multiplica y deja 4 decimales sin redondear; se puede operar
                   con números o con otros parámetros (p. ej. <code>@ANCHO -- 5</code>, <code>@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001</code>).
                   <b>Búsqueda</b>: busca el valor de otro parámetro en un catálogo (p. ej. color → artículo).
                   <b>Tabla de valores</b>: el valor de la pestaña Tablas para el parámetro de entrada (si no está exacto, el siguiente mayor).
@@ -499,6 +499,36 @@
           </table>
           <div class="text-muted" *ngIf="regla.articulos.length == 0">
             Sin artículos. Pulse <b>Añadir artículos</b>.
+          </div>
+        </div>
+
+        <div class="fab-seccion">
+          <div class="fab-seccion-titulo" style="cursor: pointer" (click)="medidasAbiertas = !medidasAbiertas">
+            <i class="fa" [ngClass]="medidasAbiertas ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+            Medidas del componente (fichero de producción)
+            <span class="text-muted small font-weight-normal" *ngIf="!medidasAbiertas">
+              {{ (regla.param_ancho || regla.param_alto) ? '' : '— las de la cortina' }}
+            </span>
+          </div>
+          <div class="text-muted small mb-2" *ngIf="medidasAbiertas">
+            Ancho y alto que van al XML con el componente (P1 y P2), en cm. Por defecto, los de la cortina.
+            Úselo cuando el componente se corta a otra medida (p. ej. el tejido: ancho de corte y pliegues).
+          </div>
+          <div class="form-row" *ngIf="medidasAbiertas">
+            <div class="col-md-6">
+              <label class="small mb-0">Ancho</label>
+              <select class="form-control form-control-sm" [(ngModel)]="regla.param_ancho">
+                <option value="">— el de la cortina —</option>
+                <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="small mb-0">Alto</label>
+              <select class="form-control form-control-sm" [(ngModel)]="regla.param_alto">
+                <option value="">— el de la cortina —</option>
+                <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

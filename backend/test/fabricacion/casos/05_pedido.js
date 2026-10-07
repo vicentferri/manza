@@ -61,23 +61,28 @@ function errorXml(xml) {
 /* Bloques HoneyComb del XML: { ancho, alto, componentes: [{ codigo, factor }] } */
 function bloquesHoneyComb(xml) {
   return (xml.match(/<Detalles>[\s\S]*?<\/Detalles>/g) || [])
-    .filter(b => b.indexOf('<Articulo>22000</Articulo>') !== -1)
+    .filter(b => b.indexOf('<Articulo>220.00</Articulo>') !== -1)
     .map(b => {
       const comp = [];
       const re = /<C(\d+)>([^<]*)<\/C\1>/g;
       let m;
       while ((m = re.exec(b))) {
         const f = new RegExp('<C' + m[1] + '_FACTOR>([^<]*)</C' + m[1] + '_FACTOR>').exec(b);
-        comp.push({ codigo: m[2], factor: f ? Number(f[1].replace(',', '.')) : null });
+        const p1 = new RegExp('<C' + m[1] + '_P1>([^<]*)</C' + m[1] + '_P1>').exec(b);
+        const p2 = new RegExp('<C' + m[1] + '_P2>([^<]*)</C' + m[1] + '_P2>').exec(b);
+        const sc = new RegExp('<C' + m[1] + '_SECCION>([^<]*)</C' + m[1] + '_SECCION>').exec(b);
+        comp.push({ codigo: m[2], factor: f ? Number(f[1].replace(',', '.')) : null,
+          p1: p1 ? p1[1] : null, p2: p2 ? p2[1] : null, seccion: sc ? sc[1] : null });
       }
       const v = (tag) => { const x = new RegExp('<' + tag + '>([^<]*)</' + tag + '>').exec(b); return x ? x[1] : null; };
       return { ancho: v('Ancho'), alto: v('Alto'), precio: v('Precio'), componentes: comp };
     });
 }
 
-/* m² del tejido como lo define la HoneyComb: (ancho - descuento) x pliegues(alto) / 10000, 2 decimales sin redondear */
+/* m² del tejido como lo define la HoneyComb: (ancho - descuento) x pliegues(alto) / 10000, 4 decimales sin redondear
+   (4 decimales de m² = cm² enteros) */
 function m2Tejido(anchoTejido, pliegues) {
-  return Math.floor(Math.round(anchoTejido * pliegues * 100) / 10000 + 1e-9) / 100;
+  return Math.floor(anchoTejido * pliegues + 1e-9) / 10000;
 }
 
 module.exports = async function (inf) {
@@ -171,7 +176,7 @@ module.exports = async function (inf) {
       });
     });
 
-    await inf.test('Hoja: tejido según el color, en m², (ancho - ' + desc + ') x pliegues(alto), 2 decimales sin redondear', async () => {
+    await inf.test('Hoja: tejido según el color, en m², (ancho - ' + desc + ') x pliegues(alto), 4 decimales sin redondear', async () => {
       const t = fila(L1, 350);
       eq(t.length, 1, 'una línea de tejido');
       const p = await pliegues(150);
@@ -267,6 +272,32 @@ module.exports = async function (inf) {
       num(tejido1 && tejido1.factor, fila(L1, 350)[0].consumo, 'factor del tejido = consumo de la hoja');
     });
 
+    await inf.test('XML: el tejido lleva su ancho de corte y sus pliegues (P1/P2, m); el resto, el ancho/alto de la cortina', async () => {
+      const metros = (cm) => (Math.round(cm) / 100).toFixed(6).replace('.', ',');
+      const t = bloques[0].componentes.find(c => c.codigo === '04810');
+      eq([t.p1, t.p2], [metros(150 - desc), metros(await pliegues(150))], 'tejido de la línea 1 (150 x 150)');
+      const otros = bloques[0].componentes.filter(c => c.codigo !== '04810');
+      ok(otros.length > 0, 'sin otros componentes');
+      eq(otros.filter(c => c.p1 !== '1,500000' || c.p2 !== '1,500000').map(c => c.codigo), [], 'componentes que no llevan 150 x 150');
+      const t2 = bloques[1].componentes.find(c => c.factor === -1);
+      eq([t2.p1, t2.p2], [metros(100 - desc), '0'], 'alto fuera de la tabla: sin pliegues (0), nunca el alto de la ventana');
+    });
+
+    await inf.test('XML: la SECCION de cada componente es la clasificación de su artículo (99 si no tiene), como CortinaDecor', async () => {
+      const clas = {};
+      (await E.filas(`select a.cod_solupyme as cod, isnull(a.clasificacion, '99') as clas from articulos a
+        where a.idrow in (select f.articulo from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION f join SOL_PEDIDOS_COLA_TIPO_7 t on t.id = f.idrow
+          join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow where l.idrow = @p and f.articulo is not null)`, { p: idPedido }))
+        .forEach(x => { clas[String(x.cod).trim()] = String(x.clas).trim(); });
+      const malos = [];
+      bloques.forEach((b, i) => b.componentes.forEach(c => {
+        if (c.seccion !== clas[c.codigo]) malos.push('bloque ' + (i + 1) + ' ' + c.codigo + ': SECCION ' + c.seccion + ' (clasificación ' + clas[c.codigo] + ')');
+      }));
+      eq(malos, [], 'componentes con una SECCION distinta de la clasificación del artículo');
+      eq(bloques[0].componentes.find(c => c.codigo === '04810').seccion, '02', 'el tejido es 02');
+      eq(bloques[0].componentes.filter(c => c.seccion === '0' || c.seccion === '').length, 0, 'ninguno con 0 o vacío');
+    });
+
     await inf.test('XML: ningún componente con consumo negativo (-1 = no se ha podido calcular)', () => {
       const negativos = [];
       bloques.forEach((b, i) => b.componentes.filter(c => c.factor < 0).forEach(c => negativos.push('bloque ' + (i + 1) + ': ' + c.codigo + ' = ' + c.factor)));
@@ -280,7 +311,7 @@ module.exports = async function (inf) {
       const clave = (f) => [f.idpedido, f.orden, f.articulo, Number(f.consumo), f.descripcion].join('|');
       eq(s.data.Fabricacion.map(clave).sort(), hoja.map(clave).sort(), 'componentes');
       eq([s.data.Pedido.cliente, s.data.Pedido.reglas_cliente], [1, 0], 'reglas generales');
-      ok(s.data.Parametros.some(p => p.parametro === '@TEJIDO_M2'), 'parámetros');
+      ok(s.data.Parametros.some(p => p.parametro === '@TEJIDO_ALTO'), 'parámetros');
     });
 
     /* ---------- Regenerar y modificar ---------- */
@@ -318,7 +349,7 @@ module.exports = async function (inf) {
 
     /* ---------- Cliente con reglas propias ---------- */
     await inf.test('Cliente con reglas propias: su pedido usa solo sus reglas', async () => {
-      const regla = await E.llamar(fab.regla_save, { body: { idrow: 0, sistema: 'HONEYCOMB', cliente: 5, orden: 350, atributo: 'TEJIDO', articulos: '@TEJIDO_ARTICULO', consumo: '@TEJIDO_M2' } });
+      const regla = await E.llamar(fab.regla_save, { body: { idrow: 0, sistema: 'HONEYCOMB', cliente: 5, orden: 350, atributo: 'TEJIDO', articulos: '@TEJIDO_ARTICULO', consumo: '@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001' } });
       eq(regla.status, 200, 'regla del cliente 5');
       const b = await E.llamar(best.bestellungen_hinzu2, { params: { cli: 5, ref: 'TEST SUITE B' }, body: [linea(120, 100, 1, OPACO, { id: 8, text: 'BEIGE' }, PERFIL_BLANCO, MANUAL)] });
       await E.esperar();

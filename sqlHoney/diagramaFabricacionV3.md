@@ -64,7 +64,7 @@ sequenceDiagram
     DB-->>API: componentes de los tipos 1-4 y 7 (getDetail)
     API->>DB: sp_fichero_produccion_2 (si se pide el fichero)
     Note right of DB: L SOL_PEDIDOS_COLA · LINEAS · TIPO_7 · TIPO_7_FABRICACION<br/>L NH_CLIENTES_DOMICILIOS (Tienda)
-    DB-->>API: XML · un Detalles 22000 por unidad con C1..Cn
+    DB-->>API: XML · un Detalles 220.00 por unidad con C1..Cn
     API-->>XML: fichero de producción
     end
 
@@ -327,7 +327,7 @@ flowchart LR
 | `dev_sp_fabricacion_tipo_1`, `temp_sp_fabricacion_tipo_2/3/4` | existentes | Fabricación programada a mano de los tipos 1-4 (candidatos a migrar). |
 | `temp_sp_fabricacion_tipo_7` | **modificado** (reescrito) | Envoltorio del motor para el tipo 7. |
 | `sol_pedidos_cola_tipo_7_add` | **modificado** | Alta de la HoneyComb con su línea, como los demás tipos. |
-| `sp_fichero_produccion_2` | **modificado** | XML: bloque `articulo = 7` → `22000`. |
+| `sp_fichero_produccion_2` | **modificado** | XML: bloque `articulo = 7` → `220.00`. |
 | `sp_fabricacion_reglas_parametros` | **nuevo** | Parámetros de una línea (columnas y fórmulas). |
 | `sp_fabricacion_reglas_aplicar` | **nuevo** | Reglas del sistema y cliente → componentes. |
 | `fn_fabricacion_condicion` | **nuevo** | Evalúa una condición. |

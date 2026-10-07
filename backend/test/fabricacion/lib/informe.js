@@ -70,7 +70,7 @@ function ok(condicion, mensaje) {
 
 /* Números (los decimal de SQL llegan como number) con tolerancia de redondeo */
 function num(real, esperado, que) {
-  if (real === null || real === undefined || Math.abs(Number(real) - Number(esperado)) > 0.0001) {
+  if (real === null || real === undefined || Math.abs(Number(real) - Number(esperado)) > 0.00001) {
     throw new Error((que ? que + ': ' : '') + 'esperado ' + esperado + ', obtenido ' + texto(real));
   }
 }

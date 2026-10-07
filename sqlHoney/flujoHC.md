@@ -14,7 +14,7 @@ funciones y endpoints que intervienen, y el registro de cambios hechos en la bas
 
 ```
 Configurador HoneyComb ──► Alta del pedido ──► Generación de fabricación ──► Hoja de fabricación / XML
- (precio por tarifa)       (cabecera, línea     (motor de reglas v3:           (22000 + componentes
+ (precio por tarifa)       (cabecera, línea     (motor de reglas v3:           (220.00 + componentes
                             y datos tipo 7)      parámetros → reglas →          C1..Cn por unidad)
                                                  componentes)
                     Pantalla artikeln_fab_cd_v3: configura parámetros y reglas, y simula
@@ -49,7 +49,7 @@ flowchart TD
     G --> L[(SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS<br/>SOL_PEDIDOS_COLA_TIPO_7_FABRICACION)]
     L --> M[ARTICULOS · SOL_ARTICULOS_UNIDADES<br/>descripción, unidad, cod_sol…]
 
-    F -->|file = 1| X[sp_fichero_produccion_2<br/>bloque articulo = 7 → 22000]
+    F -->|file = 1| X[sp_fichero_produccion_2<br/>bloque articulo = 7 → 220.00]
     X --> L
 ```
 
@@ -112,7 +112,7 @@ Con `@real <> 1` no hace nada: no existen tablas `temp_` de tipo 7 para presupue
 
 ```xml
 <Detalles>
-  <Articulo>22000</Articulo>
+  <Articulo>220.00</Articulo>
   <Descripcion>LEROY MERLIN | HONEYCOMB</Descripcion>   <!-- LEROY MERLIN si cliente 1 o 5 -->
   <DescCliente>refcliente</DescCliente>
   <Unidades>1</Unidades>
@@ -206,7 +206,7 @@ parámetros que se pasa a las funciones de condición y consumo. Es el mismo tip
 | `sp_pedidos_cola_add` | existente | Crea la cabecera del pedido en `SOL_PEDIDOS_COLA` y devuelve su id. |
 | `sol_pedidos_cola_tipo_7_add` | **modificado** | Alta de una HoneyComb: crea la línea tipo 7 en `SOL_PEDIDOS_COLA_LINEAS` y la fila en `SOL_PEDIDOS_COLA_TIPO_7` enlazada a esa línea. Con `@id <> 0` actualiza los datos y las medidas y cantidad de la línea. |
 | `sp_fabricacion_generate` | existente | Router de la fabricación de pedidos Solarmanes/Leroy: ejecuta los procedimientos de los tipos 1, 2, 3, 4 y 7 y, si se pide, el XML. |
-| `sp_fichero_produccion_2` | **modificado** | Genera el XML de producción de todas las líneas del pedido. Añade el bloque `@articulo = 7` (HoneyComb → `22000`); el resto del procedimiento queda idéntico. |
+| `sp_fichero_produccion_2` | **modificado** | Genera el XML de producción de todas las líneas del pedido. Añade el bloque `@articulo = 7` (HoneyComb → `220.00`); el resto del procedimiento queda idéntico. |
 | `sp_ObtenerPrecioHoneycomb` | existente | Precio de tarifa HoneyComb por ancho × alto (configurador). |
 
 ### 6.2 Motor de reglas (nuevos, genéricos por sistema)
@@ -303,7 +303,7 @@ obligatorio porque el motor usa métodos XML. Copias de lo anterior en `sqlHoney
 | `03_migracion_lineas_tipo_7.sql` | **Datos:** para cada fila antigua de `SOL_PEDIDOS_COLA_TIPO_7` (`idrow` = pedido) crea su línea tipo 7 y repunta `idrow`. En DEV se migraron 2 filas (pedidos 16866 y 16950). |
 | `04_temp_sp_fabricacion_tipo_7.sql` | **Crea** `fn_fabricacion_condicion`, `sp_fabricacion_evaluar`, `sp_fabricacion_reglas_parametros` y `sp_fabricacion_reglas_aplicar`. **Reescribe** `temp_sp_fabricacion_tipo_7`. |
 | `05_sps_configuracion_fabricacion.sql` | **Crea** `sp_fabricacion_regla_add/_edit/_update/_borrar` y `sp_fabricacion_parametro_edit/_borrar`. **Elimina**, si existen, los `sp_honeycomb_fabricacion_*` de la primera versión. |
-| `06_sp_fichero_produccion_2.sql` | **Modifica** `sp_fichero_produccion_2`: añade el bloque HoneyComb (`22000`). La versión de partida es idéntica en DEV, TEST y PROD. |
+| `06_sp_fichero_produccion_2.sql` | **Modifica** `sp_fichero_produccion_2`: añade el bloque HoneyComb (`220.00`). La versión de partida es idéntica en DEV, TEST y PROD. |
 
 **Otros cambios hechos en DEV durante el desarrollo** (no hay que llevarlos a PROD):
 - `sp_honeycomb_fabricacion_*`: primera versión, sustituida por los `sp_fabricacion_*`.

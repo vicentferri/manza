@@ -13,7 +13,7 @@ const E = require('../lib/entorno');
 
 const UTIL = path.join(E.FRONTEND, 'src', 'app', 'routes', 'herstellen', 'artikeln-fac-cd-v3', 'fabricacion-reglas.util.ts');
 const PARAMETROS = ['@CANTIDAD', '@ANCHO', '@ALTO', '@TEJIDO_COLOR_ID', '@TEJIDO_COLOR', '@COLOR_PERFIL', '@ACCIONAMIENTO',
-  '@TEJIDO_REFERENCIA', '@TEJIDO_ARTICULO', '@TEJIDO_ANCHO', '@TEJIDO_ALTO', '@TEJIDO_M2'];
+  '@TEJIDO_REFERENCIA', '@TEJIDO_ARTICULO', '@TEJIDO_ANCHO', '@TEJIDO_ALTO'];
 
 function cargarUtil() {
   const ts = require(path.join(E.FRONTEND, 'node_modules', 'typescript'));
@@ -106,13 +106,25 @@ module.exports = async function (inf) {
   await inf.test('Regla completa: artículos fijos, artículo según el pedido y número de consumos', () => {
     const v = (regla) => u.validarRegla(regla, PARAMETROS);
     eq(v({ articulos: '16472,16476', consumo: '@ANCHO -- 1.5;@ANCHO' }).total, 0, 'dos artículos, dos consumos');
-    eq(v({ articulos: '@TEJIDO_ARTICULO', consumo: '@TEJIDO_M2' }).total, 0, 'tejido según el pedido');
-    eq(v({ articulos: '16472;@TEJIDO_ARTICULO', consumo: '1;@TEJIDO_M2' }).total, 0, 'mezcla con ;');
+    eq(v({ articulos: '@TEJIDO_ARTICULO', consumo: '@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001' }).total, 0, 'tejido según el pedido');
+    eq(v({ articulos: '16472;@TEJIDO_ARTICULO', consumo: '1;@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001' }).total, 0, 'mezcla con ;');
+    /* Medidas propias del componente (XML P1/P2) */
+    eq(v({ articulos: '@TEJIDO_ARTICULO', consumo: '1', param_ancho: '@TEJIDO_ANCHO', param_alto: '@tejido_alto' }).total, 0, 'medidas del tejido');
+    eq(v({ articulos: '1', consumo: '1', param_ancho: '@NO_HAY', param_alto: '' }).campos.medidas, ['El parámetro @NO_HAY no existe'], 'medida inexistente');
     eq(v({ articulos: '', consumo: '1' }).campos.articulos, ['La regla no tiene artículos'], 'sin artículos');
     eq(v({ articulos: '@NO_HAY', consumo: '1' }).campos.articulos, ['El parámetro @NO_HAY no existe'], 'parámetro inexistente');
     eq(v({ articulos: 'abc', consumo: '1' }).campos.articulos, ['Id de artículo no válido: abc'], 'id no válido');
     eq(v({ articulos: '1e5', consumo: '1' }).campos.articulos, ['Id de artículo no válido: 1e5'], '1e5 no es un id');
     eq(v({ articulos: '1,2', consumo: '1;2;3' }).campos.consumo, ['Hay 3 consumos para 2 artículos'], 'consumos de más');
+    /* Artículo según el pedido: tiene que ser un parámetro que dé el id de un artículo */
+    const dan = ['@TEJIDO_ARTICULO'];
+    const va = (articulos) => u.validarRegla({ articulos, consumo: '1' }, PARAMETROS, dan);
+    eq(va('@TEJIDO_ARTICULO').total, 0, '@TEJIDO_ARTICULO da un artículo');
+    eq(va('16472,@TEJIDO_ARTICULO').total, 0, 'fijo + dinámico');
+    eq(va('@TEJIDO_REFERENCIA').campos.articulos, ['El parámetro @TEJIDO_REFERENCIA no da un artículo (use una búsqueda que devuelva el id del artículo)'], 'la Referencia no es un artículo');
+    eq(va('@ANCHO').total, 1, 'una columna tampoco');
+    eq(va('@NO_HAY').campos.articulos, ['El parámetro @NO_HAY no existe'], 'inexistente: un solo error');
+    eq(v({ articulos: '@TEJIDO_REFERENCIA', consumo: '1' }).total, 0, 'sin la lista, como antes');
     const r = v({ articulos: '1', consumo: '@NO', nombre_parametro1: '@NO == 1', nombre_parametro2: 'mal' });
     eq(Object.keys(r.campos).sort(), ['consumo', 'nombre_parametro1', 'nombre_parametro2'], 'errores por campo');
     eq(r.total, 3, 'total de errores');

@@ -24,7 +24,7 @@ const PERMITIDOS = [
   'SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS', 'SOL_FABRICACION_BUSQUEDAS', 'SOL_FABRICACION_TABLAS', 'SOL_FABRICACION_TABLAS_VALORES',
   'sol_pedidos_cola_tipo_7_add', 'temp_sp_fabricacion_tipo_7', 'sp_fichero_produccion_2',
   'fn_fabricacion_condicion', 'fn_fabricacion_pos_operador', 'sp_fabricacion_evaluar', 'sp_fabricacion_reglas_parametros',
-  'fn_fabricacion_articulos_detalle', 'sp_fabricacion_reglas_aplicar',
+  'fn_fabricacion_articulos_detalle', 'sp_fabricacion_reglas_aplicar', 'fn_fabricacion_parametro_medida',
   'sp_fabricacion_regla_add', 'sp_fabricacion_regla_update', 'sp_fabricacion_regla_edit', 'sp_fabricacion_regla_borrar',
   'sp_fabricacion_parametros_valores', 'sp_fabricacion_parametro_edit', 'sp_fabricacion_parametro_borrar',
   'sp_fabricacion_tabla_guardar', 'sp_fabricacion_tabla_borrar'
@@ -34,7 +34,7 @@ const MOTOR = ['fn_fabricacion_condicion', 'fn_fabricacion_pos_operador', 'sp_fa
   'sp_fabricacion_reglas_aplicar', 'fn_fabricacion_articulos_detalle'];
 
 function sinHoneyComb(xml) {
-  return String(xml).replace(/<Detalles><Articulo>22000<\/Articulo>[\s\S]*?<\/Detalles>/g, '');
+  return String(xml).replace(/<Detalles><Articulo>220\.00<\/Articulo>[\s\S]*?<\/Detalles>/g, '');
 }
 
 async function xmlDe(procedimiento, idPedido) {
@@ -101,13 +101,39 @@ module.exports = async function (inf) {
       const distintos = [];
       let conDetalles = 0;
       for (const p of pedidos) {
-        const antes = sinHoneyComb(await xmlDe('sp_fichero_produccion_2_original_test', p));
-        const ahora = sinHoneyComb(await xmlDe('sp_fichero_produccion_2', p));
+        /* Se comparan las líneas ordenadas: la versión original no garantiza el orden (ver test siguiente) */
+        const lineas = (x) => sinHoneyComb(x).split(/(?=<)/).sort().join('');
+        const antes = lineas(await xmlDe('sp_fichero_produccion_2_original_test', p));
+        const ahora = lineas(await xmlDe('sp_fichero_produccion_2', p));
         if (antes !== ahora) distintos.push(p);
         if (ahora.indexOf('<Detalles>') !== -1) conDetalles++;
       }
       eq(distintos, [], 'pedidos con XML distinto fuera de la HoneyComb');
       ok(conDetalles >= 10, 'pocos pedidos con contenido para comparar (' + conDetalles + ')');
+    });
+
+    await inf.test('XML: las líneas salen en orden (empieza en <root>, acaba en </root>, etiquetas equilibradas)', async () => {
+      const malos = [], conNulos = [];
+      for (const p of pedidos) {
+        const filas = await E.filas('exec sp_fichero_produccion_2 @p', { p });
+        if (filas.some(f => f.value === null)) {
+          conNulos.push(p);
+          continue;
+        }
+        const xml = filas.map(f => f.value).join('');
+        const pila = [];
+        let bien = /^<root>/.test(xml) && /<\/root>$/.test(xml);
+        (xml.match(/<\/?[A-Za-z_][\w.\-]*>/g) || []).forEach(t => {
+          if (t.charAt(1) === '/') { if (pila.pop() !== t.substring(2, t.length - 1)) bien = false; }
+          else pila.push(t.substring(1, t.length - 1));
+        });
+        if (!bien || pila.length) malos.push(p);
+      }
+      eq(malos, [], 'pedidos con el XML desordenado');
+      if (conNulos.length) {
+        inf.aviso('[preexistente] XML con una línea vacía (NULL) en los pedidos ' + conNulos.join(', ') + ': falta la apertura de <Detalles>',
+          'Pasa cuando un dato que se concatena es NULL (p. ej. TipoLama en el tipo 3). Afecta a otros productos, no a la HoneyComb.');
+      }
     });
 
     await inf.test('La fabricación HoneyComb no toca otros tipos ni otros pedidos', async () => {
@@ -137,7 +163,7 @@ module.exports = async function (inf) {
       const malos = [];
       for (const p of conHoneyComb) {
         const xml = await xmlDe('sp_fichero_produccion_2', p);
-        const hc = (xml.match(/<Detalles><Articulo>22000<\/Articulo>[\s\S]*?<\/Detalles>/g) || []).join('');
+        const hc = (xml.match(/<Detalles><Articulo>220\.00<\/Articulo>[\s\S]*?<\/Detalles>/g) || []).join('');
         if (/null/i.test(hc)) malos.push(p + ': contiene null');
         if (/SIN ART/i.test(hc)) malos.push(p + ': contiene SIN ARTÍCULO');
         const vacios = (hc.match(/<C\d+><\/C\d+>/g) || []).length;

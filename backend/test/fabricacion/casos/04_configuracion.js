@@ -40,6 +40,19 @@ module.exports = async function (inf) {
       eq((await post(fab.parametro_delete, { sistema: HC, name: '@TS_X2' })).status, 404, 'borrar otra vez');
     });
 
+    await inf.test('Parámetros: devuelve_articulo solo en las búsquedas que dan el id de un artículo', async () => {
+      const lista = (await get(fab.parametros, { sistema: HC })).data.Table;
+      const dan = lista.filter(p => p.devuelve_articulo === 1).map(p => p.name);
+      eq(dan, ['@TEJIDO_ARTICULO'], 'parámetros que ofrece "Artículo según el pedido"');
+      eq(lista.find(p => p.name === '@TEJIDO_REFERENCIA').devuelve_articulo, 0, 'la Referencia no');
+      eq(lista.filter(p => p.tipo !== 'BUSQUEDA' && p.devuelve_articulo !== 0).length, 0, 'ni columnas, fórmulas ni tablas');
+      /* Una búsqueda de otro sistema no cuenta, y una nueva sobre ARTICULOS sí */
+      await E.q(`insert into SOL_FABRICACION_BUSQUEDAS(busqueda, sistema, descripcion, tabla, clave, resultado)
+        values ('TS_ART', 'TSUITE2', 'x', 'ARTICULOS', 'cod_solupyme', 'idrow')`);
+      eq((await post(fab.parametro_edit, { sistema: HC, name: '@TS_AJENA', tipo: 'BUSQUEDA', origen: '@TEJIDO_REFERENCIA', orden: 950, busqueda: 'TS_ART' })).status, 400, 'búsqueda de otro sistema');
+      await E.q("delete from SOL_FABRICACION_BUSQUEDAS where busqueda = 'TS_ART'");
+    });
+
     await inf.test('Parámetros: BUSQUEDA y TABLA guardan su búsqueda/tabla; al cambiar de tipo se limpian', async () => {
       eq((await post(fab.parametro_edit, { sistema: HC, name: '@TS_B', tipo: 'BUSQUEDA', origen: '@tejido_color_id', orden: 905, busqueda: 'HC_TEJIDO_REFERENCIA' })).status, 200, 'búsqueda');
       eq(await param('@TS_B'), [{ name: '@TS_B', tipo: 'BUSQUEDA', origen: '@TEJIDO_COLOR_ID', orden: 905, busqueda: 'HC_TEJIDO_REFERENCIA', tabla: null }], 'búsqueda guardada');
@@ -63,7 +76,7 @@ module.exports = async function (inf) {
         [{ sistema: HC, name: '@A', tipo: 'COLUMNA', origen: 'no_existe' }, 'La columna no existe'],
         [{ sistema: HC, name: '@A', tipo: 'FORMULA', origen: '  ' }, 'La fórmula no puede estar vacía'],
         [{ sistema: HC, name: '@A', tipo: 'BUSQUEDA', origen: '@NO', orden: 900, busqueda: 'HC_TEJIDO_REFERENCIA' }, 'El parámetro de entrada'],
-        [{ sistema: HC, name: '@A', tipo: 'BUSQUEDA', origen: '@TEJIDO_M2', orden: 100, busqueda: 'HC_TEJIDO_REFERENCIA' }, 'El parámetro de entrada'],
+        [{ sistema: HC, name: '@A', tipo: 'BUSQUEDA', origen: '@TEJIDO_ALTO', orden: 100, busqueda: 'HC_TEJIDO_REFERENCIA' }, 'El parámetro de entrada'],
         [{ sistema: HC, name: '@TS_X1', tipo: 'TABLA', origen: '@TS_X1', orden: 950, tabla: 'ALTO_PLIEGUES' }, 'El parámetro de entrada'],
         [{ sistema: HC, name: '@A', tipo: 'BUSQUEDA', origen: '@ALTO', orden: 'abc', busqueda: 'HC_TEJIDO_REFERENCIA' }, 'El parámetro de entrada'],
         [{ sistema: HC, name: '@A', tipo: 'BUSQUEDA', origen: '@ALTO', orden: 900, busqueda: 'NOPE' }, 'Búsqueda no válida'],
@@ -168,6 +181,23 @@ module.exports = async function (inf) {
       eq((await post(fab.regla_save, Object.assign({}, base, { idrow: id, sistema: 'TSUITE2' }))).status, 404, 'no cambia de sistema');
       eq((await post(fab.regla_save, Object.assign({}, base, { idrow: 0, sistema: 'NOPE' }))).data.message, 'Sistema no válido');
       eq((await post(fab.regla_save, Object.assign({}, base, { idrow: 0, cliente: 99999999 }))).data.message, 'Cliente no válido');
+
+      /* Medidas propias del componente: parámetro del sistema, en mayúsculas y con @; vacío = las de la línea */
+      eq((await post(fab.regla_save, Object.assign({}, base, { idrow: id, param_ancho: 'tejido_ancho', param_alto: '@TEJIDO_ALTO' }))).status, 200, 'medidas');
+      eq((await E.filas('select param_ancho, param_alto from SOL_ARTICULOS_FABRICACION_RELACION_V2 where idrow = @id', { id }))[0],
+        { param_ancho: '@TEJIDO_ANCHO', param_alto: '@TEJIDO_ALTO' }, 'medidas guardadas');
+      const lista = (await get(fab.reglas, { sistema: HC })).data.Table.find(x => x.idrow === id);
+      eq([lista.param_ancho, lista.param_alto], ['@TEJIDO_ANCHO', '@TEJIDO_ALTO'], 'en el listado');
+      let r3 = await post(fab.regla_save, Object.assign({}, base, { idrow: id, param_ancho: '@NO_EXISTE' }));
+      eq([r3.status, r3.data.message], [400, 'El parámetro de ancho o alto del componente no existe'], 'medida inexistente al editar');
+      r3 = await post(fab.regla_save, Object.assign({}, base, { idrow: 0, param_alto: '@NO_EXISTE' }));
+      eq([r3.status, r3.data.message], [400, 'El parámetro de ancho o alto del componente no existe'], 'medida inexistente al crear');
+      eq((await post(fab.regla_update, { idrow: id, campo: 'param_alto', valor: '@NO_EXISTE' })).status, 400, 'medida inexistente en la tabla');
+      eq((await post(fab.regla_update, { idrow: id, campo: 'param_alto', valor: '' })).status, 200, 'quitar medida');
+      eq((await E.filas('select param_ancho, param_alto from SOL_ARTICULOS_FABRICACION_RELACION_V2 where idrow = @id', { id }))[0],
+        { param_ancho: '@TEJIDO_ANCHO', param_alto: null }, 'alto vuelve a ser el de la línea');
+      eq((await post(fab.regla_save, Object.assign({}, base, { idrow: id }))).status, 200, 'guardar sin medidas');
+      eq((await E.filas('select param_ancho from SOL_ARTICULOS_FABRICACION_RELACION_V2 where idrow = @id', { id }))[0].param_ancho, null, 'sin medidas');
 
       const upd = (campo, valor) => post(fab.regla_update, { idrow: id, campo, valor });
       eq((await upd('sistema', 'X')).status, 400, 'campo no editable');

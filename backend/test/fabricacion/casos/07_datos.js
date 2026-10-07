@@ -38,7 +38,7 @@ module.exports = async function (inf) {
   const parametros = await E.filas('select name, tipo, origen, orden, busqueda, tabla from SOL_FABRICACION_PARAMETROS where sistema = @s order by orden', { s: HC });
   const porNombre = {};
   parametros.forEach(p => { porNombre[p.name.toUpperCase()] = p; });
-  const reglas = await E.filas(`select idrow, cliente, orden, atributo, articulos, nombre_parametro1, nombre_parametro2, nombre_parametro3, nombre_parametro4, consumo
+  const reglas = await E.filas(`select idrow, cliente, orden, atributo, articulos, nombre_parametro1, nombre_parametro2, nombre_parametro3, nombre_parametro4, consumo, param_ancho, param_alto
     from SOL_ARTICULOS_FABRICACION_RELACION_V2 where sistema = @s`, { s: HC });
 
   await inf.test('Tabla ALTO_PLIEGUES: claves de 1 en 1 sin huecos y pliegues que no bajan al subir el alto', async () => {
@@ -93,16 +93,31 @@ module.exports = async function (inf) {
     eq(malos, []);
   });
 
+  await inf.test('Regla del tejido: existe, sin condiciones, artículo @TEJIDO_ARTICULO, consumo y medidas de corte', () => {
+    const tejido = reglas.filter(r => r.cliente === null && String(r.articulos).trim().toUpperCase() === '@TEJIDO_ARTICULO');
+    eq(tejido.length, 1, 'reglas generales de tejido (si falta, ningún pedido lleva tejido en la hoja ni en el XML)');
+    eq([tejido[0].nombre_parametro1, tejido[0].nombre_parametro2, tejido[0].nombre_parametro3, tejido[0].nombre_parametro4].map(c => String(c || '').trim()), ['', '', '', ''], 'sin condiciones');
+    eq(String(tejido[0].consumo).replace(/\s+/g, '').toUpperCase(), '@TEJIDO_ANCHO**@TEJIDO_ALTO*T0.0001', 'consumo');
+    eq([tejido[0].param_ancho, tejido[0].param_alto], ['@TEJIDO_ANCHO', '@TEJIDO_ALTO'], 'medidas del tejido en el XML');
+    ['@TEJIDO_REFERENCIA', '@TEJIDO_ARTICULO', '@TEJIDO_ANCHO', '@TEJIDO_ALTO']
+      .forEach(p => ok(porNombre[p], 'falta el parámetro ' + p));
+  });
+
   await inf.test('Reglas: artículos que existen y parámetros que existen', async () => {
+    /* Parámetros BUSQUEDA cuyo resultado es ARTICULOS.idrow (los únicos válidos como artículo según el pedido) */
+    const dan = (await E.filas(`select upper(p.name) as name from SOL_FABRICACION_PARAMETROS p
+      where p.sistema = @s and p.tipo = 'BUSQUEDA' and exists (select 1 from SOL_FABRICACION_BUSQUEDAS b
+        where b.busqueda = p.busqueda and (b.sistema is null or b.sistema = p.sistema) and upper(b.tabla) = 'ARTICULOS' and upper(b.resultado) = 'IDROW')`, { s: HC })).map(x => x.name);
     const ids = [...new Set([].concat(...reglas.map(r => String(r.articulos || '').replace(/;/g, ',').split(',').map(a => a.trim()).filter(a => /^\d+$/.test(a)))))];
     const existen = ids.length ? (await E.filas('select idrow from articulos where idrow in (' + ids.join(',') + ')')).map(a => String(a.idrow)) : [];
     const malos = ids.filter(i => existen.indexOf(i) === -1).map(i => 'artículo ' + i + ' no existe');
     reglas.forEach(r => {
-      const usados = [r.nombre_parametro1, r.nombre_parametro2, r.nombre_parametro3, r.nombre_parametro4, r.consumo, r.articulos].map(parametrosUsados);
+      const usados = [r.nombre_parametro1, r.nombre_parametro2, r.nombre_parametro3, r.nombre_parametro4, r.consumo, r.articulos, r.param_ancho, r.param_alto].map(parametrosUsados);
       [].concat(...usados).filter(u => !porNombre[u]).forEach(u => malos.push('regla ' + r.idrow + ' (' + r.atributo + ') usa ' + u + ', que no existe'));
       String(r.articulos || '').split(/[,;]/).map(a => a.trim()).filter(a => a.charAt(0) === '@').forEach(a => {
         const p = porNombre[a.toUpperCase()];
         if (p && p.tipo !== 'BUSQUEDA') malos.push('regla ' + r.idrow + ': el artículo ' + a + ' es un parámetro ' + p.tipo + ', no una búsqueda');
+        else if (p && dan.indexOf(p.name.toUpperCase()) === -1) malos.push('regla ' + r.idrow + ': el artículo ' + a + ' no da el id de un artículo (su búsqueda no devuelve ARTICULOS.idrow)');
       });
     });
     eq(malos, []);
