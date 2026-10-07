@@ -3,7 +3,6 @@
    Único cambio respecto a la versión anterior (backup/sp_fichero_produccion_2_DEV_20260929.sql):
    se añade el bloque "if @articulo = 7" que genera <Articulo>22000</Articulo>
    con los componentes de SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.
-   2026-10-06: las líneas sin artículo (articulo NULL, aviso "SIN ARTÍCULO") no se envían al XML.
    El resto del procedimiento queda idéntico.
    ===================================================================== */
 set ansi_nulls on
@@ -424,7 +423,7 @@ begin
 				declare itLineas2 cursor for
 				select isnull(cod_sol,''),cantidad,replace(cast(consumo as decimal(12,6)),'.',','),
 				replace(cast(0.01*ancho as decimal(12,6)),'.',','),replace(cast(0.01*alto as decimal(12,6)),'.',','),seccion from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION
-				where idrow=@idrow and articulo is not null /* sin articulo (aviso SIN ARTICULO) no va al XML */
+				where idrow=@idrow
 				order by orden,id
 					open itLineas2
 					fetch next from itLineas2 into @cod_sol,@cantidad2,@cod_factor,@cod_p1,@cod_p2,@cod_seccion

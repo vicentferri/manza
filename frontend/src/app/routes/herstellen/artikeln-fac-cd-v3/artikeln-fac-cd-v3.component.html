@@ -46,11 +46,50 @@
                   <select
                     class="form-control form-control-sm"
                     [(ngModel)]="modelParam.tipo"
-                    (change)="erroresParametro = []"
+                    (change)="CambiarTipoParametro()"
                     style="width: 150px"
                   >
-                    <option value="COLUMNA">Dato del pedido</option>
-                    <option value="FORMULA">Fórmula</option>
+                    <option value="COLUMNA">{{ tiposParametro.COLUMNA }}</option>
+                    <option value="FORMULA">{{ tiposParametro.FORMULA }}</option>
+                    <option value="BUSQUEDA">{{ tiposParametro.BUSQUEDA }}</option>
+                    <option value="TABLA">{{ tiposParametro.TABLA }}</option>
+                  </select>
+                </div>
+                <div style="float: left; padding: 0.2rem" *ngIf="modelParam.tipo == 'BUSQUEDA' || modelParam.tipo == 'TABLA'">
+                  <label>Parámetro de entrada</label>
+                  <select
+                    class="form-control form-control-sm"
+                    [(ngModel)]="modelParam.origen"
+                    (ngModelChange)="erroresParametro = []"
+                    style="width: 200px"
+                    title="Parámetro cuyo valor se busca (tiene que tener un orden menor)"
+                  >
+                    <option value="">— parámetro —</option>
+                    <option *ngFor="let p of parametrosAnteriores()" [value]="p">{{ p }}</option>
+                  </select>
+                </div>
+                <div style="float: left; padding: 0.2rem" *ngIf="modelParam.tipo == 'BUSQUEDA'">
+                  <label>Búsqueda</label>
+                  <select
+                    class="form-control form-control-sm"
+                    [(ngModel)]="modelParam.busqueda"
+                    (ngModelChange)="erroresParametro = []"
+                    style="width: 380px"
+                  >
+                    <option value="">— búsqueda —</option>
+                    <option *ngFor="let b of busquedas" [value]="b.busqueda">{{ b.descripcion }}</option>
+                  </select>
+                </div>
+                <div style="float: left; padding: 0.2rem" *ngIf="modelParam.tipo == 'TABLA'">
+                  <label>Tabla de valores</label>
+                  <select
+                    class="form-control form-control-sm"
+                    [(ngModel)]="modelParam.tabla"
+                    (ngModelChange)="erroresParametro = []"
+                    style="width: 250px"
+                  >
+                    <option value="">— tabla —</option>
+                    <option *ngFor="let t of tablas" [value]="t.tabla">{{ t.tabla }}{{ t.descripcion ? ' · ' + t.descripcion : '' }}</option>
                   </select>
                 </div>
                 <div style="float: left; padding: 0.2rem" *ngIf="modelParam.tipo == 'COLUMNA'">
@@ -104,9 +143,12 @@
             <div class="row">
               <div class="col col-12">
                 <small class="text-muted">
-                  Un parámetro con el mismo nombre se sobrescribe. Las fórmulas se calculan en orden y
-                  solo pueden usar parámetros con un orden menor: <b>++</b> suma, <b>--</b> resta, <b>**</b> multiplica,
-                  <b>*R</b> multiplica y redondea arriba (p. ej. <code>@ANCHO -- 1.5</code>, <code>@ALTO ** 2</code>).
+                  Un parámetro con el mismo nombre se sobrescribe. Los parámetros se calculan en orden y
+                  solo pueden usar parámetros con un orden menor. Fórmulas: <b>++</b> suma, <b>--</b> resta, <b>**</b> multiplica,
+                  <b>*R</b> multiplica y redondea arriba, <b>*T</b> multiplica y deja 2 decimales sin redondear; se puede operar
+                  con números o con otros parámetros (p. ej. <code>@ANCHO -- 5</code>, <code>@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001</code>).
+                  <b>Búsqueda</b>: busca el valor de otro parámetro en un catálogo (p. ej. color → artículo).
+                  <b>Tabla de valores</b>: el valor de la pestaña Tablas para el parámetro de entrada (si no está exacto, el siguiente mayor).
                   Pulse una fila para editarla.
                 </small>
               </div>
@@ -173,6 +215,90 @@
                 </div>
               </div>
             </div>
+          </div>
+        </tab>
+
+        <!-- ======================= TABLAS ======================= -->
+        <tab>
+          <ng-template tabHeading
+            ><i class="icon-list"></i>&nbsp;Tablas
+          </ng-template>
+          <div class="card-body card-block">
+            <div class="fab-toolbar">
+              <select class="form-control form-control-sm fab-tabla-sel" [ngModel]="tablaSel" (ngModelChange)="SeleccionarTabla($event)">
+                <option value="" *ngIf="tablaEdit.nueva">— tabla nueva —</option>
+                <option *ngFor="let t of tablas" [value]="t.tabla">
+                  {{ t.tabla }}{{ t.descripcion ? ' · ' + t.descripcion : '' }} ({{ t.filas }} filas)
+                </option>
+              </select>
+              <button class="btn btn-outline-primary btn-sm" (click)="NuevaTabla()">
+                <i class="fa fa-plus"></i>&nbsp;Nueva tabla
+              </button>
+              <label class="btn btn-outline-secondary btn-sm mb-0" title="Dos columnas: clave y valor. La primera fila son las cabeceras.">
+                <i class="fa fa-file-excel-o"></i>&nbsp;Importar Excel
+                <input type="file" accept=".xlsx,.xls" hidden (change)="ImportarTabla($event)" />
+              </label>
+              <button class="btn btn-primary btn-sm" (click)="GuardarTabla()" [disabled]="guardandoTabla || erroresTabla().length > 0">
+                <i class="fa fa-save"></i>&nbsp;Guardar
+              </button>
+              <button class="btn btn-outline-danger btn-sm" (click)="BorrarTabla()" *ngIf="!tablaEdit.nueva">
+                <i class="fa fa-trash"></i>&nbsp;Borrar
+              </button>
+              <small class="text-muted fab-toolbar-ayuda">
+                Un parámetro de tipo <b>Tabla de valores</b> toma la fila con la menor clave mayor o igual que su
+                entrada (150,5 usa la fila 151). Por encima de la última fila el valor queda vacío y el consumo sale -1.
+              </small>
+            </div>
+
+            <div class="form-row mt-2">
+              <div class="col-md-2">
+                <label>Nombre</label>
+                <input class="form-control form-control-sm fab-code-input" [(ngModel)]="tablaEdit.tabla"
+                  [disabled]="!tablaEdit.nueva" placeholder="ALTO_PLIEGUES" maxlength="50" />
+              </div>
+              <div class="col-md-4">
+                <label>Descripción</label>
+                <input class="form-control form-control-sm" [(ngModel)]="tablaEdit.descripcion" maxlength="150" />
+              </div>
+              <div class="col-md-2">
+                <label>Cabecera clave</label>
+                <input class="form-control form-control-sm" [(ngModel)]="tablaEdit.clave_texto" placeholder="Altura" maxlength="50" />
+              </div>
+              <div class="col-md-2">
+                <label>Cabecera valor</label>
+                <input class="form-control form-control-sm" [(ngModel)]="tablaEdit.valor_texto" placeholder="Pliegues (cm)" maxlength="50" />
+              </div>
+            </div>
+
+            <div class="fab-mensaje-error mt-2" *ngIf="erroresTabla().length > 0 && tablaEdit.valores.length > 0">
+              <i class="fa fa-exclamation-circle"></i> {{ erroresTabla()[0] }}
+              <span *ngIf="erroresTabla().length > 1"> (y {{ erroresTabla().length - 1 }} más)</span>
+            </div>
+
+            <div class="fab-tabla-valores mt-2">
+              <table class="table table-sm table-striped mb-0">
+                <thead>
+                  <tr>
+                    <th>{{ tablaEdit.clave_texto || 'Clave' }}</th>
+                    <th>{{ tablaEdit.valor_texto || 'Valor' }}</th>
+                    <th style="width: 40px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let v of tablaEdit.valores; let i = index">
+                    <td><input class="form-control form-control-sm" [(ngModel)]="v.clave" /></td>
+                    <td><input class="form-control form-control-sm" [(ngModel)]="v.valor" /></td>
+                    <td class="text-center">
+                      <i class="fa fa-trash fab-accion fab-accion-borrar" title="Quitar fila" (click)="QuitarFilaTabla(i)"></i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="text-muted p-2" *ngIf="tablaEdit.valores.length == 0">
+                Sin filas. Importe un Excel o añada filas.
+              </div>
+            </div>
+            <a class="fab-link" (click)="AnadirFilaTabla()"><i class="fa fa-plus"></i> Añadir fila</a>
           </div>
         </tab>
 
@@ -329,6 +455,12 @@
             <button class="btn btn-outline-primary btn-sm float-right" (click)="AbrirBuscador()">
               <i class="fa fa-search"></i>&nbsp;Añadir artículos
             </button>
+            <select class="form-control form-control-sm float-right fab-articulo-dinamico" *ngIf="parametrosArticulo().length > 0"
+              (change)="AnadirArticuloDinamico($event.target.value); $event.target.value = ''"
+              title="El artículo sale del pedido (p. ej. el tejido según el color elegido)">
+              <option value="">+ Artículo según el pedido…</option>
+              <option *ngFor="let p of parametrosArticulo()" [value]="p">{{ p }}</option>
+            </select>
           </div>
 
           <div class="form-check mb-2" *ngIf="regla.articulos.length > 1">
@@ -354,7 +486,7 @@
             <tbody>
               <tr *ngFor="let a of regla.articulos; let i = index">
                 <td class="fab-code">{{ a.cod_sol || a.idrow }}</td>
-                <td>{{ a.descripcion }}</td>
+                <td [class.fab-articulo-pedido]="a.dinamico">{{ a.descripcion }}</td>
                 <td>{{ a.descUnidad }}</td>
                 <td *ngIf="!consumoComun">
                   <ng-container *ngTemplateOutlet="editorConsumo; context: { $implicit: a.consumo, articulo: a }"></ng-container>
@@ -385,6 +517,11 @@
   </div>
 </div>
 
+<!-- Parámetros que se pueden usar como operando en las operaciones del consumo -->
+<datalist id="fab-operandos">
+  <option *ngFor="let p of nombresParametros" [value]="p"></option>
+</datalist>
+
 <!-- Editor de un consumo (tipo + campos) -->
 <ng-template #editorConsumo let-consumo let-articulo="articulo">
   <div class="fab-consumo-editor">
@@ -404,12 +541,14 @@
       <select class="form-control form-control-sm fab-consumo-oper" [(ngModel)]="consumo.operador">
         <option *ngFor="let o of operadoresConsumo" [value]="o.valor">{{ o.texto }}</option>
       </select>
-      <input class="form-control form-control-sm fab-consumo-num" [(ngModel)]="consumo.numero" />
+      <input class="form-control form-control-sm fab-consumo-num fab-consumo-operando" [(ngModel)]="consumo.numero" list="fab-operandos"
+        placeholder="nº o @PARAM" title="Un número o un parámetro (escriba @ para ver la lista)" />
       <ng-container *ngFor="let e of consumo.extra; let k = index">
         <select class="form-control form-control-sm fab-consumo-oper" [(ngModel)]="e.operador">
           <option *ngFor="let o of operadoresConsumo" [value]="o.valor">{{ o.texto }}</option>
         </select>
-        <input class="form-control form-control-sm fab-consumo-num" [(ngModel)]="e.numero" />
+        <input class="form-control form-control-sm fab-consumo-num fab-consumo-operando" [(ngModel)]="e.numero" list="fab-operandos"
+          placeholder="nº o @PARAM" title="Un número o un parámetro (escriba @ para ver la lista)" />
         <i class="fa fa-times fab-accion fab-accion-borrar" title="Quitar esta operación" (click)="QuitarOperacion(consumo, k)"></i>
       </ng-container>
       <button type="button" class="btn btn-outline-secondary btn-sm fab-consumo-mas" (click)="AnadirOperacion(consumo)"

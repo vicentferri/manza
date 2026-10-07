@@ -8,12 +8,13 @@ preparado para migrar otros sistemas (catálogo de sistemas) y para fabricacione
 
 | Script | Qué hace | DEV | TEST | PROD |
 |---|---|---|---|---|
-| `01_tablas_motor_fabricacion.sql` | `SOL_FABRICACION_SISTEMAS` (alta HONEYCOMB), `SOL_FABRICACION_PARAMETROS` (+11 parámetros base HoneyComb), columna `cliente` en `SOL_ARTICULOS_FABRICACION_RELACION_V2`, `SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS`, columnas `valores_tabla/valor/texto` en `SOL_FABRICACION_PARAMETROS` (catálogo de valores posibles, enlazado para los 8 parámetros de tejido, perfil y accionamiento) | ✅ 2026-10-05 | ⏳ | ⏳ |
+| `01_tablas_motor_fabricacion.sql` | `SOL_FABRICACION_SISTEMAS` (alta HONEYCOMB), `SOL_FABRICACION_PARAMETROS` (+11 parámetros base HoneyComb), columna `cliente` en `SOL_ARTICULOS_FABRICACION_RELACION_V2`, `SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS`, columnas `valores_tabla/valor/texto` en `SOL_FABRICACION_PARAMETROS` (catálogo de valores posibles, enlazado para los 8 parámetros de tejido, perfil y accionamiento). **2026-10-06 (tejido):** tipos de parámetro `BUSQUEDA` y `TABLA` (columnas `busqueda`, `tabla`), `SOL_FABRICACION_BUSQUEDAS` (3 búsquedas), `SOL_FABRICACION_TABLAS` / `_VALORES` | ✅ 2026-10-05 · ✅ 2026-10-06 (tejido) | ⏳ | ⏳ |
 | `02_sol_pedidos_cola_tipo_7_add.sql` | Crea la línea tipo 7 en `SOL_PEDIDOS_COLA_LINEAS`; `TIPO_7.idrow` = id de línea. **2026-10-06:** `@ancho`/`@alto` pasan de `INT` a `DECIMAL(12,2)` (medidas de 0,5 en 0,5 cm, rama `cambios_configurador`) | ✅ 2026-09-29 · ✅ 2026-10-06 (decimales) | ⏳ | ⏳ |
 | `03_migracion_lineas_tipo_7.sql` | Repunta las filas `TIPO_7` antiguas (idrow = pedido) a una línea nueva | ✅ 2026-09-29 (2 filas) | ⏳ | ⏳ |
-| `04_temp_sp_fabricacion_tipo_7.sql` | Motor genérico (`fn_fabricacion_condicion`, `fn_fabricacion_pos_operador`, `sp_fabricacion_evaluar` con cadenas de operaciones, `sp_fabricacion_reglas_parametros`, `sp_fabricacion_reglas_aplicar`) y el nuevo `temp_sp_fabricacion_tipo_7` | ✅ 2026-09-29 | ⏳ | ⏳ |
-| `05_sps_configuracion_fabricacion.sql` | SPs de reglas/parámetros (`sp_fabricacion_regla_*`, `sp_fabricacion_parametro_*`, `sp_fabricacion_parametros_valores`), limitados a sistemas del catálogo | ✅ 2026-10-05 | ⏳ | ⏳ |
-| `06_sp_fichero_produccion_2.sql` | Bloque XML `articulo = 7` → `<Articulo>22000</Articulo>` | ✅ 2026-09-29 | ⏳ | ⏳ |
+| `04_temp_sp_fabricacion_tipo_7.sql` | Motor genérico (`fn_fabricacion_condicion`, `fn_fabricacion_pos_operador`, `sp_fabricacion_evaluar` con cadenas de operaciones, `sp_fabricacion_reglas_parametros`, `sp_fabricacion_reglas_aplicar`) y el nuevo `temp_sp_fabricacion_tipo_7`. **2026-10-06 (tejido):** operandos que son parámetros (`@A ** @B`), operación `*T`, parámetros `BUSQUEDA`/`TABLA`, artículo dinámico (`@PARAM` en Artículos) con línea `SIN ARTÍCULO` si no se resuelve, `fn_fabricacion_articulos_detalle` | ✅ 2026-09-29 · ✅ 2026-10-06 (tejido) | ⏳ | ⏳ |
+| `05_sps_configuracion_fabricacion.sql` | SPs de reglas/parámetros (`sp_fabricacion_regla_*`, `sp_fabricacion_parametro_*`, `sp_fabricacion_parametros_valores`), limitados a sistemas del catálogo. **2026-10-06 (tejido):** `sp_fabricacion_parametro_edit` admite `BUSQUEDA`/`TABLA`; nuevos `sp_fabricacion_tabla_guardar` / `_borrar` | ✅ 2026-10-05 · ✅ 2026-10-06 (tejido) | ⏳ | ⏳ |
+| `06_sp_fichero_produccion_2.sql` | Bloque XML `articulo = 7` → `<Articulo>22000</Articulo>`. **2026-10-06:** las líneas sin artículo (`SIN ARTÍCULO`) no van al XML | ✅ 2026-09-29 · ✅ 2026-10-06 | ⏳ | ⏳ |
+| `07_datos_tabla_alto_pliegues_honeycomb.sql` | Datos: tabla `HONEYCOMB / ALTO_PLIEGUES` de `honeycombAltura.xlsx` (alto 30-280 cm → cm de tejido, 251 filas). Solo carga si no existe | ✅ 2026-10-06 | ⏳ | ⏳ |
 
 Scripts idempotentes. Ejecutar con `SET QUOTED_IDENTIFIER ON` (ya incluido; el motor usa métodos XML).
 Con sqlcmd: `sqlcmd -S ... -d <BD> -I -f 65001 -b -i <script>`.
@@ -24,13 +25,13 @@ la definición que haya en la BD y solo cambia esos dos tipos, sin traer el cuer
 así que el orden de aplicación entre las dos ramas da igual. Hasta que se aplique el 004, las columnas siguen en
 `int` y el decimal se redondea al guardar, como hasta ahora.
 
-**Orden de despliegue:** los SQL 01→06 y el backend a la vez que el frontend. El script 02 debe ir junto al 03
+**Orden de despliegue:** los SQL 01→07 y el backend a la vez que el frontend. El script 02 debe ir junto al 03
 para que no convivan pedidos nuevos y antiguos con distinto significado de `idrow`.
 
 `06` reemplaza `sp_fichero_produccion_2` completo (copia de DEV + bloque `if @articulo = 7`); la versión de PROD es
 idéntica a la de DEV, así que el script es válido tal cual.
 
-Copias de las versiones anteriores en `backup/` (DEV 2026-09-29).
+Copias de las versiones anteriores en `backup/` (DEV 2026-09-29; scripts 04-06 antes del tejido: `*_antes_tejido_20261006.sql`).
 
 Documentación: `flujoHC.md` (funcionamiento), `diagramaFabricacionV3.md` (diagramas y plantilla para otros
 productos), `GUIA_CONFIGURACION_FABRICACION.md` (uso de la pantalla).
@@ -46,6 +47,29 @@ productos), `GUIA_CONFIGURACION_FABRICACION.md` (uso de la pantalla).
   `fabricacion-reglas.util.ts` (nuevo): interpretación, reconstrucción y validación de condiciones y consumos.
 - Endpoints añadidos: `/fabricacion/articulos`, `/fabricacion/reglas/save` (`sp_fabricacion_regla_edit`),
   `/fabricacion/parametros/valores` (`sp_fabricacion_parametros_valores`: desplegable de valores en las condiciones).
+- **2026-10-06 — Referencia de colores de tejido (preparación del tejido en fabricación).** En
+  `manza/honeycomb-admin-data`, pestañas Colores de Tejido y Colores de Perfil, el campo *Referencia* ofrece un
+  desplegable de artículos Solupyme (código + descripción) para escribir bien el `cod_solupyme`. Sigue guardándose
+  como texto en `SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO.Referencia` / `..._COLORESPERFIL.Referencia` (sin FK ni validación). Endpoint nuevo
+  `GET /api/sm/honeycomb_articulos_buscar?q=` (`honeycomb.js`, `Auth.ensureAuth`; cada palabra en código o
+  descripción, máx. 50). Sin cambios en BD. Estado: DEV ✅ · TEST ⏳ · PROD ⏳.
+  - **2026-10-07:** el desplegable nativo (`datalist`) se cambia por una **ventana de búsqueda**: botón lupa junto a
+    Referencia → buscador con lista código/descripción → al pulsar un artículo se rellena. El campo ya no se puede
+    escribir a mano (solo elegir de la lista o quitar con ✕), así que desde la pantalla no se pueden guardar
+    códigos inexistentes; los que lleguen por *Importar Excel* siguen marcándose en rojo. Solo frontend
+    (`honeycomb-admin-data` ts/html/scss); mismo endpoint. Probado en DEV (búsqueda, elegir, Escape).
+- **2026-10-06 — Tejido en la fabricación (artículo y consumo automáticos).**
+  - Backend `fabricacion_reglas.js`: `GET /fabricacion/busquedas`, `GET /fabricacion/tablas`,
+    `GET /fabricacion/tablas/valores`, `POST /fabricacion/tablas` (guardar tabla completa; el XML para el SP se
+    construye solo con números), `POST /fabricacion/tablas/delete`; `parametros` devuelve `busqueda`/`tabla`;
+    `parametro_edit` los envía; la columna Artículos usa `fn_fabricacion_articulos_detalle` (admite `@PARAM`).
+  - Backend `honeycomb.js`: `GET /api/sm/honeycomb_articulos_existen?codigos=` (qué Referencias existen en Solupyme).
+  - Frontend v3: tipos de parámetro *Búsqueda* y *Tabla de valores*; pestaña **Tablas** (editar, importar Excel,
+    guardar, borrar); en la regla, "+ Artículo según el pedido" (artículo dinámico); operandos con parámetro
+    (desplegable al escribir `@`) y operación *por (2 decimales, sin redondear)* `*T`; simulación con las líneas
+    `SIN ARTÍCULO` y consumo `-1` en rojo y aviso.
+  - Frontend admin-data: Referencias que no existen en Solupyme en rojo (tejido y perfil).
+  - Estado: DEV ✅ · TEST ⏳ · PROD ⏳.
 
 ## Cómo funciona
 
@@ -54,7 +78,12 @@ productos), `GUIA_CONFIGURACION_FABRICACION.md` (uso de la pantalla).
    desde la pantalla (las reglas `ENROLLABLE` del modelo SM antiguo y las de CortinaDecor quedan fuera).
 2. **Parámetros** (`SOL_FABRICACION_PARAMETROS`, por sistema), editables en la pantalla:
    - `COLUMNA`: valor de una columna de la `tabla_origen` del sistema (validada contra `sys.columns`).
-   - `FORMULA`: expresión `++ -- ** *R` sobre parámetros anteriores (se calculan por `orden`).
+   - `FORMULA`: expresión `++ -- ** *R *T` sobre parámetros anteriores (se calculan por `orden`); los operandos
+     pueden ser números o parámetros. `*T` multiplica y deja 2 decimales sin redondear.
+   - `BUSQUEDA`: el valor de otro parámetro buscado en `SOL_FABRICACION_BUSQUEDAS` (tabla + columna clave + columna
+     resultado, solo por script). Ej.: `@TEJIDO_COLOR_ID` → `Referencia` del color → `idrow` del artículo.
+   - `TABLA`: el valor de `SOL_FABRICACION_TABLAS_VALORES` con la menor clave ≥ el valor de otro parámetro
+     (150,5 → fila 151). Sin fila (por encima de la última) = vacío → consumo `-1`.
 3. **Reglas** (`SOL_ARTICULOS_FABRICACION_RELACION_V2`, `sistema` + `cliente`): hasta 4 condiciones
    (`==`, `>>`, `>=`, `<<`, `<=`, `a <= @P <= b`, sin distinguir mayúsculas ni espacios).
    Op `O` = OR con la anterior; `Y`/`-` = AND. Condición vacía = se ignora; sin condiciones = siempre.
@@ -62,6 +91,13 @@ productos), `GUIA_CONFIGURACION_FABRICACION.md` (uso de la pantalla).
    reglas propias en el sistema, se usan **solo las suyas**; si no, las de Todos.
 5. **Consumo**: uno por artículo separado por `;` (uno solo vale para todos; vacío = 1). Igual que CD:
    en artículos de unidad 3 (metros) el consumo se escribe en cm y se divide entre 100.
+   **Artículos**: ids o `@PARAMETRO` (artículo según el pedido). Si el parámetro no da un artículo existente, se
+   genera la línea `SIN ARTÍCULO: <elemento> (@PARAM = valor)` con `articulo` NULL: sale en la hoja y en la
+   simulación (en rojo), **no** en el XML.
+   **Tejido HoneyComb (configurado en DEV 2026-10-06)**: `@TEJIDO_REFERENCIA` (BUSQUEDA de `@TEJIDO_COLOR_ID`),
+   `@TEJIDO_ARTICULO` (BUSQUEDA de la referencia), `@TEJIDO_ANCHO = @ANCHO -- 5` (valor de ejemplo, a confirmar),
+   `@TEJIDO_ALTO` (TABLA `ALTO_PLIEGUES` de `@ALTO`), `@TEJIDO_M2 = @TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001`, y la
+   regla orden 350 `TEJIDO`: artículo `@TEJIDO_ARTICULO`, consumo `@TEJIDO_M2`.
 6. **Salida HoneyComb**: `SOL_PEDIDOS_COLA_TIPO_7_FABRICACION` + `SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS`; el XML usa
    `FACTOR = consumo`, `CANT = 1` por unidad, `P1/P2 = ancho/alto` en metros.
 
@@ -73,20 +109,24 @@ en sus tablas). La simulación de la pantalla asume la misma estructura que el t
 ## Checklist de paso a PRODUCCIÓN
 
 1. **Copia de seguridad** en PROD de: `temp_sp_fabricacion_tipo_7`, `sol_pedidos_cola_tipo_7_add`, `sp_fichero_produccion_2`.
-2. **SQL** en PROD, en este orden y seguidos: `01` → `02` → `03` → `04` → `05` → `06`.
+2. **SQL** en PROD, en este orden y seguidos: `01` → `02` → `03` → `04` → `05` → `06` → `07`.
    - `03` imprime cada fila HoneyComb migrada (pedido → línea nueva); guardar la salida.
    - `06`: la versión de PROD es idéntica a la de DEV/TEST (confirmado 2026-09-29).
 3. **Backend** (reiniciar el servicio):
    - `backend/controllers/sm/fabricacion_reglas.js` (nuevo)
    - `backend/routes/sm_routes.js`
    - `backend/controllers/sm/export.js`
-4. **Frontend**: `ng build --prod` con `artikeln-fac-cd-v3` (ts + html) y copiar el build a `backend/dist/`.
+   - `backend/controllers/sm/honeycomb.js` (buscador y comprobación de Referencias)
+4. **Frontend**: `ng build --prod` con `artikeln-fac-cd-v3` (ts + html + css + util), `manza/honeycomb-admin-data` y
+   `manza/honeycomb/honeycomb.service.ts`, y copiar el build a `backend/dist/`.
 5. **Datos de configuración**: las reglas (`SOL_ARTICULOS_FABRICACION_RELACION_V2`) y los parámetros
-   (`SOL_FABRICACION_PARAMETROS`) son **datos**, no código: lo que se configure en DEV/TEST no pasa solo a PROD.
+   (`SOL_FABRICACION_PARAMETROS`, incluidos los de tejido) son **datos**, no código. La tabla `ALTO_PLIEGUES` sí va
+   en el script `07`. Las Referencias de los colores (admin-data) también son datos: lo que se configure en DEV/TEST no pasa solo a PROD.
    O se configuran directamente en PROD tras el despliegue, o se exportan con un script (pendiente de generar cuando
    la configuración esté cerrada). Comprobar que los ids de artículo y de cliente coinciden en PROD.
 6. **Permisos**: dar `fab_config` (Setup → Usuarios → Fabricación → Configuración) a quien vaya a configurar.
-7. **Comprobación**: simular un pedido HoneyComb real en la pantalla y revisar el XML; generar la fabricación de un
+7. **Tests**: `node backend/test/fabricacion/run.js` contra TEST, antes de PROD. Tiene que dar 0 FALLOS, salvo los que estén aceptados en *Pendiente*.
+8. **Comprobación**: simular un pedido HoneyComb real en la pantalla y revisar el XML; generar la fabricación de un
    pedido con Compac (tipo 4) y comprobar que ya no pierde sus componentes.
 
 **Rollback**: volver a crear los 3 procedimientos desde la copia del paso 1. Las tablas nuevas y la columna
@@ -114,13 +154,84 @@ El `temp_sp_fabricacion_tipo_7` anterior leía `sol_pedidos_cola_tipo_4` y hací
   mismo pedido con otro cliente vuelve a las generales; se rechazan cliente inexistente, sistema no catalogado y el
   borrado de reglas `ENROLLABLE`.
 
+## Verificación en DEV (2026-10-06, tejido)
+
+- Regresión (pedidos 17075, 17063, 17067, 17019, 16988, 16866, 16950, 17076): fabricación de los tipos 1-4 y 7 y XML
+  **idénticos** antes y después de aplicar 01/04/05/06/07 (antes de dar de alta la regla de tejido).
+- 37 reglas existentes: la columna Artículos da el mismo texto con `fn_fabricacion_articulos_detalle`.
+- Pedido 17076 (120 × 150, BEIGE): `@TEJIDO_ARTICULO` = 16578 (04810), (120 − 5) × 210 = 24.150 cm² → **2,41 m²**
+  (truncado; redondeado sería 2,42). Alto 20 → fila 30 (0,48 m²); 150,5 → fila 151 (212); alto 300 → consumo `-1`;
+  color sin Referencia → línea `SIN ARTÍCULO`, en rojo en la simulación y fuera del XML (68 componentes en vez de 70).
+- `@ANCHO -- 1.5 ** 2` sigue dando 237; parámetro inexistente → `-1`.
+- Validaciones: parámetro de entrada inexistente o posterior, búsqueda o tabla inexistentes, tabla con claves
+  repetidas, valores no numéricos o nombre inválido, borrar una tabla en uso: rechazados.
+- Pantalla probada en el navegador (parámetros, tablas, regla con artículo dinámico, simulación, admin-data con
+  Referencia inexistente en rojo). Importar Excel en la pestaña Tablas no se probó en el navegador.
+- Nota: en DEV `SOL_PEDIDOS_COLA_TIPO_7.alto` sigue en `int` (el 004 de `sqlMedidas` no está aplicado en DEV), así que
+  un pedido de DEV no puede guardar 150,5; la búsqueda con 150,5 se comprobó directamente.
+
+## Robustez y batería de tests (2026-10-07)
+
+**Tests:** `node backend/test/fabricacion/run.js`. Hay 8 secciones; ver `backend/test/fabricacion/README.md`.
+- Corren dentro de una transacción con rollback: la BD queda igual, comprobado con checksums antes y después.
+- Incluyen un pedido de principio a fin con el código real del backend.
+- Resultado en DEV: **74 OK, 1 FALLO, 6 AVISOS**. El FALLO y los AVISOS están en *Pendiente*.
+
+**Cambios hechos a raíz de los tests (DEV ✅ · TEST ⏳ · PROD ⏳):**
+- `04` (copia: `backup/04_..._antes_robustez_20261007.sql`). Con datos mal escritos o no numéricos, el motor daba **error de SQL**, lo que paraba la fabricación de todo el pedido:
+  - Antes daban error:
+    - las condiciones `@COLOR >> 5`, `36,1 <= @ANCHO <= 62` y `@ANCHO >> 99,5`;
+    - las fórmulas `1,5`, `@P ** 2` con un valor `1,5`, `@ANCHO -- abc`, parámetros con `$`, `.` o `1e5`, y los desbordamientos;
+    - artículos `1e5` o `$`.
+  - Ahora una condición así **no se cumple**, una fórmula da **`-1`** y un artículo mal escrito se ignora.
+  - `fn_fabricacion_condicion` evalúa ella misma, sin las `fn_fabricacion_*` antiguas, que siguen intactas para CD:
+    - da el mismo resultado en todo lo válido;
+    - admite coma decimal;
+    - `==` compara como números si los dos lados lo son (`150 == 150.00`), necesario cuando ancho/alto pasen a decimal.
+  - `sp_fabricacion_evaluar` ya no usa `sp_fabricacion_tag`:
+    - todo se calcula de izquierda a derecha y con `try_cast`;
+    - da el mismo resultado que antes con números de 2 decimales (comprobado en 72 casos);
+    - con más decimales ahora es exacto: `@ANCHO ** 0.0133` daba 1,50 y ahora da 2,00;
+    - un parámetro de texto o vacío daba `0` y ahora da `-1`;
+    - `0.01 *R @ALTO *R 2` daba `0`.
+  - Artículos de una regla: solo dígitos, como en la pantalla.
+- `05` (copia: `backup/05_..._antes_robustez_20261007.sql`):
+  - los nombres de parámetro y de tabla aceptaban `Ñ` y tildes, por la collation;
+  - ahora se validan con `Latin1_General_BIN`.
+- `fabricacion_reglas.js`: el mensaje de tipo no válido incluye BUSQUEDA y TABLA.
+- `honeycomb.js`: en el buscador de artículos, `%` y `_` se buscan como texto; antes eran comodines.
+- `fabricacion-reglas.util.ts`: acepta `*r` / `*t` en minúscula, como SQL, y los guarda en mayúscula.
+- **Regresión:**
+  - XML idéntico al `sp_fichero_produccion_2` original fuera de la HoneyComb en 17 pedidos reales;
+  - el tipo 7 no toca otros tipos;
+  - fabricación y XML de los 8 pedidos de referencia, idénticos antes y después.
+- **Importar Excel** en la pestaña Tablas, probado en el navegador: 251 filas sin guardar.
+
 ## Pendiente / supuestos a confirmar
+
+- **DECIDIR — alto fuera de `ALTO_PLIEGUES` (> 280 cm):**
+  - Hoy el tejido sale con consumo `-1` en la hoja (en rojo) **y en el XML de producción**. Es el FALLO de la sección 5.
+  - Como el configurador no va a limitar las medidas, puede pasar.
+  - Opciones:
+    1. no mandar al XML las líneas con consumo `-1`, como SIN ARTÍCULO;
+    2. bloquear la generación del XML del pedido;
+    3. ampliar la tabla.
+- `[preexistente]` La referencia del cliente va a `<DescCliente>` del XML sin escapar. Con `&` o `<` el fichero no es XML válido.
+  - Afecta a todos los productos (`sp_fichero_produccion_2`).
+- Configuración incompleta (AVISOS de la sección 7):
+  - CASQUILLO no tiene regla para ancho < 30, > 130 ni en los saltos entre tramos con decimales (36,0–36,1, 62,0–62,1, 88,1–88,2);
+  - solo hay reglas de perfil para BLANCO RAL 9016;
+  - ninguna regla depende del accionamiento.
 
 - `<Precio>` del XML HoneyComb = `T7_PVP_C1` (o `T7_PVP` si es nulo). `T7_PVP_C1` ya es cantidad × precio de
   tarifa: lo calcula `honeycomb_obtener_tarifa` (`pvp_c1 = cantidad * precio`), así que no se vuelve a multiplicar.
   Con cantidad > 1 cada `<Detalles>` lleva ese total (igual que el tipo 1): confirmar con el ERP.
 - Presupuestos (`/api/lm/budget_hinzu2`) no guardan líneas tipo 7.
-- Tejido en m² (unidad 2): las fórmulas no pueden multiplicar dos parámetros (ancho × alto); falta un parámetro `@M2`.
+- Tejido: confirmar el descuento de ancho (`@TEJIDO_ANCHO = @ANCHO -- 5` es un ejemplo). Los 5 colores translúcidos
+  no tienen artículo en Solupyme ni Referencia, y tienen `idTipoTejido = 8` cuando TRASLÚCIDO es el 10 (por eso
+  tampoco salen en admin-data). MARFIL (04756) existe como artículo pero no como color.
+- `GET /api/artikel_fabric_setup_sm` (`artikeln.js`, ninguna pantalla lo usa) lista todas las reglas con
+  `fn_get_articles`, que falla con un artículo `@PARAM`; si se vuelve a usar, cambiarlo a `fn_fabricacion_articulos_detalle`.
 - `temp_sp_fabricacion_tipo_7` con `@real = 0` (presupuestos `temp_`) no hace nada: no existen tablas `temp_` de tipo 7.
 - `sp_fabricacion_mrp_sm` (modelo SM antiguo, no usado por el router) recorre todas las reglas de
   `SOL_ARTICULOS_FABRICACION_RELACION_V2` sin filtrar por sistema; si algún día se reactiva, filtrar `sistema`.

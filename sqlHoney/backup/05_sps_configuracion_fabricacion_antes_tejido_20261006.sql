@@ -246,18 +246,14 @@ go
 
 /* Alta o modificación. Devuelve 1 OK, -1 nombre inválido, -2 tipo inválido,
    -3 columna inexistente en la tabla del sistema, -4 fórmula vacía,
-   -5 sistema no válido, -6 origen no es un parámetro anterior del sistema,
-   -7 búsqueda no válida, -8 tabla de valores no válida.
-   BUSQUEDA y TABLA (estructura en 01): origen = parámetro de entrada. */
+   -5 sistema no válido */
 create procedure [dbo].[sp_fabricacion_parametro_edit]
 (
 	@sistema varchar(50),
 	@name varchar(50),
 	@tipo varchar(10),
 	@origen varchar(255),
-	@orden int,
-	@busqueda varchar(50) = null,
-	@tablaValores varchar(50) = null
+	@orden int
 )
 as
 begin
@@ -275,11 +271,10 @@ begin
 
 	if left(@name,1) <> '@' set @name = '@' + @name
 
-	/* Collation binaria: con la de la BD, [A-Z] incluye Ñ y vocales con tilde, que la pantalla no admite */
-	if len(@name) < 2 or substring(@name, 2, 50) collate Latin1_General_BIN like '%[^A-Z0-9_]%'
+	if len(@name) < 2 or substring(@name, 2, 50) like '%[^A-Z0-9_]%'
 		return -1
 
-	if @tipo not in ('COLUMNA','FORMULA','BUSQUEDA','TABLA')
+	if @tipo not in ('COLUMNA','FORMULA')
 		return -2
 
 	if @tipo = 'COLUMNA'
@@ -294,41 +289,13 @@ begin
 	if @tipo = 'FORMULA' and len(@origen) = 0
 		return -4
 
-	if @tipo in ('BUSQUEDA','TABLA')
-	begin
-		/* El parámetro de entrada tiene que calcularse antes (orden menor) */
-		set @origen = upper(@origen)
-		if left(@origen,1) <> '@' set @origen = '@' + @origen
-		if not exists (select 1 from SOL_FABRICACION_PARAMETROS
-		               where sistema = @sistema and name = @origen and name <> @name and orden < isnull(@orden, 0))
-			return -6
-	end
-
-	if @tipo = 'BUSQUEDA'
-	begin
-		if not exists (select 1 from SOL_FABRICACION_BUSQUEDAS
-		               where busqueda = @busqueda and (sistema is null or sistema = @sistema))
-			return -7
-	end
-	else
-		set @busqueda = null
-
-	if @tipo = 'TABLA'
-	begin
-		if not exists (select 1 from SOL_FABRICACION_TABLAS where sistema = @sistema and tabla = @tablaValores)
-			return -8
-	end
-	else
-		set @tablaValores = null
-
 	if exists (select 1 from SOL_FABRICACION_PARAMETROS where sistema = @sistema and name = @name)
 		update SOL_FABRICACION_PARAMETROS set
-			tipo = @tipo, origen = @origen, orden = isnull(@orden, orden),
-			busqueda = @busqueda, tabla = @tablaValores
+			tipo = @tipo, origen = @origen, orden = isnull(@orden, orden)
 		where sistema = @sistema and name = @name
 	else
-		insert into SOL_FABRICACION_PARAMETROS(sistema, name, tipo, origen, orden, busqueda, tabla)
-		values(@sistema, @name, @tipo, @origen, isnull(@orden, 0), @busqueda, @tablaValores)
+		insert into SOL_FABRICACION_PARAMETROS(sistema, name, tipo, origen, orden)
+		values(@sistema, @name, @tipo, @origen, isnull(@orden, 0))
 
 	return 1
 end
@@ -347,100 +314,6 @@ as
 begin
 	set nocount on
 	delete from SOL_FABRICACION_PARAMETROS where sistema = @sistema and name = @name
-	return @@rowcount
-end
-go
-
-/* ---------------- TABLAS DE VALORES (01: SOL_FABRICACION_TABLAS / _VALORES) ---------------- */
-
-if object_id('dbo.sp_fabricacion_tabla_guardar') is not null
-	drop procedure dbo.sp_fabricacion_tabla_guardar
-go
-
-/* Alta o modificación de una tabla de valores con todas sus filas (las sustituye).
-   @valores: <v c="30" v="42"/><v c="31" v="44"/>... (clave, valor).
-   Devuelve el idrow de la tabla, -1 nombre inválido, -2 sin valores o valores no
-   numéricos, -3 claves repetidas, -5 sistema no válido. */
-create procedure [dbo].[sp_fabricacion_tabla_guardar]
-(
-	@sistema varchar(50),
-	@tabla varchar(50),
-	@descripcion varchar(150),
-	@clave_texto varchar(50),
-	@valor_texto varchar(50),
-	@valores xml
-)
-as
-begin
-	set nocount on
-
-	declare @idtabla int
-	declare @filas table(clave varchar(50), valor varchar(50))
-
-	if not exists (select 1 from SOL_FABRICACION_SISTEMAS where sistema = @sistema and activo = 1)
-		return -5
-
-	set @tabla = upper(ltrim(rtrim(isnull(@tabla,''))))
-	if len(@tabla) = 0 or @tabla collate Latin1_General_BIN like '%[^A-Z0-9_]%'
-		return -1
-
-	insert into @filas(clave, valor)
-	select replace(ltrim(rtrim(x.v.value('@c', 'varchar(50)'))), ',', '.'),
-	       replace(ltrim(rtrim(x.v.value('@v', 'varchar(50)'))), ',', '.')
-	from @valores.nodes('/v') x(v)
-
-	if not exists (select 1 from @filas)
-	   or exists (select 1 from @filas where try_cast(clave as decimal(12,2)) is null or try_cast(valor as decimal(12,2)) is null)
-		return -2
-
-	if exists (select 1 from @filas group by cast(clave as decimal(12,2)) having count(*) > 1)
-		return -3
-
-	begin tran
-		select @idtabla = idrow from SOL_FABRICACION_TABLAS where sistema = @sistema and tabla = @tabla
-
-		if @idtabla is null
-		begin
-			insert into SOL_FABRICACION_TABLAS(sistema, tabla, descripcion, clave_texto, valor_texto)
-			values(@sistema, @tabla, @descripcion, @clave_texto, @valor_texto)
-			set @idtabla = scope_identity()
-		end
-		else
-			update SOL_FABRICACION_TABLAS set
-				descripcion = @descripcion, clave_texto = @clave_texto, valor_texto = @valor_texto
-			where idrow = @idtabla
-
-		delete from SOL_FABRICACION_TABLAS_VALORES where idtabla = @idtabla
-
-		insert into SOL_FABRICACION_TABLAS_VALORES(idtabla, clave, valor)
-		select @idtabla, cast(clave as decimal(12,2)), cast(valor as decimal(12,2)) from @filas
-	commit
-
-	return @idtabla
-end
-go
-
-if object_id('dbo.sp_fabricacion_tabla_borrar') is not null
-	drop procedure dbo.sp_fabricacion_tabla_borrar
-go
-
-/* Devuelve 1 OK, 0 no encontrada, -1 la usa algún parámetro del sistema */
-create procedure [dbo].[sp_fabricacion_tabla_borrar]
-(
-	@sistema varchar(50),
-	@tabla varchar(50)
-)
-as
-begin
-	set nocount on
-
-	if exists (select 1 from SOL_FABRICACION_PARAMETROS where sistema = @sistema and tipo = 'TABLA' and tabla = @tabla)
-		return -1
-
-	delete t from SOL_FABRICACION_TABLAS t
-	join SOL_FABRICACION_SISTEMAS s on s.sistema = t.sistema and s.activo = 1
-	where t.sistema = @sistema and t.tabla = @tabla
-
 	return @@rowcount
 end
 go

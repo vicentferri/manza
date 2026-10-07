@@ -5,9 +5,6 @@
      - fn_fabricacion_condicion ........ evalúa una condición
      - fn_fabricacion_pos_operador ..... busca operadores de consumo
      - sp_fabricacion_evaluar .......... evalúa un consumo / fórmula (admite cadenas de operaciones)
-   2026-10-07 (robustez): condiciones, fórmulas y artículos mal escritos o con
-   valores no numéricos dan "no se cumple" / -1 / se ignoran, nunca un error
-   que pare la fabricación del pedido. Comprobado por backend/test/fabricacion.
      - sp_fabricacion_reglas_parametros  construye los parámetros de una línea
      - sp_fabricacion_reglas_aplicar ... aplica las reglas del sistema/cliente
      - fn_fabricacion_articulos_detalle  texto de Artículos en la pantalla (admite @PARAM)
@@ -31,15 +28,7 @@ go
 
 /* ---------------------------------------------------------------------
    fn_fabricacion_condicion: 1 si se cumple la condición, 0 si no.
-   Mismos operadores y mismo orden de detección que sp_fabricacion_mrp_cd
-   (a <= @P <= b, @P <= n, @P << n, @P == v, @P >= n, @P >> n), con el mismo
-   resultado para condiciones válidas, pero sin usar las fn_fabricacion_*
-   antiguas, que dan error de conversión (y paran la fabricación del pedido)
-   con valores no numéricos o con coma decimal (2026-10-07):
-     - Comparaciones numéricas: si el parámetro o el número no son números,
-       la condición no se cumple (0). Se admite coma decimal.
-     - ==: sin espacios ni mayúsculas, como antes; si los dos lados son
-       números se comparan como números (150 == 150.00).
+   Mismos operadores y mismo orden de detección que sp_fabricacion_mrp_cd.
    --------------------------------------------------------------------- */
 if object_id('dbo.fn_fabricacion_condicion') is not null
 	drop function dbo.fn_fabricacion_condicion
@@ -53,53 +42,30 @@ create function [dbo].[fn_fabricacion_condicion]
 returns int
 as
 begin
-	declare @op varchar(2) = null
-	declare @p1 varchar(255), @p2 varchar(255), @p3 varchar(255)
-	declare @valor varchar(255)
-	declare @actual decimal(12,2), @numero decimal(12,2), @desde decimal(12,2), @hasta decimal(12,2)
+	declare @cumple int = 0
 
 	/* Igual que mrp_cd: los espacios se eliminan antes de evaluar */
-	set @condicion = replace(isnull(@condicion, ''), ' ', '')
+	set @condicion = replace(@condicion, ' ', '')
 
-	/* Mismo orden de detección que mrp_cd (gana el último que encaja) */
-	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'<=')) = 3 set @op = 'IN'
-	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'<=')) = 2 set @op = '<='
-	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'<<')) = 2 set @op = '<<'
-	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'==')) = 2 set @op = '=='
-	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'>=')) = 2 set @op = '>='
-	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'>>')) = 2 set @op = '>>'
+	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'<=')) = 3
+		set @cumple = dbo.fn_fabricacion_intervalo(@condicion, @parametros)
 
-	if @op is null
-		return 0
+	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'<=')) = 2
+		set @cumple = dbo.fn_fabricacion_valor_menor_igual(@condicion, @parametros)
 
-	select @p1 = data from dbo.string_to_table_delimiter(@condicion, case when @op = 'IN' then '<=' else @op end) where pos = 1
-	select @p2 = data from dbo.string_to_table_delimiter(@condicion, case when @op = 'IN' then '<=' else @op end) where pos = 2
-	select @p3 = data from dbo.string_to_table_delimiter(@condicion, case when @op = 'IN' then '<=' else @op end) where pos = 3
+	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'<<')) = 2
+		set @cumple = dbo.fn_fabricacion_valor_menor(@condicion, @parametros)
 
-	if @op = '=='
-	begin
-		select @valor = replace(value, ' ', '') from @parametros where upper(name) = upper(@p1)
-		if try_cast(replace(@valor, ',', '.') as decimal(18,6)) is not null
-		   and try_cast(replace(@p2, ',', '.') as decimal(18,6)) is not null
-			return case when try_cast(replace(@valor, ',', '.') as decimal(18,6))
-			               = try_cast(replace(@p2, ',', '.') as decimal(18,6)) then 1 else 0 end
-		return case when @valor = @p2 then 1 else 0 end
-	end
+	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'==')) = 2
+		set @cumple = dbo.fn_fabricacion_igual(@condicion, @parametros)
 
-	/* Numéricas: el parámetro está a la izquierda (en el intervalo, en medio) */
-	select @valor = value from @parametros where upper(name) = upper(case when @op = 'IN' then @p2 else @p1 end)
-	set @actual = try_cast(replace(@valor, ',', '.') as decimal(12,2))
-	set @numero = try_cast(replace(@p2, ',', '.') as decimal(12,2))
-	set @desde  = try_cast(replace(@p1, ',', '.') as decimal(12,2))
-	set @hasta  = try_cast(replace(@p3, ',', '.') as decimal(12,2))
+	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'>=')) = 2
+		set @cumple = dbo.fn_fabricacion_valor_mayor_igual(@condicion, @parametros)
 
-	return case
-		when @op = 'IN' and @desde <= @actual and @actual <= @hasta then 1
-		when @op = '<=' and @actual <= @numero then 1
-		when @op = '<<' and @actual <  @numero then 1
-		when @op = '>=' and @actual >= @numero then 1
-		when @op = '>>' and @actual >  @numero then 1
-		else 0 end
+	if (select count(*) from dbo.string_to_table_delimiter(@condicion,'>>')) = 2
+		set @cumple = dbo.fn_fabricacion_valor_mayor(@condicion, @parametros)
+
+	return isnull(@cumple, 0)
 end
 go
 
@@ -133,18 +99,15 @@ go
 
 /* ---------------------------------------------------------------------
    sp_fabricacion_evaluar: evalúa una expresión de consumo/fórmula.
-   Forma: operando (operador operando)*, de izquierda a derecha, en el orden
-   escrito (sin prioridad de **). Operando: número (punto o coma decimal) o
-   @PARAMETRO. Operadores: ++ suma, -- resta, ** multiplica, *R multiplica y
-   redondea hacia arriba, *T multiplica y deja 2 decimales sin redondear
-   (1,9488 -> 1,94). Ejemplos: 400, @ANCHO, @ANCHO -- 1.5 ** 2,
-   @TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001, 0.01 ** @ALTO ** 2.
-   Si algo no se puede calcular (parámetro inexistente, vacío o no numérico,
-   operando mal escrito, resultado fuera de rango) devuelve -1, nunca un error:
-   un error pararía la fabricación de todo el pedido.
-   2026-10-07: ya no usa sp_fabricacion_tag (que da error con coma decimal o
-   valores no numéricos, devuelve 0 con un parámetro de texto o vacío y redondea
-   los números a 2 decimales: @ANCHO ** 0.0133 daba 1,50 en vez de 2,00).
+   Añade a sp_fabricacion_tag:
+     - un parámetro sin operador ('@ANCHO'), que sp_fabricacion_tag devuelve como -1;
+     - cadenas de varias operaciones ('@ANCHO -- 1.5 ** 2 ++ 10'), que se aplican
+       de izquierda a derecha, en el orden escrito (sin prioridad de **):
+       ++ suma, -- resta, ** multiplica, *R multiplica y redondea hacia arriba,
+       *T multiplica y deja 2 decimales sin redondear (1,9488 -> 1,94);
+     - operandos que son parámetros ('@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001').
+   Una sola operación con un número (salvo *T) sigue resolviéndose con
+   sp_fabricacion_tag, como antes.
    --------------------------------------------------------------------- */
 if object_id('dbo.sp_fabricacion_evaluar') is not null
 	drop procedure dbo.sp_fabricacion_evaluar
@@ -166,53 +129,73 @@ begin
 	declare @numero decimal(18,6)
 	declare @acumulado decimal(18,6)
 	declare @termino varchar(255)
+	declare @siguiente int
 
+	/* Sin espacios: la forma de 3 términos (0.01 ** @ALTO ** 2) falla con espacios en sp_fabricacion_tag */
 	set @expresion = replace(isnull(@expresion,''), ' ', '')
-	set @resultado = -1
+	set @resultado = null
 
-	/* Primer operando */
 	set @pos = dbo.fn_fabricacion_pos_operador(@expresion, 1)
-	set @termino = case when @pos > 0 then left(@expresion, @pos - 1) else @expresion end
-	if left(@termino, 1) = '@'
+
+	/* Parámetro sin operador */
+	if left(@expresion, 1) = '@' and @pos = 0
 	begin
-		set @valor = null
-		select @valor = value from @parametros where upper(name) = upper(@termino)
-		set @termino = @valor
-	end
-	set @acumulado = try_cast(replace(@termino, ',', '.') as decimal(18,6))
-	if @acumulado is null
+		select @valor = value from @parametros where upper(name) = upper(@expresion)
+		set @valor = replace(@valor, ',', '.')
+		if isnumeric(@valor) = 1
+			set @resultado = cast(@valor as decimal(12,2))
+		else
+			set @resultado = -1
 		return
-
-	/* Operaciones siguientes */
-	set @resto = case when @pos > 0 then substring(@expresion, @pos, 255) else '' end
-	while len(@resto) > 0
-	begin
-		set @op = left(@resto, 2)
-		set @pos = dbo.fn_fabricacion_pos_operador(@resto, 3)
-		set @termino = case when @pos > 0 then substring(@resto, 3, @pos - 3) else substring(@resto, 3, 255) end
-		if left(@termino, 1) = '@'
-		begin
-			set @valor = null
-			select @valor = value from @parametros where upper(name) = upper(@termino)
-			set @termino = @valor
-		end
-		set @numero = try_cast(replace(@termino, ',', '.') as decimal(18,6))
-		if @numero is null
-			return
-
-		/* try_cast: un resultado fuera de rango da -1 en vez de error */
-		if @op = '++' set @acumulado = try_cast(@acumulado + @numero as decimal(18,6))
-		if @op = '--' set @acumulado = try_cast(@acumulado - @numero as decimal(18,6))
-		if @op = '**' set @acumulado = try_cast(@acumulado * @numero as decimal(18,6))
-		if @op = '*R' set @acumulado = try_cast(ceiling(@acumulado * @numero) as decimal(18,6))
-		if @op = '*T' set @acumulado = try_cast(round(@acumulado * @numero, 2, 1) as decimal(18,6))
-		if @acumulado is null
-			return
-
-		set @resto = case when @pos > 0 then substring(@resto, @pos, 255) else '' end
 	end
 
-	set @resultado = isnull(try_cast(@acumulado as decimal(12,2)), -1)
+	/* Cadena de operaciones sobre un parámetro, de izquierda a derecha: si hay dos o más
+	   operaciones, si algún operando es un parámetro o si se usa *T */
+	set @siguiente = case when @pos > 1 then dbo.fn_fabricacion_pos_operador(@expresion, @pos + 2) else 0 end
+	if left(@expresion, 1) = '@' and @pos > 1
+	   and (@siguiente > 0 or charindex('@', @expresion, 2) > 0 or charindex('*T', @expresion) > 0)
+	begin
+		select @valor = replace(value, ',', '.') from @parametros where upper(name) = upper(left(@expresion, @pos - 1))
+		set @acumulado = try_cast(@valor as decimal(18,6))
+		if @acumulado is null
+		begin
+			set @resultado = -1
+			return
+		end
+
+		set @resto = substring(@expresion, @pos, 255)
+		while len(@resto) > 0
+		begin
+			set @op = left(@resto, 2)
+			set @pos = dbo.fn_fabricacion_pos_operador(@resto, 3)
+			set @termino = case when @pos > 0 then substring(@resto, 3, @pos - 3) else substring(@resto, 3, 255) end
+			if left(@termino, 1) = '@'
+			begin
+				set @valor = null
+				select @valor = value from @parametros where upper(name) = upper(@termino)
+				set @termino = @valor
+			end
+			set @numero = try_cast(replace(@termino, ',', '.') as decimal(18,6))
+			if @numero is null
+			begin
+				set @resultado = -1
+				return
+			end
+
+			if @op = '++' set @acumulado = @acumulado + @numero
+			if @op = '--' set @acumulado = @acumulado - @numero
+			if @op = '**' set @acumulado = @acumulado * @numero
+			if @op = '*R' set @acumulado = ceiling(@acumulado * @numero)
+			if @op = '*T' set @acumulado = round(@acumulado * @numero, 2, 1)
+
+			set @resto = case when @pos > 0 then substring(@resto, @pos, 255) else '' end
+		end
+
+		set @resultado = cast(@acumulado as decimal(12,2))
+		return
+	end
+
+	execute sp_fabricacion_tag @expresion, @parametros, @resultado out
 end
 go
 
@@ -351,7 +334,7 @@ begin
 
 	select @ids = @ids + case when @ids = '' then '' else ',' end + ltrim(rtrim(data))
 	from dbo.string_to_table(replace(isnull(@articulos,''), ';', ','), ',')
-	where ltrim(rtrim(data)) <> '' and ltrim(rtrim(data)) not like '%[^0-9]%' and try_cast(ltrim(rtrim(data)) as int) is not null
+	where isnumeric(ltrim(rtrim(data))) = 1
 	order by pos
 
 	select @dinamicos = @dinamicos + upper(ltrim(rtrim(data))) + ' (según pedido) '
@@ -460,12 +443,9 @@ begin
 		begin
 			select @numconsumos = count(*) from dbo.string_to_table(@consumo, ';')
 
-			/* Solo dígitos (como la pantalla): isnumeric acepta '1e5', '$' o '.' y el cast a int
-			   daría error; try_cast solo convierte '' en 0 */
 			declare itArticulos cursor local forward_only for
 			select pos, ltrim(rtrim(data)) from dbo.string_to_table(@articulos, ',')
-			where (ltrim(rtrim(data)) <> '' and ltrim(rtrim(data)) not like '%[^0-9]%' and try_cast(ltrim(rtrim(data)) as int) is not null)
-			   or left(ltrim(data), 1) = '@'
+			where isnumeric(ltrim(rtrim(data))) = 1 or left(ltrim(data), 1) = '@'
 			open itArticulos
 			fetch next from itArticulos into @artpos, @art
 			while @@fetch_status = 0
@@ -499,7 +479,7 @@ begin
 					end
 				end
 				else
-					set @artid = try_cast(@art as int)
+					set @artid = cast(@art as int)
 
 				insert into @resultado(orden, articulo, consumo, idregla, aviso)
 				values(@orden, @artid, @consumido, @idregla, @aviso)

@@ -521,6 +521,11 @@ smapi.get('/fabricacion/columnas', Auth.ensureAuth, FabricacionReglasController.
 smapi.post('/fabricacion/parametros', Auth.ensureAuth, FabricacionReglasController.parametro_edit);
 smapi.post('/fabricacion/parametros/delete', Auth.ensureAuth, FabricacionReglasController.parametro_delete);
 smapi.post('/fabricacion/simular', Auth.ensureAuth, FabricacionReglasController.simular);
+smapi.get('/fabricacion/busquedas', Auth.ensureAuth, FabricacionReglasController.busquedas);
+smapi.get('/fabricacion/tablas', Auth.ensureAuth, FabricacionReglasController.tablas);
+smapi.get('/fabricacion/tablas/valores', Auth.ensureAuth, FabricacionReglasController.tabla_valores);
+smapi.post('/fabricacion/tablas', Auth.ensureAuth, FabricacionReglasController.tabla_guardar);
+smapi.post('/fabricacion/tablas/delete', Auth.ensureAuth, FabricacionReglasController.tabla_delete);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);
@@ -547,6 +552,8 @@ smapi.delete('/honeycomb_tipotejido_delete/:id', Auth.ensureAuth, HoneyCombContr
 
 // Rutas CRUD - Colores de Tejido
 smapi.get('/honeycomb_colortejido_getall', HoneyCombController.honeycomb_colortejido_getall);
+smapi.get('/honeycomb_articulos_buscar', Auth.ensureAuth, HoneyCombController.honeycomb_articulos_buscar);
+smapi.get('/honeycomb_articulos_existen', Auth.ensureAuth, HoneyCombController.honeycomb_articulos_existen);
 smapi.post('/honeycomb_colortejido_insert', Auth.ensureAuth, HoneyCombController.honeycomb_colortejido_insert);
 smapi.post('/honeycomb_colortejido_update', Auth.ensureAuth, HoneyCombController.honeycomb_colortejido_update);
 smapi.delete('/honeycomb_colortejido_delete/:id', Auth.ensureAuth, HoneyCombController.honeycomb_colortejido_delete);

@@ -2,8 +2,11 @@
  * Sintaxis de condiciones y consumos del motor de fabricación por reglas.
  * Replica lo que aceptan fn_fabricacion_condicion y sp_fabricacion_evaluar (SQL):
  *   Condición: @P == valor | @P >> n | @P >= n | @P << n | @P <= n | a <= @P <= b
- *   Consumo:   n | @P | @P ++ n | @P -- n | @P ** n | @P *R n | a ** @P ** b | a *R @P *R b
- *              y cadenas @P op n op n ... (se calculan de izquierda a derecha)
+ *   Consumo:   n | @P | @P ++ n | @P -- n | @P ** n | @P *R n | @P *T n | a ** @P ** b | a *R @P *R b
+ *              y cadenas @P op x op x ... (se calculan de izquierda a derecha), donde x es
+ *              un número o un parámetro (@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001)
+ *   *T: multiplica y deja 2 decimales sin redondear.
+ *   Artículos: ids o @PARAMETRO (artículo según el pedido, p. ej. @TEJIDO_ARTICULO).
  * Los espacios se ignoran; los decimales se escriben con punto (se acepta coma).
  */
 
@@ -21,14 +24,14 @@ export interface Condicion {
 
 export type TipoConsumo = 'numero' | 'parametro' | 'operacion' | 'texto';
 
-export type OperadorConsumo = '++' | '--' | '**' | '*R';
+export type OperadorConsumo = '++' | '--' | '**' | '*R' | '*T';
 
 export interface Consumo {
   tipo: TipoConsumo;
-  numero: string;
+  numero: string;     /* número o @PARAMETRO */
   parametro: string;
   operador: OperadorConsumo;
-  extra: { operador: OperadorConsumo, numero: string }[];   /* operaciones siguientes de la cadena */
+  extra: { operador: OperadorConsumo, numero: string }[];   /* operaciones siguientes de la cadena (número o @PARAMETRO) */
   texto: string;
 }
 
@@ -46,19 +49,23 @@ export const OPERADORES_CONSUMO = [
   { valor: '++', texto: 'más' },
   { valor: '**', texto: 'por' },
   { valor: '*R', texto: 'por (redondeo arriba)' },
+  { valor: '*T', texto: 'por (2 decimales, sin redondear)' },
 ];
 
 const NUMERO = '-?\\d+(?:[.,]\\d+)?';
 const PARAM = '@[A-Za-z0-9_]+';
+const OPERANDO = '(?:' + NUMERO + '|' + PARAM + ')';
 
 const RE_INTERVALO = new RegExp('^(' + NUMERO + ')<=(' + PARAM + ')<=(' + NUMERO + ')$');
 const RE_BINARIA = new RegExp('^(' + PARAM + ')(==|>>|>=|<<|<=)(.+)$');
 const RE_NUMERO = new RegExp('^' + NUMERO + '$');
 const RE_PARAM = new RegExp('^' + PARAM + '$');
-const OPERADOR = '(\\+\\+|--|\\*\\*|\\*R)';
-const RE_OPERACION = new RegExp('^(' + PARAM + ')((?:' + OPERADOR + NUMERO + ')+)$');
-const RE_PASO = new RegExp(OPERADOR + '(' + NUMERO + ')', 'g');
-const RE_TRES_TERMINOS = new RegExp('^(' + NUMERO + ')(\\*\\*|\\*R)(' + PARAM + ')\\2(' + NUMERO + ')$');
+const RE_OPERANDO = new RegExp('^' + OPERANDO + '$');
+/* *R y *T también en minúscula, como en SQL (se guardan en mayúscula) */
+const OPERADOR = '(\\+\\+|--|\\*\\*|\\*[RrTt])';
+const RE_OPERACION = new RegExp('^(' + PARAM + ')((?:' + OPERADOR + OPERANDO + ')+)$');
+const RE_PASO = new RegExp(OPERADOR + '(' + OPERANDO + ')', 'g');
+const RE_TRES_TERMINOS = new RegExp('^(' + NUMERO + ')(\\*\\*|\\*[Rr])(' + PARAM + ')\\2(' + NUMERO + ')$');
 
 function sinEspacios(texto: string): string {
   return String(texto || '').replace(/\s+/g, '');
@@ -66,6 +73,17 @@ function sinEspacios(texto: string): string {
 
 function numero(texto: string): string {
   return String(texto || '').trim().replace(',', '.');
+}
+
+/* Operando de una operación: número (con punto) o parámetro (en mayúsculas) */
+function operando(texto: string): string {
+  let limpio = sinEspacios(texto);
+  return limpio.charAt(0) == '@' ? limpio.toUpperCase() : numero(limpio);
+}
+
+/* El texto escrito en la casilla de una operación es un número o un @PARAMETRO */
+export function operandoValido(texto: string): boolean {
+  return RE_OPERANDO.test(sinEspacios(texto));
 }
 
 /* ---------------- CONDICIONES ---------------- */
@@ -180,7 +198,7 @@ export function parseConsumo(texto: string): Consumo {
     let paso: RegExpExecArray;
     RE_PASO.lastIndex = 0;
     while ((paso = RE_PASO.exec(m[2])) !== null) {
-      pasos.push({ operador: paso[1] as OperadorConsumo, numero: numero(paso[2]) });
+      pasos.push({ operador: paso[1].toUpperCase() as OperadorConsumo, numero: operando(paso[2]) });
     }
     c.tipo = 'operacion';
     c.parametro = m[1].toUpperCase();
@@ -198,8 +216,8 @@ export function buildConsumo(c: Consumo): string {
   switch (c.tipo) {
     case 'numero': return numero(c.numero);
     case 'parametro': return c.parametro;
-    case 'operacion': return c.parametro + ' ' + c.operador + ' ' + numero(c.numero)
-      + (c.extra || []).map(e => ' ' + e.operador + ' ' + numero(e.numero)).join('');
+    case 'operacion': return c.parametro + ' ' + c.operador + ' ' + operando(c.numero)
+      + (c.extra || []).map(e => ' ' + e.operador + ' ' + operando(e.numero)).join('');
     default: return String(c.texto || '').trim();
   }
 }
@@ -210,25 +228,28 @@ export function validarConsumo(texto: string, parametros: string[]): string[] {
     return [];
   }
 
-  let parametro = '';
+  let usados: string[] = [];
   if (RE_PARAM.test(limpio)) {
-    parametro = limpio;
+    usados = [limpio];
   }
   else {
     const m2 = RE_OPERACION.exec(limpio);
     const m3 = RE_TRES_TERMINOS.exec(limpio);
     if (m2) {
-      parametro = m2[1];
+      /* El parámetro inicial y los operandos que son parámetros */
+      usados = [m2[1]].concat(m2[2].match(new RegExp(PARAM, 'g')) || []);
     }
     else if (m3) {
-      parametro = m3[3];
+      usados = [m3[3]];
     }
     else {
-      return ['Consumo mal escrito: use un número, @PARAMETRO o @PARAMETRO ++ / -- / ** / *R número'];
+      return ['Consumo mal escrito: use un número, @PARAMETRO o @PARAMETRO ++ / -- / ** / *R / *T número o @PARAMETRO'];
     }
   }
 
-  return existeParametro(parametro, parametros) ? [] : ['El parámetro ' + parametro.toUpperCase() + ' no existe'];
+  return usados
+    .filter((p, i) => usados.indexOf(p) == i && !existeParametro(p, parametros))
+    .map(p => 'El parámetro ' + p.toUpperCase() + ' no existe');
 }
 
 /* ---------------- REGLA COMPLETA ---------------- */
@@ -253,7 +274,10 @@ export function validarRegla(regla: any, parametros: string[]): ErroresRegla {
   if (articulos.length === 0) {
     agregar('articulos', ['La regla no tiene artículos']);
   }
-  articulos.filter(a => !/^\d+$/.test(a)).forEach(a => agregar('articulos', ['Id de artículo no válido: ' + a]));
+  articulos.filter(a => !/^\d+$/.test(a) && !RE_PARAM.test(a)).forEach(a => agregar('articulos', ['Id de artículo no válido: ' + a]));
+  /* Artículo según el pedido: el parámetro tiene que existir */
+  articulos.filter(a => RE_PARAM.test(a) && !existeParametro(a, parametros))
+    .forEach(a => agregar('articulos', ['El parámetro ' + a.toUpperCase() + ' no existe']));
 
   const consumos = String(regla.consumo || '').split(';');
   consumos.forEach(c => agregar('consumo', validarConsumo(c, parametros)));

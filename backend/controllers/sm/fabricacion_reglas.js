@@ -23,9 +23,19 @@ const ERRORES_REGLA = {
 
 const ERRORES_PARAMETRO = {
   '-1': 'Nombre no válido: use @ seguido de letras, números o _',
-  '-2': 'Tipo no válido: COLUMNA o FORMULA',
+  '-2': 'Tipo no válido: COLUMNA, FORMULA, BUSQUEDA o TABLA',
   '-3': 'La columna no existe en la tabla de datos del sistema',
   '-4': 'La fórmula no puede estar vacía',
+  '-5': 'Sistema no válido',
+  '-6': 'El parámetro de entrada no existe o no tiene un orden menor que este',
+  '-7': 'Búsqueda no válida',
+  '-8': 'Tabla de valores no válida'
+};
+
+const ERRORES_TABLA = {
+  '-1': 'Nombre no válido: use letras, números o _',
+  '-2': 'La tabla no tiene valores o hay valores que no son números',
+  '-3': 'Hay claves repetidas',
   '-5': 'Sistema no válido'
 };
 
@@ -116,7 +126,7 @@ async function reglas(req, res) {
       .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
       .query(`
         select r.idrow, r.sistema, r.cliente, isnull(c.descripcion, 'Todos') as cliente_nombre,
-               r.orden, r.atributo, r.articulos, dbo.fn_get_articles(r.articulos, ',') as detalle,
+               r.orden, r.atributo, r.articulos, dbo.fn_fabricacion_articulos_detalle(r.articulos) as detalle,
                r.nombre_parametro1, r.operacion, r.nombre_parametro2, r.operacion2,
                r.nombre_parametro3, r.operacion3, r.nombre_parametro4, r.consumo
         from SOL_ARTICULOS_FABRICACION_RELACION_V2 r
@@ -248,7 +258,7 @@ async function parametros(req, res) {
     const result = await pool.request()
       .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
       .query(`
-        select idrow, name, tipo, origen, orden
+        select idrow, name, tipo, origen, orden, busqueda, tabla
         from SOL_FABRICACION_PARAMETROS
         where sistema = @sistema
         order by orden, idrow`);
@@ -300,6 +310,8 @@ async function parametro_edit(req, res) {
       .input('tipo', sql.VarChar(10), texto(body.tipo, 10))
       .input('origen', sql.VarChar(255), texto(body.origen, 255))
       .input('orden', sql.Int, parseInt(body.orden, 10) || 0)
+      .input('busqueda', sql.VarChar(50), body.busqueda ? texto(body.busqueda, 50) : null)
+      .input('tablaValores', sql.VarChar(50), body.tabla ? texto(body.tabla, 50) : null)
       .execute('sp_fabricacion_parametro_edit');
     if (result.returnValue === 1) {
       res.status(200).send({ message: 'OK' });
@@ -402,7 +414,125 @@ async function simular(req, res) {
   }
 }
 
+/* ---------------- BUSQUEDAS Y TABLAS DE VALORES ---------------- */
+
+/* Búsquedas disponibles para el sistema (las generales y las suyas). Solo se dan de alta por script. */
+async function busquedas(req, res) {
+  try {
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
+      .query(`
+        select busqueda, descripcion from SOL_FABRICACION_BUSQUEDAS
+        where sistema is null or sistema = @sistema
+        order by descripcion`);
+    res.status(200).send({ Table: result.recordset });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+async function tablas(req, res) {
+  try {
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
+      .query(`
+        select t.tabla, t.descripcion, t.clave_texto, t.valor_texto,
+               count(v.idrow) as filas, min(v.clave) as desde, max(v.clave) as hasta
+        from SOL_FABRICACION_TABLAS t
+        left join SOL_FABRICACION_TABLAS_VALORES v on v.idtabla = t.idrow
+        where t.sistema = @sistema
+        group by t.tabla, t.descripcion, t.clave_texto, t.valor_texto
+        order by t.tabla`);
+    res.status(200).send({ Table: result.recordset });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+async function tabla_valores(req, res) {
+  try {
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
+      .input('tabla', sql.VarChar(50), texto(req.query.tabla, 50))
+      .query(`
+        select v.clave, v.valor
+        from SOL_FABRICACION_TABLAS t
+        join SOL_FABRICACION_TABLAS_VALORES v on v.idtabla = t.idrow
+        where t.sistema = @sistema and t.tabla = @tabla
+        order by v.clave`);
+    res.status(200).send({ Table: result.recordset });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Guarda la tabla completa: body { sistema, tabla, descripcion, clave_texto, valor_texto, valores: [{clave, valor}] } */
+async function tabla_guardar(req, res) {
+  const body = req.body || {};
+  const valores = Array.isArray(body.valores) ? body.valores : [];
+  const numeros = valores.map(v => ({
+    clave: parseFloat(String(v.clave).replace(',', '.')),
+    valor: parseFloat(String(v.valor).replace(',', '.'))
+  }));
+  if (numeros.length === 0 || numeros.length > 5000 || numeros.some(v => !isFinite(v.clave) || !isFinite(v.valor))) {
+    return res.status(400).send({ message: ERRORES_TABLA['-2'] });
+  }
+  /* Solo números: el XML no lleva texto del usuario */
+  const xml = numeros.map(v => '<v c="' + v.clave + '" v="' + v.valor + '"/>').join('');
+  try {
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input('sistema', sql.VarChar(50), texto(body.sistema, 50))
+      .input('tabla', sql.VarChar(50), texto(body.tabla, 50))
+      .input('descripcion', sql.VarChar(150), texto(body.descripcion, 150))
+      .input('clave_texto', sql.VarChar(50), texto(body.clave_texto, 50))
+      .input('valor_texto', sql.VarChar(50), texto(body.valor_texto, 50))
+      .input('valores', sql.Xml, xml)
+      .execute('sp_fabricacion_tabla_guardar');
+    if (result.returnValue > 0) {
+      res.status(200).send({ message: 'OK' });
+    } else {
+      res.status(400).send({ message: ERRORES_TABLA[String(result.returnValue)] || 'KO' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+async function tabla_delete(req, res) {
+  const body = req.body || {};
+  try {
+    const pool = await sql.connect();
+    const result = await pool.request()
+      .input('sistema', sql.VarChar(50), texto(body.sistema, 50))
+      .input('tabla', sql.VarChar(50), texto(body.tabla, 50))
+      .execute('sp_fabricacion_tabla_borrar');
+    if (result.returnValue > 0) {
+      res.status(200).send({ message: 'OK' });
+    } else if (result.returnValue === -1) {
+      res.status(400).send({ message: 'La tabla la usa algún parámetro: cambie o borre antes el parámetro' });
+    } else {
+      res.status(404).send({ message: 'Tabla no encontrada' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 module.exports = {
+  busquedas,
+  tablas,
+  tabla_valores,
+  tabla_guardar,
+  tabla_delete,
   sistemas,
   clientes,
   articulos,

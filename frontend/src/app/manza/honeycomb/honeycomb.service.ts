@@ -174,6 +174,16 @@ export class HoneycombService {
       return this.HTTP_Get(url);
    }
 
+   articulosExisten(codigos: string[]) {
+      let url = this.urlService + "/api/sm/honeycomb_articulos_existen?codigos=" + encodeURIComponent(codigos.join(','));
+      return this.HTTP_Get(url);
+   }
+
+   buscarArticulos(texto: string) {
+      let url = this.urlService + "/api/sm/honeycomb_articulos_buscar?q=" + encodeURIComponent(texto);
+      return this.HTTP_Get(url);
+   }
+
    insertColorTejido(color: any) {
       let url = this.urlService + "/api/sm/honeycomb_colortejido_insert";
       return this.HTTP_Post(url, color);

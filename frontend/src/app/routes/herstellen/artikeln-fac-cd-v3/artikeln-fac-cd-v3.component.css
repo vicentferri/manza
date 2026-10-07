@@ -341,3 +341,44 @@
 .fab-consumo-editor .fab-accion {
   font-size: 13px;
 }
+
+/* Operando de una operación: número o @PARAMETRO */
+.fab-consumo-operando {
+  width: 170px;
+}
+
+/* Artículo según el pedido (p. ej. tejido según el color) */
+.fab-articulo-dinamico {
+  width: 230px;
+  margin-right: 8px;
+}
+
+.fab-articulo-pedido {
+  font-style: italic;
+  color: #1565c0;
+}
+
+/* Pestaña Tablas */
+.fab-tabla-sel {
+  width: 380px;
+}
+
+.fab-tabla-valores {
+  max-width: 520px;
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+}
+
+.fab-tabla-valores thead th {
+  position: sticky;
+  top: 0;
+  background: #f5f6f8;
+  z-index: 1;
+}
+
+/* Simulación: línea SIN ARTÍCULO o consumo -1 */
+:host ::ng-deep .fab-sim-error {
+  background-color: #fdecea !important;
+  color: #c62828 !important;
+}

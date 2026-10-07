@@ -1556,11 +1556,68 @@ async function deleteTablaFK(req, res) {
   }
 }
 
+/* Buscador de artículos Solupyme para el campo Referencia (código + descripción).
+   Solo ayuda a escribir el código; Referencia sigue siendo texto. */
+async function honeycomb_articulos_buscar(req, res) {
+  try {
+    const q = String(req.query.q || '').trim().substring(0, 50);
+    if (q.length < 2) {
+      return res.json([]);
+    }
+
+    // Cada palabra debe aparecer en el código o en la descripción ("honeycomb blanco").
+    // %, _ y [ se buscan como texto, no como comodines del like
+    const pool = await sql.connect();
+    const request = pool.request();
+    const filtros = q.split(/\s+/).slice(0, 5).map((palabra, i) => {
+      request.input('w' + i, sql.NVarChar(160), '%' + palabra.replace(/[[%_]/g, c => '[' + c + ']') + '%');
+      return `and (a.cod_solupyme like @w${i} or a.descripcion like @w${i})`;
+    });
+    const result = await request.query(`
+        select top 50 ltrim(rtrim(a.cod_solupyme)) as codigo, upper(a.descripcion) as descripcion
+        from articulos a
+        where isnull(ltrim(rtrim(a.cod_solupyme)), '') <> ''
+          ${filtros.join('\n          ')}
+        order by a.cod_solupyme`);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al buscar artículos' });
+  }
+}
 
 
 
+/* Cuáles de los códigos (?codigos=a,b,c) existen en Solupyme, con su descripción.
+   admin-data marca en rojo las Referencias que no vuelven aquí. */
+async function honeycomb_articulos_existen(req, res) {
+  try {
+    const codigos = [...new Set(String(req.query.codigos || '').split(',')
+      .map(c => c.trim().substring(0, 25))
+      .filter(c => c !== ''))].slice(0, 500);
+    if (codigos.length === 0) {
+      return res.json([]);
+    }
+
+    const pool = await sql.connect();
+    const request = pool.request();
+    codigos.forEach((c, i) => request.input('c' + i, sql.VarChar(25), c));
+    const result = await request.query(`
+        select ltrim(rtrim(a.cod_solupyme)) as codigo, upper(a.descripcion) as descripcion
+        from articulos a
+        where ltrim(rtrim(a.cod_solupyme)) in (${codigos.map((c, i) => '@c' + i).join(',')})`);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al comprobar artículos' });
+  }
+}
 
 module.exports = {
+  honeycomb_articulos_existen,
+  honeycomb_articulos_buscar,
   honeycomb_obtener_tarifa,
   honeycomb_obtener_precio_lote,
   honeycomb_obtener_tarifa_tipotejido,

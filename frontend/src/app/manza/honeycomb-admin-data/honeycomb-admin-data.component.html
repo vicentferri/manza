@@ -243,7 +243,7 @@
                 <th style="width: 60px;">ID</th>
                 <th>Color</th>
                 <th>Tipo de Tejido</th>
-                <th style="width: 120px;">Referencia</th>
+                <th style="width: 180px;">Referencia</th>
                 <th style="width: 100px;">Código Color</th>
                 <th style="width: 60px;">Muestra</th>
                 <th style="width: 130px;">Incremento (€)</th>
@@ -277,14 +277,46 @@
                   <span *ngIf="!color.editando">{{ color.TipoTejido }}</span>
                 </td>
                 <td>
-                  <input
-                    *ngIf="color.editando"
-                    type="text"
-                    class="form-control form-control-sm"
-                    [(ngModel)]="color.Referencia"
-                    [disabled]="guardando"
-                    placeholder="Ej: BG-001">
-                  <span *ngIf="!color.editando">{{ color.Referencia || '-' }}</span>
+                  <ng-container *ngIf="color.editando">
+                    <div class="hc-ref-campo">
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [value]="color.Referencia || ''"
+                        readonly
+                        (click)="!guardando && abrirBuscadorReferencia(color)"
+                        placeholder="Sin artículo">
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        (click)="abrirBuscadorReferencia(color)"
+                        [disabled]="guardando"
+                        title="Buscar artículo Solupyme">
+                        <i class="fas fa-search"></i>
+                      </button>
+                      <button
+                        *ngIf="color.Referencia"
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        (click)="quitarReferencia(color)"
+                        [disabled]="guardando"
+                        title="Quitar artículo">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <small class="text-muted d-block" *ngIf="descripcionReferencia(color.Referencia)">
+                      {{ descripcionReferencia(color.Referencia) }}
+                    </small>
+                    <small class="text-danger d-block" *ngIf="referenciaNoExiste(color.Referencia)">
+                      No existe en Solupyme
+                    </small>
+                  </ng-container>
+                  <ng-container *ngIf="!color.editando">
+                    <span *ngIf="!referenciaNoExiste(color.Referencia)" [title]="descripcionReferencia(color.Referencia)">{{ color.Referencia || '-' }}</span>
+                    <span *ngIf="referenciaNoExiste(color.Referencia)" class="text-danger" title="Este código no existe en Solupyme: la fabricación no encontrará el artículo">
+                      <i class="fa fa-exclamation-triangle"></i> {{ color.Referencia }}
+                    </span>
+                  </ng-container>
                 </td>
                 <td>
                   <input
@@ -371,7 +403,7 @@
               <tr>
                 <th style="width: 60px;">ID</th>
                 <th>Color de Perfil</th>
-                <th style="width: 120px;">Referencia</th>
+                <th style="width: 180px;">Referencia</th>
                 <th style="width: 100px;">Código Color</th>
                 <th style="width: 60px;">Muestra</th>
                 <th style="width: 130px;">Incremento (€)</th>
@@ -391,14 +423,46 @@
                   <span *ngIf="!color.editando">{{ color.ColorPerfil }}</span>
                 </td>
                 <td>
-                  <input
-                    *ngIf="color.editando"
-                    type="text"
-                    class="form-control form-control-sm"
-                    [(ngModel)]="color.Referencia"
-                    [disabled]="guardando"
-                    placeholder="Ej: PRF-001">
-                  <span *ngIf="!color.editando">{{ color.Referencia || '-' }}</span>
+                  <ng-container *ngIf="color.editando">
+                    <div class="hc-ref-campo">
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        [value]="color.Referencia || ''"
+                        readonly
+                        (click)="!guardando && abrirBuscadorReferencia(color)"
+                        placeholder="Sin artículo">
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        (click)="abrirBuscadorReferencia(color)"
+                        [disabled]="guardando"
+                        title="Buscar artículo Solupyme">
+                        <i class="fas fa-search"></i>
+                      </button>
+                      <button
+                        *ngIf="color.Referencia"
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        (click)="quitarReferencia(color)"
+                        [disabled]="guardando"
+                        title="Quitar artículo">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <small class="text-muted d-block" *ngIf="descripcionReferencia(color.Referencia)">
+                      {{ descripcionReferencia(color.Referencia) }}
+                    </small>
+                    <small class="text-danger d-block" *ngIf="referenciaNoExiste(color.Referencia)">
+                      No existe en Solupyme
+                    </small>
+                  </ng-container>
+                  <ng-container *ngIf="!color.editando">
+                    <span *ngIf="!referenciaNoExiste(color.Referencia)" [title]="descripcionReferencia(color.Referencia)">{{ color.Referencia || '-' }}</span>
+                    <span *ngIf="referenciaNoExiste(color.Referencia)" class="text-danger" title="Este código no existe en Solupyme: la fabricación no encontrará el artículo">
+                      <i class="fa fa-exclamation-triangle"></i> {{ color.Referencia }}
+                    </span>
+                  </ng-container>
                 </td>
                 <td>
                   <input
@@ -754,6 +818,73 @@
       <div class="alert alert-info mt-3 mb-0">
         <i class="fas fa-lightbulb me-2"></i>
         <strong>Tip:</strong> Exporta primero los datos actuales para ver el formato correcto del Excel.
+      </div>
+    </div>
+  </div>
+
+  <!-- Ventana de búsqueda de artículos Solupyme (campo Referencia) -->
+  <div class="hc-ref-fondo" *ngIf="buscadorReferencia" (click)="cerrarBuscadorReferencia()">
+    <div class="hc-ref-ventana" (click)="$event.stopPropagation()" (keydown.escape)="cerrarBuscadorReferencia()">
+      <div class="hc-ref-cabecera">
+        <div>
+          <strong>Artículo Solupyme</strong>
+          <span class="text-muted" *ngIf="buscadorReferencia.nombre"> · {{ buscadorReferencia.nombre }}</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-light" (click)="cerrarBuscadorReferencia()" title="Cerrar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="hc-ref-cuerpo">
+        <input
+          id="hc-buscador-referencia"
+          type="text"
+          class="form-control"
+          autocomplete="off"
+          [(ngModel)]="buscadorReferencia.texto"
+          (ngModelChange)="buscarReferencia()"
+          placeholder="Escribe código o descripción (p. ej. honeycomb blanco)">
+        <small class="text-muted d-block mt-1">
+          Actual: <strong>{{ buscadorReferencia.color.Referencia || 'sin artículo' }}</strong>
+          <span *ngIf="descripcionReferencia(buscadorReferencia.color.Referencia)">
+            · {{ descripcionReferencia(buscadorReferencia.color.Referencia) }}
+          </span>
+        </small>
+
+        <div class="hc-ref-lista mt-2">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th style="width: 160px;">Código</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let a of buscadorReferencia.resultados"
+                class="hc-ref-fila"
+                [class.table-primary]="a.codigo === buscadorReferencia.color.Referencia"
+                (click)="elegirReferencia(a)">
+                <td><strong>{{ a.codigo }}</strong></td>
+                <td>{{ a.descripcion }}</td>
+              </tr>
+              <tr *ngIf="buscadorReferencia.buscando">
+                <td colspan="2" class="text-center text-muted py-3">Buscando…</td>
+              </tr>
+              <tr *ngIf="!buscadorReferencia.buscando && !buscadorReferencia.buscado">
+                <td colspan="2" class="text-center text-muted py-3">
+                  Escribe al menos 2 letras. Cada palabra debe aparecer en el código o en la descripción.
+                </td>
+              </tr>
+              <tr *ngIf="!buscadorReferencia.buscando && buscadorReferencia.buscado && buscadorReferencia.resultados.length === 0">
+                <td colspan="2" class="text-center text-muted py-3">No hay artículos que coincidan</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <small class="text-muted d-block mt-1" *ngIf="buscadorReferencia.resultados.length === 50">
+          Se muestran los 50 primeros: afina la búsqueda si no aparece el que buscas.
+        </small>
       </div>
     </div>
   </div>

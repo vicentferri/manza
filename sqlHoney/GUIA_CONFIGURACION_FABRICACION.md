@@ -30,7 +30,15 @@ Son las variables que pueden usar las reglas. Ya existen:
 
 - **Dato del pedido**: lee una columna del pedido HoneyComb.
 - **Fórmula**: cálculo sobre parámetros anteriores (menor *Orden*). Operadores: `++` suma, `--` resta,
-  `**` multiplica. Ejemplos: `@ANCHO -- 1.5` (ancho de corte), `@ALTO ** 2`.
+  `**` multiplica, `*R` multiplica y redondea arriba, `*T` multiplica y deja 2 decimales sin redondear. Se puede operar
+  con números o con otros parámetros. Ejemplos: `@ANCHO -- 1.5` (ancho de corte), `@ALTO ** 2`,
+  `@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001` (cm² → m² con 2 decimales).
+- **Búsqueda**: toma el valor de otro parámetro (*parámetro de entrada*) y lo busca en un catálogo de la lista. Ej.:
+  `@TEJIDO_COLOR_ID` → *Color de tejido HoneyComb -> Referencia* da el código Solupyme del tejido, y ese código →
+  *Código Solupyme -> id del artículo* da el artículo. Las búsquedas disponibles las da de alta informática.
+- **Tabla de valores**: el valor de una tabla de la pestaña *Tablas* para el parámetro de entrada. Si el valor no está
+  exacto se usa la fila siguiente mayor (alto 150,5 → fila 151). Por encima de la última fila queda vacío y el
+  consumo que lo use sale `-1`.
 - Guardar con un nombre existente lo sobrescribe. Pulsar una fila la carga en el formulario.
 - Borrar un parámetro que usa una regla hace que esa regla deje de cumplirse.
 
@@ -76,7 +84,37 @@ Los artículos HoneyComb del ERP están en `SOL_ARTICULOS_HONEYCOMB_ARTICULO` (p
 - En la tabla, la columna *Cliente* se puede cambiar directamente (desplegable).
 - Al simular, un aviso indica qué reglas se han usado (las del cliente o las generales).
 
-## 3. Pestaña Simulación
+### Artículo según el pedido (tejido)
+
+Para no escribir una regla por cada color, el artículo puede salir del pedido: en la ventana de la regla,
+**+ Artículo según el pedido…** y elegir un parámetro de tipo Búsqueda (p. ej. `@TEJIDO_ARTICULO`).
+
+Configuración del tejido HoneyComb en DEV:
+
+| Parámetro | Tipo | Cálculo |
+|---|---|---|
+| `@TEJIDO_REFERENCIA` | Búsqueda | `@TEJIDO_COLOR_ID` → Referencia del color (admin-data) |
+| `@TEJIDO_ARTICULO` | Búsqueda | `@TEJIDO_REFERENCIA` → id del artículo Solupyme |
+| `@TEJIDO_ANCHO` | Fórmula | `@ANCHO -- 5` (descuento de ancho de la HoneyComb) |
+| `@TEJIDO_ALTO` | Tabla de valores | `@ALTO` → tabla `ALTO_PLIEGUES` (cm de tejido plegado) |
+| `@TEJIDO_M2` | Fórmula | `@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001` |
+
+Regla: orden 350, elemento TEJIDO, sin condiciones, artículo `@TEJIDO_ARTICULO`, consumo `@TEJIDO_M2`.
+
+- Si el color no tiene Referencia, o el código no existe en Solupyme, sale la línea **SIN ARTÍCULO** (en rojo en la
+  simulación y en la hoja; no va al XML). Se corrige en *HoneyComb → Datos → Colores de Tejido*, donde las Referencias
+  que no existen salen en rojo. Para poner la Referencia: editar el color, pulsar la **lupa** junto al campo,
+  buscar por código o descripción (p. ej. `honeycomb opaco`) y pulsar el artículo. Guardar la fila.
+- Para cambiar el descuento de ancho basta con editar `@TEJIDO_ANCHO`; vale para todos los tejidos.
+
+## 3. Pestaña Tablas
+
+Tablas *clave → valor* por sistema (p. ej. `ALTO_PLIEGUES`: altura → cm de tejido).
+- **Importar Excel**: dos columnas (clave y valor), la primera fila son las cabeceras. Revisar y pulsar **Guardar**.
+- Se pueden editar, añadir o quitar filas. **Guardar** sustituye la tabla entera.
+- No se puede borrar una tabla que use algún parámetro.
+
+## 4. Pestaña Simulación
 
 1. Poner el **ID del pedido** y pulsar **Simular Pedido**.
 2. Izquierda: valores de los parámetros de cada línea. Derecha: componentes generados.
@@ -84,12 +122,13 @@ Los artículos HoneyComb del ERP están en `SOL_ARTICULOS_HONEYCOMB_ARTICULO` (p
 
 Qué revisar:
 - Que salgan todos los componentes esperados y ninguno de más.
-- Un consumo `-1` significa que la fórmula no se pudo calcular (parámetro mal escrito o no numérico).
+- Un consumo `-1` significa que la fórmula no se pudo calcular (parámetro mal escrito o no numérico, o un alto fuera
+  de la tabla de valores). Esas líneas y las **SIN ARTÍCULO** salen en rojo, con un aviso.
 - Si no sale nada: comprobar en la tabla de parámetros que el valor es el esperado y que la condición lo escribe igual.
 
 Método recomendado: montar un caso por combinación (accionamiento × color de perfil × tipo de tejido,
 y medidas límite si hay reglas por tramos) y simularlos todos antes de dar la configuración por buena.
 
-## 4. Al terminar
+## 5. Al terminar
 
 Avisar para generar el script que lleve las reglas y parámetros de DEV a producción.

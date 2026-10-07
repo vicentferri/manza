@@ -7,25 +7,35 @@ import { ToastrService } from 'ngx-toastr';
 import { take } from 'rxjs/operators';
 import {
   Condicion, Consumo, ErroresRegla, OPERADORES_CONDICION, OPERADORES_CONSUMO,
-  buildCondicion, buildConsumo, condicionVacia, consumoVacio, parseCondicion, parseConsumo,
+  buildCondicion, buildConsumo, condicionVacia, consumoVacio, operandoValido, parseCondicion, parseConsumo,
   validarCondicion, validarConsumo, validarRegla
 } from './fabricacion-reglas.util';
+import * as XLSX from 'xlsx';
 
 /*
  * Configuración de la fabricación por reglas (motor v3). Hoy solo el sistema HONEYCOMB.
  * Sistemas:   SOL_FABRICACION_SISTEMAS
  * Reglas:     SOL_ARTICULOS_FABRICACION_RELACION_V2 (sistema + cliente; sin cliente = todos)
- * Parámetros: SOL_FABRICACION_PARAMETROS (por sistema)
+ * Parámetros: SOL_FABRICACION_PARAMETROS (por sistema): COLUMNA, FORMULA, BUSQUEDA, TABLA
+ * Tablas:     SOL_FABRICACION_TABLAS / _VALORES (por sistema; p. ej. alto -> pliegues)
  */
 
 interface ArticuloRegla {
-  idrow: number;
+  idrow: any;           /* id del artículo, o @PARAMETRO si el artículo sale del pedido */
+  dinamico?: boolean;
   cod_sol: string;
   descripcion: string;
   unidad: number;
   descUnidad: string;
   consumo: Consumo;
 }
+
+const TIPOS_PARAMETRO = {
+  COLUMNA: 'Dato del pedido',
+  FORMULA: 'Fórmula',
+  BUSQUEDA: 'Búsqueda',
+  TABLA: 'Tabla de valores'
+};
 
 interface ColumnaOcultable {
   nombre: string;
@@ -102,9 +112,21 @@ export class ArtikelnFacCdV3Component implements OnInit {
     name: '',
     tipo: 'COLUMNA',
     origen: '',
-    orden: 0
+    orden: 0,
+    busqueda: '',
+    tabla: ''
   }
   erroresParametro: string[] = [];
+  tiposParametro = TIPOS_PARAMETRO;
+
+  /* Búsquedas (dadas de alta por script) y tablas de valores del sistema */
+  busquedas: any = [];
+  tablas: any = [];
+
+  /* ---------------- PESTAÑA TABLAS ---------------- */
+  tablaSel = '';
+  tablaEdit = this.tablaVacia();
+  guardandoTabla = false;
 
   /* ---------------- VENTANA DE REGLA ---------------- */
   regla = this.reglaVacia();
@@ -151,6 +173,8 @@ export class ArtikelnFacCdV3Component implements OnInit {
       { name: 'tipo', type: 'string' },
       { name: 'origen', type: 'string' },
       { name: 'orden', type: 'number' },
+      { name: 'busqueda', type: 'string' },
+      { name: 'tabla', type: 'string' },
     ],
     localdata: null
   };
@@ -260,6 +284,29 @@ export class ArtikelnFacCdV3Component implements OnInit {
     return this.celda('<i class="fa fa-exclamation-triangle fab-ko"></i>', 'fab-center', lista.join('\n'));
   };
 
+  /* Origen de un parámetro: columna, fórmula, o "entrada → búsqueda / tabla" */
+  textoOrigenParametro(p: any): string {
+    if (!p) return '';
+    if (p.tipo == 'BUSQUEDA') {
+      let b = this.busquedas.find(x => x.busqueda == p.busqueda);
+      return p.origen + ' → ' + (b ? b.descripcion : p.busqueda);
+    }
+    if (p.tipo == 'TABLA') {
+      return p.origen + ' → tabla ' + p.tabla;
+    }
+    return p.origen;
+  }
+
+  renderOrigenParametro(fila: any) {
+    let texto = this.textoOrigenParametro(fila);
+    return this.celda(this.escapeHtml(texto), fila && fila.tipo == 'FORMULA' ? 'fab-code' : '', texto);
+  }
+
+  /* Simulación: en rojo las líneas sin artículo (SIN ARTÍCULO) o con consumo -1 (no se pudo calcular) */
+  claseSimulacion = (row, field, value, fila) => {
+    return fila && (fila.articulo === null || fila.articulo === '' || Number(fila.consumo) === -1) ? 'fab-sim-error' : '';
+  };
+
   settings: any = {
     width: '100%',
     height: 600,
@@ -329,8 +376,8 @@ export class ArtikelnFacCdV3Component implements OnInit {
     columns: [
       { text: '', datafield: 'idrow', width: 40, cellsrenderer: this.eraser },
       { text: 'Nombre', datafield: 'name', width: 200, filtertype: 'textbox' },
-      { text: 'Tipo', datafield: 'tipo', width: 100, filtertype: 'textbox' },
-      { text: 'Origen (columna o fórmula)', datafield: 'origen', filtertype: 'textbox' },
+      { text: 'Tipo', datafield: 'tipo', width: 130, filtertype: 'textbox', cellsrenderer: (row, field, value) => this.renderTexto(row, field, TIPOS_PARAMETRO[value] || value) },
+      { text: 'Origen (columna, fórmula o parámetro de entrada)', datafield: 'origen', filtertype: 'textbox', cellsrenderer: (row, field, value, html?, props?, fila?) => this.renderOrigenParametro(fila) },
       { text: 'Orden', datafield: 'orden', width: 75, filtertype: 'textbox', cellsalign: 'center' },
     ]
   };
@@ -357,15 +404,15 @@ export class ArtikelnFacCdV3Component implements OnInit {
     showstatusbar: false,
     source: this.dataAdapterDet,
     columns: [
-      { text: "Pos", datafield: "idpedido", width: 50, filtertype: "textbox" },
-      { text: "Orden", datafield: "orden", width: 60, filtertype: "textbox", cellsalign: "center" },
-      { text: "Art", datafield: "articulo", width: 70, filtertype: "textbox" },
-      { text: "Descripción", datafield: "descripcion", width: 350, filtertype: "textbox" },
-      { text: "Cantidad", datafield: "cantidad", width: 70, filtertype: "textbox", cellsalign: "center" },
-      { text: "Unidad", datafield: "descUnidad", width: 70, filtertype: "textbox", cellsalign: "center" },
-      { text: "Consumo", datafield: "consumo", width: 80, filtertype: "textbox", cellsalign: "center", cellsformat: "d3" },
-      { text: "Cod_Sol", datafield: "cod_sol", width: 80, filtertype: "textbox", cellsalign: "center" },
-      { text: "Fam_Sol", datafield: "fam_sol", filtertype: "textbox", cellsalign: "center" },
+      { text: "Pos", datafield: "idpedido", width: 50, filtertype: "textbox", cellclassname: this.claseSimulacion },
+      { text: "Orden", datafield: "orden", width: 60, filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
+      { text: "Art", datafield: "articulo", width: 70, filtertype: "textbox", cellclassname: this.claseSimulacion },
+      { text: "Descripción", datafield: "descripcion", width: 350, filtertype: "textbox", cellclassname: this.claseSimulacion },
+      { text: "Cantidad", datafield: "cantidad", width: 70, filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
+      { text: "Unidad", datafield: "descUnidad", width: 70, filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
+      { text: "Consumo", datafield: "consumo", width: 80, filtertype: "textbox", cellsalign: "center", cellsformat: "d3", cellclassname: this.claseSimulacion },
+      { text: "Cod_Sol", datafield: "cod_sol", width: 80, filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
+      { text: "Fam_Sol", datafield: "fam_sol", filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
     ],
   };
 
@@ -514,8 +561,33 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
   ChangeSistema() {
     this.loadColumnas();
+    this.loadBusquedas();
+    this.loadTablas();
     this.loadParameters();
     this.loadValoresParametros();
+  }
+
+  loadBusquedas() {
+    this.service.HTTP_Get('/sm/fabricacion/busquedas' + this.querySistema()).subscribe(
+      data => {
+        this.busquedas = data.Table;
+        this.myGrid2.refresh();
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error));
+      });
+  }
+
+  loadTablas(seleccionar: string = null) {
+    this.service.HTTP_Get('/sm/fabricacion/tablas' + this.querySistema()).subscribe(
+      data => {
+        this.tablas = data.Table;
+        let tabla = seleccionar || (this.tablas.some(t => t.tabla == this.tablaSel) ? this.tablaSel : (this.tablas.length > 0 ? this.tablas[0].tabla : ''));
+        this.SeleccionarTabla(tabla);
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error));
+      });
   }
 
   loadValoresParametros() {
@@ -614,19 +686,43 @@ export class ArtikelnFacCdV3Component implements OnInit {
       });
   }
 
+  /* Parámetros calculados antes que el que se está editando (menor orden): los únicos que puede usar */
+  parametrosAnteriores(): string[] {
+    return this.parametros
+      .filter(p => p.orden < this.modelParam.orden && p.name != String(this.modelParam.name).toUpperCase())
+      .map(p => p.name);
+  }
+
   validarParametro() {
     this.erroresParametro = [];
+    let anteriores = this.parametrosAnteriores();
     if (this.modelParam.tipo == 'FORMULA') {
-      /* Una fórmula solo puede usar parámetros calculados antes (menor orden) */
-      let anteriores = this.parametros
-        .filter(p => p.orden < this.modelParam.orden && p.name != String(this.modelParam.name).toUpperCase())
-        .map(p => p.name);
       this.erroresParametro = validarConsumo(this.modelParam.origen, anteriores);
       if (String(this.modelParam.origen || '').trim() == '') {
         this.erroresParametro.push('La fórmula no puede estar vacía');
       }
     }
+    if (this.modelParam.tipo == 'BUSQUEDA' || this.modelParam.tipo == 'TABLA') {
+      if (!this.modelParam.origen) {
+        this.erroresParametro.push('Elija el parámetro de entrada');
+      }
+      else if (anteriores.indexOf(this.modelParam.origen) < 0) {
+        this.erroresParametro.push('El parámetro de entrada tiene que tener un orden menor que ' + this.modelParam.orden);
+      }
+      if (this.modelParam.tipo == 'BUSQUEDA' && !this.modelParam.busqueda) {
+        this.erroresParametro.push('Elija la búsqueda');
+      }
+      if (this.modelParam.tipo == 'TABLA' && !this.modelParam.tabla) {
+        this.erroresParametro.push('Elija la tabla de valores');
+      }
+    }
     return this.erroresParametro.length == 0;
+  }
+
+  /* Al cambiar de tipo, el origen anterior (columna, fórmula o entrada) ya no sirve */
+  CambiarTipoParametro() {
+    this.erroresParametro = [];
+    this.modelParam.origen = '';
   }
 
   SaveParameter() {
@@ -653,7 +749,10 @@ export class ArtikelnFacCdV3Component implements OnInit {
       this.DelParameter(row.name);
     }
     else {
-      this.modelParam = { name: row.name, tipo: row.tipo, origen: row.origen, orden: row.orden };
+      this.modelParam = {
+        name: row.name, tipo: row.tipo, origen: row.origen, orden: row.orden,
+        busqueda: row.busqueda || '', tabla: row.tabla || ''
+      };
       this.erroresParametro = [];
     }
   }
@@ -938,27 +1037,54 @@ export class ArtikelnFacCdV3Component implements OnInit {
     this.consumoComun = consumos.length <= 1;
     this.consumoTodos = consumos.length == 1 ? parseConsumo(consumos[0]) : consumoVacio();
 
-    regla.articulos = ids.map((id, i) => ({
-      idrow: parseInt(id, 10),
-      cod_sol: '',
-      descripcion: '',
-      unidad: null,
-      descUnidad: '',
-      consumo: consumos.length > 1 && consumos[i] !== undefined ? parseConsumo(consumos[i]) : consumoVacio(),
-    }));
+    regla.articulos = ids.map((id, i) => {
+      let consumo = consumos.length > 1 && consumos[i] !== undefined ? parseConsumo(consumos[i]) : consumoVacio();
+      return id.charAt(0) == '@' ? this.articuloDinamico(id, consumo) : {
+        idrow: parseInt(id, 10),
+        cod_sol: '',
+        descripcion: '',
+        unidad: null,
+        descUnidad: '',
+        consumo: consumo,
+      };
+    });
     this.regla = regla;
     this.completarArticulos();
   }
 
+  /* Artículo que sale del pedido: el valor de un parámetro (normalmente una búsqueda, p. ej. @TEJIDO_ARTICULO) */
+  articuloDinamico(parametro: string, consumo: Consumo = consumoVacio()): ArticuloRegla {
+    return {
+      idrow: parametro.toUpperCase(),
+      dinamico: true,
+      cod_sol: '',
+      descripcion: 'Según el pedido: el artículo que dé ' + parametro.toUpperCase(),
+      unidad: null,
+      descUnidad: '',
+      consumo: consumo,
+    };
+  }
+
+  /* Parámetros que pueden dar un artículo: las búsquedas */
+  parametrosArticulo(): string[] {
+    return this.parametros.filter(p => p.tipo == 'BUSQUEDA').map(p => p.name);
+  }
+
+  AnadirArticuloDinamico(parametro: string) {
+    if (parametro && !this.regla.articulos.some(a => a.idrow == parametro)) {
+      this.regla.articulos.push(this.articuloDinamico(parametro));
+    }
+  }
+
   /* Carga código, descripción y unidad de los artículos de la regla */
   completarArticulos() {
-    let ids = this.regla.articulos.filter(a => !isNaN(a.idrow)).map(a => a.idrow);
+    let ids = this.regla.articulos.filter(a => !a.dinamico && !isNaN(a.idrow)).map(a => a.idrow);
     if (ids.length == 0) {
       return;
     }
     this.service.HTTP_Get('/sm/fabricacion/articulos?ids=' + ids.join(',')).subscribe(
       data => {
-        this.regla.articulos.forEach(a => {
+        this.regla.articulos.filter(a => !a.dinamico).forEach(a => {
           let encontrado = data.Table.find(d => d.idrow == a.idrow);
           if (encontrado) {
             a.cod_sol = encontrado.cod_sol;
@@ -1016,6 +1142,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
   }
 
   unidadConsumo(articulo: ArticuloRegla) {
+    if (articulo && articulo.dinamico) {
+      return 'en la unidad del artículo (si es en metros, en cm)';
+    }
     return articulo && articulo.unidad == 3 ? 'cm (se guarda en m)' : (articulo && articulo.descUnidad ? articulo.descUnidad : '');
   }
 
@@ -1068,11 +1197,11 @@ export class ArtikelnFacCdV3Component implements OnInit {
     if ((consumo.tipo == 'parametro' || consumo.tipo == 'operacion') && !consumo.parametro) {
       return ['Elija el parámetro'];
     }
-    if (consumo.tipo == 'operacion' && String(consumo.numero).trim() == '') {
-      return ['Indique el número'];
+    if (consumo.tipo == 'operacion' && !operandoValido(consumo.numero)) {
+      return ['Indique un número o un @PARAMETRO'];
     }
-    if (consumo.tipo == 'operacion' && (consumo.extra || []).some(e => String(e.numero).trim() == '')) {
-      return ['Indique el número de todas las operaciones'];
+    if (consumo.tipo == 'operacion' && (consumo.extra || []).some(e => !operandoValido(e.numero))) {
+      return ['Indique un número o un @PARAMETRO en todas las operaciones'];
     }
     return validarConsumo(buildConsumo(consumo), this.nombresParametros);
   }
@@ -1168,6 +1297,172 @@ export class ArtikelnFacCdV3Component implements OnInit {
       });
   }
 
+  /* ---------------- TABLAS DE VALORES ----------------
+     Cada fila: clave -> valor. El motor usa la fila con la menor clave >= valor de entrada
+     (alto 150,5 usa la fila 151). Se guardan enteras (todas las filas a la vez). */
+
+  tablaVacia() {
+    return {
+      nueva: true,
+      tabla: '',
+      descripcion: '',
+      clave_texto: '',
+      valor_texto: '',
+      valores: [] as { clave: any, valor: any }[],
+    };
+  }
+
+  SeleccionarTabla(tabla: string) {
+    this.tablaSel = tabla;
+    let cabecera = this.tablas.find(t => t.tabla == tabla);
+    if (!cabecera) {
+      this.tablaEdit = this.tablaVacia();
+      return;
+    }
+    this.tablaEdit = {
+      nueva: false,
+      tabla: cabecera.tabla,
+      descripcion: cabecera.descripcion || '',
+      clave_texto: cabecera.clave_texto || '',
+      valor_texto: cabecera.valor_texto || '',
+      valores: [],
+    };
+    let url = '/sm/fabricacion/tablas/valores' + this.querySistema() + '&tabla=' + encodeURIComponent(tabla);
+    this.service.HTTP_Get(url).subscribe(
+      data => {
+        if (this.tablaSel == tabla) {
+          this.tablaEdit.valores = data.Table.map(v => ({ clave: v.clave, valor: v.valor }));
+        }
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error));
+      });
+  }
+
+  NuevaTabla() {
+    this.tablaSel = '';
+    this.tablaEdit = this.tablaVacia();
+  }
+
+  AnadirFilaTabla() {
+    this.tablaEdit.valores.push({ clave: '', valor: '' });
+  }
+
+  QuitarFilaTabla(i: number) {
+    this.tablaEdit.valores.splice(i, 1);
+  }
+
+  /* Importa las dos primeras columnas de la primera hoja: fila 1 = cabeceras, resto = clave y valor */
+  ImportarTabla(event) {
+    let fichero: File = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!fichero) {
+      return;
+    }
+    let lector = new FileReader();
+    lector.onload = (e: any) => {
+      try {
+        let libro = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        let filas: any[][] = XLSX.utils.sheet_to_json(libro.Sheets[libro.SheetNames[0]], { header: 1, blankrows: false });
+        if (filas.length < 2) {
+          this.toaster.error('El Excel no tiene filas de datos', 'Tablas');
+          return;
+        }
+        let malas = 0;
+        let valores = [];
+        filas.slice(1).forEach(f => {
+          let clave = parseFloat(String(f[0]).replace(',', '.'));
+          let valor = parseFloat(String(f[1]).replace(',', '.'));
+          if (isFinite(clave) && isFinite(valor)) {
+            valores.push({ clave: clave, valor: valor });
+          }
+          else {
+            malas++;
+          }
+        });
+        this.tablaEdit.valores = valores;
+        this.tablaEdit.clave_texto = this.tablaEdit.clave_texto || String(filas[0][0] || '');
+        this.tablaEdit.valor_texto = this.tablaEdit.valor_texto || String(filas[0][1] || '');
+        this.toaster.info(valores.length + ' filas importadas' + (malas > 0 ? ', ' + malas + ' ignoradas (no numéricas)' : '')
+          + '. Revise y pulse Guardar.', 'Tablas');
+      }
+      catch (err) {
+        this.toaster.error('No se pudo leer el Excel', 'Tablas');
+      }
+    };
+    lector.readAsArrayBuffer(fichero);
+  }
+
+  erroresTabla(): string[] {
+    let errores = [];
+    if (!/^[A-Za-z0-9_]+$/.test(String(this.tablaEdit.tabla || ''))) {
+      errores.push('Nombre no válido: use letras, números o _');
+    }
+    if (this.tablaEdit.valores.length == 0) {
+      errores.push('La tabla no tiene filas');
+    }
+    let claves = {};
+    this.tablaEdit.valores.forEach((v, i) => {
+      let clave = parseFloat(String(v.clave).replace(',', '.'));
+      let valor = parseFloat(String(v.valor).replace(',', '.'));
+      if (!isFinite(clave) || !isFinite(valor)) {
+        errores.push('Fila ' + (i + 1) + ': la clave y el valor tienen que ser números');
+      }
+      else if (claves[clave]) {
+        errores.push('Fila ' + (i + 1) + ': la clave ' + clave + ' está repetida');
+      }
+      claves[clave] = true;
+    });
+    return errores;
+  }
+
+  GuardarTabla() {
+    let errores = this.erroresTabla();
+    if (errores.length > 0) {
+      this.toaster.error(errores[0], 'Tablas');
+      return;
+    }
+    let body = {
+      sistema: this.sistema,
+      tabla: String(this.tablaEdit.tabla).toUpperCase(),
+      descripcion: this.tablaEdit.descripcion,
+      clave_texto: this.tablaEdit.clave_texto,
+      valor_texto: this.tablaEdit.valor_texto,
+      valores: this.tablaEdit.valores,
+    };
+    this.guardandoTabla = true;
+    this.service.HTTP_Post('/sm/fabricacion/tablas', JSON.stringify(body)).subscribe(
+      data => {
+        this.guardandoTabla = false;
+        if (data.message == 'OK') {
+          this.toaster.success('Tabla guardada', 'Tablas');
+          this.loadTablas(body.tabla);
+        }
+      },
+      error => {
+        this.guardandoTabla = false;
+        this.toaster.error(this.errorMessage(error), 'Tablas');
+      });
+  }
+
+  BorrarTabla() {
+    if (this.tablaEdit.nueva || !confirm('¿Desea borrar la tabla ' + this.tablaEdit.tabla + '?')) {
+      return;
+    }
+    let values = JSON.stringify({ sistema: this.sistema, tabla: this.tablaEdit.tabla });
+    this.service.HTTP_Post('/sm/fabricacion/tablas/delete', values).subscribe(
+      data => {
+        if (data.message == 'OK') {
+          this.toaster.success('Tabla borrada', 'Tablas');
+          this.tablaSel = '';
+          this.loadTablas();
+        }
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error), 'Tablas');
+      });
+  }
+
   /* ---------------- SIMULACION ---------------- */
 
   mostrarResultado(fabricacion: any[], parametros: any[]) {
@@ -1201,6 +1496,16 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
           if (data.Fabricacion.length == 0) {
             this.toaster.info('Ninguna regla se cumple para este pedido. Revise los valores de los parámetros.', 'Simulación');
+          }
+          let sinArticulo = data.Fabricacion.filter(f => f.articulo === null).length;
+          if (sinArticulo > 0) {
+            this.toaster.warning(sinArticulo + (sinArticulo == 1 ? ' componente sale' : ' componentes salen')
+              + ' SIN ARTÍCULO (en rojo): revise la Referencia del color en los datos del producto. No se envían al XML.', 'Simulación', { timeOut: 10000 });
+          }
+          let sinConsumo = data.Fabricacion.filter(f => Number(f.consumo) === -1).length;
+          if (sinConsumo > 0) {
+            this.toaster.warning(sinConsumo + (sinConsumo == 1 ? ' componente tiene' : ' componentes tienen')
+              + ' consumo -1 (en rojo): no se pudo calcular. Revise los parámetros (p. ej. un alto fuera de la tabla de valores).', 'Simulación', { timeOut: 10000 });
           }
         }
         this.mostrarResultado(data.Fabricacion, data.Parametros);

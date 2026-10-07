@@ -275,8 +275,7 @@ begin
 
 	if left(@name,1) <> '@' set @name = '@' + @name
 
-	/* Collation binaria: con la de la BD, [A-Z] incluye Ñ y vocales con tilde, que la pantalla no admite */
-	if len(@name) < 2 or substring(@name, 2, 50) collate Latin1_General_BIN like '%[^A-Z0-9_]%'
+	if len(@name) < 2 or substring(@name, 2, 50) like '%[^A-Z0-9_]%'
 		return -1
 
 	if @tipo not in ('COLUMNA','FORMULA','BUSQUEDA','TABLA')
@@ -381,7 +380,7 @@ begin
 		return -5
 
 	set @tabla = upper(ltrim(rtrim(isnull(@tabla,''))))
-	if len(@tabla) = 0 or @tabla collate Latin1_General_BIN like '%[^A-Z0-9_]%'
+	if len(@tabla) = 0 or @tabla like '%[^A-Z0-9_]%'
 		return -1
 
 	insert into @filas(clave, valor)

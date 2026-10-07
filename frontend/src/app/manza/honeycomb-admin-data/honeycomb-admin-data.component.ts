@@ -111,6 +111,19 @@ export class HoneycombAdminDataComponent implements OnInit {
    tiposTejidoLookup: TipoTejido[] = [];
    filtroTipoTejido: number = 0;
 
+   // Ventana de búsqueda de artículos Solupyme para Referencia
+   buscadorReferencia: {
+      color: ColorTejido | ColorPerfil,
+      nombre: string,
+      texto: string,
+      resultados: { codigo: string, descripcion: string }[],
+      buscando: boolean,
+      buscado: boolean
+   } | null = null;
+   descripcionesReferencia: { [codigo: string]: string } = {};
+   referenciasComprobadas: { [codigo: string]: boolean } = {};
+   private timerReferencia: any;
+
    // Estado
    cargando = false;
    guardando = false;
@@ -291,6 +304,7 @@ export class HoneycombAdminDataComponent implements OnInit {
                Incremento: c.Incremento || 0,
                editando: false
             }));
+            this.comprobarReferencias(this.coloresTejido.map(c => c.Referencia));
             this.cargando = false;
          },
          error: (err) => {
@@ -322,6 +336,102 @@ export class HoneycombAdminDataComponent implements OnInit {
 
    editarColorTejido(color: ColorTejido) {
       color.editando = true;
+   }
+
+   /**
+    * Ventana de búsqueda de artículos Solupyme para el campo Referencia.
+    * La Referencia solo se rellena eligiendo un artículo de la lista (es el código
+    * que usa la fabricación para encontrar el artículo del tejido/perfil).
+    */
+   abrirBuscadorReferencia(color: ColorTejido | ColorPerfil) {
+      const nombre = (color as ColorTejido).ColorTejido !== undefined
+         ? (color as ColorTejido).ColorTejido
+         : (color as ColorPerfil).ColorPerfil;
+      this.buscadorReferencia = {
+         color, nombre: nombre || '', texto: '', resultados: [], buscando: false, buscado: false
+      };
+      setTimeout(() => {
+         const input = document.getElementById('hc-buscador-referencia') as HTMLInputElement;
+         if (input) {
+            input.focus();
+         }
+      });
+   }
+
+   cerrarBuscadorReferencia() {
+      clearTimeout(this.timerReferencia);
+      this.buscadorReferencia = null;
+   }
+
+   buscarReferencia() {
+      const buscador = this.buscadorReferencia;
+      if (!buscador) {
+         return;
+      }
+      clearTimeout(this.timerReferencia);
+      const q = (buscador.texto || '').trim();
+      if (q.length < 2) {
+         buscador.resultados = [];
+         buscador.buscado = false;
+         return;
+      }
+      this.timerReferencia = setTimeout(() => {
+         buscador.buscando = true;
+         this.service.buscarArticulos(q).subscribe({
+            next: (data) => {
+               // Si el usuario ha seguido escribiendo, esta respuesta ya no vale
+               if (this.buscadorReferencia !== buscador || (buscador.texto || '').trim() !== q) {
+                  return;
+               }
+               buscador.resultados = data || [];
+               buscador.buscando = false;
+               buscador.buscado = true;
+            },
+            error: () => {
+               buscador.resultados = [];
+               buscador.buscando = false;
+               buscador.buscado = true;
+            }
+         });
+      }, 250);
+   }
+
+   elegirReferencia(articulo: { codigo: string, descripcion: string }) {
+      if (!this.buscadorReferencia) {
+         return;
+      }
+      this.buscadorReferencia.color.Referencia = articulo.codigo;
+      this.descripcionesReferencia[articulo.codigo] = articulo.descripcion;
+      this.referenciasComprobadas[articulo.codigo] = true;
+      this.cerrarBuscadorReferencia();
+   }
+
+   quitarReferencia(color: ColorTejido | ColorPerfil) {
+      color.Referencia = '';
+   }
+
+   /* Marca qué Referencias existen en Solupyme (las que no, salen en rojo: la fabricación no encontraría el artículo) */
+   comprobarReferencias(referencias: string[]) {
+      const codigos = referencias.map(r => (r || '').trim()).filter(r => r !== '');
+      if (codigos.length === 0) {
+         return;
+      }
+      this.service.articulosExisten(codigos).subscribe({
+         next: (data) => {
+            codigos.forEach(c => this.referenciasComprobadas[c] = true);
+            (data || []).forEach(a => this.descripcionesReferencia[a.codigo] = a.descripcion);
+         },
+         error: () => { }
+      });
+   }
+
+   referenciaNoExiste(referencia: string): boolean {
+      const codigo = (referencia || '').trim();
+      return codigo !== '' && this.referenciasComprobadas[codigo] && !this.descripcionesReferencia[codigo];
+   }
+
+   descripcionReferencia(referencia: string): string {
+      return this.descripcionesReferencia[(referencia || '').trim()] || '';
    }
 
    cancelarColorTejido(color: ColorTejido) {
@@ -418,6 +528,7 @@ export class HoneycombAdminDataComponent implements OnInit {
                Incremento: p.Incremento || 0,
                editando: false
             }));
+            this.comprobarReferencias(this.coloresPerfil.map(p => p.Referencia));
             this.cargando = false;
          },
          error: (err) => {

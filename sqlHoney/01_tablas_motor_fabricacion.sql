@@ -14,6 +14,10 @@
    - SOL_FABRICACION_PARAMETROS.valores_*: catálogo opcional de donde salen los
      valores posibles de un parámetro (desplegable en las condiciones de la pantalla).
    - SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS: valores calculados por línea HoneyComb.
+   - 2026-10-06 (tejido): tipos de parámetro BUSQUEDA y TABLA (columnas busqueda/tabla),
+     SOL_FABRICACION_BUSQUEDAS (búsquedas fijas por script: tabla + columna clave +
+     columna resultado; la pantalla solo elige una) y SOL_FABRICACION_TABLAS / _VALORES
+     (tablas de valores por sistema, p. ej. alto -> pliegues; datos en 07).
    Idempotente. En bases donde existía la versión anterior
    (SOL_ARTICULOS_HONEYCOMB_FABRICACION_PARAMETROS) migra sus filas y la elimina.
    ===================================================================== */
@@ -52,12 +56,12 @@ begin
 		idrow   int identity(1,1) not null primary key,
 		sistema varchar(50)  not null,
 		name    varchar(50)  not null,
-		tipo    varchar(10)  not null,  -- COLUMNA | FORMULA
+		tipo    varchar(10)  not null,  -- COLUMNA | FORMULA | BUSQUEDA | TABLA
 		origen  varchar(255) not null,  -- nombre de columna o expresión
 		orden   int          not null default(0),
 		constraint FK_FABRICACION_PARAMETROS_SISTEMA foreign key (sistema) references dbo.SOL_FABRICACION_SISTEMAS(sistema),
 		constraint UQ_FABRICACION_PARAMETROS_NAME unique(sistema, name),
-		constraint CK_FABRICACION_PARAMETROS_TIPO check (tipo in ('COLUMNA','FORMULA'))
+		constraint CK_FABRICACION_PARAMETROS_TIPO check (tipo in ('COLUMNA','FORMULA','BUSQUEDA','TABLA'))
 	)
 end
 go
@@ -135,5 +139,86 @@ begin
 		valor     varchar(255) null
 	)
 	create index IX_TIPO_7_PARAMETERS_IDROW on dbo.SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS(idrow)
+end
+go
+
+/* ---------------- TIPOS DE PARAMETRO ---------------- */
+if exists (select 1 from sys.check_constraints where name = 'CK_FABRICACION_PARAMETROS_TIPO'
+           and definition not like '%BUSQUEDA%')
+	alter table dbo.SOL_FABRICACION_PARAMETROS drop constraint CK_FABRICACION_PARAMETROS_TIPO
+go
+
+if not exists (select 1 from sys.check_constraints where name = 'CK_FABRICACION_PARAMETROS_TIPO')
+	alter table dbo.SOL_FABRICACION_PARAMETROS add constraint CK_FABRICACION_PARAMETROS_TIPO
+		check (tipo in ('COLUMNA','FORMULA','BUSQUEDA','TABLA'))
+go
+
+if col_length('dbo.SOL_FABRICACION_PARAMETROS', 'busqueda') is null
+	alter table dbo.SOL_FABRICACION_PARAMETROS add
+		busqueda varchar(50) null,   -- tipo BUSQUEDA: SOL_FABRICACION_BUSQUEDAS.busqueda
+		tabla    varchar(50) null    -- tipo TABLA: SOL_FABRICACION_TABLAS.tabla (del mismo sistema)
+go
+
+/* ---------------- BUSQUEDAS ---------------- */
+if object_id('dbo.SOL_FABRICACION_BUSQUEDAS') is null
+begin
+	create table dbo.SOL_FABRICACION_BUSQUEDAS
+	(
+		busqueda    varchar(50)  not null primary key,
+		sistema     varchar(50)  null,      -- NULL = disponible en todos los sistemas
+		descripcion varchar(150) not null,
+		tabla       sysname      not null,  -- dónde se busca
+		clave       sysname      not null,  -- columna que se compara con el valor de entrada
+		resultado   sysname      not null,  -- columna que se devuelve
+		constraint FK_FABRICACION_BUSQUEDAS_SISTEMA foreign key (sistema) references dbo.SOL_FABRICACION_SISTEMAS(sistema)
+	)
+end
+go
+
+merge dbo.SOL_FABRICACION_BUSQUEDAS as t
+using (values
+	('ARTICULO_POR_CODIGO',  null,        'Código Solupyme -> id del artículo',
+	 'ARTICULOS', 'cod_solupyme', 'idrow'),
+	('HC_TEJIDO_REFERENCIA', 'HONEYCOMB', 'Color de tejido HoneyComb -> Referencia (código Solupyme)',
+	 'SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO', 'idColorTejido', 'Referencia'),
+	('HC_PERFIL_REFERENCIA', 'HONEYCOMB', 'Color de perfil HoneyComb -> Referencia (código Solupyme)',
+	 'SOL_ARTICULOS_HONEYCOMB_COLORESPERFIL', 'idColorPerfil', 'Referencia')
+) as s(busqueda, sistema, descripcion, tabla, clave, resultado)
+on t.busqueda = s.busqueda
+when matched then
+	update set sistema = s.sistema, descripcion = s.descripcion, tabla = s.tabla, clave = s.clave, resultado = s.resultado
+when not matched then
+	insert(busqueda, sistema, descripcion, tabla, clave, resultado)
+	values(s.busqueda, s.sistema, s.descripcion, s.tabla, s.clave, s.resultado);
+go
+
+/* ---------------- TABLAS DE VALORES ---------------- */
+if object_id('dbo.SOL_FABRICACION_TABLAS') is null
+begin
+	create table dbo.SOL_FABRICACION_TABLAS
+	(
+		idrow       int identity(1,1) not null primary key,
+		sistema     varchar(50)  not null,
+		tabla       varchar(50)  not null,
+		descripcion varchar(150) null,
+		clave_texto varchar(50)  null,   -- cabecera de la columna clave (p. ej. Altura)
+		valor_texto varchar(50)  null,   -- cabecera de la columna valor (p. ej. Pliegues (cm))
+		constraint FK_FABRICACION_TABLAS_SISTEMA foreign key (sistema) references dbo.SOL_FABRICACION_SISTEMAS(sistema),
+		constraint UQ_FABRICACION_TABLAS unique(sistema, tabla)
+	)
+end
+go
+
+if object_id('dbo.SOL_FABRICACION_TABLAS_VALORES') is null
+begin
+	create table dbo.SOL_FABRICACION_TABLAS_VALORES
+	(
+		idrow   int identity(1,1) not null primary key,
+		idtabla int           not null,
+		clave   decimal(12,2) not null,
+		valor   decimal(12,2) not null,
+		constraint FK_FABRICACION_TABLAS_VALORES_TABLA foreign key (idtabla) references dbo.SOL_FABRICACION_TABLAS(idrow) on delete cascade,
+		constraint UQ_FABRICACION_TABLAS_VALORES unique(idtabla, clave)
+	)
 end
 go
