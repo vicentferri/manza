@@ -1321,7 +1321,7 @@ export class VerticalComponent implements OnInit, OnChanges {
 
                            if (nohaytarifa == false) {
                               this.precios.T3_Cantidad = pvp_cantidad;
-                              this.precios.T3_Tejido = pvp_cantidad * pvp;
+                              this.precios.T3_Tejido = pvp;
                               this.precios.T3_Tejido_C1 = code_c1;
                               this.Recalcular_Tipo3();
                            }
