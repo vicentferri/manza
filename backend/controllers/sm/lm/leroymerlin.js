@@ -931,9 +931,17 @@ function userInfo(req,res)
     var cliente = req.params.cli;
     if (cliente != null)
     {
-     var query = "SELECT ISNULL(prod_1,0) AS prod_1, ISNULL(prod_2,0) AS prod_2, " +
-                 "ISNULL(prod_3,0) AS prod_3, ISNULL(prod_4,0) AS prod_4, ISNULL(prod_7,0) AS prod_7 " +
-                 "FROM dbo.CLIENTES_USERS WHERE IDROW=" + parseInt(cliente);
+     var id = parseInt(cliente) || 0;
+     var query = "IF EXISTS (SELECT 1 FROM dbo.CLIENTES_USERS WHERE IDROW=" + id + ") " +
+                 "  SELECT ISNULL(prod_1,0) AS prod_1, ISNULL(prod_2,0) AS prod_2, " +
+                 "         ISNULL(prod_3,0) AS prod_3, ISNULL(prod_4,0) AS prod_4, ISNULL(prod_7,0) AS prod_7 " +
+                 "  FROM dbo.CLIENTES_USERS WHERE IDROW=" + id + "; " +
+                 "ELSE IF EXISTS (SELECT 1 FROM dbo.USERS WHERE IDROW=" + id + " AND (ambito = 'I' OR ambito = 'Interno') AND ISNULL(ACTIVO, 1) = 1) " +
+                 "  SELECT CAST(1 AS BIT) AS prod_1, CAST(1 AS BIT) AS prod_2, " +
+                 "         CAST(1 AS BIT) AS prod_3, CAST(1 AS BIT) AS prod_4, CAST(1 AS BIT) AS prod_7; " +
+                 "ELSE " +
+                 "  SELECT CAST(0 AS BIT) AS prod_1, CAST(0 AS BIT) AS prod_2, " +
+                 "         CAST(0 AS BIT) AS prod_3, CAST(0 AS BIT) AS prod_4, CAST(0 AS BIT) AS prod_7;";
      ExecuteSQL(query,res);
     }
 }
@@ -1002,61 +1010,6 @@ function tejidos_producto_id_web(req,res)
 
 
 
-function tarifa_limites(req, res) {
-  var cliente = parseInt(req.params.cli);
-  var producto = parseInt(req.params.pro);
-  var tejido = parseInt(req.params.tejido);
-  var marca = parseInt(req.params.marca);
-  var impresion = parseInt(req.params.impresion);
-
-  if (isNaN(cliente) || isNaN(producto) || isNaN(tejido)) {
-    return res.status(400).send({ message: 'Parámetros inválidos' });
-  }
-  if (isNaN(marca)) marca = 1;
-  impresion = (impresion === 1) ? 1 : 0;
-
-  // Misma selección de tarifa que sp_tarifas_calculate_prices3_AT:
-  // enrollable (1) filtra marca 55 o 1 sin alternativa; panel zip (6) sin marca.
-  // Se replica la forma exacta de cada select (sin top 1 en el 1, top 1 en el 6) para que,
-  // mientras existan tarifas duplicadas, se quede con la misma fila que el SP.
-  var marcaFiltro = (marca === 55) ? 55 : 1;
-  var prod = (producto === 2) ? 6 : 1;
-
-  var seleccion = (prod === 1)
-    ? `select @idrow = isnull(idrow,0) from sol_articulos_tarifas
-        where clientes = ${cliente} and tejidos = ${tejido} and marcas = ${marcaFiltro} and impresion = ${impresion} and producto = 1;`
-    : `select top 1 @idrow = isnull(idrow,0) from sol_articulos_tarifas
-        where clientes = ${cliente} and tejidos = ${tejido} and impresion = ${impresion} and producto = 6;`;
-
-  // Límites a partir de las cabeceras que tienen al menos una celda con precio
-  // (hay matrices con columnas/filas en la cabecera pero sin precios, que el SP valora a 0).
-  var query = `
-    declare @idrow int = 0;
-    ${seleccion}
-
-    ;with celdas as (
-        select x, y from sol_articulos_tarifas_lineas
-        where idrow = @idrow and x > 0 and y > 0 and try_cast(replace(v1,',','.') as decimal(12,2)) is not null
-    ),
-    anchos as (
-        select l.x, v = try_cast(replace(l.v1,',','.') as decimal(10,2)) from sol_articulos_tarifas_lineas l
-        where l.idrow = @idrow and l.y = 0 and l.x > 0 and exists (select 1 from celdas c where c.x = l.x)
-    ),
-    altos as (
-        select l.y, v = try_cast(replace(l.v1,',','.') as decimal(10,2)) from sol_articulos_tarifas_lineas l
-        where l.idrow = @idrow and l.x = 0 and l.y > 0 and exists (select 1 from celdas c where c.y = l.y)
-    )
-    select
-        @idrow as idrow,
-        isnull((select min(v) from anchos) * 100, 100) as min_ancho,
-        isnull((select max(v) from anchos) * 100, 380) as max_ancho,
-        isnull((select min(v) from altos) * 100, 100) as min_alto,
-        isnull((select max(v) from altos) * 100, 300) as max_alto;
-  `;
-
-  ExecuteSQL(query, res);
-}
-
 module.exports = {
     estancias,
 	  accion,
@@ -1103,7 +1056,6 @@ module.exports = {
     put_cajon_cliente,
     cajon_cliente_del,
     Cargadores,
-    userInfo,
-    tarifa_limites
+    userInfo
 }
 

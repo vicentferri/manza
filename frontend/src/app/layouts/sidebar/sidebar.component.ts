@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { setSidebarHidden } from '../../shared/sidebar-state';
 
 @Component({
   selector: 'app-sidebar',
@@ -30,6 +31,12 @@ export class SidebarComponent implements OnInit {
   }
 
   ngAfterViewInit() { }
+
+  /** Oculta el menú lateral; se vuelve a mostrar con el botón de la cabecera. */
+  hideSidebar(event: Event) {
+    event.preventDefault();
+    setSidebarHidden(true);
+  }
 
   /** ¿El usuario logueado es administrador total? */
   isAdmin(): boolean {

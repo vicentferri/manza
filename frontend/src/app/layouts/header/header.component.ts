@@ -1,7 +1,10 @@
-import { Component, OnInit, DoCheck } from '@angular/core';
+import { Component, OnInit, OnDestroy, DoCheck, Input } from '@angular/core';
 import { HaruService } from '../../services/haru.service';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { isSidebarHidden, setSidebarHidden } from '../../shared/sidebar-state';
+import { getPageTitle, PageTitle } from '../../shared/page-titles';
 
 
 @Component({
@@ -9,13 +12,27 @@ import { environment } from '../../../environments/environment';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
-export class HeaderComponent implements OnInit, DoCheck {
+export class HeaderComponent implements OnInit, OnDestroy, DoCheck {
 
   username = "username";
+
+  /** Solo el layout con menú lateral (equipo interno) muestra el botón de ocultar/mostrar menú. */
+  @Input() showSidebarToggle = false;
+
+  /** Pantalla actual (sección + nombre) que se muestra junto al botón del menú. */
+  pageTitle: PageTitle | null = null;
+  private routerSub: Subscription;
 
   constructor(private router: Router, private service: HaruService) { }
 
   ngOnInit() {
+    this.pageTitle = getPageTitle(this.router.url);
+    this.routerSub = this.router.events.subscribe(e => {
+      if (e instanceof NavigationEnd) {
+        this.pageTitle = getPageTitle(e.urlAfterRedirects);
+      }
+    });
+
     if (localStorage.getItem('currentUser')) {
       var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
       this.username = user.name;
@@ -31,6 +48,20 @@ export class HeaderComponent implements OnInit, DoCheck {
 
   }
 
+  ngOnDestroy() {
+    if (this.routerSub) {
+      this.routerSub.unsubscribe();
+    }
+  }
+
+  sidebarHidden(): boolean {
+    return isSidebarHidden();
+  }
+
+  toggleSidebar() {
+    setSidebarHidden(!isSidebarHidden());
+  }
+
   logout() {
     this.service.logout();
     this.router.navigate(['/pages/login']);
@@ -39,7 +70,8 @@ export class HeaderComponent implements OnInit, DoCheck {
   setHeader() {
 
     let cssClasses;
-    let header = environment.header;
+    // El layout interno (con menú lateral) va siempre en negro
+    let header = this.showSidebarToggle ? 'black' : environment.header;
 
     if (header === "black") {
       cssClasses = {
@@ -47,7 +79,7 @@ export class HeaderComponent implements OnInit, DoCheck {
       }
     }
 
-    if (header === "blue") {
+    else if (header === "blue") {
       cssClasses = {
         'blue app-header navbar': true,
       }

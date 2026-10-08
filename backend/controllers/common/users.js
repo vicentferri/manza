@@ -145,7 +145,7 @@ function Authenticate(req, res) {
                      "ISNULL(isAdmin, 0) AS isAdmin, ISNULL(ACTIVO, 0) AS activo, " +
                      "(SELECT nomfiscal FROM nh_clientes WHERE idcliente = USERS.EMPRESA) AS descempresa, " +
                      "(SELECT nombre FROM NH_CLIENTES_DOMICILIOS WHERE idrow = USERS.SUBEMPRESA) AS descsubempresa " +
-                     "FROM USERS WHERE (username = '" + usuario + "' OR email = '" + usuario + "' OR (email = 'jmartinez@solarmanes.es' AND '" + usuario + "' = 'admin')) AND (ambito = 'I' OR ambito = 'Interno')";
+                     "FROM USERS WHERE (username = '" + usuario + "' OR email = '" + usuario + "') AND (ambito = 'I' OR ambito = 'Interno')";
 
     new sql.Request().query(sqlInterno, (err, resInterno) => {
         if (!err && resInterno.recordset.length === 1) {

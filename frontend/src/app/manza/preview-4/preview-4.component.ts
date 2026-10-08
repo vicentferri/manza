@@ -9,6 +9,7 @@ import { CortinaTipo } from '../config/CortinaTipo';
 export class Preview4Component implements OnInit {
 
   @Input() item!: CortinaTipo;
+  @Input() Cliente: string = '-1';
   @Output() onDelete = new EventEmitter();
   @Output() onEdit = new EventEmitter();
   isCopied1 = false;

@@ -18130,11 +18130,11 @@ base-chart.chart {
   height: 50px;
   padding: 0.5rem 1rem;
   margin-right: 0;
-  background-color: #e6e6e6;
-  background-image: url("../img/logo-manza.jpg");
+  background-color: #000000;
+  background-image: url("../img/ManzaSM.png");
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: 220px auto;
+  background-size: auto;
 }
 .app-header.navbar .navbar-nav {
   flex-direction: row;

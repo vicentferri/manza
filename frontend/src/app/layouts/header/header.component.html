@@ -1,12 +1,16 @@
 <header [ngClass]="setHeader()">
 
   <a class="navbar-brand" href="#"></a>
-  <ul class="nav navbar-nav d-md-down-none">
-
-    <li class="nav-item px-3">
-      <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master']">Configuración</a>
-    </li>
-  </ul>
+  <button *ngIf="showSidebarToggle" type="button" class="sm-sidebar-toggler" (click)="toggleSidebar()"
+    [title]="sidebarHidden() ? 'Mostrar menú' : 'Ocultar menú'">
+    <i class="fa fa-bars"></i>
+    <span class="d-md-down-none">{{ sidebarHidden() ? 'Mostrar menú' : 'Ocultar menú' }}</span>
+  </button>
+  <div class="sm-page-title" *ngIf="pageTitle">
+    <span class="sm-page-section d-md-down-none" *ngIf="pageTitle.section">{{ pageTitle.section }}</span>
+    <i class="fa fa-angle-right sm-page-sep d-md-down-none" *ngIf="pageTitle.section"></i>
+    <span class="sm-page-label">{{ pageTitle.label }}</span>
+  </div>
 
   <ul class="nav navbar-nav ml-auto">
     <li class="nav-item dropdown" dropdown placement="bottom right">

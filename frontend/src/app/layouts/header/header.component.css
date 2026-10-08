@@ -1,0 +1,77 @@
+.navbar-brand,
+:host ::ng-deep .navbar-brand {
+  background-color: #000000 !important;
+  background-image: url('/assets/img/ManzaSM.png') !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: auto !important;
+}
+
+.sm-sidebar-toggler {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.75rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  color: #e9ecef;
+  background: #1c1f24;
+  border: 1px solid #3a3f47;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.sm-sidebar-toggler:hover,
+.sm-sidebar-toggler:focus {
+  color: #fff;
+  background: #2a2f36;
+  border-color: #36a9e1;
+  outline: none;
+}
+
+.sm-sidebar-toggler .fa {
+  font-size: 1rem;
+  color: #36a9e1;
+}
+
+/* Pantalla actual: SECCIÓN (gris) › Nombre (blanco) */
+.sm-page-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid #3a3f47;
+  white-space: nowrap;
+}
+
+.sm-page-section {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b95a3;
+}
+
+.sm-page-sep {
+  margin: 0 0.55rem;
+  color: #36a9e1;
+}
+
+.sm-page-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Usuario (derecha) legible sobre fondo negro */
+header.app-header .navbar-nav .nav-link.dropdown-toggle {
+  color: #c9d1d9;
+}
+
+header.app-header .navbar-nav .nav-link.dropdown-toggle:hover {
+  color: #fff;
+}
