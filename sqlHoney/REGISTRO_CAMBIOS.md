@@ -15,6 +15,7 @@ preparado para migrar otros sistemas (catálogo de sistemas) y para fabricacione
 | `05_sps_configuracion_fabricacion.sql` | SPs de reglas/parámetros (`sp_fabricacion_regla_*`, `sp_fabricacion_parametro_*`, `sp_fabricacion_parametros_valores`), limitados a sistemas del catálogo. **2026-10-06 (tejido):** `sp_fabricacion_parametro_edit` admite `BUSQUEDA`/`TABLA`; nuevos `sp_fabricacion_tabla_guardar` / `_borrar` | ✅ 2026-10-05 · ✅ 2026-10-06 (tejido) | ⏳ | ⏳ |
 | `06_sp_fichero_produccion_2.sql` | Bloque XML `articulo = 7` → `<Articulo>220.00</Articulo>` (hasta 2026-10-06: `22000`). **2026-10-06:** las líneas sin artículo (`SIN ARTÍCULO`) no van al XML | ✅ 2026-09-29 · ✅ 2026-10-06 | ⏳ | ⏳ |
 | `07_datos_tabla_alto_pliegues_honeycomb.sql` | Datos: tabla `HONEYCOMB / ALTO_PLIEGUES` de `honeycombAltura.xlsx` (alto 30-280 cm → cm de tejido, 251 filas). Solo carga si no existe | ✅ 2026-10-06 | ⏳ | ⏳ |
+| `08_datos_configuracion_honeycomb.sql` | Datos: 4 parámetros del tejido, 37 reglas HONEYCOMB + la regla del TEJIDO y Referencias de los colores de tejido, generado desde DEV (2026-10-08). Idempotente: solo añade lo que falta, no modifica ni borra; avisa de lo que difiere. Probado en DEV con rollback (DEV tal cual, BD sin configuración, caso parcial) | ✅ 2026-10-08 | ⏳ | ⏳ |
 
 Scripts idempotentes. Ejecutar con `SET QUOTED_IDENTIFIER ON` (ya incluido; el motor usa métodos XML).
 Con sqlcmd: `sqlcmd -S ... -d <BD> -I -f 65001 -b -i <script>`.
@@ -109,7 +110,9 @@ en sus tablas). La simulación de la pantalla asume la misma estructura que el t
 ## Checklist de paso a PRODUCCIÓN
 
 1. **Copia de seguridad** en PROD de: `temp_sp_fabricacion_tipo_7`, `sol_pedidos_cola_tipo_7_add`, `sp_fichero_produccion_2`.
-2. **SQL** en PROD, en este orden y seguidos: `01` → `02` → `03` → `04` → `05` → `06` → `07`.
+2. **SQL** en PROD, en este orden y seguidos: `01` → `02` → `03` → `04` → `05` → `06` → `07` → `08`.
+   - `08` lleva los datos de configuración (ver paso 5). Leer sus mensajes y avisos al terminar: reglas que ya existían y
+     difieren (no se tocan), artículos que no existen en PROD y Referencias sin artículo.
    - `03` imprime cada fila HoneyComb migrada (pedido → línea nueva); guardar la salida.
    - `06`: la versión de PROD es idéntica a la de DEV/TEST (confirmado 2026-09-29).
 3. **Backend** (reiniciar el servicio):
@@ -122,8 +125,9 @@ en sus tablas). La simulación de la pantalla asume la misma estructura que el t
 5. **Datos de configuración**: las reglas (`SOL_ARTICULOS_FABRICACION_RELACION_V2`) y los parámetros
    (`SOL_FABRICACION_PARAMETROS`, incluidos los de tejido) son **datos**, no código. La tabla `ALTO_PLIEGUES` sí va
    en el script `07`. Las Referencias de los colores (admin-data) también son datos: lo que se configure en DEV/TEST no pasa solo a PROD.
-   O se configuran directamente en PROD tras el despliegue, o se exportan con un script (pendiente de generar cuando
-   la configuración esté cerrada). Comprobar que los ids de artículo y de cliente coinciden en PROD.
+   Van en el script `08` (generado desde DEV el 2026-10-08): si la configuración de DEV cambia después, hay que
+   regenerarlo (el generador no está en el repo; se puede rehacer desde las tablas). Comprobar que los ids de artículo
+   coinciden en PROD: el propio script lo avisa al final.
 6. **Permisos**: dar `fab_config` (Setup → Usuarios → Fabricación → Configuración) a quien vaya a configurar.
 7. **Tests**: `node backend/test/fabricacion/run.js` contra TEST, antes de PROD. Tiene que dar 0 FALLOS, salvo los que estén aceptados en *Pendiente*.
 8. **Comprobación**: simular un pedido HoneyComb real en la pantalla y revisar el XML; generar la fabricación de un
