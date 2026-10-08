@@ -16,7 +16,7 @@ var cors = require("cors");
 var app = express();
 
 var options = {
-    key: fs.readFileSync('./Certificado/manzasm.key'),
+    key : fs.readFileSync('./Certificado/manzasm.key'),
     cert: fs.readFileSync('./Certificado/manzasm.crt')
 };
 
@@ -25,27 +25,27 @@ var sm_routes = require('./routes/sm_routes');
 var lm_routes = require('./routes/link_routes');
 
 app.use(compression());
-app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
-app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({extended:true,limit: '100mb'}));
+app.use(bodyParser.json({limit: '100mb'}));
 app.use(bodyParser.raw());
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  }));
 app.use(express.static(html));
 
-var porth = 3001;
+var porth = 8080;
 
 var config = {
-    user: 'sa',
+    user : 'sa',
     password: 'Cq4iz5Tsq9',
-    server: 'localhost',
-    database: 'SOLARMANES_DEV',
-    language: 'es',
-    options: {
-        encrypt: false,
-        enableArithAbort: true
+    server : '92.222.16.22',
+    database : 'SOLARMANES_DEV',
+    language : 'es',
+    options : {
+        encrypt : false,
+        enableArithAbort : true
     },
     connectionTimeout: 900000,
     requestTimeout: 900000,
@@ -66,25 +66,25 @@ var connection = sql.connect(config, function (err) {
 module.exports = connection;
 
 /* Generell API*/
-app.use('/api', master_routes);
+app.use('/api',master_routes);
 
 /* SolarManes Explicit API */
-app.use('/api/sm', sm_routes);
+app.use('/api/sm',sm_routes);
 
-app.use('/api/lm', lm_routes);
+app.use('/api/lm',lm_routes);
 
 
 
-app.use(function (req, res, next) {
+app.use(function(req, res, next){  
     // if the request is not html then move along
     var accept = req.accepts('html', 'json', 'xml', 'text');
-    if (accept !== 'html') {
+    if(accept !== 'html'){
         return next();
     }
 
     // if the request has a '.' assume that it's for a file, move along
     var ext = path.extname(req.path);
-    if (ext !== '') {
+    if (ext !== ''){
         return next();
     }
     fs.createReadStream(html + 'index.html').pipe(res);
@@ -96,9 +96,9 @@ app.use(function (req, res, next) {
 
 var httpsServer = https.createServer(options, app);
 
-httpsServer.listen(porth, function () {
-    console.log('Port:' + porth);
-    console.log('Html:' + html);
-});
+httpsServer.listen(porth, function(){
+      console.log('Port:' + porth);
+      console.log('Html:' + html);
+    });
 
 
