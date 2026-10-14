@@ -94,7 +94,8 @@ export class TarifasSimulateComponent implements OnInit {
   { id: "2", name: "PANEL JAPONES" },
   { id: "3", name: "VERTICALES" },
   { id: "4", name: "LINEA BLANCA" },
-  { id: "5", name: "NOCHE Y DIA" }]
+  { id: "5", name: "NOCHE Y DIA" },
+  { id: "7", name: "HONEYCOMB" }]
   lista_accionamientos: any = null;
   lista_marcas: any = null;
   lista_tejidos: any = null;
@@ -650,10 +651,17 @@ export class TarifasSimulateComponent implements OnInit {
       this.lista_criterios = this.lista_criterios_nocheydia;
     }
 
+    // HoneyComb no usa criterio: el tejido sale de la tabla de pliegues, sin merma
+    if (this.model.tipoproducto == 7) {
+      this.lista_criterios = [];
+      this.model.criterio = null;
+    }
+
     if (this.model.tipoproducto == 1) this.lblPrecio = "Precio m2";
     if (this.model.tipoproducto == 3) this.lblPrecio = "Precio mL";
     if (this.model.tipoproducto == 4) this.lblPrecio = "Precio mL";
     if (this.model.tipoproducto == 5) this.lblPrecio = "Precio m2";
+    if (this.model.tipoproducto == 7) this.lblPrecio = "Precio m2";
   }
 
   loadHeader(idrow: number) {
@@ -822,9 +830,14 @@ export class TarifasSimulateComponent implements OnInit {
 
       //console.log(element);
       if (element.idrow == value) {
-        if (this.model.tipoproducto == 1) {
+        if (this.model.tipoproducto == 1 || this.model.tipoproducto == 2 || this.model.tipoproducto == 5) {
           this.model.preciom2 = element.coste;
           this.model.criterio = element.criterio;
+        }
+
+        if (this.model.tipoproducto == 7) {
+          this.model.preciom2 = element.coste;
+          this.model.criterio = null;
         }
 
         if (this.model.tipoproducto == 3) {
@@ -845,7 +858,7 @@ export class TarifasSimulateComponent implements OnInit {
     this.lista_grupos.forEach(element => {
       if (element.idrow == value) {
         this.model.preciom2 = element.coste;
-        this.model.criterio = element.criterio;
+        this.model.criterio = (this.model.tipoproducto == 7) ? null : element.criterio;
       }
     });
   }
@@ -1141,12 +1154,31 @@ export class TarifasSimulateComponent implements OnInit {
         this.source2.localdata = data.Table[0];
         this.dataAdapter2.dataBind();
         this.myTarifa.updatebounddata();
+        this.ShowHideMapa();
         this.myTarifa.hideloadelement();
       },
       error => {
         this.toaster.error(error.message);
       }
     );
+  }
+
+  /**
+   * Columnas de ancho del mapa: HoneyComb solo llega a 1,40 (c07); el resto de productos las muestra todas.
+   */
+  ShowHideMapa() {
+    const ultima = (this.model.tipoproducto == 7) ? 7 : 999;
+    // Un solo repintado y solo las columnas que cambian: con hide/show uno a uno la tabla se bloquea segundos
+    this.myTarifa.beginupdate();
+    this.settings2.columns.forEach(col => {
+      const n = parseInt(col.datafield.substring(1), 10);
+      if (n < 2) return;
+      const ocultar = n > ultima;
+      if (this.myTarifa.getcolumnproperty(col.datafield, 'hidden') === ocultar) return;
+      if (ocultar) this.myTarifa.hidecolumn(col.datafield);
+      else this.myTarifa.showcolumn(col.datafield);
+    });
+    this.myTarifa.endupdate();
   }
 
   changeTipoSegmento(value) {
@@ -1301,6 +1333,10 @@ export class TarifasSimulateComponent implements OnInit {
     else if (this.model.tipoproducto == 2) {
       this.cx = (0.40 + 0.20 * (x - 2)).toFixed(2);
       this.cy = (0.655 + 0.20 * y).toFixed(3);
+    }
+    else if (this.model.tipoproducto == 7) {
+      this.cx = (0.40 + 0.20 * (x - 2)).toFixed(2);
+      this.cy = (0.40 + 0.20 * y).toFixed(2);
     }
     else {
       this.cx = (0.40 + 0.20 * (x - 2)).toFixed(2);
