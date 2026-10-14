@@ -58,6 +58,7 @@ export class BudgetListeComponent implements OnInit {
   responsables2: Array<GenType2> = [];
   zustanden: Array<GenType2> = [];
   public linkDocument: any = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
+  public linkInforme: any = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
   public SelectedDate: Date = new Date();
   public SelectedDate2: Date = new Date();
   public responsable = "-1";
@@ -344,7 +345,7 @@ export class BudgetListeComponent implements OnInit {
     enabletooltips: true,
     editable: false,
     groupable: true,
-    selectionmode: 'multiplerow', /* wir haben hier verschiedene Optionen,
+    selectionmode: 'singlerow', /* wir haben hier verschiedene Optionen,
                                     * damit zu benutzen beispielweise singlerow,multiplerow, multiplecelladvanced*/
     showfilterrow: true,
     filterable: true,
@@ -389,20 +390,29 @@ export class BudgetListeComponent implements OnInit {
 
   };
 
-  Impresion2() {
+  Impresion2(modal) {
     var arrayData: any[] = [];
     arrayData = this.getSelectedRows(this.myGrid, "idrow");
-    if (arrayData.length > 0) {
-      this.Print(arrayData);
+    if (arrayData.length == 0) {
+      alert("No ha seleccionado ninguna linea");
+      return;
     }
-    else {
-      alert("No ha seleccionado ninguna linea")
+    if (arrayData.length > 1) {
+      alert("Solamente se puede imprimir un presupuesto. Deseleccione el resto de lineas");
+      return;
     }
+    this.Print(arrayData[0]);
+    modal.show();
   }
 
   Print(item) {
-    var url = "https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&proc=PP_PREVIEW_PRE&ids=" + item;
-    this.linkDocument = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
+    // Se vacía el iframe y se añade un parámetro único para que el navegador
+    // no reutilice el informe anterior.
+    this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
+    var url = "https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&proc=PP_PREVIEW_PRE&ids=" + item + "&_=" + Date.now();
+    setTimeout(() => {
+      this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
+    }, 0);
   }
 
   EnlazarFactura() {
