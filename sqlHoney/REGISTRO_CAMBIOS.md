@@ -17,6 +17,14 @@ preparado para migrar otros sistemas (catálogo de sistemas) y para fabricacione
 | `07_datos_tabla_alto_pliegues_honeycomb.sql` | Datos: tabla `HONEYCOMB / ALTO_PLIEGUES` de `honeycombAltura.xlsx` (alto 30-280 cm → cm de tejido, 251 filas). Solo carga si no existe | ✅ 2026-10-06 | ⏳ | ✅ 2026-10-08 |
 | `08_datos_configuracion_honeycomb.sql` | Datos: 4 parámetros del tejido, 37 reglas HONEYCOMB + la regla del TEJIDO y Referencias de los colores de tejido, generado desde DEV (2026-10-08). Idempotente: solo añade lo que falta, no modifica ni borra; avisa de lo que difiere. Probado en DEV con rollback (DEV tal cual, BD sin configuración, caso parcial) | ✅ 2026-10-08 | ⏳ | ✅ 2026-10-08 |
 
+| `09_datos_tejidos_honeycomb_tarifas.sql` | Rama `honeyComb_tarifas` (generador de tarifas). Alta del producto 7 HONEYCOMB en `SOL_ARTICULOS_PRODUCTOS` (lo exige la FK; desde ahí `AT_Configuracion_Cliente_Nuevo_Inicio` crea accionamientos del 7 en clientes nuevos), `COSTE` = 9,35 en los tejidos HONEYCOMB OPACO 252-256 y asignación al producto 7 en `SOL_ARTICULOS_TEJIDOS_CLIENTES_PRODUCTOS` (clientes 1, 2, 4 y 5; IMPRESION 0, DIASFABRICACION 5). Las 20 filas salen sin `Ntejido` ni `codigoprov`: los tejidos no tienen descripción ni código por cliente | ✅ 2026-10-13 | ⏳ | ⏳ |
+| `10_exportacion_honeycomb.sql` | Tipo de exportación 8 HONEYCOMB en `SOL_TARIFAS_EXPORTACION` (ancho 0,40-1,40, alto 0,40-2,80; `idrow` IDENTITY, se inserta con id 8 explícito) | ✅ 2026-10-13 | ⏳ | ⏳ |
+| `11_fn_fabricacion_tabla_valor.sql` | Función nueva: valor de una tabla de fabricación (menor clave ≥ entrada), la misma regla que el motor v3 | ✅ 2026-10-13 | ⏳ | ⏳ |
+| `12_fn_solarmanes_precio_tejido_honeycomb.sql` | Función nueva: tejido HoneyComb = ancho × tejido plegado (`ALTO_PLIEGUES`) × preciom2 × margen1, sin merma; NULL si el alto no está en la tabla | ✅ 2026-10-13 | ⏳ | ⏳ |
+| `13_sp_solarmanes_precio_tejido_tabla_tarifa.sql` | SP del mapa: `tipoproducto` 7 (altos 0,40-2,80, anchos c02-c07, `c01` = tejido plegado, bloques 1 y 10) y rejilla de cada tipo declarada en un solo sitio (hallazgo 9). Regresión: 17 tarifas de los tipos 1-5 × 15 bloques, idénticas antes y después | ✅ 2026-10-13 | ⏳ | ⏳ |
+| `14_sp_simulate_table_details.sql` | Desglose de casilla igual que el mapa (hallazgo 4): tipo 7; `c01` de los tipos 2, 3 y 5; tejido de panel y noche y día con las funciones del mapa; monetarios sin filtro `k > 0`. Antes descuadraba en panel (hasta 2,47 €) y noche y día (hasta 161,62 €); ahora ±0,01 por redondeo. Solo cambia lo que muestra el desglose | ✅ 2026-10-13 | ⏳ | ⏳ |
+| `15_sp_solarmanes_tabla_tarifa_export_v2.sql` | Exportación tipo 8: cabecera de anchos hasta 1,40 y `select` final propio (c00-c07; sin él la pantalla no recibía datos, detectado al probar en pantalla). Resto de tipos: salida idéntica (comprobado) | ✅ 2026-10-13 | ⏳ | ⏳ |
+
 Scripts idempotentes. Ejecutar con `SET QUOTED_IDENTIFIER ON` (ya incluido; el motor usa métodos XML).
 Con sqlcmd: `sqlcmd -S ... -d <BD> -I -f 65001 -b -i <script>`.
 
@@ -71,6 +79,30 @@ productos), `GUIA_CONFIGURACION_FABRICACION.md` (uso de la pantalla).
     `SIN ARTÍCULO` y consumo `-1` en rojo y aviso.
   - Frontend admin-data: Referencias que no existen en Solupyme en rojo (tejido y perfil).
   - Estado: DEV ✅ · TEST ⏳ · PROD ⏳.
+- **2026-10-13 — HoneyComb en el generador de tarifas (rama `honeyComb_tarifas`, scripts 09-15).**
+  Frontend `routes/herstellen/tarifas-simulate/tarifas-simulate.component.ts`:
+  - Producto 7 HONEYCOMB en `lista_productos`; sin criterios (desplegable vacío, `criterio` = null) y etiqueta "Precio m2".
+  - `getCoste`: el tipo 7 toma `coste` del tejido sin criterio; los tipos 2 y 5 pasan a tomar `coste` y `criterio`
+    (antes no rellenaban nada al elegir tejido). `getCosteGrupo`: el tipo 7 no copia el criterio del grupo.
+  - Casilla seleccionada: alto = 0,40 + 0,20·fila para el tipo 7.
+  - Mapa: `ShowHideMapa` oculta las columnas desde 1,60 (c08) en el tipo 7 y las muestra en el resto, dentro de
+    `beginupdate`/`endupdate` y solo las que cambian (ocultarlas una a una bloqueaba la página 20-30 s).
+  - Sin cambios en el backend. Estado: DEV ✅ · TEST ⏳ · PROD ⏳.
+  - Probado en pantalla (local contra DEV): alta de tarifa HoneyComb (criterio vacío, "Precio m2", coste 9,35 del
+    tejido 252), guardado (tipo 7, criterio NULL), mapa 13 × 6 igual al céntimo que la prueba SQL, desglose de
+    1,00 × 1,40 = 68,28 igual que el mapa, clonado (tipo 7 con líneas y tiempos), tipo de exportación HONEYCOMB en
+    el desplegable y exportación por el endpoint (mapa 1 y 2). Tarifas de prueba 5154 y 5155 borradas.
+  - Prueba manual completa (2026-10-13, local): tarifa con 5 artículos HoneyComb (2 lineales, 3 unitarios), mapa
+    13 × 6 y desglose de 1,00 × 1,00 (tejido 29,06 = 9,35 · 1,00 · 1,40 · 2,22; total 64,13 frente a 64,14 del mapa,
+    redondeo por componente). Generación múltiple por tejidos (253, 254): clones tipo 7 con líneas y tiempos; el
+    precio m² se hereda de la base (`sp_clonate_tarifa` solo lo recalcula en el tipo 1). Edición múltiple: agregar,
+    actualizar y borrar funcionan, pero **agregar deja a NULL el precio de todas las líneas** de las tarifas
+    afectadas (`sp_tarifas_agregar_articulos` usa `precio_coste`, NULL en los 87 artículos HoneyComb y en 9.542 de
+    11.556). Sin probar: bloquear/desbloquear (contraseña) y Excel (descarga). Tarifas 5157-5159 borradas; BD igual
+    que la línea base.
+  - Segunda prueba (tarifa 5160, probada también a mano por el usuario): borrada con todos sus datos. Quedan 20 filas
+    de más (2 casillas) en `SOL_TARIFAS_SIMULATE_TABLE_DETAILS` de tarifas ya existentes (680 frente a 660): es la caché
+    del desglose que escribe la pantalla al pulsar una casilla, sin marca de fecha; no se tocan.
 
 ## Cómo funciona
 
