@@ -48,6 +48,9 @@ export class PreBestellungV2Component implements OnInit {
   public linkDocument: any = this.domSanitizer.bypassSecurityTrustResourceUrl(
     "about:blank"
   );
+  public linkInforme: any = this.domSanitizer.bypassSecurityTrustResourceUrl(
+    "about:blank"
+  );
   public SelectedDate: Date = new Date();
   public SelectedDate2: Date = new Date();
   public responsable = "-1";
@@ -2098,7 +2101,7 @@ export class PreBestellungV2Component implements OnInit {
     ],
   };
 
-  Impresion2() {
+  Impresion2(modal) {
     let arrayData: any[] = [];
 
     if (this.SelectedCliente == 1) {
@@ -2129,19 +2132,27 @@ export class PreBestellungV2Component implements OnInit {
 
     if (arrayData.length > 0) {
       this.Print(arrayData);
+      modal.show();
     } else {
       alert("No ha seleccionado ninguna linea");
     }
   }
 
   Print(item) {
+    // Se vacía el iframe y se añade un parámetro único para que el navegador
+    // no reutilice el informe anterior.
+    this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
     const url =
       "https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&cust=" +
       this.SelectedClienteP +
       "&proc=PP_PREVIEW&ids=" +
-      item;
+      item +
+      "&_=" +
+      Date.now();
     //const url = 'http://192.168.0.10/haru_server/services/bbss/preview.aspx?emp=0&cust='+this.SelectedCliente+'&proc=PP_PREVIEW&ids=' + item;
-    this.linkDocument = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
+    setTimeout(() => {
+      this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
+    }, 0);
   }
 
   CambiarEstado() {
