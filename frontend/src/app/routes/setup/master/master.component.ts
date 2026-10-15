@@ -372,6 +372,7 @@ export class MasterComponent implements OnInit {
         { id: 3, name: 'Panel Vertical', imp: false, sel: false, dias: 5 },
         { id: 4, name: 'Panel Compac', imp: false, sel: false, dias: 5 },
         { id: 6, name: 'Cajón ZIP', imp: false, sel: false, dias: 5 },
+        { id: 7, name: 'HoneyComb', imp: false, sel: false, dias: 5 },
     ];
 
     productosform: any = [

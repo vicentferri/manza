@@ -46,7 +46,8 @@ export class TejidosComponent implements OnInit {
         { id: 2, name: 'Panel Japones', imp: false, sel: false, dias: 5 },
         { id: 3, name: 'Panel Vertical', imp: false, sel: false, dias: 5 },
         { id: 4, name: 'Panel Compac', imp: false, sel: false, dias: 5 },
-        { id: 6, name: 'Cajón ZIP', imp: false, sel: false, dias: 5 }
+        { id: 6, name: 'Cajón ZIP', imp: false, sel: false, dias: 5 },
+        { id: 7, name: 'HoneyComb', imp: false, sel: false, dias: 5 }
     ];
 
     formAdd: any = { descripcion: '' };
@@ -77,7 +78,10 @@ export class TejidosComponent implements OnInit {
 
     loadClientes() {
         this.service.HTTP_Get('/sm/clientesapi').subscribe(
-            data => { this.clientesOpts = data.Table || []; },
+            data => {
+                // /sm/clientesapi devuelve idrow/descripcion; el desplegable pinta value/label
+                this.clientesOpts = (data.Table || []).map(c => ({ value: c.idrow, label: c.descripcion }));
+            },
             () => { }
         );
     }

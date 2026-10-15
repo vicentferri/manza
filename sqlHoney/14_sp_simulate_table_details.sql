@@ -10,6 +10,8 @@
      día con fn_solarmanes_precio_tejido_nyd.
    - Monetarios sin el filtro k > 0, como en el mapa.
    Línea blanca (4) no se toca: su mapa sale de otro SP (hallazgo 3).
+   2026-10-15: HoneyComb devuelve los importes sin redondear (cuadran con el
+   mapa y con el desglose de cada concepto, script 16).
    Copia anterior en backup/.
    ===================================================================== */
 set ansi_nulls on
@@ -151,6 +153,33 @@ begin
 		set @pletina      = dbo.fn_solarmanes_precio_articulos_tipo_8(@tarifa,@ancho,@c01) 
 
 		set @value = @t_tejido + @t_unitarios + @t_lineales + @t_montaje + @t_peso + @t_verticales + @t_embalaje + @t_tipo7 + @t_monetarios + @pletina
+
+		/* HoneyComb (2026-10-15): importes sin redondear. La pantalla redondea al mostrar, así la suma de
+		   los conceptos es la casilla del mapa y cada concepto la suma de su desglose
+		   (sp_simulate_table_details_articles, script 16). El resto de productos sigue igual. */
+		if @tipoproducto = 7
+		begin
+			declare @hc_conceptos table(articulo int, descripcion varchar(50), precio decimal(18,6))
+			insert into @hc_conceptos(articulo, descripcion, precio) values
+			(-1, 'Tejido', isnull(@margen2 * dbo.fn_solarmanes_precio_tejido_honeycomb(@ancho,100*@alto,@margen,@preciom2),0)),
+			(-2, 'Unitarios', isnull(@margen2 * @unitarios,0)),
+			(-3, 'Lineales', isnull(@margen2 * dbo.fn_Tarifa_Lineales(@tarifa,@ancho),0)),
+			(-4, 'Montaje', isnull(@margen2 * dbo.fn_precio_tarifa_montaje(@tarifa,@ancho,@preciomontaje,@margen),0)),
+			(-5, 'Verticales', isnull(@margen2 * @verticales * @alto,0)),
+			(-6, 'Peso', isnull(@margen2 * @margen * dbo.fn_solarmanes_peso_tejido_valor(@tarifa,0.01*@ancho,@c01,@densidad),0)),
+			(-7, 'Embalajes', isnull(dbo.temp_fn_precio_tarifa_embalaje(@tarifa,@ancho,1),0)),
+			(-8, 'Cantidad por Ancho', isnull(dbo.fn_solarmanes_precio_articulos_tipo_7(@tarifa,@ancho,@c01),0)),
+			(-9, 'Monetarios', isnull(@monetarios,0)),
+			(-10, 'Portatela y Pletina', isnull(dbo.fn_solarmanes_precio_articulos_tipo_8(@tarifa,@ancho,@c01),0))
+
+			delete from sol_tarifas_simulate_table_details where idrow=@tarifa and x=@ancho and y=100*@alto
+			insert into sol_tarifas_simulate_table_details(idrow,x,y,articulo,descripcion,cantidad,precio)
+			select @tarifa, @ancho, 100*@alto, articulo, descripcion, 1, precio from @hc_conceptos
+
+			select articulo, descripcion, cast(1 as decimal(12,6)) as cantidad, cast(precio as decimal(18,6)) as precio, cast(precio as decimal(18,6)) as total
+			from @hc_conceptos order by articulo desc
+			return
+		end
 
 		set @alto = 100*@alto
 		delete from sol_tarifas_simulate_table_details where idrow=@tarifa and x=@ancho and y=@alto
