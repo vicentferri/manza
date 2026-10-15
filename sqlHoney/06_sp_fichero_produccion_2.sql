@@ -5,6 +5,9 @@
    con los componentes de SOL_PEDIDOS_COLA_TIPO_7_FABRICACION.
    2026-10-06: las líneas sin artículo (articulo NULL, aviso "SIN ARTÍCULO") no se envían al XML.
    2026-10-07: las líneas del XML se devuelven en el orden en que se escriben (columna n + order by).
+   2026-10-15: HoneyComb, artículos que se cuentan (Ud, juego, par, min; incluye la mano de obra): el
+   consumo va en Cn_CANT y Cn_FACTOR = 1, porque producción lee la cantidad en CANT. Los que se miden
+   (ml, m2) no cambian: CANT 1 y el consumo en FACTOR. Copia: backup/06_..._antes_cant_unidades_20261015.sql.
    Antes salían con "select value from @CSV" sin orden, que SQL Server no garantiza: en DEV el
    último bloque de un pedido salió al principio (XML roto). Afecta a todos los productos.
    2026-10-07: el código del producto HoneyComb en el XML pasa de 22000 a 220.00 (formato de los códigos
@@ -426,13 +429,20 @@ begin
 
 					set @orden = 1
 
+				/* 2026-10-15: producción lee la cantidad de las piezas en Cn_CANT. Los artículos que se cuentan
+				   (unidad 1 Ud, 4 juego, 5 par, 6 min; la mano de obra es Ud) llevan el consumo en CANT y FACTOR 1.
+				   Los que se miden (2 m2, 3 ml) siguen con CANT 1 y el consumo en FACTOR. */
+				declare @hc_unidad int
+				declare @hc_consumo decimal(12,6)
+				declare @hc_cant varchar(30)
+
 				declare itLineas2 cursor for
 				select isnull(cod_sol,''),cantidad,replace(cast(consumo as decimal(12,6)),'.',','),
-				replace(cast(0.01*ancho as decimal(12,6)),'.',','),replace(cast(0.01*alto as decimal(12,6)),'.',','),seccion from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION
+				replace(cast(0.01*ancho as decimal(12,6)),'.',','),replace(cast(0.01*alto as decimal(12,6)),'.',','),seccion,unidad,consumo from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION
 				where idrow=@idrow and articulo is not null /* sin articulo (aviso SIN ARTICULO) no va al XML */
 				order by orden,id
 					open itLineas2
-					fetch next from itLineas2 into @cod_sol,@cantidad2,@cod_factor,@cod_p1,@cod_p2,@cod_seccion
+					fetch next from itLineas2 into @cod_sol,@cantidad2,@cod_factor,@cod_p1,@cod_p2,@cod_seccion,@hc_unidad,@hc_consumo
 					while @@FETCH_STATUS = 0
 					begin
 					set @cod_p1 = isnull(@cod_p1,'0')
@@ -440,9 +450,20 @@ begin
 					set @cod_factor = isnull(@cod_factor,'0')
 					set @cod_seccion = isnull(@cod_seccion,'0')
 					set @cod_p3 = '0'
+					if @hc_unidad in (1,4,5,6)
+					begin
+						/* consumo sin ceros a la derecha: 8 -> '8', 0,5 -> '0,5' */
+						set @hc_cant = cast(isnull(@hc_consumo,0) as varchar(30))
+						set @hc_cant = reverse(substring(reverse(@hc_cant), patindex('%[^0]%', reverse(@hc_cant)), 30))
+						if right(@hc_cant,1) = '.' set @hc_cant = left(@hc_cant, len(@hc_cant)-1)
+						set @hc_cant = replace(@hc_cant,'.',',')
+						set @cod_factor = '1'
+					end
+					else
+						set @hc_cant = '1'
 					set @CSV_A = ''
 					set @CSV_A += '<C' + cast(@orden as varchar) + '>' + @cod_sol + '</C' + cast(@orden as varchar) + '>'
-					set @CSV_A += '<C' + cast(@orden as varchar) + '_CANT>' + '1' + '</C' + cast(@orden as varchar) + '_CANT>'
+					set @CSV_A += '<C' + cast(@orden as varchar) + '_CANT>' + @hc_cant + '</C' + cast(@orden as varchar) + '_CANT>'
 					set @CSV_A += '<C' + cast(@orden as varchar) + '_P1>' + @cod_p1 + '</C' + cast(@orden as varchar) + '_P1>'
 					set @CSV_A += '<C' + cast(@orden as varchar) + '_P2>' + @cod_p2 + '</C' + cast(@orden as varchar) + '_P2>'
 					set @CSV_A += '<C' + cast(@orden as varchar) + '_P3>' + @cod_p3 + '</C' + cast(@orden as varchar) + '_P3>'
@@ -450,7 +471,7 @@ begin
 					set @CSV_A += '<C' + cast(@orden as varchar) + '_SECCION>' + @cod_seccion + '</C' + cast(@orden as varchar) + '_SECCION>'
 					set @orden = @orden + 1
 					insert into @CSV(value) values(@CSV_A)
-				 fetch next from itLineas2 into @cod_sol,@cantidad2,@cod_factor,@cod_p1,@cod_p2,@cod_seccion
+				 fetch next from itLineas2 into @cod_sol,@cantidad2,@cod_factor,@cod_p1,@cod_p2,@cod_seccion,@hc_unidad,@hc_consumo
 				 end
 					 close itLineas2
 					 deallocate itLineas2
