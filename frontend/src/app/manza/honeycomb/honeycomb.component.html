@@ -12,6 +12,7 @@
         <input
           #ancho
           class="form-control"
+          [class.is-invalid]="anchoInvalido()"
           type="number"
           min="30"
           max="130"
@@ -26,6 +27,7 @@
         <input
           #alto
           class="form-control"
+          [class.is-invalid]="altoInvalido()"
           type="number"
           min="30"
           max="280"
@@ -78,6 +80,7 @@
           <p class="text-muted small">No hay tipos de accionamiento disponibles</p>
         </div>
       </div>
+      <div class="pt-2" *ngIf="incrementoAccionamientoTexto">{{ incrementoAccionamientoTexto }}</div>
     </div>
 
     <!-- Tipo de Tejido y Color de Tejido en la misma fila -->

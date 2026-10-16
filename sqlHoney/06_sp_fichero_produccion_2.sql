@@ -12,6 +12,9 @@
    último bloque de un pedido salió al principio (XML roto). Afecta a todos los productos.
    2026-10-07: el código del producto HoneyComb en el XML pasa de 22000 a 220.00 (formato de los códigos
    de producto del ERP, como API.001 o la lama 000.00).
+   2026-10-16: <Precio> de la HoneyComb: si el precio viene en formato C1 ("C1 0018903", como los demás productos y
+   como lo manda ya el configurador) se manda el coste de una unidad con fn_decimal_from_c1; un importe plano se
+   manda como antes. Antes salía el texto C1 tal cual. Copia: backup/06_..._antes_precio_c1_20261016.sql.
    El resto del procedimiento queda idéntico.
    ===================================================================== */
 set ansi_nulls on
@@ -421,7 +424,14 @@ begin
 						set @descripcionCLI = @refcliente;
 					end
 
-					set @strPrecio = isnull(replace(@c1,'.',','),'0')
+					/* 2026-10-16: el precio de la HoneyComb se guarda en formato C1 como en los demás productos
+					   ('C1 ' + coste total de la línea en céntimos). El XML lleva el coste de UNA unidad (cada Detalles
+					   es una unidad): fn_decimal_from_c1 divide por la cantidad. Un importe plano ('181.67', líneas
+					   anteriores a este cambio) se manda tal cual, como antes. */
+					if replace(isnull(@c1,''),' ','') like 'C1[0-9]%' and replace(replace(@c1,'C1',''),' ','') not like '%[^0-9]%'
+						set @strPrecio = isnull(dbo.fn_decimal_from_c1 (@c1,@cantidad),'0')
+					else
+						set @strPrecio = isnull(replace(@c1,'.',','),'0')
 
 					insert into @CSV(value) values('<Detalles><Articulo>220.00</Articulo><Descripcion>' + @descripcion + '</Descripcion><DescCliente>' + @descripcionCLI + '</DescCliente>')
 					insert into @CSV(value) values('<Unidades>1</Unidades><Ancho>' + @ancho + '</Ancho>')

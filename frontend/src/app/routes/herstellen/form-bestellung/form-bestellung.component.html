@@ -345,3 +345,39 @@
     </div>
   </div>
 </div>
+
+<div *ngIf="item.TIPO == 7">
+  <div class="card">
+    <div class="card-body">
+      <div class="row mb-4 mt-2 ml-5">
+        <table class="table table-bordered">
+          <tr>
+            <td><b>HONEYCOMB</b></td>
+            <td>Ancho:</td>
+            <td>{{ item.ancho }}</td>
+            <td>Alto:</td>
+            <td>{{ item.alto }}</td>
+            <td>Cantidad:</td>
+            <td>{{ item.cantidad }}</td>
+          </tr>
+          <tr>
+            <td>Tejido:</td>
+            <td colspan="2">
+              {{ item.tej_tipo_text }}&nbsp;{{ item.tej_color_text }}
+            </td>
+            <td>Color perfil:</td>
+            <td>{{ item.color_perfil_text }}</td>
+            <td>Accionamiento:</td>
+            <td>{{ item.hc_accionamiento_text }}</td>
+          </tr>
+          <tr>
+            <td>Precio:</td>
+            <td colspan="6">
+              {{ item.T7_PVP | number: '1.2-2' }} €&nbsp;({{ item.T7_PVP_C1 }})
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

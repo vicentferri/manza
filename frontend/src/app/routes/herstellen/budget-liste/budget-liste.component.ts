@@ -72,7 +72,8 @@ export class BudgetListeComponent implements OnInit {
     lines1: [],
     lines2: [],
     lines3: [],
-    lines4: []
+    lines4: [],
+    lines7: []
   }
 
 
@@ -213,6 +214,7 @@ export class BudgetListeComponent implements OnInit {
           this.loadlinesTipo(idrow, 2);
           this.loadlinesTipo(idrow, 3);
           this.loadlinesTipo(idrow, 4);
+          this.loadlinesTipo(idrow, 7);
         }
         else {
           this.loadlines(idrow);
@@ -253,6 +255,9 @@ export class BudgetListeComponent implements OnInit {
         }
         if (tipo == 4) {
           this.document.lines4 = data.Table;
+        }
+        if (tipo == 7) {
+          this.document.lines7 = data.Table;
         }
 
       },

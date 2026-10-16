@@ -47,8 +47,8 @@ export class HoneycombService {
       return this.http.delete(url, { headers }).pipe(map((response: any) => response));
    }
 
-   GetPrecio(Ancho: number, Alto: number, Cantidad: number, TipoTejido: number) {
-      let url = this.urlService + "/api/sm/honeycomb_obtener_tarifa?ancho=" + Ancho + "&alto=" + Alto + "&cantidad=" + Cantidad + "&tipoTejido=" + TipoTejido;
+   GetPrecio(Ancho: number, Alto: number, Cantidad: number, TipoTejido: number, TipoAccionamiento: number) {
+      let url = this.urlService + "/api/sm/honeycomb_obtener_tarifa?ancho=" + Ancho + "&alto=" + Alto + "&cantidad=" + Cantidad + "&tipoTejido=" + TipoTejido + "&tipoAccionamiento=" + TipoAccionamiento;
       return this.HTTP_Get(url);
    }
 

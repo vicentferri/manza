@@ -7,6 +7,10 @@
    El parámetro @idrow sigue siendo el id del pedido (no cambia el backend).
    2026-10-06: @ancho/@alto pasan a DECIMAL(12,2) (medidas de 0,5 en 0,5 cm; rama
    cambios_configurador, scripts sqlMedidas/004 y 005). Igual que el resto de SP de alta.
+   2026-10-16: parámetro opcional @centro (tienda de entrega). Al insertar, si llega, pone
+   SOL_PEDIDOS_COLA.cliente_entrega = @centro, como los tipos 1-4. Sin él, un pedido solo
+   HoneyComb se quedaba con el domicilio por defecto de sp_pedidos_cola_add (1 en Leroy) y
+   el <Tienda> del XML era el de ese domicilio. Sin @centro (NULL) no cambia nada.
    ===================================================================== */
 set ansi_nulls on
 go
@@ -31,7 +35,8 @@ alter procedure [dbo].[sol_pedidos_cola_tipo_7_add]
     @T7_PVP               DECIMAL(12,2),
     @T7_PVP_C1            VARCHAR(25),
     @T7_Fecha_Entrega     VARCHAR(25),
-    @T7_Transporte        VARCHAR(25)
+    @T7_Transporte        VARCHAR(25),
+    @centro               INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -40,6 +45,10 @@ BEGIN
 
     IF @id = 0
     BEGIN
+        -- TIENDA DE ENTREGA (como los tipos 1-4)
+        if @centro is not null
+            update SOL_PEDIDOS_COLA set cliente_entrega = @centro where idrow = @idrow
+
         -- LINEA DEL PEDIDO
         insert into SOL_PEDIDOS_COLA_LINEAS(idrow, line, articulo, ancho, alto, cantidad, tipo)
         values(@idrow, 70, 7, @ancho, @alto, @cantidad, 7)

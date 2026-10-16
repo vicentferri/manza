@@ -686,7 +686,8 @@ function Add_Tipo_7(idrow,values){
   var color_perfil_text = values.color_perfil_text;
   var hc_accionamiento_id = values.hc_accionamiento_id;
   var hc_accionamiento_text = values.hc_accionamiento_text;
- 
+  var codeCentro = Check(values.codeCentro,-1);
+
   if (values.precios != null)
   {
    var T7_PVP = Check(values.precios.T7_PVP);
@@ -713,7 +714,8 @@ function Add_Tipo_7(idrow,values){
   request.input('T7_PVP_C1',sql.VarChar(25),T7_PVP_C1);
   request.input('T7_Fecha_Entrega',sql.VarChar(25),T7_Fecha_Entrega);
   request.input('T7_Transporte',sql.VarChar(25),T7_Transporte);
-  request.execute('sol_pedidos_cola_tipo_7_add', 
+  request.input('centro',sql.Int,codeCentro);
+  request.execute('sol_pedidos_cola_tipo_7_add',
       function(err, recordsets, returnValue) {
           
 

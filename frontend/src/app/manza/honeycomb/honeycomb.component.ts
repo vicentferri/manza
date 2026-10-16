@@ -51,6 +51,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   TiposAccionamiento: Array<{
     idTipoAccionamiento: number;
     TipoAccionamiento: string;
+    Incremento?: number;
   }> = [];
 
   @Input() codeCentro: string = '-1';
@@ -67,7 +68,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     Alto: 100,
     Cantidad: 1,
     TipoTejido: 1,
-    ColorTejido: '04755',
+    ColorTejido: '',
     ColorPerfil: '1',
     TipoAccionamiento: 0,
     precios: {
@@ -103,8 +104,12 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     });
 
     if (this.model.TipoTejido) {
-      this.service.getColoresTejido(this.model.TipoTejido).subscribe(colores => {
+      const tipoTejido = this.model.TipoTejido;
+      this.service.getColoresTejido(tipoTejido).subscribe(colores => {
+        // Si entretanto ha cambiado el tipo de tejido (p. ej. al editar una línea), esta respuesta ya no vale
+        if (this.model.TipoTejido != tipoTejido) { return; }
         this.ColoresTejidoFiltrados = colores.map(c => ({ ...c, imagenCargada: false }));
+        this.asegurarColorTejido();
         this.loadColoresTejidoImages();
       });
     }
@@ -217,23 +222,87 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
 
+  // Límites de medidas (cm)
+  readonly ANCHO_MIN = 30;
+  readonly ANCHO_MAX = 130;
+  readonly ALTO_MIN = 30;
+  readonly ALTO_MAX = 280;
+
+  anchoInvalido(): boolean {
+    const v = Number(this.model.Ancho);
+    return !(v >= this.ANCHO_MIN && v <= this.ANCHO_MAX);
+  }
+
+  altoInvalido(): boolean {
+    const v = Number(this.model.Alto);
+    return !(v >= this.ALTO_MIN && v <= this.ALTO_MAX);
+  }
+
+  // Devuelve el mensaje de error de las medidas, o '' si son correctas
+  private errorMedidas(): string {
+    if (this.anchoInvalido()) {
+      return `El ancho debe estar entre ${this.ANCHO_MIN} y ${this.ANCHO_MAX} cm`;
+    }
+    if (this.altoInvalido()) {
+      return `El alto debe estar entre ${this.ALTO_MIN} y ${this.ALTO_MAX} cm`;
+    }
+    return '';
+  }
+
+  // Borra el precio calculado para que no se añada a la cesta un precio desfasado
+  private limpiarPrecio() {
+    this.model.precios.T7_PVP = 0;
+    this.model.precios.T7_PVP_C1 = '';
+  }
+
+  // Aviso del incremento del accionamiento elegido, como en el resto de productos
+  get incrementoAccionamientoTexto(): string {
+    const acc = this.TiposAccionamiento.find(a => a.idTipoAccionamiento == Number(this.model.TipoAccionamiento));
+    const incremento = acc ? Number(acc.Incremento) || 0 : 0;
+    if (incremento <= 0) { return ''; }
+    const centimos = Math.round(incremento * 100).toString();
+    return '+ ' + (incremento * 1.9).toFixed(2) + '€ (C1 ' + centimos.padStart(7, '0') + ')';
+  }
+
   ChangeAncho(value: any) {
     this.model.Ancho = value;
+    this.limpiarPrecio();
+    if (this.anchoInvalido()) {
+      this.toaster.error(this.errorMedidas(), 'ERROR');
+    }
   }
 
   ChangeAlto(value: any) {
     this.model.Alto = value;
+    this.limpiarPrecio();
+    if (this.altoInvalido()) {
+      this.toaster.error(this.errorMedidas(), 'ERROR');
+    }
   }
 
   ChangeCantidad(value: any) {
     this.model.Cantidad = value;
+    this.limpiarPrecio();
   }
 
   ChangeTipoTejido() {
-    this.service.getColoresTejido(this.model.TipoTejido).subscribe(colores => {
+    this.limpiarPrecio();
+    const tipoTejido = this.model.TipoTejido;
+    this.service.getColoresTejido(tipoTejido).subscribe(colores => {
+      if (this.model.TipoTejido != tipoTejido) { return; }
       this.ColoresTejidoFiltrados = colores.map(c => ({ ...c, imagenCargada: false }));
+      this.asegurarColorTejido();
       this.loadColoresTejidoImages();
     });
+  }
+
+  // El color elegido tiene que ser uno de los del tipo de tejido (idColorTejido). Si no lo es
+  // (al arrancar o al cambiar de tipo de tejido), se elige el primero de la lista
+  private asegurarColorTejido() {
+    const existe = this.ColoresTejidoFiltrados.some(c => c.idColorTejido == this.model.ColorTejido);
+    if (!existe) {
+      this.model.ColorTejido = this.ColoresTejidoFiltrados.length > 0 ? this.ColoresTejidoFiltrados[0].idColorTejido : '';
+    }
   }
 
   ChangeColorTejido() {
@@ -245,12 +314,19 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
   ChangeAccionamiento() {
-    // Lógica al cambiar tipo de accionamiento
+    this.limpiarPrecio();
   }
 
   T7Check(): { Proceed: number; Message: string } {
     let iProceed = 1;
     let strMessage = '';
+
+    const errMedidas = this.errorMedidas();
+    if (errMedidas) { iProceed = 0; strMessage = errMedidas; }
+
+    if (iProceed === 1 && !this.ColoresTejidoFiltrados.some(c => c.idColorTejido == this.model.ColorTejido)) {
+      iProceed = 0; strMessage = 'Debe indicar el Color del Tejido';
+    }
 
     /*
     if (this.model.Ancho === '') { iProceed = 0; strMessage = 'Debe indicar el Ancho'; }
@@ -265,13 +341,20 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
   CalcularPrecio() {
+    const errMedidas = this.errorMedidas();
+    if (errMedidas) {
+      this.model.precios.T7_PVP = 0;
+      this.toaster.error(errMedidas, 'ERROR');
+      return;
+    }
     this.calculando = true;
 
     this.service.GetPrecio(
       this.model.Ancho,
       this.model.Alto,
       this.model.Cantidad,
-      Number(this.model.TipoTejido)
+      Number(this.model.TipoTejido),
+      Number(this.model.TipoAccionamiento)
     ).subscribe({
       next: (response: any) => {
         if (response) {

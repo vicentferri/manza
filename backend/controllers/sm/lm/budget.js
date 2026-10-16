@@ -632,14 +632,57 @@ function Add_Tipo_4(idrow,values){
   request.input('impresion_imagen',sql.VarChar(250),ID_Imagen);
   request.input('Estancia_ID',sql.Int,Estancia_ID);
   request.input('Estancia',sql.VarChar(250),Estancia);
-    request.execute('sol_presupuestos_cola_tipo_4_add', 
+    request.execute('sol_presupuestos_cola_tipo_4_add',
         function(err, recordsets, returnValue) {
-  
+
             if (err){
                 console.log(err);
             }
 
        });
+}
+
+/* HONEYCOMB: mismos datos que Add_Tipo_7 de bestellungen.js, en las tablas de presupuestos */
+function Add_Tipo_7(idrow,values){
+
+  var id = 0;
+  var codeCentro = Check(values.codeCentro,-1);
+
+  if (values.precios != null)
+  {
+   var T7_PVP = Check(values.precios.T7_PVP);
+   var T7_PVP_C1 = Check(values.precios.T7_PVP_C1);
+   var T7_Fecha_Entrega = Check(values.precios.T7_Fecha_Entrega);
+   var T7_Transporte = Check(values.precios.T7_Transporte);
+  }
+
+  var request = new sql.Request();
+  request.input('id',sql.Int,id);
+  request.input('idrow',sql.Int,idrow);
+  request.input('ancho',sql.Int,values.ancho);
+  request.input('alto',sql.Int,values.alto);
+  request.input('cantidad',sql.Int,values.cantidad);
+  request.input('tej_tipo_id',sql.Int,values.tej_tipo_id);
+  request.input('tej_tipo_text',sql.VarChar(250),values.tej_tipo_text);
+  request.input('tej_color_id',sql.Int,values.tej_color_id);
+  request.input('tej_color_text',sql.VarChar(250),values.tej_color_text);
+  request.input('color_perfil_id',sql.Int,values.color_perfil_id);
+  request.input('color_perfil_text',sql.VarChar(250),values.color_perfil_text);
+  request.input('hc_accionamiento_id',sql.Int,values.hc_accionamiento_id);
+  request.input('hc_accionamiento_text',sql.VarChar(250),values.hc_accionamiento_text);
+  request.input('T7_PVP',sql.Decimal(12,2),T7_PVP);
+  request.input('T7_PVP_C1',sql.VarChar(25),T7_PVP_C1);
+  request.input('T7_Fecha_Entrega',sql.VarChar(25),T7_Fecha_Entrega);
+  request.input('T7_Transporte',sql.VarChar(25),T7_Transporte);
+  request.input('centro',sql.Int,codeCentro);
+  request.execute('sol_presupuestos_cola_tipo_7_add',
+      function(err, recordsets, returnValue) {
+
+          if (err){
+              console.log(err);
+          }
+
+     });
 }
  
 
@@ -712,6 +755,7 @@ function budget_hinzu(req,res)
                 if (tipo == 2) Add_Tipo_2(idPedido,jsonIN[i]);  
                 if (tipo == 3) Add_Tipo_3(idPedido,jsonIN[i]);
                 if (tipo == 4) Add_Tipo_4(idPedido,jsonIN[i]);
+                if (tipo == 7) Add_Tipo_7(idPedido,jsonIN[i]);
              }
 
               SaveLog(idPedido+'_'+referencia+".json",jsonIN);
@@ -722,11 +766,11 @@ function budget_hinzu(req,res)
           res.json({message:'ko'});
         }
     }
- 
+
   });
- 
+
 }
- 
+
  function budget_hinzu2(req,res)
 {
  
@@ -769,6 +813,7 @@ function budget_hinzu(req,res)
                 if (tipo == 2) Add_Tipo_2(idPedido,jsonIN[i]);  
                 if (tipo == 3) Add_Tipo_3(idPedido,jsonIN[i]);
                 if (tipo == 4) Add_Tipo_4(idPedido,jsonIN[i]);
+                if (tipo == 7) Add_Tipo_7(idPedido,jsonIN[i]);
              }
 
               SaveLog(idPedido+'_'+referencia+".json",jsonIN);
@@ -779,12 +824,12 @@ function budget_hinzu(req,res)
           res.json({message:'ko'});
         }
     }
- 
+
   });
- 
+
 }
 
- 
+
  function budget_herunterladen_T1(req,res)
  {
  	var idrow = req.params.idrow;
@@ -819,6 +864,26 @@ function budget_herunterladen_T4(req,res)
  	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_4] where idrow ";
  	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
  	ExecuteSQL(query,res);
+ }
+
+/* HONEYCOMB: líneas tipo 7 de un presupuesto, para cargarlo en la cesta */
+function budget_herunterladen_T7(req,res)
+ {
+ 	if (!/^\d+$/.test(String(req.params.idrow))) {
+ 		return res.status(400).send({ message: 'idrow no válido' });
+ 	}
+ 	var idrow = parseInt(req.params.idrow);
+
+ 	new sql.Request()
+ 		.input('idrow', sql.Int, idrow)
+ 		.query("select * from SOL_PRESUPUESTOS_COLA_TIPO_7 where idrow in (select id from SOL_PRESUPUESTOS_COLA_LINEAS where idrow = @idrow) order by id",
+ 		(err, result) => {
+ 			if (err == null) {
+ 				res.status(200).send(result.recordset);
+ 			} else {
+ 				res.status(500).send({ message: err });
+ 			}
+ 		});
  }
 
 
@@ -972,5 +1037,6 @@ module.exports = {
     budget_herunterladen_T2,
     budget_herunterladen_T3,
     budget_herunterladen_T4,
+    budget_herunterladen_T7,
     budget_delete
 }

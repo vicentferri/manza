@@ -4,13 +4,19 @@ const sql = require('mssql');
 const fs = require('fs');
 const path = require('path');
 
+// Formato C1 del resto de productos: "C1 " + importe en céntimos a 7 dígitos
+function formatC1(importe) {
+  const centimos = Math.round(Number(importe) * 100).toString();
+  return 'C1 ' + centimos.padStart(7, '0');
+}
+
 /**
  * GET /api/honeycomb/precio
  * Consulta el precio de una tarifa según alto, ancho y tipo de tejido
  */
 async function honeycomb_obtener_tarifa(req, res) {
   try {
-    const { alto, ancho, tipoTejido, cantidad } = req.query;
+    const { alto, ancho, tipoTejido, cantidad, tipoAccionamiento } = req.query;
 
     // Validación de parámetros
     if (!alto || !ancho || !tipoTejido) {
@@ -59,12 +65,25 @@ async function honeycomb_obtener_tarifa(req, res) {
       });
     }
 
-    const pvp_c1 = cantidad * precio;
-    const pvp = pvp_c1 * 1.9;
+    // Incremento del accionamiento (coste por cortina, se suma antes del margen)
+    let incremento = 0;
+    const tipoAccionamientoNum = parseInt(tipoAccionamiento);
+    if (!isNaN(tipoAccionamientoNum)) {
+      const resAcc = await pool.request()
+        .input('idTipoAccionamiento', sql.Int, tipoAccionamientoNum)
+        .query('SELECT Incremento FROM sol_articulos_honeycomb_tiposaccionamiento WHERE idTipoAccionamiento = @idTipoAccionamiento');
+      if (resAcc.recordset.length > 0) {
+        incremento = Number(resAcc.recordset[0].Incremento) || 0;
+      }
+    }
+
+    const coste = cantidad * (Number(precio) + incremento);
+    const pvp = coste * 1.9;
 
     res.json({
       PVP: parseFloat(pvp).toFixed(2),
-      PVP_C1: parseFloat(pvp_c1).toFixed(2),
+      PVP_C1: formatC1(coste),
+      Incremento_Accionamiento: incremento,
       Fecha_Entrega: '',
       Transporte: 0,
       filaEncontrada: filaEncontrada,
@@ -686,7 +705,7 @@ async function honeycomb_tiposaccionamiento(req, res) {
         ELSE 0 
       END AS TieneImagen
     FROM sol_articulos_honeycomb_tiposaccionamiento t
-    ORDER BY t.TipoAccionamiento
+    ORDER BY t.idTipoAccionamiento
       `);
 
     res.json(result.recordset);

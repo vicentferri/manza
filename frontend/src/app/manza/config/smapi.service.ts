@@ -61,6 +61,7 @@ export class SMAPIService {
     private urlT2Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T2';
     private urlT3Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T3';
     private urlT4Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T4';
+    private urlT7Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T7';
 
     private urlBestellungnachschlagen = this.urlService + '/api/lm/bestellungen_entrega';
     private urlBudgetnachschlagen = this.urlService + '/api/lm/budget_entrega';
@@ -431,6 +432,11 @@ export class SMAPIService {
 
     Budget_herunterladen_T4(idrow: string) {
         var url: string = this.urlT4Herunterladen + '/' + idrow;
+        return this.HTTP_Get(url);
+    }
+
+    Budget_herunterladen_T7(idrow: string) {
+        var url: string = this.urlT7Herunterladen + '/' + idrow;
         return this.HTTP_Get(url);
     }
 

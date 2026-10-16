@@ -830,6 +830,40 @@ export class ConfigComponent implements OnInit {
       },
       error => { this.toaster.error(JSON.stringify(error)); }
     );
+
+    /* T7 - HONEYCOMB */
+    this.service.Budget_herunterladen_T7(event.idrow).subscribe(
+      data => {
+        const len = data.length;
+        if (len > 0) {
+          for (let pos = 0; pos < len; pos++) {
+            const item = data[pos];
+            const tipo: CortinaTipo = new CortinaTipo(this.codeCentro);
+
+            const precios = {
+              T7_PVP: Number(item.T7_PVP),
+              T7_PVP_C1: item.T7_PVP_C1,
+              T7_Fecha_Entrega: item.T7_Fecha_Entrega,
+              T7_Transporte: item.T7_Transporte
+            };
+
+            tipo.HoneyComb_Add(item.ancho, item.alto, item.cantidad,
+              item.tej_tipo_id, item.tej_tipo_text,
+              item.tej_color_id, item.tej_color_text,
+              item.color_perfil_id, item.color_perfil_text,
+              item.hc_accionamiento_id, item.hc_accionamiento_text,
+              precios);
+
+            this.Cesta.push(tipo);
+          }
+          const message = this.translation.get('AGREGADO HONEYCOMB A CESTA');
+          this.toaster.success(message, 'Cesta');
+          this.NumeroCortinas = this.TotalSum();
+          this.VerPedido();
+        }
+      },
+      error => { this.toaster.error(JSON.stringify(error)); }
+    );
   }
 
   EditLine(item: any): void {

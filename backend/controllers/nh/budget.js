@@ -98,7 +98,16 @@ function budget2_lin_tipo(req,res)
       {
         var query =  " select * from vw_nh_budget_cue_lines_tipo_4 where idrow="+idrow+" order by id";
       }
-        
+
+      if (tipo == 7)
+      {
+        if (!/^\d+$/.test(String(idrow)))
+        {
+          return res.status(400).send({ message : 'idrow no válido' });
+        }
+        var query =  " select * from vw_nh_budget_cue_lines_tipo_7 where idrow="+parseInt(idrow)+" order by id";
+      }
+
       ExecuteSQL(query,res);       
    }  
 }
