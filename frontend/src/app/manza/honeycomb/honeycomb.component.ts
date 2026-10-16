@@ -1,5 +1,7 @@
-import { Component, OnInit, Output, EventEmitter, OnDestroy, Input } from '@angular/core';
-import { SafeUrl } from '@angular/platform-browser';
+import { Component, OnInit, Output, EventEmitter, OnDestroy, Input, ViewChild } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
+import { ModalDirective } from 'ngx-bootstrap/modal';
+import { environment } from 'src/environments/environment';
 import { HoneycombService } from './honeycomb.service';
 import { Subject } from 'rxjs';
 import { ImageCacheService } from 'src/app/services/image-cache.service';
@@ -61,6 +63,15 @@ export class HoneycombComponent implements OnInit, OnDestroy {
 
   @Output() onAdd = new EventEmitter<any>();
 
+  @ViewChild('modalVideo', { static: false }) modalVideo!: ModalDirective;
+
+  // Documentación de la HoneyComb: instrucciones de montaje en PDF (en assets) y vídeo de YouTube
+  private readonly PDF_MONTAJE = '/assets/pdf/honeycomb_instrucciones_montaje.pdf';
+  private readonly YOUTUBE_ID = 'r_FUX5RTSeM';
+
+  readonly urlPdf = environment.assetsBase + this.PDF_MONTAJE;
+  urlVideo: SafeResourceUrl | null = null;
+
 
 
   model = {
@@ -85,8 +96,21 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     private service: HoneycombService,
     private imageCacheService: ImageCacheService,
     private toaster: ToastrService,
-    private translation: TranslationService
+    private translation: TranslationService,
+    private sanitizer: DomSanitizer
   ) { }
+
+  VerVideo() {
+    this.urlVideo = this.sanitizer.bypassSecurityTrustResourceUrl(
+      'https://www.youtube-nocookie.com/embed/' + this.YOUTUBE_ID + '?autoplay=1&rel=0'
+    );
+    this.modalVideo.show();
+  }
+
+  // Al cerrar se quita el iframe para que el vídeo deje de sonar
+  CerrarVideo() {
+    this.urlVideo = null;
+  }
 
   ngOnInit() {
     this.loadData();

@@ -250,3 +250,26 @@
 .gap-2 {
    gap: 0.5rem !important;
 }
+// Enlaces a la documentación (PDF y vídeo) en la cabecera
+.hc-docs a {
+  font-size: 0.9rem;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Vídeo de YouTube a 16:9
+.hc-video {
+  position: relative;
+  padding-top: 56.25%;
+
+  iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
