@@ -1,0 +1,21 @@
+<div class="acc-bloque">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong>{{ titulo }}</strong>
+        <span class="text-muted small ml-2">{{ marcadas }} de {{ opciones.length }}</span>
+        <span class="acc-estado ml-2" *ngIf="estado === 'guardando'"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
+        <span class="acc-estado acc-estado-ok ml-2" *ngIf="estado === 'guardado'"><i class="fa fa-check"></i> Guardado</span>
+        <div class="ml-auto" *ngIf="opciones.length > 1">
+            <button type="button" class="btn btn-link btn-sm p-0 mr-2" (click)="marcarTodas(true)">Todas</button>
+            <button type="button" class="btn btn-link btn-sm p-0" (click)="marcarTodas(false)">Ninguna</button>
+        </div>
+    </div>
+    <div *ngIf="ayuda" class="acc-ayuda mb-2">{{ ayuda }}</div>
+    <div class="acc-casillas">
+        <label *ngFor="let o of opciones" class="acc-casilla" [class.acc-oculto]="!o.activo"
+            [title]="o.activo ? '' : 'Oculto en el configurador'">
+            <input type="checkbox" [(ngModel)]="o.marcado" [ngModelOptions]="{ standalone: true }" (change)="cambiar(o)" />
+            {{ o.nombre }}
+        </label>
+        <div *ngIf="opciones.length === 0" class="acc-vacio text-left">{{ vacio }}</div>
+    </div>
+</div>

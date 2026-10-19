@@ -529,6 +529,16 @@ smapi.get('/fabricacion/tablas', Auth.ensureAuth, FabricacionReglasController.ta
 smapi.get('/fabricacion/tablas/valores', Auth.ensureAuth, FabricacionReglasController.tabla_valores);
 smapi.post('/fabricacion/tablas', Auth.ensureAuth, FabricacionReglasController.tabla_guardar);
 smapi.post('/fabricacion/tablas/delete', Auth.ensureAuth, FabricacionReglasController.tabla_delete);
+
+/* Modelo nuevo de accionamientos (SOL_ACC_*). Las rutas de relaciones van antes que las de catálogo */
+var AccionamientosNuevoController = require('../controllers/sm/accionamientos_nuevo');
+smapi.get('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion);
+smapi.post('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion_guardar);
+smapi.get('/acc/:catalogo', Auth.ensureAuth, AccionamientosNuevoController.lista);
+smapi.post('/acc/:catalogo', Auth.ensureAuth, AccionamientosNuevoController.guardar);
+smapi.post('/acc/:catalogo/visible', Auth.ensureAuth, AccionamientosNuevoController.visible);
+smapi.post('/acc/:catalogo/orden', Auth.ensureAuth, AccionamientosNuevoController.orden);
+smapi.post('/acc/:catalogo/delete', Auth.ensureAuth, AccionamientosNuevoController.borrar);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);

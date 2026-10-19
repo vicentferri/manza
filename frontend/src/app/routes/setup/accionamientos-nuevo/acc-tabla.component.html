@@ -1,0 +1,138 @@
+<div class="acc-bloque">
+    <div class="acc-bloque-titulo">
+        <strong>{{ titulo }}</strong>
+        <span class="text-muted small ml-2">{{ datos.length }} {{ datos.length === 1 ? 'registro' : 'registros' }}</span>
+        <div *ngIf="ayuda" class="acc-ayuda">{{ ayuda }}</div>
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap mb-2">
+        <input *ngIf="datos.length > 8" type="text" class="form-control form-control-sm mr-2 mb-1 acc-buscar"
+            placeholder="Buscar..."
+            [(ngModel)]="busqueda" [ngModelOptions]="{ standalone: true }" />
+        <button type="button" class="btn btn-success btn-sm mr-2 mb-1" (click)="abrirAlta()">
+            <i class="fa fa-plus"></i> Añadir {{ singular }}
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm mr-2 mb-1" [disabled]="!filaSeleccionada" (click)="abrirEdicion()">
+            <i class="fa fa-pencil"></i> Editar
+        </button>
+        <span [title]="motivoNoBorrar">
+            <button type="button" class="btn btn-outline-danger btn-sm mb-1"
+                [disabled]="!filaSeleccionada || motivoNoBorrar" (click)="pedirBorrado()">
+                <i class="fa fa-trash"></i> Borrar
+            </button>
+        </span>
+    </div>
+
+    <div class="table-responsive acc-table-container">
+        <table class="table table-hover table-sm acc-table mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th class="acc-th-orden" *ngIf="!busqueda" title="Orden en el configurador"></th>
+                    <th>{{ conValor ? 'Valor' + (unidad ? ' (' + unidad + ')' : '') : 'Nombre' }}</th>
+                    <th class="acc-th-uso">Uso</th>
+                    <th class="acc-th-visible text-center" title="Visible en el configurador">Visible</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let d of datosFiltrados; let primero = first; let ultimo = last" class="acc-fila"
+                    [class.acc-fila-sel]="filaSeleccionada?.id === d.id"
+                    [class.acc-oculto]="!d.activo"
+                    (click)="seleccionar(d)" (dblclick)="seleccionar(d); abrirEdicion()">
+                    <td *ngIf="!busqueda" class="acc-orden">
+                        <button type="button" class="btn btn-link btn-sm p-0" [disabled]="primero" title="Subir"
+                            (click)="mover(d, -1, $event)"><i class="fa fa-chevron-up"></i></button>
+                        <button type="button" class="btn btn-link btn-sm p-0" [disabled]="ultimo" title="Bajar"
+                            (click)="mover(d, 1, $event)"><i class="fa fa-chevron-down"></i></button>
+                    </td>
+                    <td>
+                        <div class="acc-nombre">
+                            {{ etiqueta(d) }}
+                            <i *ngIf="d.protegido" class="fa fa-lock text-muted ml-1" title="Fijo: no se puede borrar"></i>
+                        </div>
+                        <div class="acc-codigo">{{ d.codigo }}</div>
+                    </td>
+                    <td class="acc-uso">
+                        <span *ngIf="d.dependencias > 0" class="badge badge-light" title="Registros que dependen de este">en uso · {{ d.dependencias }}</span>
+                    </td>
+                    <td class="text-center" (click)="$event.stopPropagation()">
+                        <label class="acc-switch" [title]="d.activo ? 'Visible: pulse para ocultarlo' : 'Oculto: pulse para mostrarlo'">
+                            <input type="checkbox" [checked]="d.activo" (click)="cambiarVisible(d, $event)" />
+                            <span class="acc-switch-slider"></span>
+                        </label>
+                    </td>
+                </tr>
+                <tr *ngIf="datosFiltrados.length === 0">
+                    <td colspan="4" class="acc-vacio">
+                        <ng-container *ngIf="!busqueda">Todavía no hay ninguno. Pulse <strong>Añadir {{ singular }}</strong>.</ng-container>
+                        <ng-container *ngIf="busqueda">Nada coincide con «{{ busqueda }}».</ng-container>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ALTA / EDICIÓN -->
+<div bsModal #modalForm="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h6 class="modal-title text-white">{{ form.id ? 'Editar' : 'Añadir' }} {{ singular }}</h6>
+                <button type="button" class="close text-white" (click)="modalForm.hide()">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" *ngIf="conValor">
+                    <label>Valor{{ unidad ? ' (' + unidad + ')' : '' }} <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm"
+                        [(ngModel)]="form.valor" [ngModelOptions]="{ standalone: true }" (keyup.enter)="guardar()" />
+                </div>
+                <div class="form-group">
+                    <label>{{ conValor ? 'Texto a mostrar (opcional)' : 'Nombre' }} <span *ngIf="!conValor" class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" maxlength="100"
+                        [(ngModel)]="form.nombre" [ngModelOptions]="{ standalone: true }" (keyup.enter)="guardar()" />
+                    <small *ngIf="conValor" class="text-muted">Si se deja vacío, el configurador muestra el valor.</small>
+                </div>
+
+                <div class="acc-codigo-linea">
+                    <span class="text-muted">Código:</span>
+                    <strong>{{ form.id ? form.codigo : (codigoPrevisto || '—') }}</strong>
+                    <span *ngIf="!form.id" class="text-muted">(se genera solo)</span>
+                    <a *ngIf="!form.protegido && !avanzado" href="javascript:void(0)" class="ml-2" (click)="avanzado = true; form.codigo = form.codigo || codigoPrevisto">Avanzado</a>
+                    <span *ngIf="form.protegido" class="text-muted ml-2"><i class="fa fa-lock"></i> fijo</span>
+                </div>
+                <div *ngIf="avanzado" class="form-group mt-2 mb-0">
+                    <input type="text" class="form-control form-control-sm text-uppercase" maxlength="50"
+                        [(ngModel)]="form.codigo" [ngModelOptions]="{ standalone: true }" />
+                    <small class="text-warning">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        Solo letras, números o _. Lo usan las reglas de fabricación: cambiarlo puede dejar reglas sin efecto.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="guardando" (click)="guardar()">
+                    <i class="fa fa-save"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalForm.hide()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRMAR BORRADO -->
+<div bsModal #modalBorrar="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                ¿Borrar <strong>{{ filaSeleccionada ? etiqueta(filaSeleccionada) : '' }}</strong>?
+                <div class="small text-muted mt-1">No se puede deshacer. Si solo quiere que no salga en el configurador, use el interruptor Visible.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-sm" (click)="borrar()">Borrar</button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalBorrar.hide()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>

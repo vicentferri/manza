@@ -1,0 +1,272 @@
+/* ---------- Menú de secciones ---------- */
+.acc-menu .list-group-item {
+    padding: 8px 10px;
+}
+
+.acc-menu-aparte {
+    margin-top: 10px;
+    border-top-width: 1px !important;
+}
+
+.acc-menu-ayuda {
+    display: block;
+    margin-left: 28px;
+    color: #8a939b;
+    line-height: 1.2;
+}
+
+.acc-menu .active .acc-menu-ayuda {
+    color: #e8f4fa;
+}
+
+.acc-paso {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background-color: #20a8d8;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.acc-menu .active .acc-paso {
+    background-color: #fff;
+    color: #20a8d8;
+}
+
+.acc-paso-icono {
+    width: 20px;
+    margin-right: 8px;
+    text-align: center;
+}
+
+/* ---------- Textos de ayuda ---------- */
+.acc-intro {
+    margin-bottom: 12px;
+    color: #555;
+    font-size: 13px;
+}
+
+.acc-ayuda {
+    color: #8a939b;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.acc-aviso {
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border-left: 3px solid #20a8d8;
+    background-color: #f1f8fb;
+    color: #555;
+    font-size: 13px;
+}
+
+.acc-aviso-error {
+    border-left-color: #f86c6b;
+    background-color: #fdf0f0;
+}
+
+.acc-siguiente {
+    padding: 8px 10px;
+    border: 1px dashed #c8ced3;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #555;
+}
+
+.acc-detalle-titulo {
+    font-weight: 600;
+    color: #20a8d8;
+    margin-bottom: 6px;
+}
+
+.acc-columna-titulo {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+.acc-tabs {
+    margin-bottom: 8px;
+}
+
+.acc-tabs .nav-link {
+    padding: 4px 12px;
+    font-size: 13px;
+}
+
+/* ---------- Bloques (tabla y casillas) ---------- */
+.acc-bloque {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    background-color: #fff;
+}
+
+.acc-bloque-titulo {
+    margin-bottom: 8px;
+}
+
+.acc-buscar {
+    max-width: 200px;
+}
+
+.acc-table-container {
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.acc-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.acc-th-orden { width: 28px; }
+.acc-th-uso { width: 90px; }
+.acc-th-visible { width: 64px; }
+
+.acc-fila {
+    cursor: pointer;
+}
+
+.acc-fila td {
+    vertical-align: middle;
+}
+
+.acc-fila-sel td {
+    background-color: #fff3cd !important;
+}
+
+.acc-fila-sel .acc-nombre {
+    font-weight: 600;
+}
+
+.acc-orden {
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.acc-orden .btn {
+    display: block;
+    font-size: 10px;
+    color: #8a939b;
+}
+
+.acc-orden .btn:disabled {
+    visibility: hidden;
+}
+
+.acc-codigo {
+    font-size: 11px;
+    color: #9aa0a6;
+    font-family: Consolas, monospace;
+}
+
+.acc-uso .badge {
+    font-weight: normal;
+    color: #555;
+    border: 1px solid #dee2e6;
+}
+
+.acc-oculto .acc-nombre,
+.acc-casilla.acc-oculto {
+    color: #9aa0a6;
+    font-style: italic;
+}
+
+.acc-vacio {
+    text-align: center;
+    color: #8a939b;
+    padding: 12px !important;
+    font-size: 13px;
+}
+
+/* ---------- Interruptor Visible ---------- */
+.acc-switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+    margin: 0;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.acc-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.acc-switch-slider {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 18px;
+    background-color: #c8ced3;
+    transition: background-color 0.15s;
+}
+
+.acc-switch-slider::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: #fff;
+    transition: transform 0.15s;
+}
+
+.acc-switch input:checked + .acc-switch-slider {
+    background-color: #4dbd74;
+}
+
+.acc-switch input:checked + .acc-switch-slider::before {
+    transform: translateX(16px);
+}
+
+/* ---------- Casillas ---------- */
+.acc-casillas {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.acc-casilla {
+    display: block;
+    margin-bottom: 4px;
+    cursor: pointer;
+}
+
+.acc-estado {
+    font-size: 12px;
+    color: #8a939b;
+}
+
+.acc-estado-ok {
+    color: #4dbd74;
+}
+
+/* ---------- Modal ---------- */
+.acc-codigo-linea {
+    font-size: 13px;
+}
+
+.acc-codigo-linea strong {
+    margin-left: 4px;
+    font-family: Consolas, monospace;
+}

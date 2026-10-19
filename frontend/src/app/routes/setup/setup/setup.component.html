@@ -142,6 +142,13 @@
             <small class="text-muted">Grupos Modelos</small>
           </a>
         </div>
+        <div class="col-md-2 col-sm-4 col-6 mb-2" *ngIf="can('config_accionamientos')">
+          <a [routerLink]="['/routes/master/accionamientos-nuevo']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-sitemap fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Accionamientos nuevo</strong>
+            <small class="text-muted">Modelo nuevo de Accionamientos</small>
+          </a>
+        </div>
       </div>
     </div>
   </div>

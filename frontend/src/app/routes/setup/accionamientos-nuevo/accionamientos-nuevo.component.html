@@ -1,0 +1,208 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-2">
+            <h6>
+                <i class="icon-list mt-1"></i>&nbsp;{{ title }}
+                <div class="pull-right">
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <div class="row">
+            <!-- SECCIONES (en el orden del configurador) -->
+            <div class="col-md-3 col-xl-2 mb-3">
+                <div class="list-group acc-menu">
+                    <a *ngFor="let s of secciones" href="javascript:void(0)"
+                        class="list-group-item list-group-item-action"
+                        [class.active]="seccion === s.id" [class.acc-menu-aparte]="!s.paso" (click)="cambiarSeccion(s.id)">
+                        <div class="d-flex align-items-center">
+                            <span class="acc-paso" *ngIf="s.paso">{{ s.paso }}</span>
+                            <i class="fa {{ s.icono }} acc-paso-icono" *ngIf="!s.paso"></i>
+                            <strong>{{ s.label }}</strong>
+                        </div>
+                        <small class="acc-menu-ayuda">{{ s.ayuda }}</small>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-md-9 col-xl-10">
+
+                <!-- 1. ACCIONAMIENTOS Y SISTEMAS -->
+                <ng-container *ngIf="seccion === 'accionamientos'">
+                    <div class="acc-intro">
+                        Primer paso del configurador. Elija un accionamiento y marque qué sistemas se ofrecen con él.
+                        <strong>Cadena</strong>, <strong>Motor</strong> y <strong>Sin cadena</strong> son fijos (<i class="fa fa-lock"></i>): se pueden renombrar u ocultar, pero no borrar.
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <app-acc-tabla catalogo="accionamientos" titulo="Accionamientos" singular="accionamiento"
+                                [recarga]="recargaAcc" (seleccion)="accionamientoSel = $event"></app-acc-tabla>
+                        </div>
+                        <div class="col-lg-6">
+                            <ng-container *ngIf="accionamientoSel; else elijaAccionamiento">
+                                <app-acc-relacion relacion="accionamiento_sistema" [id]="accionamientoSel.id"
+                                    [titulo]="'Sistemas con ' + accionamientoSel.nombre"
+                                    vacio="No hay sistemas. Añádalos en Listas de opciones → Sistemas."
+                                    (cambio)="recargaAcc = recargaAcc + 1"></app-acc-relacion>
+                                <div *ngIf="accionamientoSel.codigo === 'CADENA'" class="acc-siguiente">
+                                    Los tipos de cadena, aros y colores se configuran en el paso 2.
+                                    <button type="button" class="btn btn-outline-primary btn-sm ml-2" (click)="cambiarSeccion('cadena')">Ir a Cadena <i class="fa fa-arrow-right"></i></button>
+                                </div>
+                                <div *ngIf="accionamientoSel.codigo === 'MOTOR'" class="acc-siguiente">
+                                    Los tipos de motor, modelos y accesorios se configuran en el paso 3.
+                                    <button type="button" class="btn btn-outline-primary btn-sm ml-2" (click)="cambiarSeccion('motor')">Ir a Motor <i class="fa fa-arrow-right"></i></button>
+                                </div>
+                            </ng-container>
+                            <ng-template #elijaAccionamiento>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un accionamiento de la lista para marcar sus sistemas.</div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- AVISO: falta un accionamiento fijo -->
+                <ng-template #faltaFijo let-codigo="codigo" let-nombre="nombre">
+                    <div class="acc-aviso acc-aviso-error">
+                        Falta el accionamiento fijo <strong>{{ codigo }}</strong>.
+                        Si ya tiene uno llamado {{ nombre }}, edítelo en el paso 1 y, en <em>Avanzado</em>, ponga el código <strong>{{ codigo }}</strong>.
+                    </div>
+                </ng-template>
+
+                <!-- 2. CADENA -->
+                <ng-container *ngIf="seccion === 'cadena' && accionamientosCargados">
+                    <ng-container *ngIf="!accCadena">
+                        <ng-container *ngTemplateOutlet="faltaFijo; context: { codigo: 'CADENA', nombre: 'Cadena' }"></ng-container>
+                    </ng-container>
+                    <ng-container *ngIf="accCadena">
+                        <div class="acc-intro">
+                            Elija un tipo de cadena y configure sus opciones a la derecha: <strong>Aro cadena</strong> tiene tipos de aro y alturas,
+                            <strong>Cadena a medida</strong> tiene sus propios tipos, y todos tienen colores.
+                            Estos dos tipos son fijos (<i class="fa fa-lock"></i>): se pueden renombrar u ocultar, pero no borrar.
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-5">
+                                <app-acc-tabla catalogo="tipos_cadena" titulo="Tipos de cadena" singular="tipo de cadena"
+                                    padreCampo="accionamiento_id" [padreId]="accCadena.id"
+                                    [recarga]="recargaTipoCadena" (seleccion)="seleccionTipoCadena($event)"></app-acc-tabla>
+                            </div>
+                            <div class="col-lg-7">
+                                <ng-container *ngIf="tipoCadenaSel; else elijaTipoCadena">
+                                    <div class="acc-detalle-titulo">{{ tipoCadenaSel.nombre }}</div>
+                                    <ul class="nav nav-tabs acc-tabs">
+                                        <li class="nav-item" *ngIf="tipoCadenaSel.codigo === 'ARO_CADENA'"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'aros'" (click)="pestanaCadena = 'aros'">Tipos de aro</a></li>
+                                        <li class="nav-item" *ngIf="tipoCadenaSel.codigo === 'ARO_CADENA'"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'alturas'" (click)="pestanaCadena = 'alturas'">Alturas</a></li>
+                                        <li class="nav-item" *ngIf="tipoCadenaSel.codigo === 'CADENA_A_MEDIDA'"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'medidas'" (click)="pestanaCadena = 'medidas'">Cadena a medida</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'colores'" (click)="pestanaCadena = 'colores'">Colores</a></li>
+                                    </ul>
+                                    <app-acc-tabla *ngIf="pestanaCadena === 'aros' && tipoCadenaSel.codigo === 'ARO_CADENA'" catalogo="tipos_aro_cadena" titulo="Tipos de aro cadena" singular="tipo de aro"
+                                        padreCampo="tipo_cadena_id" [padreId]="tipoCadenaSel.id"
+                                        (cambio)="recargaTipoCadena = recargaTipoCadena + 1"></app-acc-tabla>
+                                    <app-acc-tabla *ngIf="pestanaCadena === 'alturas' && tipoCadenaSel.codigo === 'ARO_CADENA'" catalogo="alturas" titulo="Alturas" singular="altura"
+                                        [conValor]="true" unidad="cm"
+                                        ayuda="Valen para todos los tipos de aro: si añade una altura, aparece en todos."></app-acc-tabla>
+                                    <app-acc-tabla *ngIf="pestanaCadena === 'medidas' && tipoCadenaSel.codigo === 'CADENA_A_MEDIDA'" catalogo="tipos_cadena_medida" titulo="Tipos de cadena a medida" singular="tipo de cadena a medida"
+                                        padreCampo="tipo_cadena_id" [padreId]="tipoCadenaSel.id"
+                                        (cambio)="recargaTipoCadena = recargaTipoCadena + 1"></app-acc-tabla>
+                                    <app-acc-relacion *ngIf="pestanaCadena === 'colores'" relacion="tipo_cadena_color" [id]="tipoCadenaSel.id"
+                                        titulo="Colores permitidos"
+                                        vacio="No hay colores. Añádalos en Listas de opciones → Colores de cadena."
+                                        (cambio)="recargaTipoCadena = recargaTipoCadena + 1"></app-acc-relacion>
+                                </ng-container>
+                                <ng-template #elijaTipoCadena>
+                                    <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un tipo de cadena para configurarlo.</div>
+                                </ng-template>
+                            </div>
+                        </div>
+                    </ng-container>
+                </ng-container>
+
+                <!-- 3. MOTOR (en columnas: tipo → modelo → accesorios) -->
+                <ng-container *ngIf="seccion === 'motor' && accionamientosCargados">
+                    <ng-container *ngIf="!accMotor">
+                        <ng-container *ngTemplateOutlet="faltaFijo; context: { codigo: 'MOTOR', nombre: 'Motor' }"></ng-container>
+                    </ng-container>
+                    <ng-container *ngIf="accMotor">
+                        <div class="acc-intro">De izquierda a derecha: elija un tipo de motor, después uno de sus modelos, y marque los mandos, cargadores y baterías de ese modelo.</div>
+                        <div class="row">
+                            <div class="col-xl-4 col-lg-6">
+                                <div class="acc-columna-titulo"><span class="acc-paso">a</span> Tipo de motor</div>
+                                <app-acc-tabla catalogo="tipos_motor" titulo="Tipos de motor" singular="tipo de motor"
+                                    padreCampo="accionamiento_id" [padreId]="accMotor.id"
+                                    [recarga]="recargaTipoMotor" (seleccion)="seleccionTipoMotor($event)"></app-acc-tabla>
+                            </div>
+                            <div class="col-xl-4 col-lg-6">
+                                <div class="acc-columna-titulo"><span class="acc-paso">b</span> Modelo<span *ngIf="tipoMotorSel"> de {{ tipoMotorSel.nombre }}</span></div>
+                                <ng-container *ngIf="tipoMotorSel; else elijaTipoMotor">
+                                    <ul class="nav nav-tabs acc-tabs">
+                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaTipoMotor === 'modelos'" (click)="pestanaTipoMotor = 'modelos'">Modelos</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaTipoMotor === 'sistemas'" (click)="pestanaTipoMotor = 'sistemas'">Sistemas compatibles</a></li>
+                                    </ul>
+                                    <!-- Los modelos se mantienen montados para no perder el modelo elegido al cambiar de pestaña -->
+                                    <div [hidden]="pestanaTipoMotor !== 'modelos'">
+                                        <app-acc-tabla catalogo="modelos_motor" titulo="Modelos" singular="modelo"
+                                            padreCampo="tipo_motor_id" [padreId]="tipoMotorSel.id"
+                                            [recarga]="recargaModelo" (seleccion)="modeloMotorSel = $event"
+                                            (cambio)="recargaTipoMotor = recargaTipoMotor + 1"></app-acc-tabla>
+                                    </div>
+                                    <app-acc-relacion *ngIf="pestanaTipoMotor === 'sistemas'" relacion="tipo_motor_sistema" [id]="tipoMotorSel.id"
+                                        [titulo]="'Sistemas que admiten ' + tipoMotorSel.nombre"
+                                        vacio="No hay sistemas. Añádalos en Listas de opciones → Sistemas."
+                                        (cambio)="recargaTipoMotor = recargaTipoMotor + 1"></app-acc-relacion>
+                                </ng-container>
+                                <ng-template #elijaTipoMotor>
+                                    <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un tipo de motor.</div>
+                                </ng-template>
+                            </div>
+                            <div class="col-xl-4 col-lg-12">
+                                <div class="acc-columna-titulo"><span class="acc-paso">c</span> Accesorios<span *ngIf="modeloMotorSel"> de {{ modeloMotorSel.nombre }}</span></div>
+                                <ng-container *ngIf="modeloMotorSel; else elijaModelo">
+                                    <ul class="nav nav-tabs acc-tabs">
+                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaModelo === 'mandos'" (click)="pestanaModelo = 'mandos'">Mandos</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaModelo === 'cargadores'" (click)="pestanaModelo = 'cargadores'">Cargadores</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaModelo === 'baterias'" (click)="pestanaModelo = 'baterias'">Baterías</a></li>
+                                    </ul>
+                                    <app-acc-relacion *ngIf="pestanaModelo === 'mandos'" relacion="modelo_motor_mando" [id]="modeloMotorSel.id" titulo="Mandos"
+                                        ayuda="Si no marca ninguno, el configurador no pregunta por el mando."
+                                        vacio="No hay mandos. Añádalos en Listas de opciones → Mandos."
+                                        (cambio)="recargaModelo = recargaModelo + 1"></app-acc-relacion>
+                                    <app-acc-relacion *ngIf="pestanaModelo === 'cargadores'" relacion="modelo_motor_cargador" [id]="modeloMotorSel.id" titulo="Cargadores"
+                                        ayuda="Si no marca ninguno, el configurador no pregunta por el cargador."
+                                        vacio="No hay cargadores. Añádalos en Listas de opciones → Cargadores."
+                                        (cambio)="recargaModelo = recargaModelo + 1"></app-acc-relacion>
+                                    <app-acc-relacion *ngIf="pestanaModelo === 'baterias'" relacion="modelo_motor_bateria" [id]="modeloMotorSel.id" titulo="Baterías"
+                                        ayuda="Si no marca ninguna, el configurador no pregunta por la batería."
+                                        vacio="No hay baterías. Añádalas en Listas de opciones → Baterías."
+                                        (cambio)="recargaModelo = recargaModelo + 1"></app-acc-relacion>
+                                </ng-container>
+                                <ng-template #elijaModelo>
+                                    <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> {{ tipoMotorSel ? 'Elija un modelo.' : 'Primero elija un tipo de motor.' }}</div>
+                                </ng-template>
+                            </div>
+                        </div>
+                    </ng-container>
+                </ng-container>
+
+                <!-- LISTAS DE OPCIONES -->
+                <ng-container *ngIf="seccion === 'listas'">
+                    <div class="acc-intro">Opciones que se reutilizan en los pasos. Aquí se dan de alta; en cada paso se marca cuáles se ofrecen.</div>
+                    <ul class="nav nav-tabs acc-tabs">
+                        <li class="nav-item" *ngFor="let l of listas">
+                            <a class="nav-link" href="javascript:void(0)" [class.active]="lista.id === l.id" (click)="cambiarLista(l.id)">{{ l.label }}</a>
+                        </li>
+                    </ul>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla [catalogo]="lista.id" [titulo]="lista.label" [singular]="lista.singular"
+                                [conValor]="!!lista.conValor" [ayuda]="lista.ayuda"></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+            </div>
+        </div>
+    </div>
+</div>

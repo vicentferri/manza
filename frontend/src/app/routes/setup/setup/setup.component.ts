@@ -24,6 +24,14 @@ export class SetupComponent implements OnInit {
         this.firmaID = environment.firmaID;
   }
 
+  /** ¿El usuario tiene permiso para un módulo? (mismo criterio que el menú lateral) */
+  can(modulo: string): boolean {
+    const u = localStorage.getItem('currentUser');
+    const user = u ? JSON.parse(u) : null;
+    if (user && user.isAdmin === true) { return true; }
+    return ((user && user.permisos) || []).includes(modulo);
+  }
+
   openModal(id: string){
         this.modalService.open(id);
     }

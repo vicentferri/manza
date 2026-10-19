@@ -28,6 +28,9 @@ import { TejidosComponent } from './tejidos/tejidos.component';
 import { ImpresionDigitalComponent } from './impresion-digital/impresion-digital.component';
 import { ClientesGestionComponent } from './clientes-gestion/clientes-gestion.component';
 import { PermisosGuard } from '../../services/PermisosGuard';
+import { AccionamientosNuevoComponent } from './accionamientos-nuevo/accionamientos-nuevo.component';
+import { AccTablaComponent } from './accionamientos-nuevo/acc-tabla.component';
+import { AccRelacionComponent } from './accionamientos-nuevo/acc-relacion.component';
 
 
 const routes: Routes = [
@@ -50,7 +53,8 @@ const routes: Routes = [
     { path: 'incrementos-genericos', component: IncrementosGenericosComponent },
     { path: 'tejidos-colores',  component: TejidosColoresComponent },
     { path: 'tejidos',          component: TejidosComponent },
-    { path: 'impresion-digital', component: ImpresionDigitalComponent }
+    { path: 'impresion-digital', component: ImpresionDigitalComponent },
+    { path: 'accionamientos-nuevo', component: AccionamientosNuevoComponent, canActivate: [PermisosGuard], data: { permiso: 'config_accionamientos' } }
 ];
 
 
@@ -72,7 +76,8 @@ const routes: Routes = [
         PromocionesClientesComponent, MandosCargadoresComponent, UsuariosComponent,
         AccionamientosRadioTipoComponent, AccionamientosRadioTipoClienteComponent,
         PromocionesMonitorComponent, IncrementosGenericosComponent,
-        TejidosColoresComponent, TejidosComponent, ImpresionDigitalComponent
+        TejidosColoresComponent, TejidosComponent, ImpresionDigitalComponent,
+        AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]
