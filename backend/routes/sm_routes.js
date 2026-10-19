@@ -539,6 +539,12 @@ smapi.post('/acc/:catalogo', Auth.ensureAuth, AccionamientosNuevoController.guar
 smapi.post('/acc/:catalogo/visible', Auth.ensureAuth, AccionamientosNuevoController.visible);
 smapi.post('/acc/:catalogo/orden', Auth.ensureAuth, AccionamientosNuevoController.orden);
 smapi.post('/acc/:catalogo/delete', Auth.ensureAuth, AccionamientosNuevoController.borrar);
+
+/* Configurador nuevo de accionamientos (clientes con el interruptor SOL_ACC_CLIENTE; Leroy no pasa por aquí) */
+var AccConfiguradorController = require('../controllers/sm/acc_configurador');
+smapi.get('/acc_cfg/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.activo);
+smapi.get('/acc_cfg/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.opciones);
+smapi.post('/acc_cfg/pedido/:cliente/:ref', Auth.ensureAuth, AccConfiguradorController.pedido);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);

@@ -350,7 +350,19 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 4. Mandos, cargadores y baterías son opcionales por modelo: si un modelo de motor no tiene ninguno marcado, ese paso no se muestra en el configurador.
 5. Un registro del que dependen otros (hijos o relaciones marcadas) no se puede borrar: se desactiva (`activo = 0`).
 
-## 8. Pendiente
+## 8. Cómo se guarda en el pedido
+
+El configurador nuevo solo lo usan los clientes con fila activa en `SOL_ACC_CLIENTE (cliente, activo)` (script 04). Leroy Merlín (clientes 1 y 5) no tiene fila y sigue con el configurador de siempre.
+
+Las líneas de enrollable del flujo nuevo se graban en `SOL_PEDIDOS_COLA_TIPO_1`, como las de siempre, con los SPs `sp_acc_pedido_add` y `sp_acc_pedido_tipo_1_add` (script 06):
+
+- La selección va en 12 columnas nulables `nacc_*` (script 05), con FK a su catálogo: `nacc_accionamiento_id`, `nacc_sistema_id`, `nacc_tipo_cadena_id`, `nacc_tipo_aro_id`, `nacc_cadena_medida_id`, `nacc_altura_id`, `nacc_color_cadena_id`, `nacc_tipo_motor_id`, `nacc_modelo_motor_id`, `nacc_mando_id`, `nacc_cargador_id`, `nacc_bateria_id`. En las líneas de siempre quedan a NULL.
+- Los ids antiguos de accionamiento (`acc_tipo_id`, `acc_marca_id`, `acc_modelo_id`, `mando_id`, `cargador`, `cad_altura_id`, `cad_color_id`) van a -1: nunca se mezclan ids nuevos con los antiguos.
+- Los textos que pintan la cesta, los pedidos y los informes se escriben desde `SOL_ACC_*`: `acc_tipo_text` (accionamiento), `acc_marca_text` (sistema; en motor, "sistema · tipo de motor"), `acc_modelo_text` (cadena: "tipo · aro o medida"; motor: "modelo · cargador · batería"), `mando_text`, `cad_Tipo` = 1, `cad_Altura` ("100 cm" o el tipo de medida) y `cad_color_text`.
+- El SP valida la combinación (sistema del accionamiento, tipo de cadena y sus hijos, colores permitidos, tipo de motor admitido en el sistema, modelo y sus mandos, cargadores y baterías).
+- De momento sin precio: los importes `T1_*` quedan a NULL hasta tener las tarifas del modelo nuevo.
+
+## 9. Pendiente
 
 - Visibilidad por cliente (tablas `X_CLIENTE`), si se necesita.
 - Cómo guardará el pedido la selección (columnas con los ids de cada paso).

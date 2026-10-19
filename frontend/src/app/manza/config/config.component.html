@@ -139,13 +139,23 @@
         <!-- PANEL ENROLLABLE -->
 
           <manza-enrollable
-    *ngIf="TipoCortina == 1 && productos.prod_1"
+    *ngIf="TipoCortina == 1 && productos.prod_1 && !accNuevo"
     [Cliente]="Cliente"
     [codeCentro]="codeCentro"
     [SubCliente]="SubCliente"
     [ReferenciaTienda]="ReferenciaTienda"
     (onAdd)="AgregarDesdeHijo($event)">
   </manza-enrollable>
+
+  <!-- Configurador nuevo de accionamientos: solo clientes con el interruptor (SOL_ACC_CLIENTE) -->
+  <manza-enrollable-nuevo
+    *ngIf="TipoCortina == 1 && productos.prod_1 && accNuevo"
+    [Cliente]="Cliente"
+    [codeCentro]="codeCentro"
+    [SubCliente]="SubCliente"
+    [ReferenciaTienda]="ReferenciaTienda"
+    (onAdd)="AgregarDesdeHijo($event)">
+  </manza-enrollable-nuevo>
 
         <!-- PANEL ENROLLABLE -->
      

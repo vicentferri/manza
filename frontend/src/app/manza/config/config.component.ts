@@ -13,6 +13,8 @@ import { JaponesComponent } from '../japones/japones.component';
 import { VerticalComponent } from '../vertical/vertical.component';
 import { CompacComponent } from '../compac/compac.component';
 import { HoneycombComponent } from '../honeycomb/honeycomb.component';
+import { EnrollableNuevoComponent } from '../enrollable-nuevo/enrollable-nuevo.component';
+import { AccConfiguradorService } from '../enrollable-nuevo/acc-configurador.service';
 
 declare var $: any;
 
@@ -32,6 +34,10 @@ export class ConfigComponent implements OnInit {
   @ViewChild(VerticalComponent, { static: false }) public verticalRef!: VerticalComponent;
   @ViewChild(CompacComponent, { static: false }) public compacRef!: CompacComponent;
   @ViewChild(HoneycombComponent, { static: false }) public honeycombRef!: HoneycombComponent;
+  @ViewChild(EnrollableNuevoComponent, { static: false }) public enrollableNuevoRef!: EnrollableNuevoComponent;
+
+  /* Configurador nuevo de accionamientos (SOL_ACC_CLIENTE). false = el de siempre; Leroy no tiene fila */
+  accNuevo: boolean = false;
 
   editingItem: CortinaTipo | null = null;
 
@@ -145,7 +151,8 @@ export class ConfigComponent implements OnInit {
     private domSanitizer: DomSanitizer,
     private serviceHaru: HaruService,
     private router: Router,
-    private translation: TranslationService
+    private translation: TranslationService,
+    private accConfigurador: AccConfiguradorService
   ) {
     this.vRef = vRef;
   }
@@ -167,6 +174,14 @@ export class ConfigComponent implements OnInit {
     this.hayBorrador = !!localStorage.getItem('pedido_borrador');
     this.GetIdioma();
     this.Logged = this.CheckIfLogged();
+    this.comprobarAccNuevo();
+  }
+
+  /* Solo cambia algo si el cliente tiene el interruptor activo; ante cualquier error sigue el configurador de siempre */
+  comprobarAccNuevo(): void {
+    this.accNuevo = false;
+    if (!(parseInt(this.Cliente, 10) > 0)) { return; }
+    this.accConfigurador.activo(this.Cliente).subscribe(activo => this.accNuevo = activo);
   }
 
   ChangeUser() {
@@ -421,6 +436,8 @@ export class ConfigComponent implements OnInit {
       this.btnPedido = 1;
       this.btnPresupuesto = 1;
 
+      if (this.accNuevo) { this.ProcesarPedidoAcc(); return; }
+
       let lineas = JSON.stringify(this.Cesta);
       this.service.altaPedido(lineas, this.ReferenciaTienda, parseInt(this.Cliente)).subscribe(
         data => {
@@ -439,6 +456,22 @@ export class ConfigComponent implements OnInit {
     }
   }
 
+  /* Alta del pedido con el configurador nuevo (POST /api/sm/acc_cfg/pedido): de momento solo enrollables del flujo nuevo */
+  ProcesarPedidoAcc() {
+    this.accConfigurador.altaPedido(this.Cesta, this.ReferenciaTienda, this.Cliente).subscribe(
+      data => {
+        this.NumeroPedido = data.referencia;
+        this.TransmitOK = 1;
+        this.toaster.success('Agregado PEDIDO Satisfactoriamente', 'Agregar Pedido');
+      },
+      error => {
+        this.NumeroPedido = "ERROR";
+        this.TransmitOK = -1;
+        this.toaster.error((error && error.error && error.error.message) || 'NO Ha sido posible agregar el PEDIDO al Sistema', 'Agregar Pedido');
+      }
+    );
+  }
+
   ShowBtns() {
     this.btnPedido = 0;
     this.btnPresupuesto = 0;
@@ -446,6 +479,10 @@ export class ConfigComponent implements OnInit {
   }
 
   ProcesarPresupuesto() {
+    if (this.accNuevo) {
+      this.toaster.error('Los presupuestos todavía no admiten el configurador nuevo de accionamientos', 'Presupuesto');
+      return;
+    }
     if (confirm("¿Desea Guardar el documento como Presupuesto?")) {
       this.btnPedido = 1;
       this.btnPresupuesto = 1;
@@ -879,7 +916,9 @@ export class ConfigComponent implements OnInit {
   applyEdicion(item: any): void {
     switch (item.TipoCortina) {
       case 1:
-        if (this.enrollableRef) {
+        if (item.nacc && this.enrollableNuevoRef) {
+          this.enrollableNuevoRef.cargarEdicion(item);
+        } else if (this.enrollableRef) {
           this.enrollableRef.SubTipo(item.SubTipoCortina || 1);
           this.enrollableRef.cargarEdicion(item);
         }
