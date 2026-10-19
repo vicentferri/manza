@@ -1,7 +1,6 @@
 import { Component, OnInit, Output, EventEmitter, OnDestroy, Input, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { ModalDirective } from 'ngx-bootstrap/modal';
-import { environment } from 'src/environments/environment';
 import { HoneycombService } from './honeycomb.service';
 import { Subject } from 'rxjs';
 import { ImageCacheService } from 'src/app/services/image-cache.service';
@@ -65,11 +64,10 @@ export class HoneycombComponent implements OnInit, OnDestroy {
 
   @ViewChild('modalVideo', { static: false }) modalVideo!: ModalDirective;
 
-  // Documentación de la HoneyComb: instrucciones de montaje en PDF (en assets) y vídeo de YouTube
-  private readonly PDF_MONTAJE = '/assets/pdf/honeycomb_instrucciones_montaje.pdf';
+  // Documentación de la HoneyComb: instrucciones de montaje en PDF (en assets) y vídeo de YouTube.
+  // Ruta relativa (index.html tiene <base href=".">): se resuelve donde esté desplegada la app
+  readonly urlPdf = 'assets/pdf/honeycomb_instrucciones_montaje.pdf';
   private readonly YOUTUBE_ID = 'r_FUX5RTSeM';
-
-  readonly urlPdf = environment.assetsBase + this.PDF_MONTAJE;
   urlVideo: SafeResourceUrl | null = null;
 
 
