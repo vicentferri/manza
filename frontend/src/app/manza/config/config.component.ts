@@ -472,6 +472,22 @@ export class ConfigComponent implements OnInit {
     );
   }
 
+  /* Alta del presupuesto con el configurador nuevo (POST /api/sm/acc_cfg/presupuesto): solo enrollables del flujo nuevo */
+  ProcesarPresupuestoAcc() {
+    this.accConfigurador.altaPresupuesto(this.Cesta, this.ReferenciaTienda, this.Cliente).subscribe(
+      data => {
+        this.NumeroPedido = data.referencia;
+        this.TransmitOK = 1;
+        this.toaster.success('Agregado PRESUPUESTO Satisfactoriamente', 'Agregar PRESUPUESTO');
+      },
+      error => {
+        this.NumeroPedido = "ERROR";
+        this.TransmitOK = -1;
+        this.toaster.error((error && error.error && error.error.message) || 'NO Ha sido posible agregar el PRESUPUESTO al Sistema', 'Agregar PRESUPUESTO');
+      }
+    );
+  }
+
   ShowBtns() {
     this.btnPedido = 0;
     this.btnPresupuesto = 0;
@@ -480,7 +496,11 @@ export class ConfigComponent implements OnInit {
 
   ProcesarPresupuesto() {
     if (this.accNuevo) {
-      this.toaster.error('Los presupuestos todavía no admiten el configurador nuevo de accionamientos', 'Presupuesto');
+      if (confirm("¿Desea Guardar el documento como Presupuesto?")) {
+        this.btnPedido = 1;
+        this.btnPresupuesto = 1;
+        this.ProcesarPresupuestoAcc();
+      }
       return;
     }
     if (confirm("¿Desea Guardar el documento como Presupuesto?")) {
@@ -643,6 +663,23 @@ export class ConfigComponent implements OnInit {
               item.Tipo1_Cajon, item.Tipo1_CajonC, item.Tipo1_CajonRAL,
               item.Tipo1_Guia, item.Tipo1_GuiaC, item.Tipo1_GuiaRAL,
               item.SubTipoCortina, item.Tipo1_Cargador);
+
+            /* Línea del configurador nuevo: se recupera su selección (nacc_*) para poder editarla y volver a guardarla */
+            if (item.nacc_accionamiento_id) {
+              (tipo as any).nacc = {
+                accionamiento: item.nacc_accionamiento_id, sistema: item.nacc_sistema_id,
+                tipo_cadena: item.nacc_tipo_cadena_id, tipo_aro: item.nacc_tipo_aro_id, altura: item.nacc_altura_id,
+                cadena_medida: item.nacc_cadena_medida_id, color_cadena: item.nacc_color_cadena_id,
+                cadena_longitud: item.nacc_cadena_longitud,
+                tipo_motor: item.nacc_tipo_motor_id, modelo_motor: item.nacc_modelo_motor_id,
+                mando: item.nacc_mando_id, cargador: item.nacc_cargador_id, bateria: item.nacc_bateria_id,
+                soporte: item.nacc_soporte_id, soporte_color: item.nacc_soporte_color_id,
+                tapa: item.nacc_tapa_id, tapa_color: item.nacc_tapa_color_id,
+                contrapeso: item.nacc_contrapeso_id, contrapeso_color: item.nacc_contrapeso_color_id
+              };
+              tipo.estancia_id = item.Estancia_ID;
+              tipo.estancia_obs = item.Estancia;
+            }
 
             this.Cesta.push(tipo);
           }

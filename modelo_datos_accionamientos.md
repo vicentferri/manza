@@ -385,6 +385,10 @@ Las líneas de enrollable del flujo nuevo se graban en `SOL_PEDIDOS_COLA_TIPO_1`
 - El SP valida la combinación (sistema del accionamiento, tipo de cadena y sus hijos, colores permitidos, tipo de motor admitido en el sistema, modelo y sus mandos, cargadores y baterías, soporte y tapa del sistema, colores de cada pieza).
 - De momento sin precio: los importes `T1_*` quedan a NULL hasta tener las tarifas del modelo nuevo.
 
+### Presupuestos
+
+Los presupuestos del configurador nuevo funcionan igual que los pedidos: las mismas 19 columnas `nacc_*` en `SOL_PRESUPUESTOS_COLA_TIPO_1` (script 11) y SPs propios `sp_acc_presupuesto_add` y `sp_acc_presupuesto_tipo_1_add` (script 12, generado desde el SP de línea del pedido). Para convertirlos en pedido sin perder la selección, `sp_acc_presupuesto_a_pedido` (script 13), con su propio botón en la pantalla interna de Presupuestos. Los textos de la línea se graban vacíos y no NULL, porque el configurador de siempre los procesa al recargar un presupuesto en la cesta.
+
 ## 9. Pendiente
 
 - Visibilidad por cliente (tablas `X_CLIENTE`), si se necesita.

@@ -34,4 +34,10 @@ export class AccConfiguradorService {
         const ref = encodeURIComponent(referencia || '-');
         return this.http.post<any>(this.url + '/pedido/' + cliente + '/' + ref, lineas);
     }
+
+    /* Alta del presupuesto: igual que el pedido */
+    altaPresupuesto(lineas: any[], referencia: string, cliente: string | number): Observable<any> {
+        const ref = encodeURIComponent(referencia || '-');
+        return this.http.post<any>(this.url + '/presupuesto/' + cliente + '/' + ref, lineas);
+    }
 }

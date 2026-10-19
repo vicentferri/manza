@@ -449,6 +449,22 @@ export class BudgetListeComponent implements OnInit {
     }
   }
 
-
+  /* Conversión de presupuestos del configurador nuevo de accionamientos (POST /api/sm/acc_cfg/presupuesto_a_pedido).
+     Conserva la selección nueva (nacc_*). Los demás presupuestos siguen con Convertir(), que no cambia */
+  ConvertirAcc() {
+    const arrayData: any[] = this.getSelectedRows(this.myGrid, "idrow");
+    if (arrayData.length != 1) {
+      alert("Seleccione un presupuesto");
+      return;
+    }
+    this.service.HTTP_Post("/sm/acc_cfg/presupuesto_a_pedido/" + arrayData[0], "{}").subscribe(
+      data => {
+        this.toaster.success("Traspasado Presupuesto" + (data.referencia ? " (pedido " + data.referencia + ")" : ""), "Traspaso");
+      },
+      error => {
+        this.toaster.error((error && error.error && error.error.message) || error.message, "Traspaso");
+      }
+    );
+  }
 }
 

@@ -7,11 +7,14 @@ const sql = require('mssql');
  * interruptor activo en SOL_ACC_CLIENTE. Leroy (clientes 1 y 5) no tiene fila y no pasa
  * por aquí: sigue con /api/lm/* y el configurador de siempre.
  * Scripts: C:\dev\sqlAccionamientos\ (04 interruptor, 05 y 08 columnas nacc_, 06 y 09 SPs de alta,
- *          07 soportes, tapas y contrapesos, 10 longitud de la cadena a medida)
+ *          07 soportes, tapas y contrapesos, 10 longitud de la cadena a medida,
+ *          11-13 presupuestos y su conversión en pedido)
  *
  *   GET  /api/sm/acc_cfg/activo/:cliente       ¿usa el configurador nuevo?
  *   GET  /api/sm/acc_cfg/opciones/:cliente     árbol de opciones activas, con sus relaciones
- *   POST /api/sm/acc_cfg/pedido/:cliente/:ref  alta del pedido (solo enrollables del flujo nuevo)
+ *   POST /api/sm/acc_cfg/pedido/:cliente/:ref       alta del pedido (solo enrollables del flujo nuevo)
+ *   POST /api/sm/acc_cfg/presupuesto/:cliente/:ref  alta del presupuesto (ídem)
+ *   POST /api/sm/acc_cfg/presupuesto_a_pedido/:id   convertir en pedido un presupuesto del flujo nuevo
  */
 
 /* Mensajes de los códigos de sp_acc_pedido_tipo_1_add */
@@ -191,7 +194,13 @@ async function opciones(req, res) {
   }
 }
 
-/* POST /acc_cfg/pedido/:cliente/:ref  body: [ líneas ]
+/* Pedido y presupuesto se graban igual; solo cambian los SPs y el nombre de sus parámetros */
+const DOCUMENTOS = {
+  pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add', id: 'idPedido', nombre: 'pedido' },
+  presupuesto: { cabecera: 'sp_acc_presupuesto_add', ref: 'refPresupuesto', linea: 'sp_acc_presupuesto_tipo_1_add', id: 'idPresupuesto', nombre: 'presupuesto' }
+};
+
+/* POST /acc_cfg/pedido/:cliente/:ref y /acc_cfg/presupuesto/:cliente/:ref   body: [ líneas ]
    Cada línea: { TipoCortina: 1, ancho, alto, cantidad, codeCentro,
                  nacc: { accionamiento, sistema, tipo_cadena, tipo_aro, cadena_medida, altura,
                          color_cadena, tipo_motor, modelo_motor, mando, cargador, bateria,
@@ -200,14 +209,14 @@ async function opciones(req, res) {
                  y los pasos que siguen en el modelo antiguo con los nombres de CortinaTipo:
                  acc_tubo_id, acc_posicion_id, tej_tipo_id, tej_color_id, tej_salida_id,
                  Tipo1_Cajon, Tipo1_Guia, impresion, impresion_imagen, instrucciones, estancia_id, estancia_obs }
-   Todo el pedido va en una transacción: si una línea no es válida no se graba nada. */
-async function pedido(req, res) {
+   Todo el documento va en una transacción: si una línea no es válida no se graba nada. */
+async function alta(doc, req, res) {
   const cliente = entero(req.params.cliente);
   /* El configurador manda '-' cuando no hay referencia (la ruta necesita el segmento) */
   const referencia = req.params.ref === '-' ? '' : (texto(req.params.ref, 255) || '');
   const lineas = Array.isArray(req.body) ? req.body : [];
   if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
-  if (lineas.length === 0) return res.status(400).send({ message: 'El pedido no tiene líneas' });
+  if (lineas.length === 0) return res.status(400).send({ message: `El ${doc.nombre} no tiene líneas` });
 
   const otras = lineas.findIndex(l => entero(l.TipoCortina) !== 1 || !l.nacc);
   if (otras >= 0) {
@@ -223,19 +232,19 @@ async function pedido(req, res) {
     const cabecera = await new sql.Request(transaction)
       .input('cliente', sql.Int, cliente)
       .input('referencia', sql.VarChar(255), referencia)
-      .output('refPedido', sql.VarChar(255))
-      .execute('sp_acc_pedido_add');
-    const idPedido = cabecera.returnValue;
-    if (!(idPedido > 0)) {
+      .output(doc.ref, sql.VarChar(255))
+      .execute(doc.cabecera);
+    const idDocumento = cabecera.returnValue;
+    if (!(idDocumento > 0)) {
       await transaction.rollback();
-      return res.status(400).send({ message: ERRORES_LINEA[String(idPedido)] || 'No se pudo crear el pedido' });
+      return res.status(400).send({ message: ERRORES_LINEA[String(idDocumento)] || `No se pudo crear el ${doc.nombre}` });
     }
 
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
       const n = l.nacc || {};
       const r = await new sql.Request(transaction)
-        .input('idPedido', sql.Int, idPedido)
+        .input(doc.id, sql.Int, idDocumento)
         .input('centro', sql.Int, entero(l.codeCentro) || 1)
         .input('ancho', sql.Int, entero(l.ancho))
         .input('alto', sql.Int, entero(l.alto))
@@ -271,7 +280,7 @@ async function pedido(req, res) {
         .input('instrucciones', sql.VarChar(250), texto(l.instrucciones, 250))
         .input('estancia_id', sql.Int, enteroAntiguo(l.estancia_id))
         .input('estancia', sql.VarChar(2500), texto(l.estancia_obs, 2500))
-        .execute('sp_acc_pedido_tipo_1_add');
+        .execute(doc.linea);
       if (!(r.returnValue > 0)) {
         await transaction.rollback();
         const motivo = ERRORES_LINEA[String(r.returnValue)] || 'Línea no válida';
@@ -280,7 +289,7 @@ async function pedido(req, res) {
     }
 
     await transaction.commit();
-    res.status(200).send({ message: 'OK', idPedido, referencia: cabecera.output.refPedido });
+    res.status(200).send({ message: 'OK', id: idDocumento, idPedido: idDocumento, referencia: cabecera.output[doc.ref] });
   } catch (err) {
     if (transaction) {
       try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
@@ -290,8 +299,39 @@ async function pedido(req, res) {
   }
 }
 
+function pedido(req, res) { return alta(DOCUMENTOS.pedido, req, res); }
+function presupuesto(req, res) { return alta(DOCUMENTOS.presupuesto, req, res); }
+
+/* POST /acc_cfg/presupuesto_a_pedido/:id — solo presupuestos del configurador nuevo (sp_acc_presupuesto_a_pedido).
+   Los demás se convierten con el botón de siempre, que no se toca */
+const ERRORES_CONVERSION = {
+  '-1': 'El presupuesto no existe',
+  '-2': 'El cliente del presupuesto no tiene activado el configurador nuevo: use "Convertir a Pedido"',
+  '-3': 'El presupuesto no es del configurador nuevo (o tiene líneas de otros productos): use "Convertir a Pedido"'
+};
+
+async function presupuesto_a_pedido(req, res) {
+  const id = entero(req.params.id);
+  if (id === null) return res.status(400).send({ message: 'Presupuesto no válido' });
+  try {
+    const pool = await sql.connect();
+    const r = await pool.request().input('idPresupuesto', sql.Int, id).execute('sp_acc_presupuesto_a_pedido');
+    if (r.returnValue > 0) {
+      const p = await pool.request().input('id', sql.Int, r.returnValue)
+        .query('select REFERENCIA as referencia from dbo.SOL_PEDIDOS_COLA where IDROW = @id');
+      return res.status(200).send({ message: 'OK', idPedido: r.returnValue, referencia: (p.recordset[0] || {}).referencia });
+    }
+    res.status(400).send({ message: ERRORES_CONVERSION[String(r.returnValue)] || 'No se pudo convertir el presupuesto' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 module.exports = {
   activo,
   opciones,
-  pedido
+  pedido,
+  presupuesto,
+  presupuesto_a_pedido
 };
