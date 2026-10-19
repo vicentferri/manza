@@ -11,8 +11,8 @@ import { AccConfiguradorService } from './acc-configurador.service';
  *
  * Pasos: medidas → tejido (lecturas de siempre, solo dependen del cliente) → accionamiento
  * (accionamiento → sistema → cadena: tipo, aro + altura o medida, color / motor: tipo, modelo,
- * mando, cargador, batería). Soportes, tapas, contrapesos, cajón y guía llegarán cuando estén
- * en el modelo nuevo. De momento sin precio (decisión C).
+ * mando, cargador, batería) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
+ * su color. Cajón y guía llegarán cuando estén en el modelo nuevo. De momento sin precio (decisión C).
  *
  * La línea viaja en la cesta como un CortinaTipo con los textos de siempre (para la cesta y el
  * resumen) y la selección nueva en la propiedad `nacc`, que es lo que graba el backend.
@@ -120,15 +120,20 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
 
    private limpiarSeleccion(): void {
       this.sel = { accionamiento: '', sistema: '', tipo_cadena: '', tipo_aro: '', altura: '', cadena_medida: '',
-                   color_cadena: '', tipo_motor: '', modelo_motor: '', mando: '', cargador: '', bateria: '' };
+                   color_cadena: '', tipo_motor: '', modelo_motor: '', mando: '', cargador: '', bateria: '',
+                   soporte: '', soporte_color: '', tapa: '', tapa_color: '', contrapeso: '', contrapeso_color: '' };
    }
 
    /* Al cambiar un paso se vacían los que dependen de él */
    cambiar(paso: string): void {
-      const orden = ['accionamiento', 'sistema', 'tipo_cadena', 'tipo_motor', 'modelo_motor'];
+      const orden = ['accionamiento', 'sistema', 'tipo_cadena', 'tipo_motor', 'modelo_motor', 'soporte', 'tapa', 'contrapeso'];
+      const piezasSistema = ['soporte', 'soporte_color', 'tapa', 'tapa_color'];
       const dependientes: { [p: string]: string[] } = {
-         accionamiento: ['sistema', 'tipo_cadena', 'tipo_aro', 'altura', 'cadena_medida', 'color_cadena', 'tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'],
-         sistema: ['tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'],
+         accionamiento: ['sistema', 'tipo_cadena', 'tipo_aro', 'altura', 'cadena_medida', 'color_cadena', 'tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
+         sistema: ['tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
+         soporte: ['soporte_color'],
+         tapa: ['tapa_color'],
+         contrapeso: ['contrapeso_color'],
          tipo_cadena: ['tipo_aro', 'altura', 'cadena_medida', 'color_cadena'],
          tipo_motor: ['modelo_motor', 'mando', 'cargador', 'bateria'],
          modelo_motor: ['mando', 'cargador', 'bateria']
@@ -147,7 +152,10 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       while (cambio) {
          cambio = unica(this.accionamientos, 'accionamiento') || unica(this.sistemas, 'sistema') ||
                   (this.esCadena && (unica(this.tiposCadena, 'tipo_cadena') || unica(this.aros, 'tipo_aro') || unica(this.medidas, 'cadena_medida'))) ||
-                  (this.esMotor && (unica(this.tiposMotor, 'tipo_motor') || unica(this.modelos, 'modelo_motor')));
+                  (this.esMotor && (unica(this.tiposMotor, 'tipo_motor') || unica(this.modelos, 'modelo_motor'))) ||
+                  unica(this.soportes, 'soporte') || unica(this.coloresSoporte, 'soporte_color') ||
+                  unica(this.tapas, 'tapa') || unica(this.coloresTapa, 'tapa_color') ||
+                  unica(this.contrapesos, 'contrapeso') || unica(this.coloresContrapeso, 'contrapeso_color');
       }
    }
 
@@ -193,6 +201,24 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    get cargadores(): any[] { return this.modeloSel ? this.opc.cargadores.filter(x => this.modeloSel.cargadores.indexOf(x.id) >= 0) : []; }
    get baterias(): any[] { return this.modeloSel ? this.opc.baterias.filter(x => this.modeloSel.baterias.indexOf(x.id) >= 0) : []; }
 
+   /* Soporte y tapa: los marcados para el sistema elegido; contrapeso: todos. Cada color, de los que admite su pieza */
+   private deSistema(lista: any[]): any[] {
+      const sistema = parseInt(this.sel.sistema, 10);
+      return this.opc && sistema ? (lista || []).filter(x => x.sistemas.indexOf(sistema) >= 0) : [];
+   }
+   private coloresDe(pieza: any, catalogo: any[]): any[] {
+      return pieza ? (catalogo || []).filter(c => pieza.colores.indexOf(c.id) >= 0) : [];
+   }
+   get soportes(): any[] { return this.deSistema(this.opc ? this.opc.soportes : []); }
+   get soporteSel(): any { return this.porId(this.soportes, this.sel.soporte); }
+   get coloresSoporte(): any[] { return this.coloresDe(this.soporteSel, this.opc ? this.opc.coloresSoporte : []); }
+   get tapas(): any[] { return this.deSistema(this.opc ? this.opc.tapas : []); }
+   get tapaSel(): any { return this.porId(this.tapas, this.sel.tapa); }
+   get coloresTapa(): any[] { return this.coloresDe(this.tapaSel, this.opc ? this.opc.coloresTapa : []); }
+   get contrapesos(): any[] { return this.opc && this.sel.sistema ? this.opc.contrapesos : []; }
+   get contrapesoSel(): any { return this.porId(this.contrapesos, this.sel.contrapeso); }
+   get coloresContrapeso(): any[] { return this.coloresDe(this.contrapesoSel, this.opc ? this.opc.coloresContrapeso : []); }
+
    etiquetaAltura(a: any): string {
       return a.nombre || (Number(a.valor) + ' cm');
    }
@@ -212,6 +238,13 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
          if (this.coloresCadena.length > 0 && !this.sel.color_cadena) { return 'Seleccione el color de la cadena'; }
       }
       if (this.esMotor && (!this.sel.tipo_motor || !this.sel.modelo_motor)) { return 'Seleccione el tipo y el modelo de motor'; }
+      /* cada pieza es obligatoria si hay alguna que elegir, y su color si admite alguno */
+      if (this.soportes.length > 0 && !this.sel.soporte) { return 'Seleccione el soporte'; }
+      if (this.coloresSoporte.length > 0 && !this.sel.soporte_color) { return 'Seleccione el color del soporte'; }
+      if (this.tapas.length > 0 && !this.sel.tapa) { return 'Seleccione la tapa'; }
+      if (this.coloresTapa.length > 0 && !this.sel.tapa_color) { return 'Seleccione el color de la tapa'; }
+      if (this.contrapesos.length > 0 && !this.sel.contrapeso) { return 'Seleccione el contrapeso'; }
+      if (this.coloresContrapeso.length > 0 && !this.sel.contrapeso_color) { return 'Seleccione el color del contrapeso'; }
       return '';
    }
 
@@ -255,13 +288,25 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
          t.mando_text = nombre(this.mandos, this.sel.mando);
       }
 
+      /* soporte, tapa y contrapeso: ids antiguos a -1 y textos de siempre */
+      t.sop_tipo_id = -1; t.sop_color_id = -1; t.tap_tipo_id = -1; t.tap_color_id = -1; t.con_tipo_id = -1; t.con_color_id = -1;
+      t.sop_tipo_text = nombre(this.soportes, this.sel.soporte);
+      t.sop_color_text = nombre(this.coloresSoporte, this.sel.soporte_color);
+      t.tap_tipo_text = nombre(this.tapas, this.sel.tapa);
+      t.tap_color_text = nombre(this.coloresTapa, this.sel.tapa_color);
+      t.con_tipo_text = nombre(this.contrapesos, this.sel.contrapeso);
+      t.con_color_text = nombre(this.coloresContrapeso, this.sel.contrapeso_color);
+
       /* la selección nueva, que es lo que graba el backend */
       (t as any).nacc = {
          accionamiento: id(this.sel.accionamiento), sistema: id(this.sel.sistema),
          tipo_cadena: id(this.sel.tipo_cadena), tipo_aro: id(this.sel.tipo_aro), altura: id(this.sel.altura),
          cadena_medida: id(this.sel.cadena_medida), color_cadena: id(this.sel.color_cadena),
          tipo_motor: id(this.sel.tipo_motor), modelo_motor: id(this.sel.modelo_motor),
-         mando: id(this.sel.mando), cargador: id(this.sel.cargador), bateria: id(this.sel.bateria)
+         mando: id(this.sel.mando), cargador: id(this.sel.cargador), bateria: id(this.sel.bateria),
+         soporte: id(this.sel.soporte), soporte_color: id(this.sel.soporte_color),
+         tapa: id(this.sel.tapa), tapa_color: id(this.sel.tapa_color),
+         contrapeso: id(this.sel.contrapeso), contrapeso_color: id(this.sel.contrapeso_color)
       };
 
       this.editando = null;

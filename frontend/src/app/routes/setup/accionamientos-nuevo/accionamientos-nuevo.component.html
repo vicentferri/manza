@@ -186,6 +186,40 @@
                     </ng-container>
                 </ng-container>
 
+                <!-- 4. SOPORTES Y TAPAS (por sistema) -->
+                <ng-container *ngIf="seccion === 'soportes'">
+                    <div class="acc-intro">
+                        Elija un sistema y marque qué soportes y qué tapas se ofrecen con él. Los soportes y las tapas se dan de alta en
+                        Listas de opciones. Los contrapesos valen para todos los sistemas y no se marcan aquí.
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-5">
+                            <app-acc-tabla catalogo="sistemas" titulo="Sistemas" singular="sistema"
+                                [recarga]="recargaSistemas" (seleccion)="sistemaSel = $event"></app-acc-tabla>
+                        </div>
+                        <div class="col-lg-7">
+                            <ng-container *ngIf="sistemaSel; else elijaSistema">
+                                <div class="acc-detalle-titulo">{{ sistemaSel.nombre }}</div>
+                                <ul class="nav nav-tabs acc-tabs">
+                                    <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaSistema === 'soportes'" (click)="pestanaSistema = 'soportes'">Soportes</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaSistema === 'tapas'" (click)="pestanaSistema = 'tapas'">Tapas</a></li>
+                                </ul>
+                                <app-acc-relacion *ngIf="pestanaSistema === 'soportes'" relacion="sistema_soporte" [id]="sistemaSel.id"
+                                    [titulo]="'Soportes de ' + sistemaSel.nombre"
+                                    vacio="No hay soportes. Añádalos en Listas de opciones → Soportes."
+                                    (cambio)="recargaSistemas = recargaSistemas + 1"></app-acc-relacion>
+                                <app-acc-relacion *ngIf="pestanaSistema === 'tapas'" relacion="sistema_tapa" [id]="sistemaSel.id"
+                                    [titulo]="'Tapas de ' + sistemaSel.nombre"
+                                    vacio="No hay tapas. Añádalas en Listas de opciones → Tapas."
+                                    (cambio)="recargaSistemas = recargaSistemas + 1"></app-acc-relacion>
+                            </ng-container>
+                            <ng-template #elijaSistema>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un sistema para marcar sus soportes y sus tapas.</div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </ng-container>
+
                 <!-- LISTAS DE OPCIONES -->
                 <ng-container *ngIf="seccion === 'listas'">
                     <div class="acc-intro">Opciones que se reutilizan en los pasos. Aquí se dan de alta; en cada paso se marca cuáles se ofrecen.</div>
@@ -197,7 +231,17 @@
                     <div class="row">
                         <div class="col-xl-6 col-lg-8">
                             <app-acc-tabla [catalogo]="lista.id" [titulo]="lista.label" [singular]="lista.singular"
-                                [conValor]="!!lista.conValor" [ayuda]="lista.ayuda"></app-acc-tabla>
+                                [conValor]="!!lista.conValor" [ayuda]="lista.ayuda"
+                                [recarga]="recargaLista" (seleccion)="listaSel = $event"></app-acc-tabla>
+                        </div>
+                        <!-- Piezas con colores: al elegir una, se marcan los colores que admite -->
+                        <div class="col-xl-6 col-lg-4" *ngIf="lista.colores">
+                            <app-acc-relacion *ngIf="listaSel; else elijaPieza" [relacion]="lista.colores" [id]="listaSel.id"
+                                [titulo]="lista.tituloColores + ': ' + listaSel.nombre" [vacio]="lista.vacioColores"
+                                (cambio)="recargaLista = recargaLista + 1"></app-acc-relacion>
+                            <ng-template #elijaPieza>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija uno de la lista para marcar sus colores.</div>
+                            </ng-template>
                         </div>
                     </div>
                 </ng-container>

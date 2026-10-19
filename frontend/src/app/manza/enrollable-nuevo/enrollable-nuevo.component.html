@@ -165,6 +165,59 @@
       </ng-container>
    </div>
 
+   <!-- SOPORTE, TAPA Y CONTRAPESO (modelo nuevo) -->
+   <div class="enx-seccion" *ngIf="opc && sel.sistema">
+      <div class="enx-titulo">4. Soporte, tapa y contrapeso</div>
+      <div class="row">
+         <div class="col-md-3 col-6 form-group">
+            <label>Soporte</label>
+            <select class="form-control form-control-sm" [(ngModel)]="sel.soporte" [ngModelOptions]="{ standalone: true }" (change)="cambiar('soporte')" [disabled]="soportes.length === 0">
+               <option value="">{{ soportes.length === 0 ? 'Sin soportes para este sistema' : 'Seleccionar' }}</option>
+               <option *ngFor="let s of soportes" [value]="s.id">{{ s.nombre }}</option>
+            </select>
+         </div>
+         <div class="col-md-3 col-6 form-group" *ngIf="sel.soporte && coloresSoporte.length > 0">
+            <label>Color del soporte</label>
+            <select class="form-control form-control-sm" [(ngModel)]="sel.soporte_color" [ngModelOptions]="{ standalone: true }" (change)="cambiar('soporte_color')">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let c of coloresSoporte" [value]="c.id">{{ c.nombre }}</option>
+            </select>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-md-3 col-6 form-group">
+            <label>Tapa</label>
+            <select class="form-control form-control-sm" [(ngModel)]="sel.tapa" [ngModelOptions]="{ standalone: true }" (change)="cambiar('tapa')" [disabled]="tapas.length === 0">
+               <option value="">{{ tapas.length === 0 ? 'Sin tapas para este sistema' : 'Seleccionar' }}</option>
+               <option *ngFor="let t of tapas" [value]="t.id">{{ t.nombre }}</option>
+            </select>
+         </div>
+         <div class="col-md-3 col-6 form-group" *ngIf="sel.tapa && coloresTapa.length > 0">
+            <label>Color de la tapa</label>
+            <select class="form-control form-control-sm" [(ngModel)]="sel.tapa_color" [ngModelOptions]="{ standalone: true }" (change)="cambiar('tapa_color')">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let c of coloresTapa" [value]="c.id">{{ c.nombre }}</option>
+            </select>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-md-3 col-6 form-group">
+            <label>Contrapeso</label>
+            <select class="form-control form-control-sm" [(ngModel)]="sel.contrapeso" [ngModelOptions]="{ standalone: true }" (change)="cambiar('contrapeso')" [disabled]="contrapesos.length === 0">
+               <option value="">{{ contrapesos.length === 0 ? 'Sin contrapesos dados de alta' : 'Seleccionar' }}</option>
+               <option *ngFor="let c of contrapesos" [value]="c.id">{{ c.nombre }}</option>
+            </select>
+         </div>
+         <div class="col-md-3 col-6 form-group" *ngIf="sel.contrapeso && coloresContrapeso.length > 0">
+            <label>Color del contrapeso</label>
+            <select class="form-control form-control-sm" [(ngModel)]="sel.contrapeso_color" [ngModelOptions]="{ standalone: true }" (change)="cambiar('contrapeso_color')">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let c of coloresContrapeso" [value]="c.id">{{ c.nombre }}</option>
+            </select>
+         </div>
+      </div>
+   </div>
+
    <!-- OBSERVACIONES Y AÑADIR -->
    <div class="enx-seccion">
       <div class="row align-items-end">

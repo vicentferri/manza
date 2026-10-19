@@ -26,13 +26,27 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'accionamientos', paso: '1', label: 'Accionamientos', ayuda: 'Qué sistemas tiene cada uno', icono: 'fa-hand-pointer-o' },
         { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, aros, alturas, medidas y colores', icono: 'fa-link' },
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos y sus accesorios', icono: 'fa-cog' },
-        { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, colores, mandos...', icono: 'fa-list' }
+        { id: 'soportes', paso: '4', label: 'Soportes y tapas', ayuda: 'Qué soportes y tapas tiene cada sistema', icono: 'fa-th-large' },
+        { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' }
     ];
     seccion = 'accionamientos';
 
     readonly listas = [
         { id: 'sistemas', label: 'Sistemas', singular: 'sistema', ayuda: 'Rhin, Duero, Sena deco... Se asignan a cada accionamiento en el paso 1.' },
+        /* colores: relación pieza → colores que admite (se marcan al elegir la pieza) */
+        { id: 'soportes', label: 'Soportes', singular: 'soporte', colores: 'soporte_color', tituloColores: 'Colores del soporte',
+          vacioColores: 'No hay colores de soporte. Añádalos en la pestaña Colores de soporte.',
+          ayuda: 'Genéricos (Corto, Largo...). Cada sistema marca los suyos en el paso 4.' },
+        { id: 'tapas', label: 'Tapas', singular: 'tapa', colores: 'tapa_color', tituloColores: 'Colores de la tapa',
+          vacioColores: 'No hay colores de tapa. Añádalos en la pestaña Colores de tapa.',
+          ayuda: 'Cada sistema marca las suyas en el paso 4.' },
+        { id: 'contrapesos', label: 'Contrapesos', singular: 'contrapeso', colores: 'contrapeso_color', tituloColores: 'Colores del contrapeso',
+          vacioColores: 'No hay colores de contrapeso. Añádalos en la pestaña Colores de contrapeso.',
+          ayuda: 'Valen para todos los sistemas.' },
         { id: 'colores_cadena', label: 'Colores de cadena', singular: 'color', ayuda: 'Se asignan a cada tipo de cadena en el paso 2.' },
+        { id: 'colores_soporte', label: 'Colores de soporte', singular: 'color', ayuda: 'Se marcan en cada soporte (pestaña Soportes).' },
+        { id: 'colores_tapa', label: 'Colores de tapa', singular: 'color', ayuda: 'Se marcan en cada tapa (pestaña Tapas).' },
+        { id: 'colores_contrapeso', label: 'Colores de contrapeso', singular: 'color', ayuda: 'Se marcan en cada contrapeso (pestaña Contrapesos).' },
         { id: 'mandos', label: 'Mandos', singular: 'mando', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' },
         { id: 'cargadores', label: 'Cargadores', singular: 'cargador', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' },
         { id: 'baterias', label: 'Baterías', singular: 'batería', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' }
@@ -51,12 +65,17 @@ export class AccionamientosNuevoComponent implements OnInit {
     pestanaTipoMotor = 'modelos';
     modeloMotorSel: any = null;
     pestanaModelo = 'mandos';
+    sistemaSel: any = null;
+    pestanaSistema = 'soportes';
+    listaSel: any = null;
 
     /* Contadores que fuerzan la recarga de una lista cuando cambia algo que cuelga de ella ("Uso") */
     recargaAcc = 0;
     recargaTipoCadena = 0;
     recargaTipoMotor = 0;
     recargaModelo = 0;
+    recargaSistemas = 0;
+    recargaLista = 0;
 
     constructor(private service: HaruService, private toaster: ToastrService) { }
 
@@ -70,11 +89,14 @@ export class AccionamientosNuevoComponent implements OnInit {
         this.tipoCadenaSel = null;
         this.tipoMotorSel = null;
         this.modeloMotorSel = null;
+        this.sistemaSel = null;
+        this.listaSel = null;
         if (id === 'cadena' || id === 'motor') { this.cargarAccionamientos(); }
     }
 
     cambiarLista(id: string) {
         this.lista = this.listas.find(l => l.id === id);
+        this.listaSel = null;
     }
 
     /* Cada tipo de cadena enseña solo lo que le corresponde: aros (ARO_CADENA), medidas (CADENA_A_MEDIDA) y colores (todos) */

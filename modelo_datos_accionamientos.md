@@ -310,6 +310,18 @@ Las tres tablas tienen la misma estructura. Sus opciones se **filtran por el mod
 | orden | INT | NOT NULL, DEFAULT 0 | Orden |
 | activo | BIT | NOT NULL, DEFAULT 1 | Visible en el configurador |
 
+### 4.11 SOL_ACC_SOPORTE, SOL_ACC_TAPA y SOL_ACC_CONTRAPESO
+
+Script 07. Las tres tablas tienen la estructura común de los catálogos (`id`, `codigo`, `nombre` único, `nombre_pt`, `orden`, `activo`).
+
+- **Soportes genéricos** (p. ej. "Corto", "Largo"): cada sistema marca los que ofrece (`SOL_ACC_SOPORTE_SISTEMA`). La fabricación distinguirá por sistema y soporte.
+- **Tapas**: dependen solo del sistema (`SOL_ACC_TAPA_SISTEMA`), no del soporte.
+- **Contrapesos**: valen para todos los sistemas; no tienen relación con el sistema.
+
+### 4.12 Colores de soporte, tapa y contrapeso
+
+`SOL_ACC_COLOR_SOPORTE`, `SOL_ACC_COLOR_TAPA` y `SOL_ACC_COLOR_CONTRAPESO` (script 07): un catálogo de colores **por pieza**, con la estructura común. El usuario elige un color para cada pieza (cadena, soporte, tapa y contrapeso), y cada pieza marca qué colores de su catálogo admite.
+
 ## 5. Tablas intermedias (relaciones muchos a muchos)
 
 Se usan cuando una opción puede servir para varios elementos del paso anterior. Por ejemplo, un mismo mando puede ser compatible con varios modelos de motor, y un modelo de motor admite varios mandos. Todas tienen clave primaria compuesta por sus dos claves foráneas, lo que impide duplicados.
@@ -322,6 +334,11 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 | SOL_ACC_MODELO_MOTOR_MANDO | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | mando_id → SOL_ACC_MANDO.id | Qué mandos aparecen para cada modelo |
 | SOL_ACC_MODELO_MOTOR_CARGADOR | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | cargador_id → SOL_ACC_CARGADOR.id | Qué cargadores aparecen para cada modelo |
 | SOL_ACC_MODELO_MOTOR_BATERIA | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | bateria_id → SOL_ACC_BATERIA.id | Qué baterías aparecen para cada modelo |
+| SOL_ACC_SOPORTE_SISTEMA | soporte_id → SOL_ACC_SOPORTE.id | sistema_id → SOL_ACC_SISTEMA.id | Qué soportes ofrece cada sistema |
+| SOL_ACC_TAPA_SISTEMA | tapa_id → SOL_ACC_TAPA.id | sistema_id → SOL_ACC_SISTEMA.id | Qué tapas ofrece cada sistema |
+| SOL_ACC_SOPORTE_COLOR | soporte_id → SOL_ACC_SOPORTE.id | color_soporte_id → SOL_ACC_COLOR_SOPORTE.id | Colores que admite cada soporte |
+| SOL_ACC_TAPA_COLOR | tapa_id → SOL_ACC_TAPA.id | color_tapa_id → SOL_ACC_COLOR_TAPA.id | Colores que admite cada tapa |
+| SOL_ACC_CONTRAPESO_COLOR | contrapeso_id → SOL_ACC_CONTRAPESO.id | color_contrapeso_id → SOL_ACC_COLOR_CONTRAPESO.id | Colores que admite cada contrapeso |
 
 ## 6. Resumen de relaciones
 
@@ -339,6 +356,10 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 | Modelo Motor | Mando | N:M | Tabla SOL_ACC_MODELO_MOTOR_MANDO |
 | Modelo Motor | Cargador | N:M | Tabla SOL_ACC_MODELO_MOTOR_CARGADOR |
 | Modelo Motor | Batería | N:M | Tabla SOL_ACC_MODELO_MOTOR_BATERIA |
+| Sistema | Soporte | N:M | Tabla SOL_ACC_SOPORTE_SISTEMA |
+| Sistema | Tapa | N:M | Tabla SOL_ACC_TAPA_SISTEMA |
+| Contrapeso | (todos los sistemas) | — | Sin relación |
+| Soporte / Tapa / Contrapeso | Su color | N:M | SOL_ACC_SOPORTE_COLOR, SOL_ACC_TAPA_COLOR, SOL_ACC_CONTRAPESO_COLOR |
 
 "Sin cadena" solo se relaciona con Sistema; no abre más pasos.
 
@@ -356,14 +377,14 @@ El configurador nuevo solo lo usan los clientes con fila activa en `SOL_ACC_CLIE
 
 Las líneas de enrollable del flujo nuevo se graban en `SOL_PEDIDOS_COLA_TIPO_1`, como las de siempre, con los SPs `sp_acc_pedido_add` y `sp_acc_pedido_tipo_1_add` (script 06):
 
-- La selección va en 12 columnas nulables `nacc_*` (script 05), con FK a su catálogo: `nacc_accionamiento_id`, `nacc_sistema_id`, `nacc_tipo_cadena_id`, `nacc_tipo_aro_id`, `nacc_cadena_medida_id`, `nacc_altura_id`, `nacc_color_cadena_id`, `nacc_tipo_motor_id`, `nacc_modelo_motor_id`, `nacc_mando_id`, `nacc_cargador_id`, `nacc_bateria_id`. En las líneas de siempre quedan a NULL.
-- Los ids antiguos de accionamiento (`acc_tipo_id`, `acc_marca_id`, `acc_modelo_id`, `mando_id`, `cargador`, `cad_altura_id`, `cad_color_id`) van a -1: nunca se mezclan ids nuevos con los antiguos.
-- Los textos que pintan la cesta, los pedidos y los informes se escriben desde `SOL_ACC_*`: `acc_tipo_text` (accionamiento), `acc_marca_text` (sistema; en motor, "sistema · tipo de motor"), `acc_modelo_text` (cadena: "tipo · aro o medida"; motor: "modelo · cargador · batería"), `mando_text`, `cad_Tipo` = 1, `cad_Altura` ("100 cm" o el tipo de medida) y `cad_color_text`.
-- El SP valida la combinación (sistema del accionamiento, tipo de cadena y sus hijos, colores permitidos, tipo de motor admitido en el sistema, modelo y sus mandos, cargadores y baterías).
+- La selección va en 18 columnas nulables `nacc_*` (12 del script 05 y 6 del 08), con FK a su catálogo: `nacc_accionamiento_id`, `nacc_sistema_id`, `nacc_tipo_cadena_id`, `nacc_tipo_aro_id`, `nacc_cadena_medida_id`, `nacc_altura_id`, `nacc_color_cadena_id`, `nacc_tipo_motor_id`, `nacc_modelo_motor_id`, `nacc_mando_id`, `nacc_cargador_id`, `nacc_bateria_id`, `nacc_soporte_id`, `nacc_soporte_color_id`, `nacc_tapa_id`, `nacc_tapa_color_id`, `nacc_contrapeso_id`, `nacc_contrapeso_color_id`. En las líneas de siempre quedan a NULL.
+- Los ids antiguos de accionamiento, soporte, tapa y contrapeso (`acc_tipo_id`, `acc_marca_id`, `acc_modelo_id`, `mando_id`, `cargador`, `cad_altura_id`, `cad_color_id`, `sop_*_id`, `tap_*_id`, `con_*_id`) van a -1: nunca se mezclan ids nuevos con los antiguos.
+- Los textos que pintan la cesta, los pedidos y los informes se escriben desde `SOL_ACC_*`: `acc_tipo_text` (accionamiento), `acc_marca_text` (sistema; en motor, "sistema · tipo de motor"), `acc_modelo_text` (cadena: "tipo · aro o medida"; motor: "modelo · cargador · batería"), `mando_text`, `cad_Tipo` = 1, `cad_Altura` ("100 cm" o el tipo de medida), `cad_color_text`, y `sop_tipo_text`/`sop_color_text`, `tap_tipo_text`/`tap_color_text`, `con_tipo_text`/`con_color_text`.
+- El SP valida la combinación (sistema del accionamiento, tipo de cadena y sus hijos, colores permitidos, tipo de motor admitido en el sistema, modelo y sus mandos, cargadores y baterías, soporte y tapa del sistema, colores de cada pieza).
 - De momento sin precio: los importes `T1_*` quedan a NULL hasta tener las tarifas del modelo nuevo.
 
 ## 9. Pendiente
 
 - Visibilidad por cliente (tablas `X_CLIENTE`), si se necesita.
 - Cómo guardará el pedido la selección (columnas con los ids de cada paso).
-- Siguientes pasos del configurador: soportes (un sistema tiene varios soportes a elegir), contrapesos, tapas, tejido...
+- Siguientes pasos del configurador: cajón, guía, tubo, posición de mando, tejido...

@@ -26,7 +26,15 @@ const CATALOGOS = {
   tipos_aro_cadena:    { tabla: 'SOL_ACC_TIPO_ARO_CADENA', padre: 'tipo_cadena_id', tablaPadre: 'SOL_ACC_TIPO_CADENA', codigoPadre: 'ARO_CADENA' },
   tipos_cadena_medida: { tabla: 'SOL_ACC_TIPO_CADENA_MEDIDA', padre: 'tipo_cadena_id', tablaPadre: 'SOL_ACC_TIPO_CADENA', codigoPadre: 'CADENA_A_MEDIDA' },
   tipos_motor:         { tabla: 'SOL_ACC_TIPO_MOTOR', padre: 'accionamiento_id', tablaPadre: 'SOL_ACC_ACCIONAMIENTO', codigoPadre: 'MOTOR' },
-  modelos_motor:       { tabla: 'SOL_ACC_MODELO_MOTOR', padre: 'tipo_motor_id', tablaPadre: 'SOL_ACC_TIPO_MOTOR' }
+  modelos_motor:       { tabla: 'SOL_ACC_MODELO_MOTOR', padre: 'tipo_motor_id', tablaPadre: 'SOL_ACC_TIPO_MOTOR' },
+  /* Soportes y tapas genéricos (cada sistema marca los suyos); contrapesos para todos los sistemas.
+     Cada pieza tiene su propio catálogo de colores (script 07) */
+  soportes:            { tabla: 'SOL_ACC_SOPORTE' },
+  tapas:               { tabla: 'SOL_ACC_TAPA' },
+  contrapesos:         { tabla: 'SOL_ACC_CONTRAPESO' },
+  colores_soporte:     { tabla: 'SOL_ACC_COLOR_SOPORTE' },
+  colores_tapa:        { tabla: 'SOL_ACC_COLOR_TAPA' },
+  colores_contrapeso:  { tabla: 'SOL_ACC_COLOR_CONTRAPESO' }
 };
 
 /* Relaciones N:M: origen = registro que se edita, destino = opciones que se marcan */
@@ -42,7 +50,19 @@ const RELACIONES = {
   modelo_motor_cargador: { tabla: 'SOL_ACC_MODELO_MOTOR_CARGADOR', origen: 'modelo_motor_id', destino: 'cargador_id',
                            catOrigen: 'modelos_motor', catDestino: 'cargadores' },
   modelo_motor_bateria:  { tabla: 'SOL_ACC_MODELO_MOTOR_BATERIA', origen: 'modelo_motor_id', destino: 'bateria_id',
-                           catOrigen: 'modelos_motor', catDestino: 'baterias' }
+                           catOrigen: 'modelos_motor', catDestino: 'baterias' },
+  /* Desde el sistema se marcan sus soportes y sus tapas */
+  sistema_soporte:       { tabla: 'SOL_ACC_SOPORTE_SISTEMA', origen: 'sistema_id', destino: 'soporte_id',
+                           catOrigen: 'sistemas', catDestino: 'soportes' },
+  sistema_tapa:          { tabla: 'SOL_ACC_TAPA_SISTEMA', origen: 'sistema_id', destino: 'tapa_id',
+                           catOrigen: 'sistemas', catDestino: 'tapas' },
+  /* Colores que admite cada pieza */
+  soporte_color:         { tabla: 'SOL_ACC_SOPORTE_COLOR', origen: 'soporte_id', destino: 'color_soporte_id',
+                           catOrigen: 'soportes', catDestino: 'colores_soporte' },
+  tapa_color:            { tabla: 'SOL_ACC_TAPA_COLOR', origen: 'tapa_id', destino: 'color_tapa_id',
+                           catOrigen: 'tapas', catDestino: 'colores_tapa' },
+  contrapeso_color:      { tabla: 'SOL_ACC_CONTRAPESO_COLOR', origen: 'contrapeso_id', destino: 'color_contrapeso_id',
+                           catOrigen: 'contrapesos', catDestino: 'colores_contrapeso' }
 };
 
 /* El código se usará en las reglas de fabricación: mayúsculas, números y _ */

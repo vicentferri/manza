@@ -6,7 +6,8 @@ const sql = require('mssql');
  * Configurador nuevo de accionamientos (modelo SOL_ACC_*), para los clientes con el
  * interruptor activo en SOL_ACC_CLIENTE. Leroy (clientes 1 y 5) no tiene fila y no pasa
  * por aquí: sigue con /api/lm/* y el configurador de siempre.
- * Scripts: C:\dev\sqlAccionamientos\ (04 interruptor, 05 columnas nacc_, 06 SPs de alta)
+ * Scripts: C:\dev\sqlAccionamientos\ (04 interruptor, 05 y 08 columnas nacc_, 06 y 09 SPs de alta,
+ *          07 soportes, tapas y contrapesos)
  *
  *   GET  /api/sm/acc_cfg/activo/:cliente       ¿usa el configurador nuevo?
  *   GET  /api/sm/acc_cfg/opciones/:cliente     árbol de opciones activas, con sus relaciones
@@ -26,7 +27,13 @@ const ERRORES_LINEA = {
   '-9': 'Hay datos de cadena o de motor que no corresponden al accionamiento',
   '-10': 'Tipo de motor no válido o no admitido en el sistema',
   '-11': 'Modelo de motor no válido',
-  '-12': 'Mando, cargador o batería no asignado a ese modelo'
+  '-12': 'Mando, cargador o batería no asignado a ese modelo',
+  '-13': 'El soporte no está disponible para ese sistema',
+  '-14': 'Color de soporte no válido',
+  '-15': 'La tapa no está disponible para ese sistema',
+  '-16': 'Color de tapa no válido',
+  '-17': 'Contrapeso no válido',
+  '-18': 'Color de contrapeso no válido'
 };
 
 function entero(value) {
@@ -88,7 +95,9 @@ async function opciones(req, res) {
 
     const [accionamientos, sistemas, tiposCadena, aros, medidas, alturas, colores,
            tiposMotor, modelos, mandos, cargadores, baterias,
-           accSis, cadCol, motSis, modMan, modCar, modBat] = await Promise.all([
+           accSis, cadCol, motSis, modMan, modCar, modBat,
+           soportes, tapas, contrapesos, coloresSoporte, coloresTapa, coloresContrapeso,
+           sopSis, tapSis, sopCol, tapCol, conCol] = await Promise.all([
       lista('SOL_ACC_ACCIONAMIENTO'),
       lista('SOL_ACC_SISTEMA'),
       q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_CADENA where activo = 1 order by orden, nombre`),
@@ -106,13 +115,25 @@ async function opciones(req, res) {
       q('select tipo_motor_id, sistema_id from dbo.SOL_ACC_TIPO_MOTOR_SISTEMA'),
       q('select modelo_motor_id, mando_id from dbo.SOL_ACC_MODELO_MOTOR_MANDO'),
       q('select modelo_motor_id, cargador_id from dbo.SOL_ACC_MODELO_MOTOR_CARGADOR'),
-      q('select modelo_motor_id, bateria_id from dbo.SOL_ACC_MODELO_MOTOR_BATERIA')
+      q('select modelo_motor_id, bateria_id from dbo.SOL_ACC_MODELO_MOTOR_BATERIA'),
+      lista('SOL_ACC_SOPORTE'),
+      lista('SOL_ACC_TAPA'),
+      lista('SOL_ACC_CONTRAPESO'),
+      lista('SOL_ACC_COLOR_SOPORTE'),
+      lista('SOL_ACC_COLOR_TAPA'),
+      lista('SOL_ACC_COLOR_CONTRAPESO'),
+      q('select soporte_id, sistema_id from dbo.SOL_ACC_SOPORTE_SISTEMA'),
+      q('select tapa_id, sistema_id from dbo.SOL_ACC_TAPA_SISTEMA'),
+      q('select soporte_id, color_soporte_id from dbo.SOL_ACC_SOPORTE_COLOR'),
+      q('select tapa_id, color_tapa_id from dbo.SOL_ACC_TAPA_COLOR'),
+      q('select contrapeso_id, color_contrapeso_id from dbo.SOL_ACC_CONTRAPESO_COLOR')
     ]);
 
     /* Solo se enlazan ids de opciones activas: una opción oculta desaparece de todas las listas */
     const activos = (filas) => new Set(filas.map(f => f.id));
     const sisActivos = activos(sistemas), colActivos = activos(colores), manActivos = activos(mandos),
-          carActivos = activos(cargadores), batActivos = activos(baterias);
+          carActivos = activos(cargadores), batActivos = activos(baterias),
+          colSopActivos = activos(coloresSoporte), colTapActivos = activos(coloresTapa), colConActivos = activos(coloresContrapeso);
     const filtrar = (ids, conjunto) => (ids || []).filter(id => conjunto.has(id));
 
     const sisPorAcc = agrupar(accSis, 'accionamiento_id', 'sistema_id');
@@ -121,6 +142,11 @@ async function opciones(req, res) {
     const manPorModelo = agrupar(modMan, 'modelo_motor_id', 'mando_id');
     const carPorModelo = agrupar(modCar, 'modelo_motor_id', 'cargador_id');
     const batPorModelo = agrupar(modBat, 'modelo_motor_id', 'bateria_id');
+    const sisPorSoporte = agrupar(sopSis, 'soporte_id', 'sistema_id');
+    const sisPorTapa = agrupar(tapSis, 'tapa_id', 'sistema_id');
+    const colPorSoporte = agrupar(sopCol, 'soporte_id', 'color_soporte_id');
+    const colPorTapa = agrupar(tapCol, 'tapa_id', 'color_tapa_id');
+    const colPorContrapeso = agrupar(conCol, 'contrapeso_id', 'color_contrapeso_id');
 
     res.status(200).send({
       accionamientos: accionamientos.map(a => Object.assign(a, { sistemas: filtrar(sisPorAcc[a.id], sisActivos) })),
@@ -143,7 +169,14 @@ async function opciones(req, res) {
       })),
       mandos,
       cargadores,
-      baterias
+      baterias,
+      /* soportes y tapas: los del sistema elegido (sistemas); contrapesos: todos. Cada uno con sus colores */
+      soportes: soportes.map(x => Object.assign(x, { sistemas: filtrar(sisPorSoporte[x.id], sisActivos), colores: filtrar(colPorSoporte[x.id], colSopActivos) })),
+      tapas: tapas.map(x => Object.assign(x, { sistemas: filtrar(sisPorTapa[x.id], sisActivos), colores: filtrar(colPorTapa[x.id], colTapActivos) })),
+      contrapesos: contrapesos.map(x => Object.assign(x, { colores: filtrar(colPorContrapeso[x.id], colConActivos) })),
+      coloresSoporte,
+      coloresTapa,
+      coloresContrapeso
     });
   } catch (err) {
     console.error(err);
@@ -154,11 +187,11 @@ async function opciones(req, res) {
 /* POST /acc_cfg/pedido/:cliente/:ref  body: [ líneas ]
    Cada línea: { TipoCortina: 1, ancho, alto, cantidad, codeCentro,
                  nacc: { accionamiento, sistema, tipo_cadena, tipo_aro, cadena_medida, altura,
-                         color_cadena, tipo_motor, modelo_motor, mando, cargador, bateria },
+                         color_cadena, tipo_motor, modelo_motor, mando, cargador, bateria,
+                         soporte, soporte_color, tapa, tapa_color, contrapeso, contrapeso_color },
                  y los pasos que siguen en el modelo antiguo con los nombres de CortinaTipo:
-                 acc_tubo_id, acc_posicion_id, sop_tipo_id, sop_color_id, tej_tipo_id, tej_color_id,
-                 tej_salida_id, con_tipo_id, con_color_id, tap_tipo_id, tap_color_id, Tipo1_Cajon,
-                 Tipo1_Guia, impresion, impresion_imagen, instrucciones, estancia_id, estancia_obs }
+                 acc_tubo_id, acc_posicion_id, tej_tipo_id, tej_color_id, tej_salida_id,
+                 Tipo1_Cajon, Tipo1_Guia, impresion, impresion_imagen, instrucciones, estancia_id, estancia_obs }
    Todo el pedido va en una transacción: si una línea no es válida no se graba nada. */
 async function pedido(req, res) {
   const cliente = entero(req.params.cliente);
@@ -211,17 +244,17 @@ async function pedido(req, res) {
         .input('mando', sql.Int, entero(n.mando))
         .input('cargador', sql.Int, entero(n.cargador))
         .input('bateria', sql.Int, entero(n.bateria))
+        .input('soporte', sql.Int, entero(n.soporte))
+        .input('soporte_color', sql.Int, entero(n.soporte_color))
+        .input('tapa', sql.Int, entero(n.tapa))
+        .input('tapa_color', sql.Int, entero(n.tapa_color))
+        .input('contrapeso', sql.Int, entero(n.contrapeso))
+        .input('contrapeso_color', sql.Int, entero(n.contrapeso_color))
         .input('acc_tubo_id', sql.Int, enteroAntiguo(l.acc_tubo_id))
         .input('acc_posicion_id', sql.Int, enteroAntiguo(l.acc_posicion_id))
-        .input('sop_tipo_id', sql.Int, enteroAntiguo(l.sop_tipo_id))
-        .input('sop_color_id', sql.Int, enteroAntiguo(l.sop_color_id))
         .input('tej_tipo_id', sql.Int, enteroAntiguo(l.tej_tipo_id))
         .input('tej_color_id', sql.Int, enteroAntiguo(l.tej_color_id))
         .input('tej_salida_id', sql.Int, enteroAntiguo(l.tej_salida_id))
-        .input('con_tipo_id', sql.Int, enteroAntiguo(l.con_tipo_id))
-        .input('con_color_id', sql.Int, enteroAntiguo(l.con_color_id))
-        .input('tap_tipo_id', sql.Int, enteroAntiguo(l.tap_tipo_id))
-        .input('tap_color_id', sql.Int, enteroAntiguo(l.tap_color_id))
         .input('idcajon', sql.Int, enteroAntiguo(l.Tipo1_Cajon))
         .input('idguia', sql.Int, enteroAntiguo(l.Tipo1_Guia))
         .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
