@@ -7,7 +7,7 @@ const sql = require('mssql');
  * interruptor activo en SOL_ACC_CLIENTE. Leroy (clientes 1 y 5) no tiene fila y no pasa
  * por aquí: sigue con /api/lm/* y el configurador de siempre.
  * Scripts: C:\dev\sqlAccionamientos\ (04 interruptor, 05 y 08 columnas nacc_, 06 y 09 SPs de alta,
- *          07 soportes, tapas y contrapesos)
+ *          07 soportes, tapas y contrapesos, 10 longitud de la cadena a medida)
  *
  *   GET  /api/sm/acc_cfg/activo/:cliente       ¿usa el configurador nuevo?
  *   GET  /api/sm/acc_cfg/opciones/:cliente     árbol de opciones activas, con sus relaciones
@@ -33,7 +33,8 @@ const ERRORES_LINEA = {
   '-15': 'La tapa no está disponible para ese sistema',
   '-16': 'Color de tapa no válido',
   '-17': 'Contrapeso no válido',
-  '-18': 'Color de contrapeso no válido'
+  '-18': 'Color de contrapeso no válido',
+  '-19': 'Longitud de cadena no válida: obligatoria en la cadena a medida y solo en ella'
 };
 
 function entero(value) {
@@ -45,6 +46,12 @@ function entero(value) {
 function enteroAntiguo(value) {
   const n = entero(value);
   return n === null ? -1 : n;
+}
+
+function decimal(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(String(value).replace(',', '.'));
+  return isNaN(n) ? null : n;
 }
 
 function texto(value, max) {
@@ -188,7 +195,8 @@ async function opciones(req, res) {
    Cada línea: { TipoCortina: 1, ancho, alto, cantidad, codeCentro,
                  nacc: { accionamiento, sistema, tipo_cadena, tipo_aro, cadena_medida, altura,
                          color_cadena, tipo_motor, modelo_motor, mando, cargador, bateria,
-                         soporte, soporte_color, tapa, tapa_color, contrapeso, contrapeso_color },
+                         soporte, soporte_color, tapa, tapa_color, contrapeso, contrapeso_color,
+                         cadena_longitud (cm, solo en la cadena a medida) },
                  y los pasos que siguen en el modelo antiguo con los nombres de CortinaTipo:
                  acc_tubo_id, acc_posicion_id, tej_tipo_id, tej_color_id, tej_salida_id,
                  Tipo1_Cajon, Tipo1_Guia, impresion, impresion_imagen, instrucciones, estancia_id, estancia_obs }
@@ -238,6 +246,7 @@ async function pedido(req, res) {
         .input('tipo_aro', sql.Int, entero(n.tipo_aro))
         .input('cadena_medida', sql.Int, entero(n.cadena_medida))
         .input('altura', sql.Int, entero(n.altura))
+        .input('cadena_longitud', sql.Decimal(10, 2), decimal(n.cadena_longitud))
         .input('color_cadena', sql.Int, entero(n.color_cadena))
         .input('tipo_motor', sql.Int, entero(n.tipo_motor))
         .input('modelo_motor', sql.Int, entero(n.modelo_motor))

@@ -12,7 +12,9 @@ import { AccConfiguradorService } from './acc-configurador.service';
  * Pasos: medidas → tejido (lecturas de siempre, solo dependen del cliente) → accionamiento
  * (accionamiento → sistema → cadena: tipo, aro + altura o medida, color / motor: tipo, modelo,
  * mando, cargador, batería) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
- * su color. Cajón y guía llegarán cuando estén en el modelo nuevo. De momento sin precio (decisión C).
+ * su color. Además: posición (Derecha/Izquierda), estancia y observaciones, impresión digital (sí/no
+ * y un texto; con sí, solo tejidos aptos) y longitud tecleada en la cadena a medida.
+ * Cajón y guía llegarán cuando estén en el modelo nuevo. De momento sin precio (decisión C).
  *
  * La línea viaja en la cesta como un CortinaTipo con los textos de siempre (para la cesta y el
  * resumen) y la selección nueva en la propiedad `nacc`, que es lo que graba el backend.
@@ -39,7 +41,22 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    ancho: number = null;
    alto: number = null;
    cantidad = 1;
-   instrucciones = '';
+
+   /* estancia y observaciones (catálogo de estancias de siempre, del cliente) */
+   estancias: any[] = [];
+   estancia = '-1';
+   observaciones = '';
+
+   /* posición del accionamiento: ids del catálogo de siempre (SOL_ARTICULOS_POSICIONMANDO) */
+   readonly posiciones = [{ id: 1, nombre: 'Derecha' }, { id: 2, nombre: 'Izquierda' }];
+   posicion = '';
+
+   /* impresión digital: sí/no y un texto. Con sí, solo se ofrecen los tejidos aptos */
+   impresion = false;
+   impresionTexto = '';
+
+   /* cadena a medida: longitud que teclea el cliente (cm) */
+   longitud: number = null;
 
    /* tejido (modelo de siempre) */
    alltejidos: any[] = [];
@@ -68,6 +85,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       if ((changes['Cliente'] || changes['SubCliente']) && parseInt(this.Cliente, 10) > 0) {
          this.cargarOpciones();
          this.cargarTejidos();
+         this.cargarEstancias();
       }
    }
 
@@ -81,8 +99,12 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       );
    }
 
-   private cargarTejidos(): void {
-      this.service.getTejidosProducto(this.Cliente, '1', this.SubCliente).subscribe(
+   /* Con impresión digital, las lecturas "ID" de siempre: solo tejidos y colores aptos para imprimir */
+   private cargarTejidos(despues?: () => void): void {
+      const lectura = this.impresion
+         ? this.service.getTejidosProductoID(this.Cliente, '1', this.SubCliente)
+         : this.service.getTejidosProducto(this.Cliente, '1', this.SubCliente);
+      lectura.subscribe(
          data => {
             this.alltejidos = data || [];
             this.tiposTejido = [];
@@ -90,9 +112,22 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
             this.tiposTejido.sort();
             this.opacidad = this.tiposTejido[0] || '';
             this.cambiarOpacidad();
+            if (despues) { despues(); }
          },
          error => this.toaster.error(error.message)
       );
+   }
+
+   private cargarEstancias(): void {
+      this.service.getEstancias(parseInt(this.Cliente, 10)).subscribe(
+         data => { this.estancias = data || []; },
+         error => this.toaster.error(error.message)
+      );
+   }
+
+   cambiarImpresion(): void {
+      if (!this.impresion) { this.impresionTexto = ''; }
+      this.cargarTejidos();
    }
 
    cambiarOpacidad(): void {
@@ -106,7 +141,10 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       this.tejidosC = [];
       this.tejidoColor = '-1';
       if (this.tejido === '-1') { return; }
-      this.service.getTejidosColor(parseInt(this.tejido, 10), parseInt(this.Cliente, 10), this.SubCliente).subscribe(
+      const lectura = this.impresion
+         ? this.service.getTejidosColorID(parseInt(this.tejido, 10), parseInt(this.Cliente, 10), this.SubCliente)
+         : this.service.getTejidosColor(parseInt(this.tejido, 10), parseInt(this.Cliente, 10), this.SubCliente);
+      lectura.subscribe(
          data => {
             this.tejidosC = data || [];
             const inicial = colorInicial && this.tejidosC.some(c => String(c.id) === colorInicial) ? colorInicial : null;
@@ -219,6 +257,12 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    get contrapesoSel(): any { return this.porId(this.contrapesos, this.sel.contrapeso); }
    get coloresContrapeso(): any[] { return this.coloresDe(this.contrapesoSel, this.opc ? this.opc.coloresContrapeso : []); }
 
+   /* Ancho máximo del color de tejido elegido (ancmax), si lo tiene */
+   get anchoMaximo(): number {
+      const c = this.tejidosC.find(x => String(x.id) === this.tejidoColor);
+      return c && c.ancmax > 0 ? c.ancmax : null;
+   }
+
    etiquetaAltura(a: any): string {
       return a.nombre || (Number(a.valor) + ' cm');
    }
@@ -229,12 +273,16 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       if (!(this.ancho > 0) || !(this.alto > 0)) { return 'Indique el ancho y el alto'; }
       if (!(this.cantidad > 0)) { return 'Indique la cantidad'; }
       if (this.tejido === '-1' || this.tejidoColor === '-1') { return 'Seleccione el tejido y su color'; }
+      if (this.anchoMaximo && this.ancho > this.anchoMaximo) { return 'El ancho (' + this.ancho + ' cm) supera el máximo de este tejido (' + this.anchoMaximo + ' cm)'; }
+      if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
       if (!this.sel.accionamiento) { return 'Seleccione el accionamiento'; }
       if (!this.sel.sistema) { return 'Seleccione el sistema'; }
+      if (!this.posicion) { return 'Seleccione la posición del accionamiento'; }
       if (this.esCadena) {
          if (!this.sel.tipo_cadena) { return 'Seleccione el tipo de cadena'; }
          if (this.esAro && (!this.sel.tipo_aro || !this.sel.altura)) { return 'Seleccione el tipo de aro y la altura'; }
          if (this.esMedida && !this.sel.cadena_medida) { return 'Seleccione el tipo de cadena a medida'; }
+         if (this.esMedida && !(this.longitud > 0)) { return 'Indique la longitud de la cadena'; }
          if (this.coloresCadena.length > 0 && !this.sel.color_cadena) { return 'Seleccione el color de la cadena'; }
       }
       if (this.esMotor && (!this.sel.tipo_motor || !this.sel.modelo_motor)) { return 'Seleccione el tipo y el modelo de motor'; }
@@ -262,7 +310,14 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       t.ancho = this.ancho;
       t.alto = this.alto;
       t.cantidad = this.cantidad;
-      (t as any).instrucciones = this.instrucciones || '';
+
+      /* posición, estancia, observaciones e impresión digital (columnas de siempre) */
+      t.acc_posicion_id = parseInt(this.posicion, 10);
+      t.acc_posicion_text = (this.posiciones.find(p => String(p.id) === this.posicion) || { nombre: '' }).nombre;
+      t.estancia_id = this.estancia;
+      t.estancia_obs = this.observaciones || '';
+      t.impresion = this.impresion;
+      t.impresion_imagen = this.impresion ? this.impresionTexto.trim() : '';
 
       /* tejido (ids y textos de siempre) */
       t.tej_tipo_id = parseInt(this.tejido, 10);
@@ -280,7 +335,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       if (this.esCadena) {
          t.acc_modelo_text = unir(nombre(this.tiposCadena, this.sel.tipo_cadena), nombre(this.aros, this.sel.tipo_aro), nombre(this.medidas, this.sel.cadena_medida));
          const altura = this.porId(this.alturas, this.sel.altura);
-         t.cad_Altura = altura ? this.etiquetaAltura(altura) : nombre(this.medidas, this.sel.cadena_medida);
+         t.cad_Altura = altura ? this.etiquetaAltura(altura) : (this.esMedida ? Number(this.longitud) + ' cm' : null);
          t.cad_altura_text = t.cad_Altura;
          t.cad_color_text = nombre(this.coloresCadena, this.sel.color_cadena);
       } else if (this.esMotor) {
@@ -306,7 +361,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
          mando: id(this.sel.mando), cargador: id(this.sel.cargador), bateria: id(this.sel.bateria),
          soporte: id(this.sel.soporte), soporte_color: id(this.sel.soporte_color),
          tapa: id(this.sel.tapa), tapa_color: id(this.sel.tapa_color),
-         contrapeso: id(this.sel.contrapeso), contrapeso_color: id(this.sel.contrapeso_color)
+         contrapeso: id(this.sel.contrapeso), contrapeso_color: id(this.sel.contrapeso_color),
+         cadena_longitud: this.esCadena && this.esMedida ? Number(this.longitud) : null
       };
 
       this.editando = null;
@@ -322,14 +378,22 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       this.ancho = item.ancho;
       this.alto = item.alto;
       this.cantidad = item.cantidad;
-      this.instrucciones = item.instrucciones || '';
-      const tejido = this.alltejidos.find(x => String(x.id) === String(item.tej_tipo_id));
-      if (tejido) {
-         this.opacidad = tejido.opacidad;
-         this.cambiarOpacidad();
-         this.tejido = String(tejido.id);
-         this.cambiarTejido(String(item.tej_color_id));
-      }
+      this.posicion = item.acc_posicion_id > 0 ? String(item.acc_posicion_id) : '';
+      this.estancia = item.estancia_id ? String(item.estancia_id) : '-1';
+      this.observaciones = item.estancia_obs || '';
+      this.longitud = item.nacc.cadena_longitud || null;
+      /* la impresión cambia la lista de tejidos: se recarga y después se elige el de la línea */
+      this.impresion = !!item.impresion;
+      this.impresionTexto = item.impresion_imagen || '';
+      this.cargarTejidos(() => {
+         const tejido = this.alltejidos.find(x => String(x.id) === String(item.tej_tipo_id));
+         if (tejido) {
+            this.opacidad = tejido.opacidad;
+            this.cambiarOpacidad();
+            this.tejido = String(tejido.id);
+            this.cambiarTejido(String(item.tej_color_id));
+         }
+      });
       this.salida = String(item.tej_salida_id || 1);
       this.limpiarSeleccion();
       Object.keys(this.sel).forEach(k => { const v = item.nacc[k]; this.sel[k] = v === null || v === undefined ? '' : String(v); });

@@ -31,6 +31,12 @@
     margin-bottom: 2px;
 }
 
+.enx-nota {
+    color: #8a939b;
+    font-size: 11px;
+    font-weight: normal;
+}
+
 .enx-error {
     color: #f86c6b;
     font-size: 12px;
