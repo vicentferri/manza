@@ -37,23 +37,27 @@ export class AccMotoresSistemaComponent implements OnInit {
             data => {
                 this.sistemas = data.sistemas || [];
                 this.tipos = data.tipos || [];
+                this.filtrar();
                 this.cargado = true;
             },
             () => this.toaster.error('Error al cargar los motores', 'Motores por sistema')
         );
     }
 
-    /* Tipos con sus modelos filtrados por el buscador (por nombre del modelo o del tipo) */
-    get tiposVisibles(): any[] {
+    /* Tipos con sus modelos filtrados por el buscador (por nombre del modelo o del tipo).
+       Se guarda en un campo y se recalcula solo al cargar o al buscar: si fuera un getter, crearía
+       objetos nuevos en cada ciclo de detección de cambios y *ngFor recrearía las filas entre el
+       clic y el evento change, con lo que la casilla pulsada no llegaría a guardar */
+    tiposVisibles: any[] = [];
+    modelosVisibles: any[] = [];
+
+    filtrar() {
         const texto = this.normalizar(this.buscar);
-        return this.tipos
+        this.tiposVisibles = this.tipos
             .map(t => ({ tipo: t, modelos: !texto || this.normalizar(t.nombre).indexOf(texto) >= 0
                 ? t.modelos : t.modelos.filter(m => this.normalizar(m.nombre).indexOf(texto) >= 0) }))
             .filter(g => !texto || g.modelos.length > 0);
-    }
-
-    get modelosVisibles(): any[] {
-        return [].concat(...this.tiposVisibles.map(g => g.modelos));
+        this.modelosVisibles = [].concat(...this.tiposVisibles.map(g => g.modelos));
     }
 
     get sinSistema(): number {

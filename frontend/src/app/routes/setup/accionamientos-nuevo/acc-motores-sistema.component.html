@@ -4,7 +4,7 @@
         <span class="acc-estado ml-2" *ngIf="estado === 'guardando'"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
         <span class="acc-estado acc-estado-ok ml-2" *ngIf="estado === 'guardado'"><i class="fa fa-check"></i> Guardado</span>
         <input type="text" class="form-control form-control-sm acc-buscar ml-auto" placeholder="Buscar motor..."
-            [(ngModel)]="buscar" [ngModelOptions]="{ standalone: true }" />
+            [(ngModel)]="buscar" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }" />
     </div>
     <div class="acc-ayuda mb-2">
         Marque en qué sistemas se ofrece cada motor. La casilla del tipo y la de la cabecera marcan o quitan todos los motores de la fila o de la columna<span *ngIf="buscar"> (solo los que se ven con la búsqueda)</span>.
