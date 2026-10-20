@@ -1,0 +1,86 @@
+<div bsModal #modal="bs-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h6 class="modal-title text-white">Suplementos de {{ elemento }}</h6>
+                <button type="button" class="close text-white" (click)="modal.hide()">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="acc-ayuda mb-2">
+                    Importe por cortina que se suma al precio cuando se elige este elemento. Deje cliente o sistema en
+                    <strong>Todos</strong> para el precio general; si hay uno para el cliente o el sistema concreto, gana ese.
+                    Para precios por tramos elija la medida y escriba hasta cuántos cm vale cada importe: se aplica el primer
+                    tramo que cubre la medida, y si la medida supera el último, la línea no se puede pedir.
+                </div>
+
+                <table class="table table-sm acc-sup-tabla mb-2">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Sistema</th>
+                            <th>Medida</th>
+                            <th class="acc-sup-num">Hasta (cm)</th>
+                            <th class="acc-sup-num">Importe (€)</th>
+                            <th class="text-center" title="Si no está activo, no se cobra">Activo</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let l of lineas" [class.acc-oculto]="!l.activo">
+                            <td>
+                                <select class="form-control form-control-sm" [(ngModel)]="l.cliente" [ngModelOptions]="{ standalone: true }">
+                                    <option value="">Todos</option>
+                                    <option *ngFor="let c of clientes" [value]="c.id">{{ c.nombre }}</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-control form-control-sm" [(ngModel)]="l.sistema_id" [ngModelOptions]="{ standalone: true }">
+                                    <option value="">Todos</option>
+                                    <option *ngFor="let s of sistemas" [value]="s.id">{{ s.nombre }}</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-control form-control-sm" [(ngModel)]="l.medida" [ngModelOptions]="{ standalone: true }" (change)="cambiarMedida(l)">
+                                    <option value="">Importe fijo</option>
+                                    <option value="ANCHO">Por ancho</option>
+                                    <option value="ALTO">Por alto</option>
+                                    <option *ngIf="conLongitud || l.medida === 'LONGITUD'" value="LONGITUD">Por longitud de cadena</option>
+                                </select>
+                            </td>
+                            <td class="acc-sup-num">
+                                <input type="text" class="form-control form-control-sm text-right" [disabled]="!l.medida"
+                                    [placeholder]="l.medida ? 'cm' : '—'" [(ngModel)]="l.hasta" [ngModelOptions]="{ standalone: true }" />
+                            </td>
+                            <td class="acc-sup-num">
+                                <input type="text" class="form-control form-control-sm text-right" placeholder="0,00"
+                                    [(ngModel)]="l.importe" [ngModelOptions]="{ standalone: true }" (keyup.enter)="guardar()" />
+                            </td>
+                            <td class="text-center align-middle">
+                                <input type="checkbox" [(ngModel)]="l.activo" [ngModelOptions]="{ standalone: true }" />
+                            </td>
+                            <td class="text-right">
+                                <button type="button" class="btn btn-link btn-sm text-danger p-0" title="Quitar la línea" (click)="quitar(l)">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="lineas.length === 0">
+                            <td colspan="7" class="acc-vacio">Sin suplementos: este elemento no suma nada al precio.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-outline-success btn-sm" (click)="anadir()">
+                    <i class="fa fa-plus"></i> Añadir línea
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="guardando" (click)="guardar()">
+                    <i class="fa fa-save"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modal.hide()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>

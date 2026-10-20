@@ -73,7 +73,35 @@ export class AccTablaComponent implements OnChanges {
         if (!f) { return ''; }
         if (f.protegido) { return 'Es fijo: no se puede borrar. Puede ocultarlo'; }
         if (f.dependencias > 0) { return 'Está en uso (' + f.dependencias + '): no se puede borrar. Puede ocultarlo'; }
+        if (f.suplementos > 0) { return 'Tiene suplementos de precio: quítelos antes de borrarlo, o ocúltelo'; }
         return '';
+    }
+
+    /* Suplemento: sin precios o solo el importe general fijo → se edita en la celda; si no, en el detalle */
+    esFijo(d: any): boolean {
+        return !d.suplementos || (d.suplementos === 1 && d.suplemento_fijo !== null);
+    }
+
+    importeTexto(d: any): string {
+        return d.suplemento_fijo === null || d.suplemento_fijo === undefined ? '' : Number(d.suplemento_fijo).toFixed(2).replace('.', ',');
+    }
+
+    guardarFijo(d: any, input: HTMLInputElement) {
+        const nuevo = String(input.value || '').trim();
+        if (nuevo === this.importeTexto(d)) { return; }
+        this.service.HTTP_Post('/sm/acc/sup/' + this.catalogo + '/' + d.id + '/fijo', JSON.stringify({ importe: nuevo })).subscribe(
+            () => {
+                this.toaster.success(nuevo ? 'Suplemento guardado' : 'Suplemento quitado', this.etiqueta(d));
+                this.cargar();
+            },
+            /* Si no se guarda, la celda vuelve al importe que había */
+            err => { input.value = this.importeTexto(d); this.error(err, 'No se pudo guardar el suplemento'); }
+        );
+    }
+
+    /* Las filas se conservan al recargar: si no, al guardar un suplemento se perdería el foco de la siguiente celda */
+    porId(i: number, d: any): number {
+        return d.id;
     }
 
     etiqueta(d: any): string {

@@ -395,6 +395,23 @@ Administración asigna a cada sistema los motores que ofrece desde el paso 3, pe
 
 La tarifa base de la línea dependerá solo del sistema, nunca del motor (decisión del usuario, 2026-10-20).
 
+### Suplementos de precio
+
+Cualquier elemento de cualquier lista puede llevar un suplemento (decisión del usuario, 2026-10-20), que se mantiene desde la propia pantalla. La tabla `SOL_ACC_SUPLEMENTO` (script 16) guarda una fila por importe:
+
+| Campo | Descripción |
+|---|---|
+| catalogo, elemento_id | Tabla del elemento (`SOL_ACC_MANDO`...) y su id. Sin FK (apunta a varias tablas): el backend comprueba que existe y no deja borrar un elemento con suplementos |
+| cliente | Opcional (FK a `SOL_CLIENTES`). Vacío = todos los clientes |
+| sistema_id | Opcional (FK a `SOL_ACC_SISTEMA`). Vacío = todos los sistemas |
+| medida, hasta | Opcionales. Con medida (`ANCHO`, `ALTO` o `LONGITUD` de la cadena), la fila es un tramo "hasta X cm"; sin medida, un importe fijo |
+| importe | € por cortina |
+| activo | Retirar un precio sin borrarlo |
+
+Regla de cálculo prevista (se aplicará al valorar, fase aparte): se suman los suplementos de todos los elementos elegidos, por cortina. Para cada elemento gana el ámbito más concreto (cliente + sistema, cliente, sistema, general); dentro del ámbito, el importe fijo o el primer tramo cuyo "hasta" cubre la medida. Si la medida supera el último tramo, la línea se rechaza. El precio base saldrá de la tarifa del sistema, nunca del motor (decisión del 2026-10-20). En cada cliente + sistema, un elemento tiene un importe fijo o tramos de una sola medida (lo valida el backend).
+
+En la pantalla: columna "Suplemento (€)" en todas las listas, botón "···" con el detalle y sección "Suplementos" con el resumen de todos los precios.
+
 ## 9. Pendiente
 
 - Visibilidad por cliente (tablas `X_CLIENTE`), si se necesita.

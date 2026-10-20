@@ -313,6 +313,35 @@
     vertical-align: middle;
 }
 
+/* ---------- Suplementos de precio ---------- */
+.acc-th-sup { width: 120px; }
+
+.acc-sup-input {
+    width: 80px;
+    height: 24px;
+    padding: 1px 6px;
+}
+
+.acc-sup-input::placeholder {
+    color: #c8ced3;
+}
+
+.acc-sup-varios {
+    display: inline-block;
+    width: 80px;
+    font-size: 12px;
+    text-align: right;
+}
+
+.acc-sup-tabla td,
+.acc-sup-tabla th {
+    vertical-align: middle;
+}
+
+.acc-sup-num { width: 110px; }
+
+.acc-sup-filtro { max-width: 220px; }
+
 /* ---------- Modal ---------- */
 .acc-codigo-linea {
     font-size: 13px;

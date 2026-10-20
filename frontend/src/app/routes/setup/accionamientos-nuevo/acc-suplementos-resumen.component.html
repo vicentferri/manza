@@ -1,0 +1,54 @@
+<div class="acc-bloque">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong>Suplementos</strong>
+        <span class="text-muted small ml-2">{{ filtradas.length }} de {{ lineas.length }}</span>
+    </div>
+    <div class="d-flex align-items-center flex-wrap mb-2">
+        <select class="form-control form-control-sm mr-2 mb-1 acc-sup-filtro" [(ngModel)]="filtroLista" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Todas las listas</option>
+            <option *ngFor="let c of listasConSuplemento" [value]="c">{{ nombreLista(c) }}</option>
+        </select>
+        <select class="form-control form-control-sm mr-2 mb-1 acc-sup-filtro" [(ngModel)]="filtroCliente" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Todos los clientes</option>
+            <option value="general">Solo precios generales</option>
+            <option *ngFor="let c of clientesConSuplemento" [value]="c.id">{{ c.nombre }}</option>
+        </select>
+        <input type="text" class="form-control form-control-sm mb-1 acc-buscar" placeholder="Buscar elemento..."
+            [(ngModel)]="buscar" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }" />
+    </div>
+
+    <div class="table-responsive acc-table-container">
+        <table class="table table-hover table-sm acc-table mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Lista</th>
+                    <th>Elemento</th>
+                    <th>Cliente</th>
+                    <th>Sistema</th>
+                    <th>Tramo</th>
+                    <th class="text-right">Importe</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let l of filtradas" class="acc-fila" [class.acc-oculto]="!l.activo || !l.elemento_activo"
+                    [title]="!l.activo ? 'Precio inactivo: no se cobra' : (!l.elemento_activo ? 'Elemento oculto en el configurador' : 'Pulse para ver o cambiar los precios de este elemento')"
+                    (click)="detalle.abrir(l.clave, l.elemento_id)">
+                    <td>{{ nombreLista(l.clave) }}</td>
+                    <td class="acc-nombre">{{ l.elemento_nombre }}</td>
+                    <td>{{ l.cliente_nombre || 'Todos' }}</td>
+                    <td>{{ l.sistema_nombre || 'Todos' }}</td>
+                    <td>{{ tramo(l) }}</td>
+                    <td class="text-right">{{ importe(l.importe) }}</td>
+                </tr>
+                <tr *ngIf="cargado && filtradas.length === 0">
+                    <td colspan="6" class="acc-vacio">
+                        <ng-container *ngIf="lineas.length === 0">Todavía no hay suplementos. Se ponen en la columna <strong>Suplemento</strong> de cada lista.</ng-container>
+                        <ng-container *ngIf="lineas.length > 0">Ningún suplemento coincide con el filtro.</ng-container>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<app-acc-suplementos #detalle (cambio)="cargar()"></app-acc-suplementos>

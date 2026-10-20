@@ -219,6 +219,15 @@
                     </div>
                 </ng-container>
 
+                <!-- SUPLEMENTOS (resumen de todos los precios) -->
+                <ng-container *ngIf="seccion === 'suplementos'">
+                    <div class="acc-intro">
+                        Todos los suplementos de precio juntos. Se ponen en la columna <strong>Suplemento</strong> de cada lista;
+                        aquí se revisan y, pulsando una línea, se cambian. Los suplementos de los elementos elegidos se suman al precio de la cortina.
+                    </div>
+                    <app-acc-suplementos-resumen [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
+                </ng-container>
+
                 <!-- LISTAS DE OPCIONES -->
                 <ng-container *ngIf="seccion === 'listas'">
                     <div class="acc-intro">Opciones que se reutilizan en los pasos. Aquí se dan de alta; en cada paso se marca cuáles se ofrecen.</div>

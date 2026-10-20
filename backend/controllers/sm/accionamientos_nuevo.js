@@ -144,14 +144,19 @@ async function lista(req, res) {
     const dependencias = refs.length
       ? refs.map(r => `(select count(*) from dbo.${r.tabla} d where d.${r.columna} = x.id)`).join(' + ')
       : '0';
-    const request = pool.request();
+    const request = pool.request().input('tabla', sql.VarChar(50), cat.tabla);
     let where = '';
     if (cat.padre) {
       request.input('padre', sql.Int, padre);
       where = `where x.${cat.padre} = @padre`;
     }
+    /* suplementos: líneas de precio del elemento (script 16); suplemento_fijo: el importe general
+       sin tramos, el que se edita directamente en la tabla */
     const result = await request.query(`
-      select x.*, ${dependencias} as dependencias
+      select x.*, ${dependencias} as dependencias,
+             (select count(*) from dbo.SOL_ACC_SUPLEMENTO s where s.catalogo = @tabla and s.elemento_id = x.id) as suplementos,
+             (select s.importe from dbo.SOL_ACC_SUPLEMENTO s where s.catalogo = @tabla and s.elemento_id = x.id
+                and s.cliente is null and s.sistema_id is null and s.medida is null) as suplemento_fijo
       from dbo.${cat.tabla} x ${where}
       order by x.orden, ${cat.valor ? 'x.valor' : 'x.nombre'}`);
     const protegidos = cat.protegidos || [];
@@ -304,6 +309,12 @@ async function borrar(req, res) {
         return res.status(400).send({ message: `${a.recordset[0].codigo} es fijo y no se puede borrar. Puede ocultarlo` });
       }
     }
+    /* Los suplementos no tienen FK al elemento (script 16): se comprueba aquí */
+    const s = await pool.request().input('id', sql.Int, id).input('tabla', sql.VarChar(50), cat.tabla)
+      .query('select count(*) as n from dbo.SOL_ACC_SUPLEMENTO where catalogo = @tabla and elemento_id = @id');
+    if (s.recordset[0].n > 0) {
+      return res.status(400).send({ message: 'Tiene suplementos de precio: quítelos antes de borrarlo, u ocúltelo' });
+    }
     await pool.request().input('id', sql.Int, id).query(`delete from dbo.${cat.tabla} where id = @id`);
     res.status(200).send({ message: 'OK' });
   } catch (err) {
@@ -445,7 +456,192 @@ async function matriz_motores_guardar(req, res) {
   }
 }
 
+/* ---------------- SUPLEMENTOS DE PRECIO (script 16) ---------------- */
+
+const MEDIDAS = ['ANCHO', 'ALTO', 'LONGITUD'];
+/* La longitud de la cadena solo tiene sentido en los elementos de la cadena */
+const CATALOGOS_CADENA = ['tipos_cadena', 'tipos_aro_cadena', 'tipos_cadena_medida', 'alturas', 'colores_cadena'];
+
+/* Nombre que se enseña de un elemento (las alturas pueden no tener nombre: su valor en cm) */
+function nombreElemento(cat, alias) {
+  return cat.valor ? `isnull(${alias}.nombre, cast(cast(${alias}.valor as float) as varchar(20)) + ' cm')` : `${alias}.nombre`;
+}
+
+async function elementoExiste(pool, cat, id) {
+  const r = await pool.request().input('id', sql.Int, id)
+    .query(`select ${nombreElemento(cat, 'x')} as nombre from dbo.${cat.tabla} x where x.id = @id`);
+  return r.recordset[0] || null;
+}
+
+const SELECT_SUPLEMENTO = `
+  select s.id, s.catalogo, s.elemento_id, s.cliente, c.descripcion as cliente_nombre, s.sistema_id, si.nombre as sistema_nombre,
+         s.medida, s.hasta, s.importe, s.activo
+  from dbo.SOL_ACC_SUPLEMENTO s
+  left join dbo.SOL_CLIENTES c on c.idrow = s.cliente
+  left join dbo.SOL_ACC_SISTEMA si on si.id = s.sistema_id`;
+
+/* GET /acc/sup/:catalogo/:id — líneas de precio de un elemento */
+async function suplementos(req, res) {
+  const cat = CATALOGOS[req.params.catalogo];
+  if (!cat) return res.status(400).send({ message: 'Catálogo no válido' });
+  const id = entero(req.params.id);
+  if (id === null) return res.status(400).send({ message: 'Falta el registro' });
+  try {
+    const pool = await sql.connect();
+    const elemento = await elementoExiste(pool, cat, id);
+    if (!elemento) return res.status(404).send({ message: 'El registro no existe' });
+    const r = await pool.request().input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id).query(`${SELECT_SUPLEMENTO}
+      where s.catalogo = @tabla and s.elemento_id = @id
+      order by case when s.cliente is null then 0 else 1 end, c.descripcion,
+               case when s.sistema_id is null then 0 else 1 end, si.nombre, s.medida, s.hasta`);
+    res.status(200).send({ elemento: elemento.nombre, longitud: CATALOGOS_CADENA.includes(req.params.catalogo), lineas: r.recordset });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/sup/:catalogo/:id/fijo { importe } — importe general fijo (sin cliente, sistema ni tramos),
+   el que se teclea directamente en la tabla. Vacío o null lo quita */
+async function suplemento_fijo(req, res) {
+  const cat = CATALOGOS[req.params.catalogo];
+  if (!cat) return res.status(400).send({ message: 'Catálogo no válido' });
+  const id = entero(req.params.id);
+  if (id === null) return res.status(400).send({ message: 'Falta el registro' });
+  const body = req.body || {};
+  const quitar = body.importe === null || body.importe === undefined || String(body.importe).trim() === '';
+  const importe = quitar ? null : decimal(body.importe);
+  if (!quitar && (importe === null || importe < 0)) return res.status(400).send({ message: 'El importe tiene que ser un número mayor o igual que 0' });
+
+  try {
+    const pool = await sql.connect();
+    if (!(await elementoExiste(pool, cat, id))) return res.status(404).send({ message: 'El registro no existe' });
+    const request = pool.request().input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id).input('importe', sql.Decimal(10, 2), importe);
+    const general = 'catalogo = @tabla and elemento_id = @id and cliente is null and sistema_id is null';
+    if (quitar) {
+      await request.query(`delete from dbo.SOL_ACC_SUPLEMENTO where ${general} and medida is null`);
+    } else {
+      const tramos = await request.query(`select count(*) as n from dbo.SOL_ACC_SUPLEMENTO where ${general} and medida is not null`);
+      if (tramos.recordset[0].n > 0) {
+        return res.status(400).send({ message: 'El precio general va por tramos: cámbielo en el detalle (···)' });
+      }
+      await request.query(`
+        update dbo.SOL_ACC_SUPLEMENTO set importe = @importe where ${general} and medida is null;
+        if @@rowcount = 0 insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, importe) values (@tabla, @id, @importe)`);
+    }
+    res.status(200).send({ message: 'OK' });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/sup/:catalogo/:id { lineas: [{ cliente, sistema_id, medida, hasta, importe, activo }] }
+   Sustituye todas las líneas del elemento (el detalle se guarda entero). En cada ámbito
+   (cliente + sistema) hay o un importe fijo o tramos de una sola medida, sin "hasta" repetidos */
+async function suplementos_guardar(req, res) {
+  const cat = CATALOGOS[req.params.catalogo];
+  if (!cat) return res.status(400).send({ message: 'Catálogo no válido' });
+  const id = entero(req.params.id);
+  if (id === null) return res.status(400).send({ message: 'Falta el registro' });
+  const longitud = CATALOGOS_CADENA.includes(req.params.catalogo);
+
+  const lineas = [];
+  for (const l of ((req.body || {}).lineas || [])) {
+    const vacio = (v) => v === null || v === undefined || String(v).trim() === '';
+    const linea = {
+      cliente: vacio(l.cliente) ? null : entero(l.cliente),
+      sistema_id: vacio(l.sistema_id) ? null : entero(l.sistema_id),
+      medida: vacio(l.medida) ? null : String(l.medida).toUpperCase(),
+      hasta: vacio(l.hasta) ? null : decimal(l.hasta),
+      importe: decimal(l.importe),
+      activo: l.activo === false || l.activo === 0 ? 0 : 1
+    };
+    if (linea.importe === null || linea.importe < 0) return res.status(400).send({ message: 'Cada línea necesita un importe mayor o igual que 0' });
+    if (linea.medida && !MEDIDAS.includes(linea.medida)) return res.status(400).send({ message: 'Medida no válida' });
+    if (linea.medida === 'LONGITUD' && !longitud) return res.status(400).send({ message: 'La longitud de cadena solo vale en los elementos de la cadena' });
+    if (linea.medida && (linea.hasta === null || linea.hasta <= 0)) return res.status(400).send({ message: 'Un tramo necesita un "hasta" mayor que 0' });
+    if (!linea.medida && linea.hasta !== null) return res.status(400).send({ message: 'Indique la medida del tramo o deje vacío el "hasta"' });
+    lineas.push(linea);
+  }
+
+  const ambitos = {};
+  lineas.forEach(l => (ambitos[`${l.cliente}|${l.sistema_id}`] = ambitos[`${l.cliente}|${l.sistema_id}`] || []).push(l));
+  for (const grupo of Object.values(ambitos)) {
+    const fijos = grupo.filter(l => !l.medida);
+    const medidas = new Set(grupo.filter(l => l.medida).map(l => l.medida));
+    if (fijos.length > 1) return res.status(400).send({ message: 'Hay dos importes fijos para el mismo cliente y sistema' });
+    if (fijos.length && medidas.size) return res.status(400).send({ message: 'Para un mismo cliente y sistema, ponga un importe fijo o tramos, no las dos cosas' });
+    if (medidas.size > 1) return res.status(400).send({ message: 'Para un mismo cliente y sistema, los tramos tienen que ser de una sola medida' });
+    const hastas = grupo.filter(l => l.medida).map(l => l.hasta);
+    if (new Set(hastas).size !== hastas.length) return res.status(400).send({ message: 'Hay dos tramos con el mismo "hasta"' });
+  }
+
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    if (!(await elementoExiste(pool, cat, id))) return res.status(404).send({ message: 'El registro no existe' });
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    await new sql.Request(transaction).input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id)
+      .query('delete from dbo.SOL_ACC_SUPLEMENTO where catalogo = @tabla and elemento_id = @id');
+    for (const l of lineas) {
+      /* Cliente y sistema inexistentes los para la FK */
+      await new sql.Request(transaction)
+        .input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id)
+        .input('cliente', sql.Int, l.cliente).input('sistema', sql.Int, l.sistema_id)
+        .input('medida', sql.VarChar(10), l.medida).input('hasta', sql.Decimal(10, 2), l.hasta)
+        .input('importe', sql.Decimal(10, 2), l.importe).input('activo', sql.Bit, l.activo)
+        .query(`insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, cliente, sistema_id, medida, hasta, importe, activo)
+                values (@tabla, @id, @cliente, @sistema, @medida, @hasta, @importe, @activo)`);
+    }
+    await transaction.commit();
+    res.status(200).send({ message: 'OK' });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    const numero = err && (err.number || (err.originalError && err.originalError.info && err.originalError.info.number));
+    if (numero === 547) return res.status(400).send({ message: 'Cliente o sistema no válido' });
+    errorSql(err, res);
+  }
+}
+
+/* GET /acc/suplementos — resumen de todos los suplementos, con el nombre de su elemento */
+async function suplementos_resumen(req, res) {
+  try {
+    const pool = await sql.connect();
+    const nombres = Object.keys(CATALOGOS).map(clave => {
+      const cat = CATALOGOS[clave];
+      return `select '${clave}' as clave, '${cat.tabla}' as tabla, x.id, ${nombreElemento(cat, 'x')} as nombre, x.activo from dbo.${cat.tabla} x`;
+    }).join(' union all ');
+    const r = await pool.request().query(`
+      with elementos as (${nombres})
+      select e.clave, e.nombre as elemento_nombre, e.activo as elemento_activo, sup.*
+      from (${SELECT_SUPLEMENTO}) sup
+      join elementos e on e.tabla = sup.catalogo and e.id = sup.elemento_id
+      order by e.clave, e.nombre, sup.cliente_nombre, sup.sistema_nombre, sup.medida, sup.hasta`);
+    res.status(200).send({ Table: r.recordset });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* GET /acc/clientes — clientes para elegir en los suplementos */
+async function clientes(req, res) {
+  try {
+    const pool = await sql.connect();
+    const r = await pool.request().query('select idrow as id, descripcion as nombre from dbo.SOL_CLIENTES order by descripcion');
+    res.status(200).send({ Table: r.recordset });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
 module.exports = {
+  suplementos,
+  suplemento_fijo,
+  suplementos_guardar,
+  suplementos_resumen,
+  clientes,
   lista,
   guardar,
   visible,

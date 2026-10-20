@@ -30,11 +30,12 @@
                     <th class="acc-th-orden" *ngIf="!busqueda" title="Orden en el configurador"></th>
                     <th>{{ conValor ? 'Valor' + (unidad ? ' (' + unidad + ')' : '') : 'Nombre' }}</th>
                     <th class="acc-th-uso">Uso</th>
+                    <th class="acc-th-sup" title="Importe que suma al precio de la cortina. ··· para precios por cliente, sistema o tramos">Suplemento (€)</th>
                     <th class="acc-th-visible text-center" title="Visible en el configurador">Visible</th>
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let d of datosFiltrados; let primero = first; let ultimo = last" class="acc-fila"
+                <tr *ngFor="let d of datosFiltrados; let primero = first; let ultimo = last; trackBy: porId" class="acc-fila"
                     [class.acc-fila-sel]="filaSeleccionada?.id === d.id"
                     [class.acc-oculto]="!d.activo"
                     (click)="seleccionar(d)" (dblclick)="seleccionar(d); abrirEdicion()">
@@ -54,6 +55,19 @@
                     <td class="acc-uso">
                         <span *ngIf="d.dependencias > 0" class="badge badge-light" title="Registros que dependen de este">en uso · {{ d.dependencias }}</span>
                     </td>
+                    <!-- Importe general fijo: se teclea aquí (Intro o salir del campo guarda; vacío lo quita).
+                         Si hay precios por cliente, sistema o tramos, se ven y se cambian en el detalle (···) -->
+                    <td class="acc-sup" (click)="$event.stopPropagation()">
+                        <div class="d-flex align-items-center">
+                            <input *ngIf="esFijo(d); else variosPrecios" #importe type="text" class="form-control form-control-sm text-right acc-sup-input"
+                                placeholder="—" [value]="importeTexto(d)" (keyup.enter)="importe.blur()" (blur)="guardarFijo(d, importe)" />
+                            <ng-template #variosPrecios>
+                                <a href="javascript:void(0)" class="acc-sup-varios" (click)="suplementos.abrir(catalogo, d.id)">{{ d.suplementos }} precios</a>
+                            </ng-template>
+                            <button type="button" class="btn btn-link btn-sm p-0 ml-1" title="Detalle: precios por cliente, sistema o tramos"
+                                (click)="suplementos.abrir(catalogo, d.id)">···</button>
+                        </div>
+                    </td>
                     <td class="text-center" (click)="$event.stopPropagation()">
                         <label class="acc-switch" [title]="d.activo ? 'Visible: pulse para ocultarlo' : 'Oculto: pulse para mostrarlo'">
                             <input type="checkbox" [checked]="d.activo" (click)="cambiarVisible(d, $event)" />
@@ -62,7 +76,7 @@
                     </td>
                 </tr>
                 <tr *ngIf="datosFiltrados.length === 0">
-                    <td colspan="4" class="acc-vacio">
+                    <td colspan="5" class="acc-vacio">
                         <ng-container *ngIf="!busqueda">Todavía no hay ninguno. Pulse <strong>Añadir {{ singular }}</strong>.</ng-container>
                         <ng-container *ngIf="busqueda">Nada coincide con «{{ busqueda }}».</ng-container>
                     </td>
@@ -71,6 +85,9 @@
         </table>
     </div>
 </div>
+
+<!-- DETALLE DE SUPLEMENTOS -->
+<app-acc-suplementos #suplementos (cambio)="cargar()"></app-acc-suplementos>
 
 <!-- ALTA / EDICIÓN -->
 <div bsModal #modalForm="bs-modal" class="modal fade" tabindex="-1" role="dialog">

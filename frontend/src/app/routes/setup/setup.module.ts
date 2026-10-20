@@ -32,6 +32,8 @@ import { AccionamientosNuevoComponent } from './accionamientos-nuevo/accionamien
 import { AccTablaComponent } from './accionamientos-nuevo/acc-tabla.component';
 import { AccRelacionComponent } from './accionamientos-nuevo/acc-relacion.component';
 import { AccMotoresSistemaComponent } from './accionamientos-nuevo/acc-motores-sistema.component';
+import { AccSuplementosComponent } from './accionamientos-nuevo/acc-suplementos.component';
+import { AccSuplementosResumenComponent } from './accionamientos-nuevo/acc-suplementos-resumen.component';
 
 
 const routes: Routes = [
@@ -78,7 +80,8 @@ const routes: Routes = [
         AccionamientosRadioTipoComponent, AccionamientosRadioTipoClienteComponent,
         PromocionesMonitorComponent, IncrementosGenericosComponent,
         TejidosColoresComponent, TejidosComponent, ImpresionDigitalComponent,
-        AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent
+        AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent,
+        AccSuplementosComponent, AccSuplementosResumenComponent
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]

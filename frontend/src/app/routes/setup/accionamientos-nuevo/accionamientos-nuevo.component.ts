@@ -27,7 +27,8 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, aros, alturas, medidas y colores', icono: 'fa-link' },
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
         { id: 'soportes', paso: '4', label: 'Soportes y tapas', ayuda: 'Qué soportes y tapas tiene cada sistema', icono: 'fa-th-large' },
-        { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' }
+        { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' },
+        { id: 'suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
     seccion = 'accionamientos';
 
@@ -52,6 +53,12 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'baterias', label: 'Baterías', singular: 'batería', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' }
     ];
     lista: any = this.listas[0];
+
+    /* Nombre de cada lista para el resumen de suplementos (claves de CATALOGOS del backend) */
+    readonly nombresListas: { [clave: string]: string } = Object.assign({
+        accionamientos: 'Accionamientos', tipos_cadena: 'Tipos de cadena', tipos_aro_cadena: 'Tipos de aro',
+        tipos_cadena_medida: 'Cadena a medida', alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores'
+    }, ...this.listas.map(l => ({ [l.id]: l.label })));
 
     /* Los tipos de cadena y de motor cuelgan de los accionamientos fijos CADENA y MOTOR */
     accCadena: any = null;
