@@ -25,7 +25,7 @@ export class AccionamientosNuevoComponent implements OnInit {
     readonly secciones = [
         { id: 'accionamientos', paso: '1', label: 'Accionamientos', ayuda: 'Qué sistemas tiene cada uno', icono: 'fa-hand-pointer-o' },
         { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, aros, alturas, medidas y colores', icono: 'fa-link' },
-        { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos y sus accesorios', icono: 'fa-cog' },
+        { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
         { id: 'soportes', paso: '4', label: 'Soportes y tapas', ayuda: 'Qué soportes y tapas tiene cada sistema', icono: 'fa-th-large' },
         { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' }
     ];
@@ -62,7 +62,8 @@ export class AccionamientosNuevoComponent implements OnInit {
     tipoCadenaSel: any = null;
     pestanaCadena = 'aros';
     tipoMotorSel: any = null;
-    pestanaTipoMotor = 'modelos';
+    /* Paso 3: 'modelos' (tipo → modelo → accesorios) o 'sistemas' (motores por sistema) */
+    vistaMotor = 'modelos';
     modeloMotorSel: any = null;
     pestanaModelo = 'mandos';
     sistemaSel: any = null;

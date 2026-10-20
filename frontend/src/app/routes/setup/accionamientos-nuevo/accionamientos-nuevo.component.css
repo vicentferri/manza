@@ -261,6 +261,58 @@
     color: #4dbd74;
 }
 
+/* ---------- Motores por sistema (tabla de marcado) ---------- */
+.acc-matriz-container {
+    max-height: 520px;
+    overflow: auto;
+}
+
+.acc-matriz {
+    font-size: 13px;
+}
+
+.acc-matriz thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 12px;
+    vertical-align: bottom;
+}
+
+.acc-matriz-motor {
+    min-width: 200px;
+}
+
+.acc-matriz-sistema {
+    min-width: 80px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.acc-matriz-tipo td {
+    background-color: #eef6fa;
+    font-weight: 600;
+}
+
+.acc-matriz-modelo td:first-child {
+    padding-left: 24px;
+}
+
+.acc-matriz-celda {
+    cursor: pointer;
+}
+
+.acc-matriz-celda:hover {
+    background-color: #fff3cd;
+}
+
+.acc-matriz input[type="checkbox"] {
+    cursor: pointer;
+    vertical-align: middle;
+}
+
 /* ---------- Modal ---------- */
 .acc-codigo-linea {
     font-size: 13px;

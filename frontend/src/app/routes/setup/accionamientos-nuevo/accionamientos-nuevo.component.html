@@ -126,7 +126,17 @@
                         <ng-container *ngTemplateOutlet="faltaFijo; context: { codigo: 'MOTOR', nombre: 'Motor' }"></ng-container>
                     </ng-container>
                     <ng-container *ngIf="accMotor">
-                        <div class="acc-intro">De izquierda a derecha: elija un tipo de motor, después uno de sus modelos, y marque los mandos, cargadores y baterías de ese modelo.</div>
+                        <ul class="nav nav-tabs acc-tabs">
+                            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="vistaMotor === 'modelos'" (click)="vistaMotor = 'modelos'">Modelos y accesorios</a></li>
+                            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="vistaMotor === 'sistemas'" (click)="vistaMotor = 'sistemas'">Motores por sistema</a></li>
+                        </ul>
+                        <app-acc-motores-sistema *ngIf="vistaMotor === 'sistemas'"></app-acc-motores-sistema>
+                    </ng-container>
+                    <ng-container *ngIf="accMotor && vistaMotor === 'modelos'">
+                        <div class="acc-intro">
+                            De izquierda a derecha: elija un tipo de motor, después uno de sus modelos, y marque los mandos, cargadores y baterías de ese modelo.
+                            En qué sistemas se ofrece cada motor se marca en <a href="javascript:void(0)" (click)="vistaMotor = 'sistemas'">Motores por sistema</a>.
+                        </div>
                         <div class="row">
                             <div class="col-xl-4 col-lg-6">
                                 <div class="acc-columna-titulo"><span class="acc-paso">a</span> Tipo de motor</div>
@@ -137,21 +147,10 @@
                             <div class="col-xl-4 col-lg-6">
                                 <div class="acc-columna-titulo"><span class="acc-paso">b</span> Modelo<span *ngIf="tipoMotorSel"> de {{ tipoMotorSel.nombre }}</span></div>
                                 <ng-container *ngIf="tipoMotorSel; else elijaTipoMotor">
-                                    <ul class="nav nav-tabs acc-tabs">
-                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaTipoMotor === 'modelos'" (click)="pestanaTipoMotor = 'modelos'">Modelos</a></li>
-                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaTipoMotor === 'sistemas'" (click)="pestanaTipoMotor = 'sistemas'">Sistemas compatibles</a></li>
-                                    </ul>
-                                    <!-- Los modelos se mantienen montados para no perder el modelo elegido al cambiar de pestaña -->
-                                    <div [hidden]="pestanaTipoMotor !== 'modelos'">
-                                        <app-acc-tabla catalogo="modelos_motor" titulo="Modelos" singular="modelo"
-                                            padreCampo="tipo_motor_id" [padreId]="tipoMotorSel.id"
-                                            [recarga]="recargaModelo" (seleccion)="modeloMotorSel = $event"
-                                            (cambio)="recargaTipoMotor = recargaTipoMotor + 1"></app-acc-tabla>
-                                    </div>
-                                    <app-acc-relacion *ngIf="pestanaTipoMotor === 'sistemas'" relacion="tipo_motor_sistema" [id]="tipoMotorSel.id"
-                                        [titulo]="'Sistemas que admiten ' + tipoMotorSel.nombre"
-                                        vacio="No hay sistemas. Añádalos en Listas de opciones → Sistemas."
-                                        (cambio)="recargaTipoMotor = recargaTipoMotor + 1"></app-acc-relacion>
+                                    <app-acc-tabla catalogo="modelos_motor" titulo="Modelos" singular="modelo"
+                                        padreCampo="tipo_motor_id" [padreId]="tipoMotorSel.id"
+                                        [recarga]="recargaModelo" (seleccion)="modeloMotorSel = $event"
+                                        (cambio)="recargaTipoMotor = recargaTipoMotor + 1"></app-acc-tabla>
                                 </ng-container>
                                 <ng-template #elijaTipoMotor>
                                     <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un tipo de motor.</div>

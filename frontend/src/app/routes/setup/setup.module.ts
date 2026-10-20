@@ -31,6 +31,7 @@ import { PermisosGuard } from '../../services/PermisosGuard';
 import { AccionamientosNuevoComponent } from './accionamientos-nuevo/accionamientos-nuevo.component';
 import { AccTablaComponent } from './accionamientos-nuevo/acc-tabla.component';
 import { AccRelacionComponent } from './accionamientos-nuevo/acc-relacion.component';
+import { AccMotoresSistemaComponent } from './accionamientos-nuevo/acc-motores-sistema.component';
 
 
 const routes: Routes = [
@@ -77,7 +78,7 @@ const routes: Routes = [
         AccionamientosRadioTipoComponent, AccionamientosRadioTipoClienteComponent,
         PromocionesMonitorComponent, IncrementosGenericosComponent,
         TejidosColoresComponent, TejidosComponent, ImpresionDigitalComponent,
-        AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent
+        AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]

@@ -28,7 +28,7 @@ const ERRORES_LINEA = {
   '-7': 'Altura no válida',
   '-8': 'El color no está permitido para ese tipo de cadena',
   '-9': 'Hay datos de cadena o de motor que no corresponden al accionamiento',
-  '-10': 'Tipo de motor no válido o no admitido en el sistema',
+  '-10': 'Tipo de motor no válido',
   '-11': 'Modelo de motor no válido',
   '-12': 'Mando, cargador o batería no asignado a ese modelo',
   '-13': 'El soporte no está disponible para ese sistema',
@@ -37,7 +37,8 @@ const ERRORES_LINEA = {
   '-16': 'Color de tapa no válido',
   '-17': 'Contrapeso no válido',
   '-18': 'Color de contrapeso no válido',
-  '-19': 'Longitud de cadena no válida: obligatoria en la cadena a medida y solo en ella'
+  '-19': 'Longitud de cadena no válida: obligatoria en la cadena a medida y solo en ella',
+  '-20': 'El motor no está disponible para ese sistema'
 };
 
 function entero(value) {
@@ -122,7 +123,7 @@ async function opciones(req, res) {
       lista('SOL_ACC_BATERIA'),
       q('select accionamiento_id, sistema_id from dbo.SOL_ACC_ACCIONAMIENTO_SISTEMA'),
       q('select tipo_cadena_id, color_cadena_id from dbo.SOL_ACC_TIPO_CADENA_COLOR'),
-      q('select tipo_motor_id, sistema_id from dbo.SOL_ACC_TIPO_MOTOR_SISTEMA'),
+      q('select modelo_motor_id, sistema_id from dbo.SOL_ACC_MODELO_MOTOR_SISTEMA'),
       q('select modelo_motor_id, mando_id from dbo.SOL_ACC_MODELO_MOTOR_MANDO'),
       q('select modelo_motor_id, cargador_id from dbo.SOL_ACC_MODELO_MOTOR_CARGADOR'),
       q('select modelo_motor_id, bateria_id from dbo.SOL_ACC_MODELO_MOTOR_BATERIA'),
@@ -148,7 +149,7 @@ async function opciones(req, res) {
 
     const sisPorAcc = agrupar(accSis, 'accionamiento_id', 'sistema_id');
     const colPorTipo = agrupar(cadCol, 'tipo_cadena_id', 'color_cadena_id');
-    const sisPorMotor = agrupar(motSis, 'tipo_motor_id', 'sistema_id');
+    const sisPorModelo = agrupar(motSis, 'modelo_motor_id', 'sistema_id');
     const manPorModelo = agrupar(modMan, 'modelo_motor_id', 'mando_id');
     const carPorModelo = agrupar(modCar, 'modelo_motor_id', 'cargador_id');
     const batPorModelo = agrupar(modBat, 'modelo_motor_id', 'bateria_id');
@@ -168,15 +169,18 @@ async function opciones(req, res) {
       })),
       alturas,
       colores,
-      tiposMotor: tiposMotor.map(t => Object.assign(t, {
-        sistemas: filtrar(sisPorMotor[t.id], sisActivos),
-        modelos: modelos.filter(m => m.tipo_motor_id === t.id).map(m => ({
+      /* Cada modelo con los sistemas a los que está asignado; el tipo, con los de sus modelos
+         (un tipo aparece en un sistema si alguno de sus modelos está asignado a él) */
+      tiposMotor: tiposMotor.map(t => {
+        const mods = modelos.filter(m => m.tipo_motor_id === t.id).map(m => ({
           id: m.id, codigo: m.codigo, nombre: m.nombre,
+          sistemas: filtrar(sisPorModelo[m.id], sisActivos),
           mandos: filtrar(manPorModelo[m.id], manActivos),
           cargadores: filtrar(carPorModelo[m.id], carActivos),
           baterias: filtrar(batPorModelo[m.id], batActivos)
-        }))
-      })),
+        }));
+        return Object.assign(t, { sistemas: [...new Set([].concat(...mods.map(m => m.sistemas)))], modelos: mods });
+      }),
       mandos,
       cargadores,
       baterias,

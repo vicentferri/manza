@@ -41,8 +41,6 @@ const CATALOGOS = {
 const RELACIONES = {
   accionamiento_sistema: { tabla: 'SOL_ACC_ACCIONAMIENTO_SISTEMA', origen: 'accionamiento_id', destino: 'sistema_id',
                            catOrigen: 'accionamientos', catDestino: 'sistemas' },
-  tipo_motor_sistema:    { tabla: 'SOL_ACC_TIPO_MOTOR_SISTEMA', origen: 'tipo_motor_id', destino: 'sistema_id',
-                           catOrigen: 'tipos_motor', catDestino: 'sistemas' },
   tipo_cadena_color:     { tabla: 'SOL_ACC_TIPO_CADENA_COLOR', origen: 'tipo_cadena_id', destino: 'color_cadena_id',
                            catOrigen: 'tipos_cadena', catDestino: 'colores_cadena' },
   modelo_motor_mando:    { tabla: 'SOL_ACC_MODELO_MOTOR_MANDO', origen: 'modelo_motor_id', destino: 'mando_id',
@@ -371,6 +369,82 @@ async function relacion_guardar(req, res) {
   }
 }
 
+/* ---------------- MOTORES POR SISTEMA (script 14) ---------------- */
+
+/* GET /acc/matriz/motores — sistemas en columnas y modelos de motor, agrupados por tipo, en filas.
+   Cada modelo trae los sistemas a los que está asignado. Incluye los ocultos (la pantalla los pinta en gris) */
+async function matriz_motores(req, res) {
+  try {
+    const pool = await sql.connect();
+    const q = async (consulta) => (await pool.request().query(consulta)).recordset;
+    const [sistemas, tipos, modelos, asignados] = await Promise.all([
+      /* conMotor: el sistema tiene el accionamiento MOTOR en el paso 1 (si no, el configurador no llega a sus motores) */
+      q(`select s.id, s.codigo, s.nombre, s.activo,
+                case when exists (select 1 from dbo.SOL_ACC_ACCIONAMIENTO_SISTEMA r
+                                  join dbo.SOL_ACC_ACCIONAMIENTO a on a.id = r.accionamiento_id and a.codigo = 'MOTOR'
+                                  where r.sistema_id = s.id) then 1 else 0 end as conMotor
+         from dbo.SOL_ACC_SISTEMA s order by s.orden, s.nombre`),
+      q(`select t.id, t.codigo, t.nombre, t.activo from dbo.SOL_ACC_TIPO_MOTOR t
+         join dbo.SOL_ACC_ACCIONAMIENTO a on a.id = t.accionamiento_id and a.codigo = 'MOTOR'
+         order by t.orden, t.nombre`),
+      q('select id, tipo_motor_id, codigo, nombre, activo from dbo.SOL_ACC_MODELO_MOTOR order by orden, nombre'),
+      q('select modelo_motor_id, sistema_id from dbo.SOL_ACC_MODELO_MOTOR_SISTEMA')
+    ]);
+    const porModelo = {};
+    asignados.forEach(r => (porModelo[r.modelo_motor_id] = porModelo[r.modelo_motor_id] || []).push(r.sistema_id));
+    res.status(200).send({
+      sistemas,
+      tipos: tipos.map(t => Object.assign(t, {
+        modelos: modelos.filter(m => m.tipo_motor_id === t.id)
+          .map(m => ({ id: m.id, codigo: m.codigo, nombre: m.nombre, activo: m.activo, sistemas: porModelo[m.id] || [] }))
+      }))
+    });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/matriz/motores { sistema_id, modelo_ids: [...], marcado } — asigna o quita varios
+   modelos en un sistema de una vez: una casilla, todos los modelos de un tipo o una columna entera */
+async function matriz_motores_guardar(req, res) {
+  const body = req.body || {};
+  const sistema = entero(body.sistema_id);
+  const ids = [...new Set((body.modelo_ids || []).map(entero).filter(n => n !== null))];
+  if (sistema === null) return res.status(400).send({ message: 'Falta el sistema' });
+  if (ids.length === 0) return res.status(400).send({ message: 'Faltan los motores' });
+
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    const s = await pool.request().input('sistema', sql.Int, sistema)
+      .query('select 1 as ok from dbo.SOL_ACC_SISTEMA where id = @sistema');
+    if (!s.recordset[0]) return res.status(404).send({ message: 'El sistema no existe' });
+
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const request = new sql.Request(transaction).input('sistema', sql.Int, sistema);
+    if (body.marcado) {
+      /* Solo los modelos que existen y que aún no están asignados */
+      await request.query(`
+        insert into dbo.SOL_ACC_MODELO_MOTOR_SISTEMA (modelo_motor_id, sistema_id)
+        select m.id, @sistema from dbo.SOL_ACC_MODELO_MOTOR m
+        where m.id in (${ids.join(',')})
+          and not exists (select 1 from dbo.SOL_ACC_MODELO_MOTOR_SISTEMA x where x.modelo_motor_id = m.id and x.sistema_id = @sistema)`);
+    } else {
+      await request.query(`
+        delete from dbo.SOL_ACC_MODELO_MOTOR_SISTEMA
+        where sistema_id = @sistema and modelo_motor_id in (${ids.join(',')})`);
+    }
+    await transaction.commit();
+    res.status(200).send({ message: 'OK' });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
 module.exports = {
   lista,
   guardar,
@@ -378,5 +452,7 @@ module.exports = {
   orden,
   borrar,
   relacion,
-  relacion_guardar
+  relacion_guardar,
+  matriz_motores,
+  matriz_motores_guardar
 };

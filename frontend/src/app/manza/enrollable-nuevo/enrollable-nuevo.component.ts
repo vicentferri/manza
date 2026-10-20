@@ -226,14 +226,18 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       return t ? this.opc.colores.filter(c => t.colores.indexOf(c.id) >= 0) : [];
    }
 
-   /* Tipos de motor del accionamiento MOTOR que admite el sistema elegido */
+   /* Tipos de motor del accionamiento MOTOR con algún modelo asignado al sistema elegido */
    get tiposMotor(): any[] {
       const a = this.accionamientoSel;
       const sistema = parseInt(this.sel.sistema, 10);
       return a && this.esMotor && sistema ? this.opc.tiposMotor.filter(t => t.accionamiento_id === a.id && t.sistemas.indexOf(sistema) >= 0) : [];
    }
    get tipoMotorSel(): any { return this.porId(this.tiposMotor, this.sel.tipo_motor); }
-   get modelos(): any[] { return this.tipoMotorSel ? this.tipoMotorSel.modelos : []; }
+   /* Solo los modelos del tipo asignados al sistema elegido */
+   get modelos(): any[] {
+      const sistema = parseInt(this.sel.sistema, 10);
+      return this.tipoMotorSel ? this.tipoMotorSel.modelos.filter(m => m.sistemas.indexOf(sistema) >= 0) : [];
+   }
    get modeloSel(): any { return this.porId(this.modelos, this.sel.modelo_motor); }
    get mandos(): any[] { return this.modeloSel ? this.opc.mandos.filter(x => this.modeloSel.mandos.indexOf(x.id) >= 0) : []; }
    get cargadores(): any[] { return this.modeloSel ? this.opc.cargadores.filter(x => this.modeloSel.cargadores.indexOf(x.id) >= 0) : []; }

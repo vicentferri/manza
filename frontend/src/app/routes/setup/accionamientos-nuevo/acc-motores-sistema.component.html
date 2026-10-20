@@ -1,0 +1,60 @@
+<div class="acc-bloque">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong>Motores por sistema</strong>
+        <span class="acc-estado ml-2" *ngIf="estado === 'guardando'"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
+        <span class="acc-estado acc-estado-ok ml-2" *ngIf="estado === 'guardado'"><i class="fa fa-check"></i> Guardado</span>
+        <input type="text" class="form-control form-control-sm acc-buscar ml-auto" placeholder="Buscar motor..."
+            [(ngModel)]="buscar" [ngModelOptions]="{ standalone: true }" />
+    </div>
+    <div class="acc-ayuda mb-2">
+        Marque en qué sistemas se ofrece cada motor. La casilla del tipo y la de la cabecera marcan o quitan todos los motores de la fila o de la columna<span *ngIf="buscar"> (solo los que se ven con la búsqueda)</span>.
+    </div>
+    <div *ngIf="sinSistema > 0" class="acc-aviso">
+        <i class="fa fa-exclamation-triangle"></i> {{ sinSistema }} {{ sinSistema === 1 ? 'motor no está' : 'motores no están' }} en ningún sistema: no {{ sinSistema === 1 ? 'aparece' : 'aparecen' }} en el configurador.
+    </div>
+
+    <div *ngIf="cargado && sistemas.length === 0" class="acc-vacio">No hay sistemas. Añádalos en Listas de opciones → Sistemas.</div>
+    <div *ngIf="cargado && sistemas.length > 0 && tipos.length === 0" class="acc-vacio">No hay tipos de motor. Créelos en la pestaña Modelos y accesorios.</div>
+
+    <div class="acc-matriz-container" *ngIf="sistemas.length > 0 && tipos.length > 0">
+        <table class="table table-sm table-bordered acc-matriz mb-0">
+            <thead>
+                <tr>
+                    <th class="acc-matriz-motor">Motor</th>
+                    <th *ngFor="let s of sistemas" class="acc-matriz-sistema" [class.acc-oculto]="!s.activo"
+                        [title]="!s.activo ? 'Sistema oculto en el configurador' : (!s.conMotor ? 'Este sistema no tiene el accionamiento Motor (paso 1)' : '')">
+                        <div>{{ s.nombre }} <i *ngIf="!s.conMotor" class="fa fa-exclamation-triangle text-warning"></i></div>
+                        <input type="checkbox" [checked]="todos(modelosVisibles, s)" [indeterminate]="algunos(modelosVisibles, s)"
+                            (change)="cambiarGrupo(modelosVisibles, s)" title="Todos los motores en {{ s.nombre }}" />
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let g of tiposVisibles">
+                    <tr class="acc-matriz-tipo" [class.acc-oculto]="!g.tipo.activo">
+                        <td><span class="acc-nombre">{{ g.tipo.nombre }}</span> <span class="text-muted small">· {{ g.modelos.length }}</span></td>
+                        <td *ngFor="let s of sistemas" class="text-center">
+                            <input type="checkbox" *ngIf="g.modelos.length > 0" [checked]="todos(g.modelos, s)" [indeterminate]="algunos(g.modelos, s)"
+                                (change)="cambiarGrupo(g.modelos, s)" title="Todos los {{ g.tipo.nombre }} en {{ s.nombre }}" />
+                        </td>
+                    </tr>
+                    <tr *ngFor="let m of g.modelos" class="acc-matriz-modelo" [class.acc-oculto]="!m.activo">
+                        <td>
+                            <span class="acc-nombre">{{ m.nombre }}</span>
+                            <span *ngIf="m.sistemas.length === 0" class="badge badge-warning ml-1">sin sistema</span>
+                        </td>
+                        <td *ngFor="let s of sistemas" class="text-center acc-matriz-celda" (click)="cambiarUno(m, s)">
+                            <input type="checkbox" [checked]="marcado(m, s)" (click)="$event.stopPropagation()" (change)="cambiarUno(m, s)" />
+                        </td>
+                    </tr>
+                    <tr *ngIf="g.modelos.length === 0" class="acc-matriz-modelo">
+                        <td [attr.colspan]="sistemas.length + 1" class="text-muted small">Sin modelos</td>
+                    </tr>
+                </ng-container>
+                <tr *ngIf="tiposVisibles.length === 0">
+                    <td [attr.colspan]="sistemas.length + 1" class="acc-vacio">Ningún motor coincide con la búsqueda.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -157,7 +157,7 @@
                   <option value="">Seleccionar</option>
                   <option *ngFor="let t of tiposMotor" [value]="t.id">{{ t.nombre }}</option>
                </select>
-               <small *ngIf="tiposMotor.length === 0" class="enx-error">Ningún tipo de motor admite este sistema.</small>
+               <small *ngIf="tiposMotor.length === 0" class="enx-error">No hay motores asignados a este sistema.</small>
             </div>
             <div class="col-md-3 col-6 form-group" *ngIf="sel.tipo_motor">
                <label>Modelo</label>

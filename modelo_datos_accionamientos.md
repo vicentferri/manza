@@ -21,7 +21,7 @@ flowchart TD
     A[Accionamiento] --> S[Sistema<br/>filtrado por accionamiento]
     S --> C{¿Qué accionamiento?}
     C -->|Cadena| TC[Tipo de Cadena]
-    C -->|Motor| TM[Tipo de Motor<br/>filtrado por sistema]
+    C -->|Motor| TM[Tipo de Motor<br/>con algún modelo en el sistema]
     C -->|Sin cadena| FIN[Fin de la configuración]
 
     TC -->|Aro cadena| TAC[Tipo Aro Cadena]
@@ -29,7 +29,7 @@ flowchart TD
     TAC --> ALT[Altura<br/>todas disponibles]
     TC --> COL[Color Cadena<br/>filtrado por tipo de cadena]
 
-    TM --> MM[Modelo Motor<br/>filtrado por tipo de motor]
+    TM --> MM[Modelo Motor<br/>del tipo y asignado al sistema]
     MM --> MAN[Mandos<br/>filtrado por modelo]
     MM --> CAR[Cargadores<br/>filtrado por modelo]
     MM --> BAT[Baterías<br/>filtrado por modelo]
@@ -153,8 +153,8 @@ classDiagram
     TipoAroCadena "*" -- "*" Altura : todas con todas
     TipoCadena "*" -- "*" ColorCadena : colores permitidos
     Accionamiento "1" -- "0..*" TipoMotor : si es Motor
-    TipoMotor "*" -- "*" Sistema : admitido en
     TipoMotor "1" -- "0..*" ModeloMotor : modelos
+    ModeloMotor "*" -- "*" Sistema : disponible en
     ModeloMotor "*" -- "*" Mando : filtrado por modelo
     ModeloMotor "*" -- "*" Cargador : filtrado por modelo
     ModeloMotor "*" -- "*" Bateria : filtrado por modelo
@@ -285,7 +285,7 @@ Solo aplica cuando el accionamiento es **Motor**.
 
 ### 4.9 SOL_ACC_MODELO_MOTOR
 
-Las opciones mostradas dependen del tipo de motor elegido.
+Las opciones mostradas dependen del tipo de motor elegido y del sistema: solo salen los modelos asignados al sistema (`SOL_ACC_MODELO_MOTOR_SISTEMA`, script 14). Un tipo de motor aparece en un sistema si alguno de sus modelos está asignado a él.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -329,7 +329,7 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 | Tabla | Campo 1 (PK, FK) | Campo 2 (PK, FK) | Qué resuelve |
 |---|---|---|---|
 | SOL_ACC_ACCIONAMIENTO_SISTEMA | accionamiento_id → SOL_ACC_ACCIONAMIENTO.id | sistema_id → SOL_ACC_SISTEMA.id | Qué sistemas aparecen para cada accionamiento |
-| SOL_ACC_TIPO_MOTOR_SISTEMA | tipo_motor_id → SOL_ACC_TIPO_MOTOR.id | sistema_id → SOL_ACC_SISTEMA.id | Qué tipos de motor admite cada sistema |
+| SOL_ACC_MODELO_MOTOR_SISTEMA | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | sistema_id → SOL_ACC_SISTEMA.id | Qué motores (modelos) ofrece cada sistema. Script 14; sustituye a `SOL_ACC_TIPO_MOTOR_SISTEMA` (relación por tipo, borrada) |
 | SOL_ACC_TIPO_CADENA_COLOR | tipo_cadena_id → SOL_ACC_TIPO_CADENA.id | color_cadena_id → SOL_ACC_COLOR_CADENA.id | Qué colores aparecen para Aro cadena y para Cadena a medida |
 | SOL_ACC_MODELO_MOTOR_MANDO | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | mando_id → SOL_ACC_MANDO.id | Qué mandos aparecen para cada modelo |
 | SOL_ACC_MODELO_MOTOR_CARGADOR | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | cargador_id → SOL_ACC_CARGADOR.id | Qué cargadores aparecen para cada modelo |
@@ -351,7 +351,7 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 | Tipo de Cadena (Cadena a medida) | Tipo Cadena a Medida | 1:N | FK `tipo_cadena_id` en SOL_ACC_TIPO_CADENA_MEDIDA |
 | Tipo de Cadena | Color Cadena | N:M | Tabla SOL_ACC_TIPO_CADENA_COLOR |
 | Accionamiento (Motor) | Tipo de Motor | 1:N | FK `accionamiento_id` en SOL_ACC_TIPO_MOTOR |
-| Tipo de Motor | Sistema | N:M | Tabla SOL_ACC_TIPO_MOTOR_SISTEMA |
+| Modelo Motor | Sistema | N:M | Tabla SOL_ACC_MODELO_MOTOR_SISTEMA (el tipo se deduce de sus modelos) |
 | Tipo de Motor | Modelo Motor | 1:N | FK `tipo_motor_id` en SOL_ACC_MODELO_MOTOR |
 | Modelo Motor | Mando | N:M | Tabla SOL_ACC_MODELO_MOTOR_MANDO |
 | Modelo Motor | Cargador | N:M | Tabla SOL_ACC_MODELO_MOTOR_CARGADOR |
@@ -382,12 +382,18 @@ Las líneas de enrollable del flujo nuevo se graban en `SOL_PEDIDOS_COLA_TIPO_1`
 - Los textos que pintan la cesta, los pedidos y los informes se escriben desde `SOL_ACC_*`: `acc_tipo_text` (accionamiento), `acc_marca_text` (sistema; en motor, "sistema · tipo de motor"), `acc_modelo_text` (cadena: "tipo · aro o medida"; motor: "modelo · cargador · batería"), `mando_text`, `cad_Tipo` = 1, `cad_Altura` ("100 cm" o el tipo de medida), `cad_color_text`, y `sop_tipo_text`/`sop_color_text`, `tap_tipo_text`/`tap_color_text`, `con_tipo_text`/`con_color_text`.
 - **Cadena:** dos tipos, Aro cadena (aro + altura de la lista) y Cadena a medida (el cliente teclea la longitud, que va en `nacc_cadena_longitud` y en `cad_Altura` como "150 cm"). La cadena metálica no es un tipo: es un color de cadena ("Metálico") que se da de alta a mano.
 - **Pasos que siguen en las columnas de siempre:** posición del accionamiento (`acc_posicion_id` 1 Derecha / 2 Izquierda), estancia y observaciones (`Estancia_ID`, `Estancia`), impresión digital (`impresion` sí/no, `impresion_imagen` con el texto) y el tejido.
-- El SP valida la combinación (sistema del accionamiento, tipo de cadena y sus hijos, colores permitidos, tipo de motor admitido en el sistema, modelo y sus mandos, cargadores y baterías, soporte y tapa del sistema, colores de cada pieza).
+- El SP valida la combinación (sistema del accionamiento, tipo de cadena y sus hijos, colores permitidos, modelo de motor del tipo y asignado al sistema (-20, script 15), modelo y sus mandos, cargadores y baterías, soporte y tapa del sistema, colores de cada pieza).
 - De momento sin precio: los importes `T1_*` quedan a NULL hasta tener las tarifas del modelo nuevo.
 
 ### Presupuestos
 
 Los presupuestos del configurador nuevo funcionan igual que los pedidos: las mismas 19 columnas `nacc_*` en `SOL_PRESUPUESTOS_COLA_TIPO_1` (script 11) y SPs propios `sp_acc_presupuesto_add` y `sp_acc_presupuesto_tipo_1_add` (script 12, generado desde el SP de línea del pedido). Para convertirlos en pedido sin perder la selección, `sp_acc_presupuesto_a_pedido` (script 13), con su propio botón en la pantalla interna de Presupuestos. Los textos de la línea se graban vacíos y no NULL, porque el configurador de siempre los procesa al recargar un presupuesto en la cesta.
+
+### Motores por sistema
+
+Administración asigna a cada sistema los motores que ofrece desde el paso 3, pestaña **Motores por sistema**: una tabla con los modelos de motor agrupados por tipo en filas y los sistemas en columnas. Un clic marca un motor en un sistema; la casilla del tipo y la de la cabecera marcan o quitan de una vez la fila o la columna (con el buscador, solo los motores filtrados). Se guarda al momento. Avisa de los motores que no están en ningún sistema y de los sistemas que no tienen el accionamiento Motor en el paso 1. Backend: `GET/POST /api/sm/acc/matriz/motores`. En el configurador se sigue eligiendo tipo y después modelo (decisión del usuario, 2026-10-20).
+
+La tarifa base de la línea dependerá solo del sistema, nunca del motor (decisión del usuario, 2026-10-20).
 
 ## 9. Pendiente
 

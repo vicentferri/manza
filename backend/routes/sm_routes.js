@@ -534,6 +534,8 @@ smapi.post('/fabricacion/tablas/delete', Auth.ensureAuth, FabricacionReglasContr
 var AccionamientosNuevoController = require('../controllers/sm/accionamientos_nuevo');
 smapi.get('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion_guardar);
+smapi.get('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores);
+smapi.post('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores_guardar);
 smapi.get('/acc/:catalogo', Auth.ensureAuth, AccionamientosNuevoController.lista);
 smapi.post('/acc/:catalogo', Auth.ensureAuth, AccionamientosNuevoController.guardar);
 smapi.post('/acc/:catalogo/visible', Auth.ensureAuth, AccionamientosNuevoController.visible);
