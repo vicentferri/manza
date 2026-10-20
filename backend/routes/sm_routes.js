@@ -538,6 +538,8 @@ smapi.get('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.
 smapi.post('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores_guardar);
 smapi.get('/acc/suplementos', Auth.ensureAuth, AccionamientosNuevoController.suplementos_resumen);
 smapi.get('/acc/clientes', Auth.ensureAuth, AccionamientosNuevoController.clientes);
+smapi.get('/acc/tarifas_familias', Auth.ensureAuth, AccionamientosNuevoController.tarifas_familias);
+smapi.post('/acc/sistemas/tarifa', Auth.ensureAuth, AccionamientosNuevoController.sistema_tarifa);
 smapi.get('/acc/sup/:catalogo/:id', Auth.ensureAuth, AccionamientosNuevoController.suplementos);
 smapi.post('/acc/sup/:catalogo/:id', Auth.ensureAuth, AccionamientosNuevoController.suplementos_guardar);
 smapi.post('/acc/sup/:catalogo/:id/fijo', Auth.ensureAuth, AccionamientosNuevoController.suplemento_fijo);

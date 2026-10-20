@@ -195,6 +195,7 @@ Tres accionamientos son **fijos** y los crea el script `02_datos_accionamientos_
 | nombre_pt | VARCHAR(100) | NULL | Traducción PT |
 | orden | INT | NOT NULL, DEFAULT 0 | Orden |
 | activo | BIT | NOT NULL, DEFAULT 1 | Visible en el configurador |
+| sp_modelo | VARCHAR(50) | NULL | Familia de tarifa del generador (script 17): el mismo valor que `SOL_TARIFAS_SIMULATE.sp_modelo`. El precio base de la línea sale de esta tarifa, nunca del motor. Sin tarifa, el sistema no se puede valorar |
 
 Valores de ejemplo: Rhin, Duero, Sena deco.
 
