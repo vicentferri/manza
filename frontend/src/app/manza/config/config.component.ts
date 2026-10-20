@@ -564,6 +564,8 @@ export class ConfigComponent implements OnInit {
               T1_Inc_Mando_C1: item.T1_Inc_Mando_C1,
               T1_Inc_Impresion: item.T1_Inc_Impresion,
               T1_Inc_Impresion_C1: item.T1_Inc_Impresion_C1,
+              T1_Inc_Cargador: item.T1_Inc_Cargador || 0,
+              T1_Inc_Cargador_C1: item.T1_Inc_Cargador_C1 || '',
               T1_PVP: Number(item.T1_PVP),
               T1_PVP_C1: item.T1_PVP_C1,
               T1_Fecha_Entrega: item.T1_Fecha_Entrega,
