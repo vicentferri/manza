@@ -538,8 +538,6 @@ smapi.get('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.
 smapi.post('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores_guardar);
 smapi.get('/acc/suplementos', Auth.ensureAuth, AccionamientosNuevoController.suplementos_resumen);
 smapi.get('/acc/clientes', Auth.ensureAuth, AccionamientosNuevoController.clientes);
-smapi.get('/acc/tarifas_familias', Auth.ensureAuth, AccionamientosNuevoController.tarifas_familias);
-smapi.post('/acc/sistemas/tarifa', Auth.ensureAuth, AccionamientosNuevoController.sistema_tarifa);
 smapi.get('/acc/sup/:catalogo/:id', Auth.ensureAuth, AccionamientosNuevoController.suplementos);
 smapi.post('/acc/sup/:catalogo/:id', Auth.ensureAuth, AccionamientosNuevoController.suplementos_guardar);
 smapi.post('/acc/sup/:catalogo/:id/fijo', Auth.ensureAuth, AccionamientosNuevoController.suplemento_fijo);
@@ -553,6 +551,7 @@ smapi.post('/acc/:catalogo/delete', Auth.ensureAuth, AccionamientosNuevoControll
 var AccConfiguradorController = require('../controllers/sm/acc_configurador');
 smapi.get('/acc_cfg/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.activo);
 smapi.get('/acc_cfg/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.opciones);
+smapi.post('/acc_cfg/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.precio);
 smapi.post('/acc_cfg/pedido/:cliente/:ref', Auth.ensureAuth, AccConfiguradorController.pedido);
 smapi.post('/acc_cfg/presupuesto/:cliente/:ref', Auth.ensureAuth, AccConfiguradorController.presupuesto);
 smapi.post('/acc_cfg/presupuesto_a_pedido/:id', Auth.ensureAuth, AccConfiguradorController.presupuesto_a_pedido);

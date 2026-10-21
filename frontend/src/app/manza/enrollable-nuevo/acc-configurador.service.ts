@@ -29,6 +29,12 @@ export class AccConfiguradorService {
         return this.http.get<any>(this.url + '/opciones/' + cliente);
     }
 
+    /* Precio de una línea (tarifa T1 o T2 del generador + impresión + suplementos), sin grabar nada.
+       Si no hay precio responde 400 con { message, codigo, aviso } */
+    precio(cliente: string | number, linea: any): Observable<any> {
+        return this.http.post<any>(this.url + '/precio/' + cliente, linea);
+    }
+
     /* Alta del pedido: solo líneas de enrollable del flujo nuevo (con nacc) */
     altaPedido(lineas: any[], referencia: string, cliente: string | number): Observable<any> {
         const ref = encodeURIComponent(referencia || '-');

@@ -8,10 +8,12 @@ const sql = require('mssql');
  * por aquí: sigue con /api/lm/* y el configurador de siempre.
  * Scripts: C:\dev\sqlAccionamientos\ (04 interruptor, 05 y 08 columnas nacc_, 06 y 09 SPs de alta,
  *          07 soportes, tapas y contrapesos, 10 longitud de la cadena a medida,
- *          11-13 presupuestos y su conversión en pedido)
+ *          11-13 presupuestos y su conversión en pedido, 16-22 precio: suplementos, tarifa por
+ *          sistema, precio base, valoración de la línea, desglose y alta con precio)
  *
  *   GET  /api/sm/acc_cfg/activo/:cliente       ¿usa el configurador nuevo?
  *   GET  /api/sm/acc_cfg/opciones/:cliente     árbol de opciones activas, con sus relaciones
+ *   POST /api/sm/acc_cfg/precio/:cliente       precio de una línea con su desglose (sin grabar nada)
  *   POST /api/sm/acc_cfg/pedido/:cliente/:ref       alta del pedido (solo enrollables del flujo nuevo)
  *   POST /api/sm/acc_cfg/presupuesto/:cliente/:ref  alta del presupuesto (ídem)
  *   POST /api/sm/acc_cfg/presupuesto_a_pedido/:id   convertir en pedido un presupuesto del flujo nuevo
@@ -38,7 +40,10 @@ const ERRORES_LINEA = {
   '-17': 'Contrapeso no válido',
   '-18': 'Color de contrapeso no válido',
   '-19': 'Longitud de cadena no válida: obligatoria en la cadena a medida y solo en ella',
-  '-20': 'El motor no está disponible para ese sistema'
+  '-20': 'El motor no está disponible para ese sistema',
+  '-21': 'Precio de la línea incoherente',
+  '-22': 'Desglose del precio no válido',
+  '-23': 'Falta la tarifa (T1 o T2) con la que se calculó el precio'
 };
 
 function entero(value) {
@@ -198,6 +203,103 @@ async function opciones(req, res) {
   }
 }
 
+/* ---------------- PRECIO (scripts 16-22) ---------------- */
+
+/* Precio de una línea con sp_acc_precio_linea (scripts 19 y 25): la base sale del mapa guardado de
+   la tarifa del generador del tipo elegido en el configurador (l.tipo_tarifa: 'T1' por grupo de
+   tejido o 'T2' por tejido). Devuelve { codigo, mensaje, aviso } y, si codigo = 0, los importes por
+   cortina, el total, las cinco partes para las columnas de siempre y el desglose. El aviso dice si
+   falta la tarifa del otro tipo (o la elegida), para generarla. Se llama fuera de la transacción del
+   alta. Las medidas se pasan igual que al alta (enteros en cm) para que coincida lo grabado */
+async function precioLinea(pool, cliente, l) {
+  const n = l.nacc || {};
+  const d = (nombre) => [nombre, sql.Decimal(12, 2)];
+  const salidas = [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total'),
+    d('col_tejido'), d('col_mando'), d('col_cargador'), d('col_contrapeso'), d('col_cadena')];
+  const request = pool.request()
+    .input('cliente', sql.Int, cliente)
+    .input('ancho', sql.Decimal(12, 2), entero(l.ancho))
+    .input('alto', sql.Decimal(12, 2), entero(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad) || 1)
+    .input('tej_tipo_id', sql.Int, enteroAntiguo(l.tej_tipo_id))
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
+    .input('tipo_tarifa', sql.VarChar(2), TIPOS_TARIFA.includes(l.tipo_tarifa) ? l.tipo_tarifa : null)
+    .input('accionamiento', sql.Int, entero(n.accionamiento))
+    .input('sistema', sql.Int, entero(n.sistema))
+    .input('tipo_cadena', sql.Int, entero(n.tipo_cadena))
+    .input('tipo_aro', sql.Int, entero(n.tipo_aro))
+    .input('cadena_medida', sql.Int, entero(n.cadena_medida))
+    .input('altura', sql.Int, entero(n.altura))
+    .input('cadena_longitud', sql.Decimal(10, 2), decimal(n.cadena_longitud))
+    .input('color_cadena', sql.Int, entero(n.color_cadena))
+    .input('tipo_motor', sql.Int, entero(n.tipo_motor))
+    .input('modelo_motor', sql.Int, entero(n.modelo_motor))
+    .input('mando', sql.Int, entero(n.mando))
+    .input('cargador', sql.Int, entero(n.cargador))
+    .input('bateria', sql.Int, entero(n.bateria))
+    .input('soporte', sql.Int, entero(n.soporte))
+    .input('soporte_color', sql.Int, entero(n.soporte_color))
+    .input('tapa', sql.Int, entero(n.tapa))
+    .input('tapa_color', sql.Int, entero(n.tapa_color))
+    .input('contrapeso', sql.Int, entero(n.contrapeso))
+    .input('contrapeso_color', sql.Int, entero(n.contrapeso_color))
+    .input('desglose', sql.Bit, 1)
+    .output('tarifa', sql.Int)
+    .output('mensaje', sql.VarChar(250))
+    .output('aviso', sql.VarChar(250));
+  salidas.forEach(([nombre, tipo]) => request.output(nombre, tipo));
+  const r = await request.execute('sp_acc_precio_linea');
+  const o = r.output;
+  if (r.returnValue !== 0) {
+    return { codigo: r.returnValue, mensaje: o.mensaje || 'No se puede calcular el precio', aviso: o.aviso || null };
+  }
+  return {
+    codigo: 0,
+    aviso: o.aviso || null,
+    tipo_tarifa: l.tipo_tarifa,
+    tarifa: o.tarifa,
+    base: o.base, impresion: o.importe_impresion, suplementos: o.suplementos,
+    unitario: o.unitario, total: o.total,
+    columnas: { tejido: o.col_tejido, mando: o.col_mando, cargador: o.col_cargador, contrapeso: o.col_contrapeso, cadena: o.col_cadena },
+    desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
+  };
+}
+
+/* Tarifas que puede elegir el configurador: T1 (por grupo de tejido) y T2 (por tejido) */
+const TIPOS_TARIFA = ['T1', 'T2'];
+
+/* El desglose va al SP del alta en XML: la BD está en nivel de compatibilidad 110 y no tiene OPENJSON */
+function atributoXml(valor) {
+  return String(valor === null || valor === undefined ? '' : valor)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+function desgloseXml(desglose) {
+  return '<d>' + desglose.map((f, i) =>
+    `<l o="${i + 1}" c="${atributoXml(f.concepto)}" e="${atributoXml(f.elemento)}" t="${atributoXml(f.detalle)}" i="${Number(f.importe).toFixed(2)}"/>`
+  ).join('') + '</d>';
+}
+
+/* POST /acc_cfg/precio/:cliente   body: una línea (la misma forma que en el alta). No graba nada */
+async function precio(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  const l = req.body || {};
+  if (!l.nacc) return res.status(400).send({ message: 'Falta la selección del accionamiento' });
+  try {
+    const pool = await sql.connect();
+    if (!await clienteActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo' });
+    }
+    const p = await precioLinea(pool, cliente, l);
+    if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
+    res.status(200).send(p);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 /* Pedido y presupuesto se graban igual; solo cambian los SPs y el nombre de sus parámetros */
 const DOCUMENTOS = {
   pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add', id: 'idPedido', nombre: 'pedido' },
@@ -205,7 +307,7 @@ const DOCUMENTOS = {
 };
 
 /* POST /acc_cfg/pedido/:cliente/:ref y /acc_cfg/presupuesto/:cliente/:ref   body: [ líneas ]
-   Cada línea: { TipoCortina: 1, ancho, alto, cantidad, codeCentro,
+   Cada línea: { TipoCortina: 1, ancho, alto, cantidad, codeCentro, tipo_tarifa ('T1' o 'T2'),
                  nacc: { accionamiento, sistema, tipo_cadena, tipo_aro, cadena_medida, altura,
                          color_cadena, tipo_motor, modelo_motor, mando, cargador, bateria,
                          soporte, soporte_color, tapa, tapa_color, contrapeso, contrapeso_color,
@@ -213,6 +315,8 @@ const DOCUMENTOS = {
                  y los pasos que siguen en el modelo antiguo con los nombres de CortinaTipo:
                  acc_tubo_id, acc_posicion_id, tej_tipo_id, tej_color_id, tej_salida_id,
                  Tipo1_Cajon, Tipo1_Guia, impresion, impresion_imagen, instrucciones, estancia_id, estancia_obs }
+   El precio lo calcula aquí el servidor (no se fía del navegador), ANTES de la transacción porque
+   la rejilla sincronizada se lee de un servidor remoto; una línea sin precio rechaza el documento.
    Todo el documento va en una transacción: si una línea no es válida no se graba nada. */
 async function alta(doc, req, res) {
   const cliente = entero(req.params.cliente);
@@ -230,6 +334,15 @@ async function alta(doc, req, res) {
   let transaction;
   try {
     const pool = await sql.connect();
+
+    /* Precio de cada línea, fuera de la transacción */
+    const precios = [];
+    for (let i = 0; i < lineas.length; i++) {
+      const p = await precioLinea(pool, cliente, lineas[i]);
+      if (p.codigo !== 0) return res.status(400).send({ message: `Línea ${i + 1}: ${p.mensaje}` });
+      precios.push(p);
+    }
+
     transaction = new sql.Transaction(pool);
     await transaction.begin();
 
@@ -284,6 +397,14 @@ async function alta(doc, req, res) {
         .input('instrucciones', sql.VarChar(250), texto(l.instrucciones, 250))
         .input('estancia_id', sql.Int, enteroAntiguo(l.estancia_id))
         .input('estancia', sql.VarChar(2500), texto(l.estancia_obs, 2500))
+        .input('pvp_unitario', sql.Decimal(12, 2), precios[i].unitario)
+        .input('pvp_tejido', sql.Decimal(12, 2), precios[i].columnas.tejido)
+        .input('pvp_mando', sql.Decimal(12, 2), precios[i].columnas.mando)
+        .input('pvp_cargador', sql.Decimal(12, 2), precios[i].columnas.cargador)
+        .input('pvp_contrapeso', sql.Decimal(12, 2), precios[i].columnas.contrapeso)
+        .input('pvp_cadena', sql.Decimal(12, 2), precios[i].columnas.cadena)
+        .input('desglose', sql.Xml, desgloseXml(precios[i].desglose))
+        .input('tipo_tarifa', sql.VarChar(2), precios[i].tipo_tarifa)
         .execute(doc.linea);
       if (!(r.returnValue > 0)) {
         await transaction.rollback();
@@ -335,6 +456,7 @@ async function presupuesto_a_pedido(req, res) {
 module.exports = {
   activo,
   opciones,
+  precio,
   pedido,
   presupuesto,
   presupuesto_a_pedido

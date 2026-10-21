@@ -14,7 +14,11 @@ import { AccConfiguradorService } from './acc-configurador.service';
  * mando, cargador, batería) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
  * su color. Además: posición (Derecha/Izquierda), estancia y observaciones, impresión digital (sí/no
  * y un texto; con sí, solo tejidos aptos) y longitud tecleada en la cadena a medida.
- * Cajón y guía llegarán cuando estén en el modelo nuevo. De momento sin precio (decisión C).
+ * Cajón y guía llegarán cuando estén en el modelo nuevo.
+ * Precio: el usuario elige la tarifa T1 (por grupo de tejido) o T2 (por tejido) y pulsa "Calcular
+ * precio" (backend /acc_cfg/precio: mapa de la tarifa del generador + impresión + suplementos). Solo
+ * se puede añadir a la cesta con el precio calculado para la configuración actual; al grabar, el
+ * servidor lo vuelve a calcular.
  *
  * La línea viaja en la cesta como un CortinaTipo con los textos de siempre (para la cesta y el
  * resumen) y la selección nueva en la propiedad `nacc`, que es lo que graba el backend.
@@ -74,6 +78,14 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
 
    /* línea que se está editando desde la cesta */
    private editando: CortinaTipo = null;
+
+   /* precio: tarifa elegida, resultado del cálculo y la configuración para la que se calculó */
+   tipoTarifa = '';
+   precio: any = null;
+   precioError = '';
+   precioAviso = '';
+   calculando = false;
+   private precioFirma = '';
 
    constructor(private service: SMAPIService, private acc: AccConfiguradorService, private toaster: ToastrService) { }
 
@@ -300,10 +312,67 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       return '';
    }
 
+   /* Lo que determina el precio: si cambia algo, el precio calculado deja de valer */
+   private get firma(): string {
+      return JSON.stringify({ a: this.ancho, h: this.alto, c: this.cantidad, tj: this.tejido, tc: this.tejidoColor, i: this.impresion,
+                              l: this.longitud, s: this.sel, t: this.tipoTarifa });
+   }
+
+   get precioVigente(): boolean {
+      return !!this.precio && this.precioFirma === this.firma;
+   }
+
+   CalcularPrecio(): void {
+      if (!this.tipoTarifa) { this.toaster.error('Elija la tarifa: T1 o T2', 'ATENCIÓN'); return; }
+      const error = this.validar();
+      if (error) { this.toaster.error(error, 'ATENCIÓN'); return; }
+      const linea = this.construirLinea();
+      const firma = this.firma;
+      this.calculando = true;
+      this.precio = null;
+      this.precioError = '';
+      this.precioAviso = '';
+      this.acc.precio(this.Cliente, linea).subscribe(
+         data => {
+            this.calculando = false;
+            this.precio = data;
+            this.precioFirma = firma;
+            this.precioAviso = data.aviso || '';
+         },
+         err => {
+            this.calculando = false;
+            const cuerpo = err && err.error ? err.error : {};
+            this.precioError = cuerpo.message && cuerpo.message !== 'KO' ? cuerpo.message : 'No se pudo calcular el precio';
+            this.precioAviso = cuerpo.aviso || '';
+         }
+      );
+   }
+
    Agregar(): void {
       const error = this.validar();
       if (error) { this.toaster.error(error, 'ATENCIÓN'); return; }
+      if (!this.precioVigente) { this.toaster.error('Calcule el precio antes de añadir a la cesta', 'ATENCIÓN'); return; }
 
+      const t = this.construirLinea();
+      /* importes para la cesta (el servidor los vuelve a calcular al grabar) */
+      const p = this.precio, c = this.cantidad;
+      t.precios.T1_Cantidad = c;
+      t.precios.T1_Tejido = +(p.columnas.tejido * c).toFixed(2);
+      t.precios.T1_Inc_Mando = +(p.columnas.mando * c).toFixed(2);
+      t.precios.T1_Inc_Cargador = +(p.columnas.cargador * c).toFixed(2);
+      t.precios.T1_Inc_Contrapeso = +(p.columnas.contrapeso * c).toFixed(2);
+      t.precios.T1_Inc_CadenaMetalica = +(p.columnas.cadena * c).toFixed(2);
+      t.precios.T1_Inc_Impresion = 0;
+      t.precios.T1_PVP = p.total;
+
+      this.editando = null;
+      this.precio = null;
+      this.onAdd.emit(t);
+      this.toaster.success('Añadido a la cesta', 'Configurador');
+   }
+
+   /* La línea tal como viaja en la cesta y al backend (textos de siempre, selección nueva y tarifa) */
+   private construirLinea(): CortinaTipo {
       const nombre = (lista: any[], id: string) => { const x = this.porId(lista, id); return x ? x.nombre : null; };
       const unir = (...partes: string[]) => partes.filter(p => !!p).join(' · ');
       const id = (v: string) => (v ? parseInt(v, 10) : null);
@@ -368,10 +437,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
          contrapeso: id(this.sel.contrapeso), contrapeso_color: id(this.sel.contrapeso_color),
          cadena_longitud: this.esCadena && this.esMedida ? Number(this.longitud) : null
       };
-
-      this.editando = null;
-      this.onAdd.emit(t);
-      this.toaster.success('Añadido a la cesta (sin precio: configurador nuevo)', 'Configurador');
+      (t as any).tipo_tarifa = this.tipoTarifa;
+      return t;
    }
 
    // ─── EDICIÓN DESDE LA CESTA ────────────────────────────────────────────────────
@@ -401,5 +468,10 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       this.salida = String(item.tej_salida_id || 1);
       this.limpiarSeleccion();
       Object.keys(this.sel).forEach(k => { const v = item.nacc[k]; this.sel[k] = v === null || v === undefined ? '' : String(v); });
+      /* la tarifa elegida; el precio hay que volver a calcularlo */
+      this.tipoTarifa = item.tipo_tarifa || '';
+      this.precio = null;
+      this.precioError = '';
+      this.precioAviso = '';
    }
 }

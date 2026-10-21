@@ -30,7 +30,6 @@
                     <th class="acc-th-orden" *ngIf="!busqueda" title="Orden en el configurador"></th>
                     <th>{{ conValor ? 'Valor' + (unidad ? ' (' + unidad + ')' : '') : 'Nombre' }}</th>
                     <th class="acc-th-uso">Uso</th>
-                    <th *ngIf="conTarifa" class="acc-th-tarifa" title="Tarifa del generador con la que se calcula el precio base de las cortinas de este sistema">Tarifa</th>
                     <th class="acc-th-sup" title="Importe que suma al precio de la cortina. ··· para precios por cliente, sistema o tramos">Suplemento (€)</th>
                     <th class="acc-th-visible text-center" title="Visible en el configurador">Visible</th>
                 </tr>
@@ -56,13 +55,6 @@
                     <td class="acc-uso">
                         <span *ngIf="d.dependencias > 0" class="badge badge-light" title="Registros que dependen de este">en uso · {{ d.dependencias }}</span>
                     </td>
-                    <td *ngIf="conTarifa" (click)="$event.stopPropagation()">
-                        <select #tarifa class="form-control form-control-sm acc-tarifa-select" [class.text-danger]="!d.sp_modelo"
-                            (change)="cambiarTarifa(d, tarifa)">
-                            <option value="" [selected]="!d.sp_modelo">Sin tarifa</option>
-                            <option *ngFor="let f of familias" [value]="f.sp_modelo" [selected]="f.sp_modelo === d.sp_modelo">{{ f.nombre }} ({{ f.tarifas }})</option>
-                        </select>
-                    </td>
                     <!-- Importe general fijo: se teclea aquí (Intro o salir del campo guarda; vacío lo quita).
                          Si hay precios por cliente, sistema o tramos, se ven y se cambian en el detalle (···) -->
                     <td class="acc-sup" (click)="$event.stopPropagation()">
@@ -84,7 +76,7 @@
                     </td>
                 </tr>
                 <tr *ngIf="datosFiltrados.length === 0">
-                    <td [attr.colspan]="conTarifa ? 6 : 5" class="acc-vacio">
+                    <td colspan="5" class="acc-vacio">
                         <ng-container *ngIf="!busqueda">Todavía no hay ninguno. Pulse <strong>Añadir {{ singular }}</strong>.</ng-container>
                         <ng-container *ngIf="busqueda">Nada coincide con «{{ busqueda }}».</ng-container>
                     </td>

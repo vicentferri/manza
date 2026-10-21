@@ -1,7 +1,7 @@
 <div class="enx">
    <div class="enx-aviso">
       <i class="fa fa-flask"></i>
-      Configurador nuevo de accionamientos: de momento sin precio y solo enrollables en la cesta.
+      Configurador nuevo de accionamientos: de momento solo enrollables en la cesta.
    </div>
 
    <!-- MEDIDAS -->
@@ -244,7 +244,7 @@
       </div>
    </div>
 
-   <!-- OBSERVACIONES Y AÑADIR -->
+   <!-- OBSERVACIONES -->
    <div class="enx-seccion">
       <div class="row align-items-end">
          <div class="col-md-3 col-6 form-group">
@@ -254,15 +254,62 @@
                <option *ngFor="let e of estancias" [value]="e.idrow">{{ e.descripcion }}</option>
             </select>
          </div>
-         <div class="col-md-6 form-group">
+         <div class="col-md-9 form-group">
             <label>{{ "OBSERVACIONES" | translate }}</label>
             <input type="text" class="form-control form-control-sm" maxlength="2500" [(ngModel)]="observaciones" [ngModelOptions]="{ standalone: true }" />
          </div>
-         <div class="col-md-3 form-group text-right">
-            <button type="button" class="btn btn-success" (click)="Agregar()">
+      </div>
+   </div>
+
+   <!-- PRECIO Y AÑADIR -->
+   <div class="enx-seccion">
+      <div class="enx-titulo">Precio</div>
+      <div class="row align-items-end">
+         <div class="col-md-3 col-6 form-group">
+            <label>Tarifa</label>
+            <div class="btn-group btn-group-sm d-flex" role="group">
+               <button type="button" class="btn w-100" [class.btn-primary]="tipoTarifa === 'T1'" [class.btn-outline-primary]="tipoTarifa !== 'T1'"
+                  (click)="tipoTarifa = 'T1'" title="Tarifa por grupo de tejido">T1</button>
+               <button type="button" class="btn w-100" [class.btn-primary]="tipoTarifa === 'T2'" [class.btn-outline-primary]="tipoTarifa !== 'T2'"
+                  (click)="tipoTarifa = 'T2'" title="Tarifa por tejido">T2</button>
+            </div>
+         </div>
+         <div class="col-md-3 col-6 form-group">
+            <button type="button" class="btn btn-sm btn-primary btn-block" (click)="CalcularPrecio()" [disabled]="calculando || !tipoTarifa">
+               <i class="fa" [class.fa-calculator]="!calculando" [class.fa-spinner]="calculando" [class.fa-spin]="calculando"></i> Calcular precio
+            </button>
+         </div>
+         <div class="col-md-3 col-6 form-group text-right enx-total">
+            <ng-container *ngIf="precioVigente">
+               <div class="enx-total-importe">{{ precio.total | number:'1.2-2' }} €</div>
+               <div class="enx-nota">{{ precio.unitario | number:'1.2-2' }} € por cortina · {{ precio.tipo_tarifa }}</div>
+            </ng-container>
+            <span *ngIf="precio && !precioVigente" class="enx-nota">Ha cambiado la configuración: vuelva a calcular el precio</span>
+         </div>
+         <div class="col-md-3 col-6 form-group text-right">
+            <button type="button" class="btn btn-success" (click)="Agregar()" [disabled]="!precioVigente"
+               [title]="precioVigente ? '' : 'Calcule el precio antes de añadir'">
                <i class="fa fa-plus"></i> {{ "AGREGAR" | translate }}
             </button>
          </div>
       </div>
+
+      <div *ngIf="precioError" class="enx-error mb-2"><i class="fa fa-times-circle"></i> {{ precioError }}</div>
+      <div *ngIf="precioAviso" class="enx-aviso"><i class="fa fa-exclamation-triangle"></i> {{ precioAviso }}</div>
+
+      <table *ngIf="precioVigente" class="table table-sm enx-desglose mb-2">
+         <tbody>
+            <tr *ngFor="let d of precio.desglose">
+               <td>{{ d.concepto }}</td>
+               <td>{{ d.elemento }}</td>
+               <td class="enx-nota">{{ d.detalle }}</td>
+               <td class="text-right">{{ d.importe | number:'1.2-2' }} €</td>
+            </tr>
+            <tr *ngIf="cantidad > 1" class="enx-desglose-total">
+               <td colspan="3">Por cortina x {{ cantidad }}</td>
+               <td class="text-right">{{ precio.total | number:'1.2-2' }} €</td>
+            </tr>
+         </tbody>
+      </table>
    </div>
 </div>

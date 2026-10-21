@@ -315,13 +315,7 @@
 
 /* ---------- Suplementos de precio ---------- */
 .acc-th-sup { width: 120px; }
-.acc-th-tarifa { width: 170px; }
 
-.acc-tarifa-select {
-    height: 26px;
-    padding: 1px 4px;
-    font-size: 12px;
-}
 
 .acc-sup-input {
     width: 80px;

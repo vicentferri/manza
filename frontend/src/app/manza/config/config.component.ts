@@ -677,6 +677,8 @@ export class ConfigComponent implements OnInit {
                 tapa: item.nacc_tapa_id, tapa_color: item.nacc_tapa_color_id,
                 contrapeso: item.nacc_contrapeso_id, contrapeso_color: item.nacc_contrapeso_color_id
               };
+              /* Tarifa (T1/T2) con la que se calculó el precio: el servidor lo recalcula al pedir */
+              (tipo as any).tipo_tarifa = item.nacc_tipo_tarifa;
               tipo.estancia_id = item.Estancia_ID;
               tipo.estancia_obs = item.Estancia;
             }

@@ -37,6 +37,22 @@
     font-weight: normal;
 }
 
+.enx-total-importe {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2f353a;
+}
+
+.enx-desglose td {
+    font-size: 12px;
+    padding: 3px 6px;
+}
+
+.enx-desglose-total td {
+    font-weight: 600;
+    border-top: 2px solid #c8ced3;
+}
+
 .enx-error {
     color: #f86c6b;
     font-size: 12px;

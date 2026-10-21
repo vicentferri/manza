@@ -636,54 +636,7 @@ async function clientes(req, res) {
   }
 }
 
-/* ---------------- TARIFA BASE POR SISTEMA (script 17) ---------------- */
-
-/* Familias de tarifa: el "modelo" de los tipos de accionamiento antiguos, que es el sp_modelo de
-   las tarifas del generador (SOL_TARIFAS_SIMULATE). El nombre sale de dgrupo ("Rhin 1:1 - RHIN") */
-const SQL_FAMILIAS = `
-  select a.modelo as sp_modelo, max(ltrim(rtrim(substring(a.dgrupo, charindex(' - ', a.dgrupo) + 3, 100)))) as nombre,
-         (select count(*) from dbo.SOL_TARIFAS_SIMULATE s
-          where s.tipoproducto = 1 and s.sp_tarifa = 'T14' and s.tejido = -1 and s.sp_modelo = a.modelo) as tarifas
-  from dbo.SOL_ARTICULOS_ACCIONAMIENTOS_TIPOS a
-  where a.modelo is not null and a.modelo <> ''
-  group by a.modelo`;
-
-/* GET /acc/tarifas_familias — familias de tarifa para elegir la de cada sistema */
-async function tarifas_familias(req, res) {
-  try {
-    const pool = await sql.connect();
-    const r = await pool.request().query(`select * from (${SQL_FAMILIAS}) f order by f.nombre`);
-    res.status(200).send({ Table: r.recordset });
-  } catch (err) {
-    errorSql(err, res);
-  }
-}
-
-/* POST /acc/sistemas/tarifa { id, sp_modelo } — tarifa base del sistema; vacío la quita */
-async function sistema_tarifa(req, res) {
-  const body = req.body || {};
-  const id = entero(body.id);
-  if (id === null) return res.status(400).send({ message: 'Falta el sistema' });
-  const spModelo = texto(body.sp_modelo, 50) || null;
-  try {
-    const pool = await sql.connect();
-    if (spModelo) {
-      const f = await pool.request().input('m', sql.VarChar(50), spModelo)
-        .query(`select 1 as ok from (${SQL_FAMILIAS}) f where f.sp_modelo = @m`);
-      if (!f.recordset[0]) return res.status(400).send({ message: 'Tarifa no válida' });
-    }
-    const r = await pool.request().input('id', sql.Int, id).input('m', sql.VarChar(50), spModelo)
-      .query('update dbo.SOL_ACC_SISTEMA set sp_modelo = @m where id = @id; select @@rowcount as filas');
-    if (!r.recordset[0].filas) return res.status(404).send({ message: 'El sistema no existe' });
-    res.status(200).send({ message: 'OK' });
-  } catch (err) {
-    errorSql(err, res);
-  }
-}
-
 module.exports = {
-  tarifas_familias,
-  sistema_tarifa,
   suplementos,
   suplemento_fijo,
   suplementos_guardar,

@@ -25,8 +25,6 @@ export class AccTablaComponent implements OnChanges {
     /* Unidad del valor (solo con conValor): se muestra en la cabecera, en el formulario y junto a cada valor */
     @Input() unidad = '';
     @Input() ayuda = '';
-    /* Solo en la lista de sistemas: columna con la tarifa base (familia del generador de tarifas, script 17) */
-    @Input() conTarifa = false;
     /* Lo sube el padre cuando cambia algo que afecta a "Uso" (hijos, relaciones) */
     @Input() recarga = 0;
     @Output() seleccion = new EventEmitter<any>();
@@ -37,7 +35,6 @@ export class AccTablaComponent implements OnChanges {
     @ViewChild('modalBorrar', { static: false }) modalBorrar: ModalDirective;
 
     datos: any[] = [];
-    familias: any[] = [];
     filaSeleccionada: any = null;
     busqueda = '';
     form: any = {};
@@ -47,12 +44,6 @@ export class AccTablaComponent implements OnChanges {
     constructor(private service: HaruService, private toaster: ToastrService) { }
 
     ngOnChanges(changes: SimpleChanges) {
-        if (changes.conTarifa && this.conTarifa && !this.familias.length) {
-            this.service.HTTP_Get('/sm/acc/tarifas_familias').subscribe(
-                data => this.familias = data.Table || [],
-                err => this.error(err, 'Error al cargar las tarifas')
-            );
-        }
         if (changes.catalogo || changes.padreId) {
             /* Sin emitir: el padre ya limpia su selección al cambiar de catálogo o de padre */
             this.filaSeleccionada = null;
@@ -168,19 +159,6 @@ export class AccTablaComponent implements OnChanges {
                 this.cambio.emit();
             },
             err => { this.guardando = false; this.error(err, 'Error al guardar'); }
-        );
-    }
-
-    /* Tarifa base del sistema: se guarda al elegirla; si falla, el desplegable vuelve a la que tenía */
-    cambiarTarifa(fila: any, select: HTMLSelectElement) {
-        const anterior = fila.sp_modelo || '';
-        const nueva = select.value;
-        this.service.HTTP_Post('/sm/acc/sistemas/tarifa', JSON.stringify({ id: fila.id, sp_modelo: nueva })).subscribe(
-            () => {
-                fila.sp_modelo = nueva || null;
-                this.toaster.success(nueva ? 'Tarifa guardada' : 'Tarifa quitada', this.etiqueta(fila));
-            },
-            err => { select.value = anterior; this.error(err, 'No se pudo guardar la tarifa'); }
         );
     }
 

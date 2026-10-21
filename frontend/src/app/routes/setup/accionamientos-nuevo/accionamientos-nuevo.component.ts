@@ -33,7 +33,7 @@ export class AccionamientosNuevoComponent implements OnInit {
     seccion = 'accionamientos';
 
     readonly listas = [
-        { id: 'sistemas', label: 'Sistemas', singular: 'sistema', ayuda: 'Rhin, Duero, Sena deco... Se asignan a cada accionamiento en el paso 1. La tarifa es la del generador con la que se calcula el precio base; sin tarifa, el sistema no se puede valorar.' },
+        { id: 'sistemas', label: 'Sistemas', singular: 'sistema', ayuda: 'Rhin, Duero, Sena deco... Se asignan a cada accionamiento en el paso 1. Su precio base sale de las tarifas del generador que tengan este sistema.' },
         /* colores: relación pieza → colores que admite (se marcan al elegir la pieza) */
         { id: 'soportes', label: 'Soportes', singular: 'soporte', colores: 'soporte_color', tituloColores: 'Colores del soporte',
           vacioColores: 'No hay colores de soporte. Añádalos en la pestaña Colores de soporte.',
