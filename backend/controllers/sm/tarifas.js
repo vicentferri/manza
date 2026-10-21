@@ -875,7 +875,8 @@ function tarifa_simulate(req,res)
 {
     var idrow = req.params.idrow;
 
-            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,criterio,preciom2,preciomontaje,bloqueo,desmultiplicador,desmultiplicador_trigger,desmultiplicador_value,tipoproducto,grupotejido,grupo,densidad,sp_sistema,sp_modelo,sp_accionamiento,sp_tejido from sol_tarifas_simulate ";
+            /* acc_sistema_id y mapa_fecha: configurador nuevo (scripts 23-24 de sqlAccionamientos) */
+            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,criterio,preciom2,preciomontaje,bloqueo,desmultiplicador,desmultiplicador_trigger,desmultiplicador_value,tipoproducto,grupotejido,grupo,densidad,sp_sistema,sp_modelo,sp_accionamiento,sp_tejido,acc_sistema_id,mapa_fecha,op_synchronized,op_synchr_date from sol_tarifas_simulate ";
             sqlquery += " where idrow = " + idrow;
                 new sql.Request().query(sqlquery, (err2,result) => {
 
@@ -1485,14 +1486,45 @@ function Simulation(req,res){
         request.input('sp_modelo',sql.VarChar(50),body.sp_modelo);
         request.input('sp_accionamiento',sql.VarChar(50),body.sp_accionamiento);
         request.input('sp_tejido',sql.VarChar(50),body.sp_tejido);
-        request.execute('sp_tarifas_simulate', 
+        /* Configurador nuevo (script 27 de sqlAccionamientos): sistema del modelo nuevo de la tarifa.
+           Si no llega, -1 = no tocarlo; vacío = quitarlo. desactivar_duplicadas = el usuario ha
+           confirmado que se desactive la otra tarifa activa igual */
+        var accSistema = body.acc_sistema_id === undefined ? -1
+            : (body.acc_sistema_id === null || body.acc_sistema_id === '' ? null : parseInt(body.acc_sistema_id, 10));
+        if (accSistema !== null && isNaN(accSistema)) accSistema = -1;
+        request.input('acc_sistema_id',sql.Int,accSistema);
+        request.input('desactivar_duplicadas',sql.Bit,body.desactivar_duplicadas ? 1 : 0);
+        request.execute('sp_tarifas_simulate',
         function(err, recordsets, returnValue) {
 
             if (err == null)
-            {       
+            {
                 if (recordsets.returnValue == null)
                 {
                     res.status(500).send({message: 'KO'});
+                }
+                else if (recordsets.returnValue == -10)
+                {
+                    res.status(400).send({message: 'Para el configurador nuevo la tarifa tiene que ser de enrollable y tener el grupo (T1) o el tejido (T2) elegido'});
+                }
+                else if (recordsets.returnValue == -11)
+                {
+                    /* Otra tarifa activa igual: se devuelve cuál, para que la pantalla pida confirmación */
+                    new sql.Request()
+                        .input('idrow',sql.Int,body.idrow).input('sistema',sql.Int,accSistema)
+                        .input('grupotejido',sql.Int,body.grupotejido).input('grupo',sql.Int,body.grupo).input('tejido',sql.Int,body.tejido)
+                        .query("select idrow, nombre from SOL_TARIFAS_SIMULATE where idrow <> @idrow and activa = 1 and acc_sistema_id = @sistema and tipoproducto = 1 " +
+                               "and isnull(grupotejido,0) = isnull(@grupotejido,0) and ((isnull(@grupotejido,0) = 1 and grupo = @grupo) or (isnull(@grupotejido,0) = 0 and tejido = @tejido))",
+                        (err2, result) => {
+                            var duplicadas = err2 ? [] : result.recordset;
+                            var tipo = parseInt(body.grupotejido, 10) === 1 ? 'T1' : 'T2';
+                            res.status(409).send({
+                                message: 'Ya existe una tarifa ' + tipo + ' activa para este sistema y ' + (tipo === 'T1' ? 'grupo' : 'tejido') +
+                                         (duplicadas.length ? ': ' + duplicadas.map(d => d.idrow + ' ' + d.nombre).join(', ') : '') +
+                                         '. Si guarda, esa tarifa quedará desactivada.',
+                                duplicadas: duplicadas
+                            });
+                        });
                 }
                 else
                 {

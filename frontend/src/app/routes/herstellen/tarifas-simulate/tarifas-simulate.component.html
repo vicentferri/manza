@@ -206,6 +206,25 @@
           </div>
         </div>
 
+        <!-- Configurador nuevo: sistema de "Accionamientos nuevo" (no es el SP Sistema de la exportación) -->
+        <div class="row mt-1" *ngIf="model.tipoproducto == 1">
+          <div class="col col-3">
+            <label>Sistema (configurador nuevo)</label>
+            <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="model.acc_sistema_id">
+              <option value="">— Ninguno —</option>
+              <option *ngFor="let s of acc_sistemas" [value]="s.id">{{ s.nombre }}</option>
+            </select>
+          </div>
+          <div class="col col-9 pt-4">
+            <small class="text-muted">
+              Para que el configurador nuevo encuentre esta tarifa. Con <strong>Grupo</strong> es una tarifa T1 y con
+              <strong>Tejido</strong> una T2. Si ya hay otra tarifa activa igual, al guardar se le pedirá confirmación y la
+              anterior quedará desactivada. No cambia la exportación (los campos SP siguen igual).
+            </small>
+          </div>
+        </div>
+
         <div class="row mt-1">
           <div class="col col-12">
             <tabset>
@@ -265,6 +284,18 @@
                         <button style="margin-left: 3px" class="btn btn-sm btn-secondary mt-3" (click)="GeneraTarifa()">
                           <i class="fa fa-refresh"></i>&nbsp;Generar Tarifa
                         </button>
+                      </div>
+
+                      <!-- Precio guardado de la tarifa (Mapa Completo) y aviso si es posterior a la exportación -->
+                      <div class="pull-right text-right" style="margin: 14px 8px 0 0" *ngIf="model.idrow > 0">
+                        <small *ngIf="mapa_fecha" class="text-muted">Mapa guardado el {{ mapa_fecha | date:'dd/MM/yyyy HH:mm' }}</small>
+                        <small *ngIf="!mapa_fecha" class="text-muted">Sin mapa guardado: genere el Mapa Completo</small>
+                        <div *ngIf="mapaPosteriorExportacion">
+                          <small class="text-warning">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            El mapa es posterior a la última exportación ({{ sync_fecha | date:'dd/MM/yyyy' }}): vuelva a exportarla para que coincidan.
+                          </small>
+                        </div>
                       </div>
 
                       <div class="pull-right">
@@ -522,6 +553,26 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Configurador nuevo: confirmar que se desactiva la tarifa activa igual -->
+<div class="modal fade" bsModal #modalDuplicada="bs-modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Ya existe una tarifa igual</h6>
+        <button type="button" class="close" (click)="modalDuplicada.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>{{ duplicadaMensaje }}</p>
+        <small class="text-muted">La tarifa anterior no se borra: queda desactivada y el configurador nuevo usará esta.</small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-warning" (click)="ConfirmarDuplicada()">Guardar y desactivar la anterior</button>
+        <button type="button" class="btn btn-sm btn-secondary" (click)="modalDuplicada.hide()">Cancelar</button>
       </div>
     </div>
   </div>

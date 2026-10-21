@@ -22,6 +22,7 @@ export class TarifasSimulateComponent implements OnInit {
   @ViewChild('gridReference', { static: false }) myTarifa!: jqxGridComponent;
   @ViewChild('gridTiempos', { static: false }) myTiempo!: jqxGridComponent;
   @ViewChild('staticModalAdd', { static: false }) modalAdd!: ModalDirective;
+  @ViewChild('modalDuplicada', { static: false }) modalDuplicada!: ModalDirective;
   @ViewChild('staticModalDetalle', { static: false }) modalDetalle!: ModalDirective;
   @ViewChild('SearchArtikel', { static: false }) search!: SearchArtikelComponent;
   @ViewChild('staticModal', { static: false }) public modalKunden!: ModalDirective;
@@ -76,8 +77,18 @@ export class TarifasSimulateComponent implements OnInit {
     sp_sistema: '-1',
     sp_modelo: '-1',
     sp_accionamiento: '-1',
-    sp_tejido: '-1'
+    sp_tejido: '-1',
+    /* Configurador nuevo: sistema de "Accionamientos nuevo" al que se aplica la tarifa ('' = ninguno).
+       No es el "SP Sistema" (tipo de producto de la exportación) */
+    acc_sistema_id: '',
+    desactivar_duplicadas: false
   }
+
+  /* Configurador nuevo: sistemas a elegir, fecha del mapa guardado y de la última exportación */
+  acc_sistemas: any = [];
+  mapa_fecha: any = null;
+  sync_fecha: any = null;
+  duplicadaMensaje = '';
 
   model2 = {
     operation: '1',
@@ -515,6 +526,10 @@ export class TarifasSimulateComponent implements OnInit {
     this.model.desmultiplicador = '1';
     this.model.desmultiplicador_trigger = 1.9;
     this.model.desmultiplicador_value = 1.12;
+    this.model.acc_sistema_id = '';
+    this.model.desactivar_duplicadas = false;
+    this.mapa_fecha = null;
+    this.sync_fecha = null;
     this.source.localdata = null;
     this.dataAdapter.dataBind();
     this.myGrid.updatebounddata();
@@ -545,6 +560,7 @@ export class TarifasSimulateComponent implements OnInit {
     this.service.HTTP_Post('/sm/tarifa_simulate', values).subscribe(
       data => {
         console.log(data);
+        this.model.desactivar_duplicadas = false;
         if (data.message === "OK") {
           this.model.idrow = data.idrow;
           this.toaster.success("Actualización Realizada", "ACTUALIZACION");
@@ -558,8 +574,47 @@ export class TarifasSimulateComponent implements OnInit {
 
       },
       error => {
-        this.toaster.error("Error en la grabación:" + error.mensaje, "ACTUALIZACION");
+        this.model.desactivar_duplicadas = false;
+        const cuerpo = error && error.error ? error.error : {};
+        if (error && error.status === 409) {
+          /* Ya hay otra tarifa activa igual (mismo tipo, sistema y grupo o tejido): se pide confirmación */
+          this.duplicadaMensaje = cuerpo.message || 'Ya existe una tarifa activa igual: si guarda, quedará desactivada.';
+          this.modalDuplicada.show();
+        } else if (error && error.status === 400 && cuerpo.message) {
+          this.toaster.error(cuerpo.message, "ACTUALIZACION");
+        } else {
+          this.toaster.error("Error en la grabación:" + error.mensaje, "ACTUALIZACION");
+        }
       }
+    );
+  }
+
+  /* El usuario confirma el aviso de la tarifa duplicada: se guarda y la anterior queda desactivada */
+  ConfirmarDuplicada() {
+    this.modalDuplicada.hide();
+    this.model.desactivar_duplicadas = true;
+    this.SaveValues();
+  }
+
+  /* El mapa guardado es posterior a la última exportación: el sistema externo tiene un precio distinto */
+  get mapaPosteriorExportacion(): boolean {
+    return !!this.mapa_fecha && !!this.sync_fecha && new Date(this.mapa_fecha).getTime() > new Date(this.sync_fecha).getTime();
+  }
+
+  /* Tras generar el mapa completo solo hay que refrescar su fecha, sin recargar toda la tarifa */
+  RefrescarMapa() {
+    this.service.HTTP_Get('/sm/tarifa_simulate/' + this.model.idrow).subscribe(
+      data => {
+        if (data.Table && data.Table[0]) {
+          this.mapa_fecha = data.Table[0].mapa_fecha || null;
+          this.sync_fecha = data.Table[0].op_synchronized ? (data.Table[0].op_synchr_date || null) : null;
+          if (this.mapaPosteriorExportacion) {
+            this.toaster.warning('Esta tarifa se exportó el ' + new Date(this.sync_fecha).toLocaleDateString('es-ES') +
+              '. El mapa nuevo no se ha enviado: vuelva a exportarla para que coincidan.', 'GENERAR TARIFA');
+          }
+        }
+      },
+      error => { }
     );
   }
 
@@ -697,6 +752,9 @@ export class TarifasSimulateComponent implements OnInit {
         //console.log(data.Table[0]);
         this.model.grupo = data.Table[0].grupo;
         this.model.grupotejido = data.Table[0].grupotejido ? '1' : '0';
+        this.model.acc_sistema_id = data.Table[0].acc_sistema_id === null || data.Table[0].acc_sistema_id === undefined ? '' : String(data.Table[0].acc_sistema_id);
+        this.mapa_fecha = data.Table[0].mapa_fecha || null;
+        this.sync_fecha = data.Table[0].op_synchronized ? (data.Table[0].op_synchr_date || null) : null;
         this.esgrupo = this.model.grupotejido == '0' ? 0 : 1;
 
         this.model.densidad = data.Table[0].densidad;
@@ -740,6 +798,16 @@ export class TarifasSimulateComponent implements OnInit {
 
     this.LoadTejidos(-1);
     this.LoadGrupos(-1);
+
+    /* Sistemas del configurador nuevo (solo los visibles) */
+    this.service.HTTP_Get('/sm/acc/sistemas').subscribe(
+      data => {
+        this.acc_sistemas = (data.Table || []).filter(s => s.activo);
+      },
+      error => {
+        this.toaster.error('No se pudieron cargar los sistemas del configurador nuevo');
+      }
+    );
 
     this.service.HTTP_Get('/sm/import_tables/SISTEMA').subscribe(
       data => {
@@ -1156,6 +1224,12 @@ export class TarifasSimulateComponent implements OnInit {
         this.myTarifa.updatebounddata();
         this.ShowHideMapa();
         this.myTarifa.hideloadelement();
+        /* Solo el Mapa Completo (bloque 10) se guarda (script 24): los demás bloques solo se ven */
+        if (String(bloque) === '10') {
+          this.RefrescarMapa();
+        } else {
+          this.toaster.info('Este bloque solo se muestra: no se guarda. Solo el Mapa Completo - EURO se guarda como precio de la tarifa.', 'GENERAR TARIFA');
+        }
       },
       error => {
         this.toaster.error(error.message);
