@@ -79,6 +79,7 @@ function Add_Tipo_1(idrow,values){
     var Estancia    =  Check(values.estancia_obs, -1);
     var idcajon             =  Check(values.Tipo1_Cajon,-1);
     var idguia             =  Check(values.Tipo1_Guia,-1);
+    var cargador          = Check(values.Tipo1_Cargador, -1);
 
     var FechaEntrega      =  Check(values.precios.T1_Fecha_Entrega);
 
@@ -97,6 +98,8 @@ function Add_Tipo_1(idrow,values){
 	var T1_PVP_C1					=  Check(values.precios.T1_PVP_C1);
 	var T1_Fecha_Entrega 			=  Check(values.precios.T1_Fecha_Entrega);
 	var T1_Transporte				=  Check(values.precios.T1_Transporte);
+	var T1_Inc_Cargador				=  Check(values.precios.T1_Inc_Cargador);
+	var T1_Inc_Cargador_C1			=  Check(values.precios.T1_Inc_Cargador_C1);
 
          
     var request = new sql.Request();
@@ -170,7 +173,10 @@ function Add_Tipo_1(idrow,values){
   request.input('Estancia',sql.VarChar(250),Estancia);
   request.input('idcajon',sql.Int,idcajon);
    request.input('idguia',sql.Int,idguia);
-     request.execute('sp_sol_presupuestos_cola_tipo_1_add', 
+   request.input('cargador',sql.Int,cargador);
+   request.input('T1_Inc_Cargador',sql.VarChar(25),T1_Inc_Cargador);
+   request.input('T1_Inc_Cargador_C1',sql.VarChar(25),T1_Inc_Cargador_C1);
+     request.execute('sp_sol_presupuestos_cola_tipo_1_add',
         function(err, recordsets, returnValue) {
  
             if (err){
@@ -834,7 +840,7 @@ function budget_hinzu(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_1] where idrow ";
+ 	var query = "select *, cargador as Tipo1_Cargador from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_1] where idrow ";
  	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
  	ExecuteSQL(query,res);
  }

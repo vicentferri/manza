@@ -651,6 +651,11 @@ export class EnrollableComponent implements OnInit, OnChanges {
       }
    }
 
+   // Motor (acc. 3) con batería 25 (tipo 69): se avisa del cargador recomendado
+   get verAvisoCargador(): boolean {
+      return this.Tipo1_Tipo === '3' && this.Tipo1_Marca === '69';
+   }
+
    ChangeAccionamiento(): void {
       this.precios.T1_Inc_Mando = 0;
       const accionamiento = this.Tipo1_Tipo;
