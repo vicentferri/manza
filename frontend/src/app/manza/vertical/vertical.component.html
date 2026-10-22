@@ -35,14 +35,14 @@
           <div class="col-md-4" [hidden]="!PV_SEL_1">
             <label [hidden]="TipoVertical == '2'">{{ "ANCHO" | translate }}</label>
             <input #pv_ancho_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_Ancho_1" id="PV_Ancho_1" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="PV_Ancho_1" id="PV_Ancho_1" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }"
               required (keyup.enter)="Next($event, pv_alto_1)" [hidden]="TipoVertical == '2'" />
             <small class="text-muted">0-600 cm</small>
           </div>
           <div class="col-md-4" [hidden]="!PV_SEL_1">
             <label [hidden]="TipoVertical == '3'">{{ "ALTO" | translate }}</label>
             <input #pv_alto_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_Alto_1" id="PV_Alto_1" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }" required
+              [(ngModel)]="PV_Alto_1" id="PV_Alto_1" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }" required
               (keyup.enter)="Next($event, pv_cantidad_1)" [hidden]="TipoVertical == '3'" />
             <small class="text-muted">0-600 cm</small>
           </div>
@@ -202,7 +202,7 @@
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "ANCHO" | translate }}</label>
             <input #pv_ancho_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_Ancho_2" id="PV_Ancho_2" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="PV_Ancho_2" id="PV_Ancho_2" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }"
               required (change)="Vertical_Angle()" />
           </div>
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
@@ -213,14 +213,14 @@
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "ALTURAMINIMA" | translate }}</label>
             <input #pv_alturamin_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_AlturaMin_2" id="PV_AlturaMin_2" [appMaxdigits]="3"
+              [(ngModel)]="PV_AlturaMin_2" id="PV_AlturaMin_2" [appMaxdigits]="5"
               [ngModelOptions]="{ standalone: true }" required (keyup.enter)="Next($event, pv_alturamax_2)"
               (change)="Vertical_Angle()" />
           </div>
           <div class="col-2 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "ALTURAMAXIMA" | translate }}</label>
             <input #pv_alturamax_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-              [(ngModel)]="PV_AlturaMax_2" id="PV_AlturaMax_2" [appMaxdigits]="3"
+              [(ngModel)]="PV_AlturaMax_2" id="PV_AlturaMax_2" [appMaxdigits]="5"
               [ngModelOptions]="{ standalone: true }" required (change)="Vertical_Angle()" />
           </div>
 
