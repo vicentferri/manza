@@ -1,6 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { SMAPIService } from '../config/smapi.service';
 import { CortinaTipo } from '../config/CortinaTipo';
+import { errorPasoMedidas } from '../config/medidas';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { Tipo } from '../config/Tipo';
@@ -449,6 +450,10 @@ export class CompacComponent implements OnInit, OnChanges {
       if (iProceed && this.compac.Compac_Tap_Color === '-1') { iProceed = 0; strMessage = 'Debe seleccionar el Color de Tapas'; }
       if (iProceed && parseInt(this.Tipo4_Tejido) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Tejido'; }
       if (iProceed && parseInt(this.Tipo4_TejidoColor) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Color del Tejido'; }
+      if (iProceed) {
+         const errorPaso = errorPasoMedidas({ 'Ancho': this.Ancho, 'Alto': this.Alto, 'Ancho Exterior': this.compac.PC_AnchoB });
+         if (errorPaso) { iProceed = 0; strMessage = errorPaso; }
+      }
 
       this.CheckValidity();
 
