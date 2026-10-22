@@ -179,10 +179,33 @@ como `@A;@B` y en la lista se ve como `@A + @B → búsqueda`. Compila AOT.
   se recarga al guardar y al borrar un parámetro. Con HoneyComb no se notaba, porque sus valores
   vienen fijos por script.
 
+## 2026-10-22 · Simulación por sistema (paso 2.6, solo simulación)
+
+Sin cambios en la BD.
+
+- **Backend** (`simular`):
+  - En un juego del enrollable (con `acc_sistema_id`), la simulación sigue ejecutando el
+    procedimiento para todo el pedido, pero solo devuelve la fabricación y los parámetros de las
+    líneas de ese sistema (`nacc_sistema_id`).
+  - Devuelve `Omitidas`: cuántas líneas son de otros sistemas y cuántas del modelo antiguo de
+    accionamientos, que no se fabrican por reglas.
+  - En HoneyComb `Omitidas` es `null` y todo sigue igual.
+- **Pantalla:** aviso "No se muestran N líneas de otros sistemas ni N líneas del modelo antiguo…".
+  Si el pedido no tiene líneas del sistema, se mantiene el aviso "El pedido no tiene líneas de
+  Enrollable · X".
+- **Prueba** `pruebas/prueba_simulacion.js`, 7/7:
+  - El controlador se ejecuta dentro de una transacción que se deshace.
+  - HoneyComb sale sin filtro.
+  - En el pedido 7304 hay dos líneas en dos sistemas ZZ y una antigua: cada juego ve solo la suya,
+    con su posición y las omitidas (1 + 1).
+  - Un juego sin líneas en el pedido no muestra nada (omitidas 2 + 1).
+- La batería `backend/test/fabricacion` da los mismos resultados. El frontend recompila sin
+  errores.
+- El aviso no se ha visto en el navegador: haría falta un pedido con líneas del modelo nuevo, y la
+  simulación fabricaría de verdad en la BD local.
+
 ### Pendiente
 
 - Cuando llegue el modelo nuevo de tejidos: volver a apuntar `ENR_TEJIDO_ARTICULO` (la salida del tejido no cambia).
-- 2.6: script de hoja y parámetros por pedido, con diferencias frente a otro pedido.
+- 2.6 (comparación, aparcada): hoja y parámetros por pedido, con diferencias frente a otro pedido.
 - 2.7: guía de reglas del enrollable. Reparar `backend/test/fabricacion/run.js`.
-- La simulación de la pantalla ejecuta el procedimiento para todo el pedido y muestra todas sus
-  líneas v3, sean del sistema que sean.

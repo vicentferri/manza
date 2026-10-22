@@ -485,28 +485,51 @@ async function simular(req, res) {
       .input('real', sql.Int, 1)
       .execute(sistema.procedimiento);
 
+    /* Juego de un sistema del enrollable (sqlEnrrollable): el procedimiento fabrica todas las líneas
+       del modelo nuevo del pedido, pero solo se muestran las del sistema elegido */
+    const porSistema = sistema.acc_sistema_id !== null && sistema.acc_sistema_id !== undefined;
+    const filtroSistema = porSistema ? ' and t.nacc_accionamiento_id is not null and t.nacc_sistema_id = @acc' : '';
+
     const fabricacion = await pool.request()
       .input('idPedido', sql.Int, idPedido)
       .input('tipo', sql.Int, sistema.tipo_linea)
+      .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
       .query(`
         select f.id, f.idpedido, f.orden, f.articulo, f.descripcion, f.cantidad, f.unidad, f.descUnidad,
                f.consumo, isnull(f.cod_sol,'') as cod_sol, f.fam_sol
         from dbo.[${sistema.tabla_fabricacion}] f
         join dbo.[${sistema.tabla_origen}] t on t.id = f.idrow
         join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
-        where l.idrow = @idPedido
+        where l.idrow = @idPedido${filtroSistema}
         order by f.idpedido, f.orden, f.id`);
 
     const params = await pool.request()
       .input('idPedido', sql.Int, idPedido)
       .input('tipo', sql.Int, sistema.tipo_linea)
+      .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
       .query(`
         select p.idpedido, p.parametro, p.valor
         from dbo.[${sistema.tabla_parametros}] p
         join dbo.[${sistema.tabla_origen}] t on t.id = p.idrow
         join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
-        where l.idrow = @idPedido
+        where l.idrow = @idPedido${filtroSistema}
         order by p.idpedido, p.id`);
+
+    /* Líneas del pedido que no se muestran: de otros sistemas o del modelo antiguo (no se fabrican) */
+    let omitidas = null;
+    if (porSistema) {
+      const r = await pool.request()
+        .input('idPedido', sql.Int, idPedido)
+        .input('tipo', sql.Int, sistema.tipo_linea)
+        .input('acc', sql.Int, sistema.acc_sistema_id)
+        .query(`
+          select sum(case when t.nacc_accionamiento_id is not null and isnull(t.nacc_sistema_id, -1) <> @acc then 1 else 0 end) as otros_sistemas,
+                 sum(case when t.nacc_accionamiento_id is null then 1 else 0 end) as modelo_antiguo
+          from dbo.[${sistema.tabla_origen}] t
+          join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
+          where l.idrow = @idPedido`);
+      omitidas = { otros_sistemas: r.recordset[0].otros_sistemas || 0, modelo_antiguo: r.recordset[0].modelo_antiguo || 0 };
+    }
 
     /* Qué reglas se han usado: las propias del cliente del pedido o las generales */
     const info = await pool.request()
@@ -524,7 +547,8 @@ async function simular(req, res) {
     res.status(200).send({
       Fabricacion: fabricacion.recordset,
       Parametros: params.recordset,
-      Pedido: info.recordset[0] || null
+      Pedido: info.recordset[0] || null,
+      Omitidas: omitidas
     });
   } catch (err) {
     console.error(err);

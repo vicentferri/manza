@@ -1581,6 +1581,19 @@ export class ArtikelnFacCdV3Component implements OnInit {
     let values = JSON.stringify({ idPedido: this.model2.idrow, sistema: this.sistema });
     this.service.HTTP_Post('/sm/fabricacion/simular', values).subscribe(
       data => {
+        /* Enrollable: solo se muestran las líneas del sistema elegido */
+        let omitidas = data.Omitidas;
+        if (omitidas && (omitidas.otros_sistemas > 0 || omitidas.modelo_antiguo > 0)) {
+          let partes = [];
+          if (omitidas.otros_sistemas > 0) {
+            partes.push(omitidas.otros_sistemas + (omitidas.otros_sistemas == 1 ? ' línea de otro sistema' : ' líneas de otros sistemas'));
+          }
+          if (omitidas.modelo_antiguo > 0) {
+            partes.push(omitidas.modelo_antiguo + (omitidas.modelo_antiguo == 1 ? ' línea' : ' líneas')
+              + ' del modelo antiguo de accionamientos (no se fabrican por reglas)');
+          }
+          this.toaster.info('No se muestran ' + partes.join(' ni ') + '.', 'Simulación', { timeOut: 10000 });
+        }
         if (data.Parametros.length == 0) {
           this.toaster.warning('El pedido no tiene líneas de ' + this.nombreJuego, 'Simulación');
         }
