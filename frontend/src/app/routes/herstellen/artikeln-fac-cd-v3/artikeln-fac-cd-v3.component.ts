@@ -118,6 +118,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     name: '',
     tipo: 'COLUMNA',
     origen: '',
+    origen2: '',
     orden: 0,
     busqueda: '',
     tabla: ''
@@ -298,7 +299,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     if (!p) return '';
     if (p.tipo == 'BUSQUEDA') {
       let b = this.busquedas.find(x => x.busqueda == p.busqueda);
-      return p.origen + ' → ' + (b ? b.descripcion : p.busqueda);
+      return String(p.origen || '').replace(';', ' + ') + ' → ' + (b ? b.descripcion : p.busqueda);
     }
     if (p.tipo == 'TABLA') {
       return p.origen + ' → tabla ' + p.tabla;
@@ -754,6 +755,13 @@ export class ArtikelnFacCdV3Component implements OnInit {
       .map(p => p.name);
   }
 
+  /* Búsqueda de dos claves (p. ej. tipo de tejido + color): el parámetro tiene dos entradas */
+  get busquedaDosClaves(): boolean {
+    if (this.modelParam.tipo != 'BUSQUEDA') return false;
+    let b = this.busquedas.find(x => x.busqueda == this.modelParam.busqueda);
+    return !!(b && b.dos_claves);
+  }
+
   validarParametro() {
     this.erroresParametro = [];
     let anteriores = this.parametrosAnteriores();
@@ -773,6 +781,14 @@ export class ArtikelnFacCdV3Component implements OnInit {
       if (this.modelParam.tipo == 'BUSQUEDA' && !this.modelParam.busqueda) {
         this.erroresParametro.push('Elija la búsqueda');
       }
+      if (this.busquedaDosClaves) {
+        if (!this.modelParam.origen2) {
+          this.erroresParametro.push('Esta búsqueda necesita un segundo parámetro de entrada');
+        }
+        else if (anteriores.indexOf(this.modelParam.origen2) < 0) {
+          this.erroresParametro.push('El segundo parámetro de entrada tiene que tener un orden menor que ' + this.modelParam.orden);
+        }
+      }
       if (this.modelParam.tipo == 'TABLA' && !this.modelParam.tabla) {
         this.erroresParametro.push('Elija la tabla de valores');
       }
@@ -784,18 +800,25 @@ export class ArtikelnFacCdV3Component implements OnInit {
   CambiarTipoParametro() {
     this.erroresParametro = [];
     this.modelParam.origen = '';
+    this.modelParam.origen2 = '';
   }
 
   SaveParameter() {
     if (!this.validarParametro()) {
       return;
     }
-    let values = JSON.stringify(Object.assign({ sistema: this.sistema }, this.modelParam));
+    /* Búsqueda de dos claves: las dos entradas viajan juntas en origen ('@A;@B') */
+    let param: any = Object.assign({ sistema: this.sistema }, this.modelParam);
+    param.origen = this.busquedaDosClaves ? param.origen + ';' + param.origen2 : param.origen;
+    delete param.origen2;
+    let values = JSON.stringify(param);
     this.service.HTTP_Post('/sm/fabricacion/parametros', values).subscribe(
       data => {
         if (data.message == 'OK') {
           this.toaster.success('Guardado', 'Parámetros');
           this.loadParameters();
+          /* Un parámetro de búsqueda con nombres (p. ej. soporte) trae su desplegable de valores */
+          this.loadValoresParametros();
         }
       },
       error => {
@@ -810,8 +833,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
       this.DelParameter(row.name);
     }
     else {
+      let origenes = String(row.origen || '').split(';');
       this.modelParam = {
-        name: row.name, tipo: row.tipo, origen: row.origen, orden: row.orden,
+        name: row.name, tipo: row.tipo, origen: origenes[0], origen2: origenes[1] || '', orden: row.orden,
         busqueda: row.busqueda || '', tabla: row.tabla || ''
       };
       this.erroresParametro = [];
@@ -825,6 +849,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
         data => {
           if (data.message == 'OK') {
             this.loadParameters();
+            this.loadValoresParametros();
           }
         },
         error => {

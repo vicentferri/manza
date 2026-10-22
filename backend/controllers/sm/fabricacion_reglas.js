@@ -32,7 +32,8 @@ const ERRORES_PARAMETRO = {
   '-5': 'Sistema no válido',
   '-6': 'El parámetro de entrada no existe o no tiene un orden menor que este',
   '-7': 'Búsqueda no válida',
-  '-8': 'Tabla de valores no válida'
+  '-8': 'Tabla de valores no válida',
+  '-9': 'Esta búsqueda necesita dos parámetros de entrada (o solo admite uno)'
 };
 
 const ERRORES_TABLA = {
@@ -363,10 +364,12 @@ async function parametros(req, res) {
       .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
       .query(`
         select p.idrow, p.name, p.tipo, p.origen, p.orden, p.busqueda, p.tabla,
+               /* Da un artículo: el id de ARTICULOS o la columna articulos de una tabla de relación
+                  (tejido del enrollable, sqlEnrrollable/04) */
                case when p.tipo = 'BUSQUEDA' and exists (
                       select 1 from SOL_FABRICACION_BUSQUEDAS b
-                      where b.busqueda = p.busqueda and (b.sistema is null or b.sistema = p.sistema)
-                        and upper(b.tabla) = 'ARTICULOS' and upper(b.resultado) = 'IDROW')
+                      where b.busqueda = p.busqueda and dbo.fn_fabricacion_busqueda_visible(b.busqueda, p.sistema) = 1
+                        and ((upper(b.tabla) = 'ARTICULOS' and upper(b.resultado) = 'IDROW') or upper(b.resultado) = 'ARTICULOS'))
                     then 1 else 0 end as devuelve_articulo
         from SOL_FABRICACION_PARAMETROS p
         where p.sistema = @sistema
@@ -537,9 +540,12 @@ async function busquedas(req, res) {
     const pool = await sql.connect();
     const result = await pool.request()
       .input('sistema', sql.VarChar(50), texto(req.query.sistema, 50))
+      /* Generales, del juego o de su producto (fn_fabricacion_busqueda_visible). dos_claves: el
+         parámetro necesita dos entradas (origen '@A;@B') */
       .query(`
-        select busqueda, descripcion from SOL_FABRICACION_BUSQUEDAS
-        where sistema is null or sistema = @sistema
+        select busqueda, descripcion, cast(case when clave2 is null then 0 else 1 end as bit) as dos_claves
+        from SOL_FABRICACION_BUSQUEDAS
+        where dbo.fn_fabricacion_busqueda_visible(busqueda, @sistema) = 1
         order by descripcion`);
     res.status(200).send({ Table: result.recordset });
   } catch (err) {

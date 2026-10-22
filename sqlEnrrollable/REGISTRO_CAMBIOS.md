@@ -14,6 +14,7 @@ reglas independiente (`ENROLLABLE_<código del sistema>`). Requisito de los scri
 | `01_sol_pedidos_cola_tipo_1_parameters.sql` | Tabla `SOL_PEDIDOS_COLA_TIPO_1_PARAMETERS` (parámetros calculados por línea, como la del tipo 7) | 2026-10-22 | — |
 | `02_temp_sp_fabricacion_tipo_1_v3.sql` | Procedimiento `temp_sp_fabricacion_tipo_1_v3` | 2026-10-22 | — |
 | `03_sustituir_fabricacion_tipo_1.sql` | Sustituye la fabricación del enrollable: copia `dev_sp_fabricacion_tipo_1_copia_20261022`, el router llama solo al v3 y se borra el original (se deshace con `03_deshacer_...`) | 2026-10-22 | — |
+| `04_busquedas_enrollable.sql` | Búsquedas del enrollable para las reglas: id → código de los catálogos `SOL_ACC_*`, tejido por tipo + color, salida de tejido; búsquedas por producto, de dos claves y con filtro en el motor. Cambia también el 02 (`descripcion2`) | 2026-10-22 | — |
 | `comprobacion_produccion_solo_lectura.sql` | Antes y después de desplegar: huellas de los SPs que toca el 03, objetos ya existentes y líneas del modelo nuevo | — | — |
 
 ## 2026-10-22 · 01 y 02: tabla de parámetros y procedimiento
@@ -96,9 +97,91 @@ sustitución deja de importar.
   - Ejecutar `comprobacion_produccion_solo_lectura.sql` antes de desplegar. Debe dar ORIGINAL en
     los dos procedimientos; después, CON EL 03.
 
+## 2026-10-22 · 04: búsquedas del enrollable (paso 2.3)
+
+**Decisión del usuario:**
+- El enrollable se fabrica **solo con reglas**, como HoneyComb, y las reglas las hace el usuario
+  con su equipo.
+- Las tablas de valores (rangos) fueron una excepción de HoneyComb y no se usan en el enrollable.
+- Las búsquedas se definen por script.
+- Cada juego empieza vacío: no hay "duplicar juego".
+- Los **tejidos se van a rehacer** como los accionamientos. Lo hará otro agente e informará de
+  los cambios. Por eso todo lo del tejido queda como datos (búsquedas), no como lógica del motor.
+
+**Motor (cambios aditivos):**
+- `SOL_FABRICACION_BUSQUEDAS` recibe columnas nuevas opcionales:
+  - `producto`: la ven todos los juegos de ese producto.
+  - `clave2`: segunda clave; el parámetro tiene origen `@A;@B`.
+  - `filtro_columna` y `filtro_valor`: filtro fijo.
+  - `texto`: nombre legible para el desplegable de las condiciones.
+- `fn_fabricacion_busqueda_visible(busqueda, sistema)` (nueva) decide qué búsquedas puede usar un
+  juego: las generales (sin sistema ni producto), las del propio juego y las de su producto. La
+  usan el motor, la validación y el backend. HoneyComb ve exactamente lo mismo que antes.
+- `sp_fabricacion_reglas_parametros`:
+  - Admite dos claves; si falta una de las dos entradas, el valor queda vacío.
+  - Admite el filtro fijo.
+  - Sin `clave2` ni filtro, la consulta dinámica es la misma de antes.
+- `sp_fabricacion_parametro_edit`:
+  - Valida las dos entradas (-6 si alguna no es un parámetro anterior).
+  - Devuelve -9 si el número de entradas no corresponde a la búsqueda.
+  - Normaliza el origen a `@A;@B`.
+  - Mantiene el orden de los errores de siempre.
+- `sp_fabricacion_parametros_valores`: los parámetros BUSQUEDA cuya búsqueda tiene `texto` dan su
+  desplegable (código · nombre).
+- Los tres objetos se reescriben a partir del texto desplegado; se comprobó que es el de
+  `sqlHoney/04` y `05`.
+
+**Búsquedas (producto 1):**
+- `ENR_SISTEMA`, `ENR_ACCIONAMIENTO`, `ENR_TIPO_CADENA`, `ENR_TIPO_ARO`, `ENR_CADENA_MEDIDA`,
+  `ENR_ALTURA`, `ENR_COLOR_CADENA`, `ENR_TIPO_MOTOR`, `ENR_MODELO_MOTOR`, `ENR_MANDO`,
+  `ENR_CARGADOR`, `ENR_BATERIA`, `ENR_SOPORTE`, `ENR_COLOR_SOPORTE`, `ENR_TAPA`, `ENR_COLOR_TAPA`,
+  `ENR_CONTRAPESO`, `ENR_COLOR_CONTRAPESO`: id → código, con el nombre para el desplegable.
+- `ENR_ALTURA_VALOR`: id → valor.
+- `ENR_TEJIDO_ARTICULO`: tipo + color → artículo, en `SOL_ARTICULOS_FABRICACION_RELACION` tipo 3
+  (762 combinaciones, un artículo cada una). Es la misma relación que usaba la fabricación
+  anterior.
+- `ENR_SALIDA_TEJIDO`: `SOL_ARTICULOS_SALIDATEJIDO`.
+- **`ENR_TEJIDO_ARTICULO` es provisional hasta el modelo nuevo de tejidos.** Bastará con volver a
+  apuntarla a las tablas nuevas (datos): el motor y las reglas no cambian. La salida del tejido
+  (`ENR_SALIDA_TEJIDO`) se queda como está; lo ha decidido el usuario.
+
+**02:** cuando la regla tiene medidas propias (`param_ancho` / `param_alto`), `descripcion2` =
+`'ancho x alto'`, como en la hoja anterior.
+
+**Backend:**
+- `/fabricacion/busquedas` filtra con `fn_fabricacion_busqueda_visible` y devuelve `dos_claves`.
+- El listado de parámetros marca como "da un artículo" también las búsquedas cuyo resultado es la
+  columna `articulos`.
+- Mensaje para el error -9.
+
+**Pantalla:** si la búsqueda elegida es de dos claves, aparece "Segundo parámetro". Se guarda
+como `@A;@B` y en la lista se ve como `@A + @B → búsqueda`. Compila AOT.
+
+**Pruebas:**
+- `pruebas/prueba_04_busquedas.sql`, 11/11 con rollback: altas y validaciones (-6, -7 y -9),
+  HoneyComb no ve las búsquedas del enrollable, soporte por código, tejido por tipo + color con
+  1,652 m² y `descripcion2`, combinación inexistente → SIN ARTÍCULO.
+- `pruebas/prueba_04_valores.js`, 4/4: el desplegable del soporte sale de `SOL_ACC_SOPORTE`, y los
+  desplegables de HoneyComb salen sin cambios (34 valores).
+- La foto de regresión de 94 pedidos es idéntica a la de después del 03.
+- La batería `backend/test/fabricacion` da los mismos resultados que antes del 04 (los 13 fallos
+  de siempre).
+- Repetidas las pruebas 02 y 03: OK.
+- **Pantalla probada en el navegador** con datos ZZ, ya borrados:
+  - HoneyComb sin cambios: 15 parámetros y sus 3 búsquedas.
+  - Alta del juego y de sus parámetros.
+  - "Segundo parámetro": avisa si falta, se guarda como `@A + @B` y al editar vuelven las dos
+    entradas.
+  - Desplegable de códigos en las condiciones (`ZZSOP_PANT · ZZ SOPORTE PANTALLA`).
+  - `@TEJIDO_ARTICULO` en "Artículo según el pedido".
+- **Corregido en la pantalla:** el desplegable de valores de las condiciones solo se cargaba al
+  cambiar de sistema. Un parámetro de búsqueda recién creado no tenía su lista hasta recargar. Ahora
+  se recarga al guardar y al borrar un parámetro. Con HoneyComb no se notaba, porque sus valores
+  vienen fijos por script.
+
 ### Pendiente
 
-- 2.3: búsqueda con varias claves en el motor (y lo que pida la lista de reglas del compañero).
+- Cuando llegue el modelo nuevo de tejidos: volver a apuntar `ENR_TEJIDO_ARTICULO` (la salida del tejido no cambia).
 - 2.6: script de hoja y parámetros por pedido, con diferencias frente a otro pedido.
 - 2.7: guía de reglas del enrollable. Reparar `backend/test/fabricacion/run.js`.
 - La simulación de la pantalla ejecuta el procedimiento para todo el pedido y muestra todas sus

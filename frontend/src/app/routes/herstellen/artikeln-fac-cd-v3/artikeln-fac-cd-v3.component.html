@@ -113,6 +113,19 @@
                     <option *ngFor="let b of busquedas" [value]="b.busqueda">{{ b.descripcion }}</option>
                   </select>
                 </div>
+                <div style="float: left; padding: 0.2rem" *ngIf="busquedaDosClaves">
+                  <label>Segundo parámetro</label>
+                  <select
+                    class="form-control form-control-sm"
+                    [(ngModel)]="modelParam.origen2"
+                    (ngModelChange)="erroresParametro = []"
+                    style="width: 200px"
+                    title="Segunda clave de la búsqueda (tiene que tener un orden menor)"
+                  >
+                    <option value="">— parámetro —</option>
+                    <option *ngFor="let p of parametrosAnteriores()" [value]="p">{{ p }}</option>
+                  </select>
+                </div>
                 <div style="float: left; padding: 0.2rem" *ngIf="modelParam.tipo == 'TABLA'">
                   <label>Tabla de valores</label>
                   <select

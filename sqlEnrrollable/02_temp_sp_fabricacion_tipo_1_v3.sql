@@ -20,6 +20,7 @@
    Diferencias con el tipo 7: idpedido es la posición de la línea entre las de tipo 1 del
    pedido (como dev_sp_fabricacion_tipo_1) y la tabla de fabricación no tiene precio.
    Firma igual que los demás temp_sp_fabricacion_tipo_N (@print no se usa).
+   2026-10-22: descripcion2 = 'ancho x alto' cuando la regla tiene medidas propias.
    ===================================================================== */
 set ansi_nulls on
 go
@@ -109,9 +110,15 @@ begin
 			insert into @componentes(orden, articulo, consumo, idregla, aviso, ancho, alto, con_ancho, con_alto)
 			execute sp_fabricacion_reglas_aplicar @sistema, @cliente, @parametros
 
-			/* Ancho / alto: los de la regla si los tiene; si no, los de la línea */
-			insert into SOL_PEDIDOS_COLA_TIPO_1_FABRICACION(idrow, idpedido, numero, articulo, descripcion, cantidad, unidad, orden, consumo, ancho, alto)
-			select @id, @Pos, 1, articulo, isnull(aviso, ''), @cantidad, case when articulo is null then null else 1 end, orden, consumo,
+			/* Ancho / alto: los de la regla si los tiene; si no, los de la línea.
+			   Si la regla da medidas propias (corte del tejido, largo del tubo...), van también en
+			   descripcion2 como 'ancho x alto' (la hoja las muestra, como en la fabricación anterior) */
+			insert into SOL_PEDIDOS_COLA_TIPO_1_FABRICACION(idrow, idpedido, numero, articulo, descripcion, descripcion2, cantidad, unidad, orden, consumo, ancho, alto)
+			select @id, @Pos, 1, articulo, isnull(aviso, ''),
+			       case when con_ancho = 1 or con_alto = 1
+			            then isnull(cast(case when con_ancho = 1 then ancho else @ancho end as varchar(20)), '-') + ' x '
+			               + isnull(cast(case when con_alto = 1 then alto else @alto end as varchar(20)), '-') end,
+			       @cantidad, case when articulo is null then null else 1 end, orden, consumo,
 			       case when con_ancho = 1 then ancho else @ancho end,
 			       case when con_alto = 1  then alto  else @alto  end
 			from @componentes
