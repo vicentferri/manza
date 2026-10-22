@@ -5,7 +5,9 @@ const sql = require('mssql');
 /*
  * Configuración de la fabricación por reglas (motor v3).
  * Pantalla: routes/herstellen/artikeln_fab_cd_v3
- * Sistemas:   SOL_FABRICACION_SISTEMAS (hoy HONEYCOMB)
+ * Productos:  SOL_FABRICACION_PRODUCTOS (sqlHoney/22): productos con fabricación por reglas y cómo se fabrican
+ * Sistemas:   SOL_FABRICACION_SISTEMAS: un juego de fabricación por producto y sistema (HONEYCOMB,
+ *             ENROLLABLE_RHIN...), separados: nada se comparte entre juegos. Todo lo demás va por su clave
  * Reglas:     SOL_ARTICULOS_FABRICACION_RELACION_V2 (sistema + cliente; cliente NULL = todos)
  * Parámetros: SOL_FABRICACION_PARAMETROS (por sistema)
  * Motor:      sp_fabricacion_reglas_parametros / sp_fabricacion_reglas_aplicar,
@@ -70,14 +72,110 @@ async function sistemaActivo(pool, nombre) {
 
 /* ---------------- CATALOGOS ---------------- */
 
-async function sistemas(req, res) {
+/* GET /fabricacion/productos — productos con fabricación por reglas (nombre de SOL_ARTICULOS_PRODUCTOS) */
+async function productos(req, res) {
   try {
     const pool = await sql.connect();
     const result = await pool.request().query(`
-      select sistema, descripcion from SOL_FABRICACION_SISTEMAS
-      where activo = 1 order by descripcion`);
+      select fp.producto, p.descripcion, fp.con_sistema
+      from SOL_FABRICACION_PRODUCTOS fp
+      join SOL_ARTICULOS_PRODUCTOS p on p.idrow = fp.producto
+      where fp.activo = 1 order by p.descripcion`);
     res.status(200).send({ Table: result.recordset });
   } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* GET /fabricacion/sistemas[?producto=N] — juegos de fabricación activos. Con producto, solo los suyos
+   y, en Disponibles, los sistemas del configurador nuevo que todavía no tienen juego */
+async function sistemas(req, res) {
+  const producto = parseInt(req.query.producto, 10);
+  try {
+    const pool = await sql.connect();
+    const request = pool.request();
+    let filtro = '';
+    if (!isNaN(producto)) {
+      request.input('producto', sql.Int, producto);
+      filtro = 'and s.producto = @producto';
+    }
+    const result = await request.query(`
+      select s.sistema, s.descripcion, s.producto, s.acc_sistema_id, a.nombre as sistema_nombre
+      from SOL_FABRICACION_SISTEMAS s
+      left join SOL_ACC_SISTEMA a on a.id = s.acc_sistema_id
+      where s.activo = 1 ${filtro}
+      order by s.descripcion`);
+    let disponibles = [];
+    if (!isNaN(producto)) {
+      const libres = await pool.request().input('producto', sql.Int, producto).query(`
+        select a.id, a.codigo, a.nombre
+        from SOL_ACC_SISTEMA a
+        where a.activo = 1
+          and exists (select 1 from SOL_FABRICACION_PRODUCTOS fp where fp.producto = @producto and fp.activo = 1 and fp.con_sistema = 1)
+          and not exists (select 1 from SOL_FABRICACION_SISTEMAS s where s.producto = @producto and s.acc_sistema_id = a.id)
+        order by a.orden, a.nombre`);
+      disponibles = libres.recordset;
+    }
+    res.status(200).send({ Table: result.recordset, Disponibles: disponibles });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* "ENROLLABLE" -> "Enrollable" (para la descripción del juego) */
+function nombreProducto(descripcion) {
+  const t = String(descripcion || '').trim().toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/* POST /fabricacion/sistemas { producto, acc_sistema_id } — crea un juego de fabricación VACÍO para un
+   producto con sistemas. Clave: producto + código del sistema (ENROLLABLE_RHIN); el cableado (tablas
+   y procedimiento) se copia del producto. No copia nada de otros juegos */
+async function sistema_add(req, res) {
+  const body = req.body || {};
+  const producto = parseInt(body.producto, 10);
+  const accSistema = parseInt(body.acc_sistema_id, 10);
+  if (isNaN(producto) || isNaN(accSistema)) {
+    return res.status(400).send({ message: 'Indique el producto y el sistema' });
+  }
+  try {
+    const pool = await sql.connect();
+    const p = (await pool.request().input('producto', sql.Int, producto).query(`
+      select fp.*, ap.descripcion from SOL_FABRICACION_PRODUCTOS fp
+      join SOL_ARTICULOS_PRODUCTOS ap on ap.idrow = fp.producto
+      where fp.producto = @producto and fp.activo = 1`)).recordset[0];
+    if (!p) return res.status(400).send({ message: 'Producto no válido' });
+    if (!p.con_sistema) return res.status(400).send({ message: 'Este producto no se divide por sistemas' });
+    const s = (await pool.request().input('id', sql.Int, accSistema)
+      .query('select id, codigo, nombre from SOL_ACC_SISTEMA where id = @id and activo = 1')).recordset[0];
+    if (!s) return res.status(400).send({ message: 'Sistema no válido' });
+
+    const clave = (String(p.descripcion).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_') + '_' + s.codigo).substring(0, 50);
+    if (!IDENTIFICADOR.test(clave)) return res.status(400).send({ message: 'No se puede formar la clave del juego' });
+    const repetido = (await pool.request().input('clave', sql.VarChar(50), clave).input('producto', sql.Int, producto).input('id', sql.Int, s.id)
+      .query(`select count(*) as n from SOL_FABRICACION_SISTEMAS
+              where sistema = @clave or (producto = @producto and acc_sistema_id = @id)`)).recordset[0].n;
+    if (repetido > 0) return res.status(409).send({ message: 'Ese sistema ya tiene su juego de fabricación' });
+
+    await pool.request()
+      .input('clave', sql.VarChar(50), clave)
+      .input('descripcion', sql.VarChar(100), (nombreProducto(p.descripcion) + ' · ' + s.nombre).substring(0, 100))
+      .input('tipo', sql.Int, p.producto)
+      .input('origen', sql.NVarChar(128), p.tabla_origen)
+      .input('fabricacion', sql.NVarChar(128), p.tabla_fabricacion)
+      .input('parametros', sql.NVarChar(128), p.tabla_parametros)
+      .input('procedimiento', sql.NVarChar(128), p.procedimiento)
+      .input('producto', sql.Int, p.producto)
+      .input('acc', sql.Int, s.id)
+      .query(`insert into SOL_FABRICACION_SISTEMAS
+                (sistema, descripcion, tipo_linea, tabla_origen, tabla_fabricacion, tabla_parametros, procedimiento, activo, producto, acc_sistema_id)
+              values (@clave, @descripcion, @tipo, @origen, @fabricacion, @parametros, @procedimiento, 1, @producto, @acc)`);
+    res.status(200).send({ message: 'OK', sistema: clave });
+  } catch (err) {
+    const numero = err && (err.number || (err.originalError && err.originalError.info && err.originalError.info.number));
+    if (numero === 2627 || numero === 2601) return res.status(409).send({ message: 'Ese sistema ya tiene su juego de fabricación' });
     console.error(err);
     res.status(500).send({ message: 'KO' });
   }
@@ -371,6 +469,12 @@ async function simular(req, res) {
     if (!sistema) {
       return res.status(400).send({ message: 'Sistema no válido' });
     }
+    /* El enrollable tiene su juego antes que su procedimiento (se hace en un paso posterior) */
+    const existe = await pool.request().input('nombre', sql.NVarChar(128), 'dbo.' + sistema.procedimiento)
+      .query('select object_id(@nombre) as id');
+    if (!existe.recordset[0].id) {
+      return res.status(400).send({ message: 'La simulación de este producto todavía no está disponible' });
+    }
 
     await pool.request()
       .input('idPedido', sql.Int, idPedido)
@@ -544,7 +648,9 @@ module.exports = {
   tabla_valores,
   tabla_guardar,
   tabla_delete,
+  productos,
   sistemas,
+  sistema_add,
   clientes,
   articulos,
   reglas,

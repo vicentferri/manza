@@ -510,7 +510,9 @@ smapi.get('/honeycomb_obtener_tarifa', HoneyCombController.honeycomb_obtener_tar
 
 /* FABRICACION POR REGLAS (motor v3: HoneyComb y futuros sistemas) - pantalla artikeln_fab_cd_v3 */
 var FabricacionReglasController = require('../controllers/sm/fabricacion_reglas');
+smapi.get('/fabricacion/productos', Auth.ensureAuth, FabricacionReglasController.productos);
 smapi.get('/fabricacion/sistemas', Auth.ensureAuth, FabricacionReglasController.sistemas);
+smapi.post('/fabricacion/sistemas', Auth.ensureAuth, FabricacionReglasController.sistema_add);
 smapi.get('/fabricacion/clientes', Auth.ensureAuth, FabricacionReglasController.clientes);
 smapi.get('/fabricacion/articulos', Auth.ensureAuth, FabricacionReglasController.articulos);
 smapi.get('/fabricacion/reglas', Auth.ensureAuth, FabricacionReglasController.reglas);

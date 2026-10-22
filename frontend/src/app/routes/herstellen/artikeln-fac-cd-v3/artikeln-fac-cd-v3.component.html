@@ -4,8 +4,22 @@
       <h6>
         <i class="icon-list mt-1"></i>
         &nbsp;Configuración de Fabricación
-        <div class="pull-right">
+        <div class="pull-right fab-cabecera">
           <div class="input-group input-group-sm fab-sistema">
+            <div class="input-group-prepend">
+              <span class="input-group-text">Producto</span>
+            </div>
+            <select
+              class="form-control form-control-sm"
+              [(ngModel)]="producto"
+              (change)="ChangeProducto()"
+              style="width: 160px"
+            >
+              <option *ngFor="let p of productos" [value]="p.producto">{{ p.descripcion }}</option>
+            </select>
+          </div>
+          <!-- Solo los productos que se dividen por sistemas (el enrollable); HoneyComb tiene un único juego -->
+          <div *ngIf="productoConSistema" class="input-group input-group-sm fab-sistema">
             <div class="input-group-prepend">
               <span class="input-group-text">Sistema</span>
             </div>
@@ -13,10 +27,29 @@
               class="form-control form-control-sm"
               [(ngModel)]="sistema"
               (change)="ChangeSistema()"
+              [disabled]="sistemas.length === 0"
               style="width: 200px"
             >
-              <option *ngFor="let s of sistemas" [value]="s.sistema">{{ s.descripcion }}</option>
+              <option *ngIf="sistemas.length === 0" value="">Sin sistemas: añada uno</option>
+              <option *ngFor="let s of sistemas" [value]="s.sistema">{{ s.sistema_nombre || s.descripcion }}</option>
             </select>
+          </div>
+          <div *ngIf="productoConSistema" class="input-group input-group-sm fab-sistema">
+            <select
+              class="form-control form-control-sm"
+              [(ngModel)]="sistemaNuevo"
+              [disabled]="sistemasDisponibles.length === 0"
+              title="Crea el juego de fabricación del sistema, vacío: no copia nada de otros sistemas"
+              style="width: 170px"
+            >
+              <option value="">{{ sistemasDisponibles.length ? 'Añadir sistema…' : 'Todos añadidos' }}</option>
+              <option *ngFor="let d of sistemasDisponibles" [value]="d.id">{{ d.nombre }}</option>
+            </select>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-outline-success btn-sm" [disabled]="!sistemaNuevo" (click)="AnadirSistema()">
+                <i class="fa fa-plus"></i> Añadir
+              </button>
+            </div>
           </div>
         </div>
       </h6>
@@ -368,7 +401,7 @@
   <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">{{ tituloRegla }} <small class="text-muted">· {{ sistema }}</small></h5>
+        <h5 class="modal-title">{{ tituloRegla }} <small class="text-muted">· {{ nombreJuego }}</small></h5>
         <button type="button" class="close" (click)="modalRegla.hide()"><span>&times;</span></button>
       </div>
       <div class="modal-body fab-regla">

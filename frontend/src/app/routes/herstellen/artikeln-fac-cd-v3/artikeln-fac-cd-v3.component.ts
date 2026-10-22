@@ -78,8 +78,14 @@ export class ArtikelnFacCdV3Component implements OnInit {
   operadoresCondicion = OPERADORES_CONDICION;
   operadoresConsumo = OPERADORES_CONSUMO;
 
+  /* Producto (HoneyComb, Enrollable...) y sistema: cada pareja es un juego de fabricación separado,
+     con su clave en `sistema` (HONEYCOMB, ENROLLABLE_RHIN...). Los productos sin sistemas tienen un solo juego */
+  productos: any = [];
+  producto: any = '';
   sistemas: any = [];
   sistema = '';
+  sistemasDisponibles: any = [];
+  sistemaNuevo: any = '';
   clientes: any = [];
   columnas: any = [];
   parametros: any = [];
@@ -457,7 +463,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     this.myGrid3.createComponent(this.settingsDet);
     this.myGrid4.createComponent(this.settings4);
     this.performResize();
-    this.loadSistemas();
+    this.loadProductos();
   }
 
   ngOnInit() {
@@ -546,19 +552,71 @@ export class ArtikelnFacCdV3Component implements OnInit {
     return (error.error && error.error.message) ? error.error.message : error.message;
   }
 
-  /* ---------------- SISTEMA / CLIENTES ---------------- */
+  /* ---------------- PRODUCTO / SISTEMA / CLIENTES ---------------- */
 
-  loadSistemas() {
-    this.service.HTTP_Get('/sm/fabricacion/sistemas').subscribe(
+  /* Al entrar se elige HoneyComb si está (lo que había hasta ahora) o el primer producto */
+  loadProductos() {
+    this.service.HTTP_Get('/sm/fabricacion/productos').subscribe(
       data => {
-        this.sistemas = data.Table;
-        if (this.sistemas.length > 0) {
-          this.sistema = this.sistemas[0].sistema;
-          this.ChangeSistema();
+        this.productos = data.Table;
+        if (this.productos.length > 0) {
+          const honeycomb = this.productos.find(p => p.producto == 7);
+          this.producto = (honeycomb || this.productos[0]).producto;
+          this.ChangeProducto();
         }
       },
       error => {
         this.toaster.error(this.errorMessage(error));
+      });
+  }
+
+  get productoConSistema(): boolean {
+    const p = this.productos.find(x => x.producto == this.producto);
+    return !!(p && p.con_sistema);
+  }
+
+  /* Nombre del juego elegido para los títulos ("Enrollable · Rhin", "HoneyComb") */
+  get nombreJuego(): string {
+    const s = this.sistemas.find(x => x.sistema == this.sistema);
+    return s ? s.descripcion : this.sistema;
+  }
+
+  ChangeProducto() {
+    this.loadSistemas();
+  }
+
+  /* Juegos del producto; con `elegir`, se queda en ese juego (p. ej. el que se acaba de crear) */
+  loadSistemas(elegir?: string) {
+    this.service.HTTP_Get('/sm/fabricacion/sistemas?producto=' + encodeURIComponent(this.producto)).subscribe(
+      data => {
+        this.sistemas = data.Table;
+        this.sistemasDisponibles = data.Disponibles || [];
+        this.sistemaNuevo = '';
+        const elegido = elegir && this.sistemas.find(s => s.sistema == elegir);
+        this.sistema = elegido ? elegido.sistema : (this.sistemas.length > 0 ? this.sistemas[0].sistema : '');
+        this.ChangeSistema();
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error));
+      });
+  }
+
+  /* Crea el juego vacío del producto para el sistema elegido: no copia nada de otros sistemas */
+  AnadirSistema() {
+    if (!this.sistemaNuevo) {
+      this.toaster.warning('Elija el sistema que quiere añadir', 'Sistemas');
+      return;
+    }
+    let values = JSON.stringify({ producto: this.producto, acc_sistema_id: this.sistemaNuevo });
+    this.service.HTTP_Post('/sm/fabricacion/sistemas', values).subscribe(
+      data => {
+        if (data.message == 'OK') {
+          this.toaster.success('Sistema añadido, sin reglas', 'Sistemas');
+          this.loadSistemas(data.sistema);
+        }
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error), 'Sistemas');
       });
   }
 
@@ -1499,7 +1557,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     this.service.HTTP_Post('/sm/fabricacion/simular', values).subscribe(
       data => {
         if (data.Parametros.length == 0) {
-          this.toaster.warning('El pedido no tiene líneas de ' + this.sistema, 'Simulación');
+          this.toaster.warning('El pedido no tiene líneas de ' + this.nombreJuego, 'Simulación');
         }
         else {
           let pedido = data.Pedido || {};
