@@ -2,9 +2,11 @@
    02 - temp_sp_fabricacion_tipo_1_v3: fabricación del enrollable con el
    motor de reglas v3 (el de HoneyComb, sqlHoney/04).
    Solo procesa las líneas de tipo 1 del modelo nuevo de accionamientos
-   (SOL_PEDIDOS_COLA_TIPO_1.nacc_accionamiento_id informado). Las del modelo
-   antiguo (Leroy Merlín incluido) las sigue haciendo dev_sp_fabricacion_tipo_1;
-   de ellas no se borra ni se escribe nada aquí.
+   (SOL_PEDIDOS_COLA_TIPO_1.nacc_accionamiento_id informado). Desde el script 03
+   es la única fabricación del enrollable (la anterior queda guardada como
+   dev_sp_fabricacion_tipo_1_copia_20261022): las líneas del modelo antiguo
+   (Leroy Merlín incluido) ya no se calculan, y de ellas no se borra ni se escribe
+   nada (conservan la fabricación que tuvieran).
    Juego de reglas de la línea: el de SOL_FABRICACION_SISTEMAS con producto 1 y
    acc_sistema_id = nacc_sistema_id (clave ENROLLABLE_<código del sistema>). Cada
    sistema es un juego independiente; si el sistema no tiene juego, o el juego no
