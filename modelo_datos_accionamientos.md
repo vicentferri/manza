@@ -2,9 +2,9 @@
 
 Este documento es el registro del modelo que hay en la base de datos (tablas `SOL_ACC_*`). Si cambia el modelo, se actualiza aquí.
 
-- **Scripts:** `C:\dev\sqlAccionamientos\01` a `28` (idempotentes). Se despliegan todos en orden con `00_desplegar_todo.sql` (o `00_desplegar_todo_ssms.sql` desde SSMS); ver `DESPLIEGUE.md`. Desplegados en producción el 2026-10-21.
+- **Scripts:** `C:\dev\sqlAccionamientos\01` a `29` (idempotentes; el 29 requiere el maestro de tejidos y se despliega aparte). Se despliegan todos en orden con `00_desplegar_todo.sql` (o `00_desplegar_todo_ssms.sql` desde SSMS); ver `DESPLIEGUE.md`. Desplegados en producción el 2026-10-21.
 - **Registro de cambios y estado por entorno:** `C:\dev\sqlAccionamientos\REGISTRO_CAMBIOS.md`.
-- **Mantenimiento:** pantalla "Accionamientos nuevo" (`/routes/master/accionamientos-nuevo`, permiso `config_accionamientos`), con el backend en `backend/controllers/sm/accionamientos_nuevo.js` (`/api/sm/acc/*`).
+- **Mantenimiento:** pantalla "Productos" (antes "Accionamientos nuevo"; `/routes/master/accionamientos-nuevo`, permiso `config_accionamientos`), con el backend en `backend/controllers/sm/accionamientos_nuevo.js` (`/api/sm/acc/*`).
 - **Configurador nuevo:** componente `manza/enrollable-nuevo`, backend `backend/controllers/sm/acc_configurador.js` (`/api/sm/acc_cfg/*`). Solo para clientes con el interruptor activo (apartado 4.13).
 - **Fabricación:** cada sistema tiene su propio juego de reglas en el motor v3 (apartado 10).
 
@@ -386,6 +386,21 @@ Script 07. Las tres tablas tienen la estructura común de los catálogos (`id`, 
 
 `SOL_ACC_COLOR_SOPORTE`, `SOL_ACC_COLOR_TAPA` y `SOL_ACC_COLOR_CONTRAPESO` (script 07): un catálogo de colores **por pieza**, con la estructura común. El usuario elige un color para cada pieza (cadena, soporte, tapa y contrapeso), y cada pieza marca qué colores de su catálogo admite.
 
+### 4.14 SOL_ACC_PRODUCTO_TEJIDO (tejidos disponibles)
+
+Script 29. Qué tejidos del maestro de tejidos (`SOL_TEJIDOS_MAESTRO`, una fila por tejido + color; ver `tejidos.md`) se ofrecen en cada producto del configurador. Se mantiene en el apartado **Tejidos** de la pantalla Productos.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| producto | INT | PK, FK → SOL_ARTICULOS_PRODUCTOS.idrow | 1 = enrollable (el único de momento) |
+| tejido | INT | PK, FK → SOL_TEJIDOS_MAESTRO.idrow (on delete cascade) | Tejido + color disponible |
+| created | DATETIME | NOT NULL, DEFAULT getdate() | Alta |
+| usuario | VARCHAR(100) | NULL | Email del usuario que lo marcó (el token no lleva id) |
+
+- Una sola lista para todos los clientes (decisión del usuario, 2026-10-23).
+- En la pantalla los tejidos se agrupan solo por nombre, sin distinguir el criterio: marcar VERA BLOCK marca sus colores de 200, de 250 y de cualquier otro ancho (decisión del usuario, 2026-10-23).
+- **El configurador todavía no la lee**: sigue con los tejidos de siempre. Pasarlo al maestro (columna en la línea, precio T1/T2 y fabricación) queda para más adelante.
+
 ### 4.13 SOL_ACC_CLIENTE (interruptor por cliente)
 
 Script 04. Decide qué clientes usan el configurador nuevo.
@@ -534,6 +549,7 @@ En curso: pantalla y backend con los dos filtros, procedimiento del enrollable q
 - Cesta mixta: con el interruptor activo, un documento con otros productos se rechaza.
 - Fabricación de las líneas nuevas (apartado 10).
 - Ancho máximo de los tejidos para clientes que no son Leroy (`vw_tejidos_colores_3009` no trae `ancmax`).
+- Que el configurador use los tejidos disponibles del maestro (4.14) en vez de los de siempre.
 - Traducciones de los nombres (hoy `nombre_pt` sin uso en la pantalla).
 - Visibilidad por cliente (tablas `X_CLIENTE`), si se necesita.
 - Borrar lo que ya no se usa: `SOL_ACC_SISTEMA.sp_modelo` y `fn_acc_precio_base` (scripts 17 y 18).

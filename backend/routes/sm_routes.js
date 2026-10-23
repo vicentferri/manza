@@ -546,6 +546,9 @@ smapi.post('/fabricacion/tablas/delete', Auth.ensureAuth, FabricacionReglasContr
 
 /* Modelo nuevo de accionamientos (SOL_ACC_*). Las rutas de relaciones van antes que las de catálogo */
 var AccionamientosNuevoController = require('../controllers/sm/accionamientos_nuevo');
+/* Tejidos disponibles por producto (script 29): antes de /acc/:catalogo para que no la tape */
+smapi.get('/acc/tejidos/:producto', Auth.ensureAuth, AccionamientosNuevoController.tejidos);
+smapi.post('/acc/tejidos/:producto', Auth.ensureAuth, AccionamientosNuevoController.tejidos_guardar);
 smapi.get('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion_guardar);
 smapi.get('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores);

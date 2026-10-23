@@ -47,7 +47,7 @@ const PAGE_TITLES: { [url: string]: PageTitle } = {
   '/routes/master/accionamientos-radio-tipo': T('Accionamientos', 'Radio Tipo'),
   '/routes/master/accionamientos-radio-tipo-cliente': T('Accionamientos', 'Radio Tipo Clientes'),
   '/routes/master/detail/912': T('Accionamientos', 'Grupo Modelo'),
-  '/routes/master/accionamientos-nuevo': T('Accionamientos', 'Accionamientos nuevo'),
+  '/routes/master/accionamientos-nuevo': T('Configuración', 'Productos'),
 
   '/routes/master/tejidos': T('Tejidos', 'Tipos de Tejido'),
   '/routes/master/tejidos-maestro': T('Tejidos', 'Maestro de Tejidos'),

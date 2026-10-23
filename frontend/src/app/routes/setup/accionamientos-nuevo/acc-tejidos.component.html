@@ -1,0 +1,88 @@
+<div class="acc-bloque">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong>Tejidos del enrollable</strong>
+        <span class="text-muted small ml-2">{{ totalDisponibles }} disponibles de {{ tejidos.length }}</span>
+        <span class="acc-estado ml-2" *ngIf="estado === 'guardando'"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
+        <span class="acc-estado acc-estado-ok ml-2" *ngIf="estado === 'guardado'"><i class="fa fa-check"></i> Guardado</span>
+    </div>
+    <div class="acc-ayuda mb-2">
+        Marque los tejidos (cada color por separado) que se ofrecen en el configurador. La casilla de cada tejido marca o quita
+        todos sus colores. Los tejidos y sus datos se mantienen en el <a [routerLink]="['/routes/master/tejidos-maestro']">Maestro de tejidos</a>.
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap mb-2">
+        <input type="text" class="form-control form-control-sm acc-buscar mr-2 mb-1" placeholder="Buscar código, tejido o color..."
+            [(ngModel)]="buscar" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }" />
+        <select class="form-control form-control-sm acc-tej-filtro mr-2 mb-1" [(ngModel)]="filtroTipo" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Todos los tipos</option>
+            <option value="-">Sin tipo</option>
+            <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+        </select>
+        <select class="form-control form-control-sm acc-tej-filtro mr-2 mb-1" [(ngModel)]="filtroEstado" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Disponibles y no disponibles</option>
+            <option value="si">Solo disponibles</option>
+            <option value="no">Solo no disponibles</option>
+        </select>
+        <span class="ml-auto mb-1">
+            <button type="button" class="btn btn-outline-success btn-sm mr-1" [disabled]="visibles.length === 0" (click)="cambiarFiltrados(true)"
+                [title]="hayFiltro ? 'Marcar los tejidos que se ven con el filtro' : 'Marcar todos los tejidos'">
+                <i class="fa fa-check-square-o"></i> Marcar {{ hayFiltro ? 'lo filtrado' : 'todos' }}
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="visibles.length === 0" (click)="cambiarFiltrados(false)"
+                [title]="hayFiltro ? 'Quitar los tejidos que se ven con el filtro' : 'Quitar todos los tejidos'">
+                <i class="fa fa-square-o"></i> Quitar {{ hayFiltro ? 'lo filtrado' : 'todos' }}
+            </button>
+        </span>
+    </div>
+
+    <div *ngIf="cargado && tejidos.length === 0" class="acc-vacio">No hay tejidos activos en el Maestro de tejidos.</div>
+
+    <div class="acc-matriz-container" *ngIf="tejidos.length > 0">
+        <table class="table table-sm acc-matriz acc-tej-tabla mb-0">
+            <thead>
+                <tr>
+                    <th class="acc-tej-check"></th>
+                    <th>Tejido / color</th>
+                    <th>Código</th>
+                    <th>Tipo</th>
+                    <th class="text-right">Criterio</th>
+                    <th class="text-right">Coste m²</th>
+                    <th class="text-center">Grupo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let g of grupos; trackBy: porClave">
+                    <tr class="acc-matriz-tipo acc-tej-grupo" (click)="alternar(g)">
+                        <td class="acc-tej-check" (click)="$event.stopPropagation()">
+                            <input type="checkbox" [checked]="todos(g.tejidos)" [indeterminate]="algunos(g.tejidos)" (change)="cambiarGrupo(g)"
+                                title="Todos los colores de {{ g.nombre }}" />
+                        </td>
+                        <td colspan="3">
+                            <i class="fa fa-fw text-muted" [ngClass]="abierto(g) ? 'fa-caret-down' : 'fa-caret-right'"></i>
+                            <span class="acc-nombre">{{ g.nombre }}</span>
+                            <span class="text-muted small"> · {{ disponibles(g.tejidos) }} de {{ g.tejidos.length }} colores</span>
+                        </td>
+                        <td class="text-right text-muted small">{{ g.anchos }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                    <ng-container *ngIf="abierto(g)">
+                        <tr *ngFor="let t of g.tejidos; trackBy: porId" class="acc-matriz-modelo acc-matriz-celda" (click)="cambiarUno(t)">
+                            <td class="acc-tej-check">
+                                <input type="checkbox" [checked]="t.disponible" (click)="$event.stopPropagation()" (change)="cambiarUno(t)" />
+                            </td>
+                            <td>{{ t.color }}</td>
+                            <td><span class="acc-codigo">{{ t.cod_solupyme }}</span></td>
+                            <td class="small">{{ t.tipo || '' }}<span *ngIf="!t.tipo" class="badge badge-warning">sin tipo</span></td>
+                            <td class="text-right">{{ t.criterio != null ? t.criterio + ' cm' : '' }}<span *ngIf="t.criterio == null" class="badge badge-warning">sin criterio</span></td>
+                            <td class="text-right">{{ t.coste_m2 | number:'1.2-2' }} €</td>
+                            <td class="text-center">{{ t.grupo || '' }}</td>
+                        </tr>
+                    </ng-container>
+                </ng-container>
+                <tr *ngIf="grupos.length === 0">
+                    <td colspan="7" class="acc-vacio">Ningún tejido coincide con el filtro.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

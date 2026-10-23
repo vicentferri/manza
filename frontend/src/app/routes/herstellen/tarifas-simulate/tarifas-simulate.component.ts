@@ -78,7 +78,7 @@ export class TarifasSimulateComponent implements OnInit {
     sp_modelo: '-1',
     sp_accionamiento: '-1',
     sp_tejido: '-1',
-    /* Configurador nuevo: sistema de "Accionamientos nuevo" al que se aplica la tarifa ('' = ninguno).
+    /* Configurador nuevo: sistema de la pantalla Productos (antes "Accionamientos nuevo") al que se aplica la tarifa ('' = ninguno).
        No es el "SP Sistema" (tipo de producto de la exportación) */
     acc_sistema_id: '',
     desactivar_duplicadas: false

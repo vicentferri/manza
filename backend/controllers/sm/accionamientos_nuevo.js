@@ -4,7 +4,7 @@ const sql = require('mssql');
 
 /*
  * Modelo nuevo de accionamientos (tablas SOL_ACC_*).
- * Pantalla: routes/setup/accionamientos-nuevo ("Accionamientos nuevo")
+ * Pantalla: routes/setup/accionamientos-nuevo ("Productos", antes "Accionamientos nuevo")
  * Scripts:  C:\dev\sqlAccionamientos\ (01 tablas, 02 accionamientos fijos CADENA y MOTOR)
  *
  * Las tablas y columnas salen solo de CATALOGOS y RELACIONES: el cliente manda la
@@ -636,7 +636,89 @@ async function clientes(req, res) {
   }
 }
 
+/* ---------------- TEJIDOS DISPONIBLES (script 29) ---------------- */
+
+/* Tejidos del maestro (SOL_TEJIDOS_MAESTRO, una fila por tejido + color) que se ofrecen en un
+   producto del configurador (SOL_ACC_PRODUCTO_TEJIDO). Una sola lista para todos los clientes.
+   De momento solo el enrollable; el configurador todavía no la lee */
+async function productoValido(pool, producto) {
+  if (producto === null) return false;
+  const r = await pool.request().input('producto', sql.Int, producto)
+    .query('select 1 as ok from dbo.SOL_ARTICULOS_PRODUCTOS where idrow = @producto');
+  return r.recordset.length > 0;
+}
+
+/* GET /acc/tejidos/:producto — los tejidos activos del maestro, con disponible = 1/0 */
+async function tejidos(req, res) {
+  const producto = entero(req.params.producto);
+  try {
+    const pool = await sql.connect();
+    if (!await productoValido(pool, producto)) return res.status(400).send({ message: 'Producto no válido' });
+    const r = await pool.request().input('producto', sql.Int, producto).query(`
+      select m.idrow as id, m.cod_solupyme, m.nombre, m.color, m.tipo_tejido, t.descripcion as tipo,
+             m.criterio, m.impresion_digital, m.coste_m2, m.grupo,
+             case when pt.tejido is null then 0 else 1 end as disponible
+      from dbo.SOL_TEJIDOS_MAESTRO m
+      left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+      left join dbo.SOL_ACC_PRODUCTO_TEJIDO pt on pt.tejido = m.idrow and pt.producto = @producto
+      where m.activo = 1
+      order by m.nombre, m.criterio, m.color`);
+    res.status(200).send({ Table: r.recordset });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/tejidos/:producto { ids: [...], disponible } — marca o quita varios tejidos de una vez */
+async function tejidos_guardar(req, res) {
+  const producto = entero(req.params.producto);
+  const body = req.body || {};
+  const ids = [...new Set((body.ids || []).map(entero).filter(n => n !== null))];
+  if (ids.length === 0) return res.status(400).send({ message: 'Faltan los tejidos' });
+
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    if (!await productoValido(pool, producto)) return res.status(400).send({ message: 'Producto no válido' });
+    const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    /* De 500 en 500 para no pasar del límite de parámetros de SQL Server */
+    for (let i = 0; i < ids.length; i += 500) {
+      const lote = ids.slice(i, i + 500);
+      const request = new sql.Request(transaction)
+        .input('producto', sql.Int, producto)
+        .input('usuario', sql.VarChar(100), usuario);
+      lote.forEach((id, j) => request.input('id' + j, sql.Int, id));
+      const enIds = lote.map((id, j) => '@id' + j).join(', ');
+      if (body.disponible) {
+        /* Solo tejidos activos del maestro; los que ya están se dejan como estaban */
+        await request.query(`
+          insert into dbo.SOL_ACC_PRODUCTO_TEJIDO (producto, tejido, usuario)
+          select @producto, m.idrow, @usuario from dbo.SOL_TEJIDOS_MAESTRO m
+          where m.idrow in (${enIds}) and m.activo = 1
+            and not exists (select 1 from dbo.SOL_ACC_PRODUCTO_TEJIDO pt where pt.producto = @producto and pt.tejido = m.idrow)`);
+      } else {
+        await request.query(`delete from dbo.SOL_ACC_PRODUCTO_TEJIDO where producto = @producto and tejido in (${enIds})`);
+      }
+    }
+    await transaction.commit();
+
+    const total = await pool.request().input('producto', sql.Int, producto)
+      .query('select count(*) as n from dbo.SOL_ACC_PRODUCTO_TEJIDO where producto = @producto');
+    res.status(200).send({ message: 'OK', disponibles: total.recordset[0].n });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
 module.exports = {
+  tejidos,
+  tejidos_guardar,
   suplementos,
   suplemento_fijo,
   suplementos_guardar,

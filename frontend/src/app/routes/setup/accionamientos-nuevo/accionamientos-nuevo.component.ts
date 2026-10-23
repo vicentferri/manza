@@ -8,7 +8,8 @@ import { ToastrService } from 'ngx-toastr';
  * Backend: controllers/sm/accionamientos_nuevo.js (/api/sm/acc/*)
  *
  * Las secciones siguen el orden del configurador: accionamiento y sistemas, cadena, motor,
- * y aparte las listas de opciones que se reutilizan (sistemas, colores, mandos...).
+ * y aparte los tejidos disponibles (app-acc-tejidos, script 29) y las listas de opciones que se
+ * reutilizan (sistemas, colores, mandos...).
  * Cada sección se arma con app-acc-tabla (catálogo) y app-acc-relacion (N:M). Para un catálogo
  * nuevo (soportes, contrapesos...) basta con declararlo en el backend y añadir aquí su sección.
  */
@@ -20,13 +21,14 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class AccionamientosNuevoComponent implements OnInit {
 
-    title = 'Accionamientos nuevo';
+    title = 'Productos';
 
     readonly secciones = [
         { id: 'accionamientos', paso: '1', label: 'Accionamientos', ayuda: 'Qué sistemas tiene cada uno', icono: 'fa-hand-pointer-o' },
         { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, aros, alturas, medidas y colores', icono: 'fa-link' },
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
         { id: 'soportes', paso: '4', label: 'Soportes y tapas', ayuda: 'Qué soportes y tapas tiene cada sistema', icono: 'fa-th-large' },
+        { id: 'tejidos', paso: '', label: 'Tejidos', ayuda: 'Los que salen en el configurador', icono: 'fa-th' },
         { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' },
         { id: 'suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
