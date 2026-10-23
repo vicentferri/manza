@@ -1,7 +1,7 @@
 /* =====================================================================
    Comprobación de SOLO LECTURA para ejecutar en producción antes (y después) de desplegar
    sqlEnrrollable. No modifica nada.
-   1. Huella (SHA-256) de los procedimientos que toca el script 03, comparada con la de la
+   1. Huella (SHA-256) de los procedimientos que tocan los scripts 03 y 06, comparada con la de la
       copia local en la que se probó (restaurada de producción el 2026-10-21):
         ORIGINAL   = como antes del 03 (debe salir así antes de desplegar)
         CON EL 03  = ya desplegado
@@ -24,7 +24,8 @@ select e.procedimiento,
 from (values
 	('dev_sp_fabricacion_tipo_1', 'D31543E8BDA0BFBA06D3B5E024D2D77C18F3E83F6E8AF0CA0A0BE8565D161F2A', null),
 	('dev_sp_fabricacion_tipo_1_copia_20261022', null, '503E0127E8E79D9D3D25620231C5683E330B3DD83BF1A8078615F1C5CEC278A5'),
-	('sp_fabricacion_generate', '2381690305C24711FF02898D3DBFB4E6E202494B2A11E701E38216A526F57F7C', '7F18B753EE38CB593234240CFE3C9ED6AF989DC6B091222FF61E6F4EEE015C68')
+	('sp_fabricacion_generate', '2381690305C24711FF02898D3DBFB4E6E202494B2A11E701E38216A526F57F7C', '7F18B753EE38CB593234240CFE3C9ED6AF989DC6B091222FF61E6F4EEE015C68'),
+	('sp_fichero_produccion_2', 'FB3511DAA1AFEF024D1EE00CD8B69D16C5F0AB7B727CC14A25827FBB0FEFC52F', 'BB1B7F37B24B5C1300733617DFA164539B272FF265A7AF4E9F9C073F335F2EA3')
 ) e(procedimiento, original, con03)
 left join sys.sql_modules m on m.object_id = object_id('dbo.' + e.procedimiento)
 order by e.procedimiento

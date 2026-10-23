@@ -15,6 +15,8 @@ reglas independiente (`ENROLLABLE_<código del sistema>`). Requisito de los scri
 | `02_temp_sp_fabricacion_tipo_1_v3.sql` | Procedimiento `temp_sp_fabricacion_tipo_1_v3` | 2026-10-22 | — |
 | `03_sustituir_fabricacion_tipo_1.sql` | Sustituye la fabricación del enrollable: copia `dev_sp_fabricacion_tipo_1_copia_20261022`, el router llama solo al v3 y se borra el original (se deshace con `03_deshacer_...`) | 2026-10-22 | — |
 | `04_busquedas_enrollable.sql` | Búsquedas del enrollable para las reglas: id → código de los catálogos `SOL_ACC_*`, tejido por tipo + color, salida de tejido; búsquedas por producto, de dos claves y con filtro en el motor. Cambia también el 02 (`descripcion2`) | 2026-10-22 | — |
+| `05_tejido_del_maestro.sql` | Búsqueda `ENR_TEJIDO_SOLUPYME`: tejido del maestro (`nacc_tejido_id`) -> código Solupyme. `ENR_TEJIDO_ARTICULO` queda marcada como antigua | 2026-10-23 | — |
+| `06_xml_cant_factor_enrollable.sql` | XML del enrollable: `CANT` y `FACTOR` según la unidad del artículo (como HoneyComb). Se deshace con `06_deshacer_...` | 2026-10-23 | — |
 | `comprobacion_produccion_solo_lectura.sql` | Antes y después de desplegar: huellas de los SPs que toca el 03, objetos ya existentes y líneas del modelo nuevo | — | — |
 
 ## 2026-10-22 · 01 y 02: tabla de parámetros y procedimiento
@@ -204,8 +206,89 @@ Sin cambios en la BD.
 - El aviso no se ha visto en el navegador: haría falta un pedido con líneas del modelo nuevo, y la
   simulación fabricaría de verdad en la BD local.
 
+## 2026-10-23 · 05: tejido del maestro de tejidos
+
+**Contexto:** desde el 23/10 las líneas del configurador nuevo guardan el tejido en
+`SOL_PEDIDOS_COLA_TIPO_1.nacc_tejido_id`, que apunta a `SOL_TEJIDOS_MAESTRO` (ver `tejidos.md`). Los
+campos `tej_tipo_id` y `tej_color_id` quedan a -1. La búsqueda `ENR_TEJIDO_ARTICULO` (tipo + color, de
+la relación antigua) no sirve para esas líneas.
+
+**Decisión del usuario:** no hay una regla por tejido. Cada sistema tiene **una regla de tejido** con
+"artículo según el pedido" (`@TEJIDO_ARTICULO`) y el consumo del sistema, general para cualquier tejido
+seleccionable. El tejido ya trae su código Solupyme, igual que en HoneyComb.
+
+**Juego de un sistema** (parámetros, como HoneyComb):
+
+| Parámetro | Tipo | Origen |
+|---|---|---|
+| `@TEJIDO_ID` | Dato del pedido | `nacc_tejido_id` |
+| `@TEJIDO_REFERENCIA` | Búsqueda | `@TEJIDO_ID` → "Enrollable: tejido del maestro -> código Solupyme" |
+| `@TEJIDO_ARTICULO` | Búsqueda | `@TEJIDO_REFERENCIA` → "Código Solupyme -> id del artículo" |
+
+Regla: artículo `@TEJIDO_ARTICULO`; el consumo y las medidas propias los pone quien escribe las reglas
+(por ejemplo, `@TEJIDO_ANCHO ** @ALTO *T 0.0001` con `@TEJIDO_ANCHO` = `@ANCHO -- 2`).
+
+- El script 05 solo añade `ENR_TEJIDO_SOLUPYME` (`SOL_TEJIDOS_MAESTRO`, `idrow` → `cod_solupyme`). El motor
+  no cambia. `ENR_TEJIDO_ARTICULO` pasa a llamarse "Enrollable (tejido antiguo)...", sin borrarla.
+- `ENR_SALIDA_TEJIDO` no cambia (decisión del usuario).
+- **Prueba** `pruebas/prueba_05_tejido_maestro.sql`, con rollback:
+  - Un juego con una sola regla de tejido: el primer y el último tejido del maestro dan cada uno su artículo
+    de Solupyme, con 100,5 × 140,5 cm → tejido de 98,5 × 140,5 y consumo 1,3839 m², descripcion2 `98.50 x 140.50`.
+  - Una línea sin tejido sale como SIN ARTÍCULO.
+  - Los 935 tejidos del maestro tienen exactamente un artículo en `ARTICULOS`.
+  - Un `nacc_tejido_id` inexistente no se puede probar: la columna tiene clave ajena al maestro.
+- **Medidas con decimales:** `ancho` y `alto` ya son `decimal(12,2)` en las líneas (6 decimales en la
+  fabricación). Probado 100,5 × 140,5 con el motor sin cambios: condiciones, fórmulas, `*T`, `descripcion2`
+  y metros.
+- **Dato a tener en cuenta:** 454 de los 935 tejidos del maestro tienen el artículo de Solupyme **sin unidad**
+  (`ARTICULOS.unidad1` vacía; el resto tiene m²). El consumo y el artículo salen bien, pero la columna Unidad
+  de la hoja sale en blanco para esos. Se arregla en los datos de Solupyme.
+- Regresión de 94 pedidos (tipos 2, 3, 4 y 7): fabricación idéntica. Solo cambia el texto de los parámetros
+  guardados de HoneyComb (`@ANCHO` = `40.00` en vez de `40`) porque las medidas ya son decimales.
+
+## 2026-10-23 · 06: XML del enrollable, CANT y FACTOR según la unidad
+
+**Decisión del usuario:** el XML tiene que salir correcto. En HoneyComb, al principio el consumo iba siempre en
+`FACTOR`, y era incorrecto: los artículos que se cuentan (Ud y otras) llevan el consumo en `CANT`. El tejido
+va aparte. La regla debe valer para todas las fabricaciones; el usuario eligió **solo el enrollable por ahora**.
+
+**Regla** (la de HoneyComb, `sqlHoney/06`, 2026-10-15), ahora también en el bloque del enrollable (`articulo = 1`) de
+`sp_fichero_produccion_2`. Cada `<Detalles>` es una unidad:
+
+| Unidad del artículo | `Cn_CANT` | `Cn_FACTOR` |
+|---|---|---|
+| 1 Ud, 4 juego, 5 par, 6 min (se cuentan) | el consumo (sin ceros a la derecha: `2`, `0,5`) | `1` |
+| 2 m², 3 ml, **sin unidad** (se miden; el tejido) | `1` | el consumo |
+
+- Antes: `CANT` = cantidad de la línea y `FACTOR` = consumo, para todos los artículos.
+- Además: no se envían las líneas sin artículo (SIN ARTÍCULO) y los componentes salen en su orden (`orden, id`).
+- Un artículo que se cuenta y no tiene unidad en Solupyme saldría como "se mide". Con el tejido no importa. Revisar los
+  artículos que se usen en las reglas.
+- `06_xml_cant_factor_enrollable.sql`: cambio quirúrgico sobre la definición que hay en la BD (se sustituye el bloque
+  del cursor de los componentes; debe aparecer exactamente una vez). Se generan los dos scripts con
+  `herramientas/generar_06.py`.
+- Huellas SHA-256 de `sp_fichero_produccion_2` en LOCAL: original `FB3511DA…` (igual que el fichero `sqlHoney/06`),
+  con el 06 `BB1B7F37…`. `06_deshacer_...` devuelve **exactamente** la original. Copia de la definición anterior en
+  `backup/sp_fichero_produccion_2_antes_06_20261023.sql`.
+- Los demás productos no cambian: japonés, vertical, Compac y HoneyComb.
+- **Prueba** `pruebas/prueba_06_xml.sql`, 9/9 con rollback: línea de 2 unidades con un artículo de cada unidad.
+  - Ud consumo 2 → `CANT 2, FACTOR 1`, y consumo 0,5 → `CANT 0,5`.
+  - Juego → `CANT 1, FACTOR 1`.
+  - m² → `CANT 1, FACTOR 3,25`.
+  - ml (100,5 cm → 1,005 m) → `CANT 1, FACTOR 1,005`.
+  - Tejido sin unidad → `CANT 1, FACTOR 1,3839`, `P1 0,985` y `P2 1,405` m.
+  - El SIN ARTÍCULO no sale.
+- **Regresión del XML** `pruebas/regresion_xml.js`: 68 pedidos reales de japonés, vertical, Compac y HoneyComb sin
+  enrollable dan el XML **idéntico** con y sin el 06.
+- **Efecto en los pedidos antiguos con enrollable:** si se vuelve a pedir el XML de un pedido ya fabricado con el SP
+  antiguo, cambia (`CANT` y `FACTOR` por unidad; sin las líneas sin artículo). Ejemplo: un artículo en metros que
+  antes salía `CANT 9, FACTOR 1,5` pasa a `CANT 1, FACTOR 1,5`. Los 40 pedidos de la muestra cambian.
+- **Pendiente:** aplicar la misma regla a japonés, vertical y Compac. Ahí mandan `CANT` = cantidad de la línea (Compac
+  `CANT` 1 fijo). Con datos reales cambiarían muchas líneas; antes habría que ver una foto del XML antes y después.
+
 ### Pendiente
 
-- Cuando llegue el modelo nuevo de tejidos: volver a apuntar `ENR_TEJIDO_ARTICULO` (la salida del tejido no cambia).
+- Unidad en blanco en la hoja para los 454 tejidos cuyo artículo no tiene `unidad1` en Solupyme.
+- Regla CANT / FACTOR por unidad en japonés, vertical y Compac (el usuario decidió no tocarlos de momento).
 - 2.6 (comparación, aparcada): hoja y parámetros por pedido, con diferencias frente a otro pedido.
 - 2.7: guía de reglas del enrollable. Reparar `backend/test/fabricacion/run.js`.
