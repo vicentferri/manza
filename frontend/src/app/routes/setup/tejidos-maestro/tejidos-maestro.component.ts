@@ -6,6 +6,9 @@ import { ModalDirective } from 'ngx-bootstrap/modal';
 /*
  * Maestro de tejidos (SOL_TEJIDOS_MAESTRO / SOL_TEJIDOS_TIPOS, ver tejidos.md).
  * Una fila por tejido + color. Coste ml y grupo son calculados: aquí solo se muestran.
+ * Grupo = letra del (coste m² + 10 %, redondeado arriba) + criterio; lo calcula el backend al guardar.
+ * Coste ml: solo en los tejidos y lamas (89 / 127 mm) que marque el usuario; depende del coste m²
+ * y del precio minuto de mano de obra, que se cambia en "Parámetros ml".
  * No se borra: se da de baja.
  */
 @Component({
@@ -18,6 +21,8 @@ export class TejidosMaestroComponent implements OnInit {
 
     @ViewChild('modalTejido', { static: false }) modalTejido!: ModalDirective;
     @ViewChild('modalTipos', { static: false }) modalTipos!: ModalDirective;
+    @ViewChild('modalMl', { static: false }) modalMl!: ModalDirective;
+    @ViewChild('modalParamsMl', { static: false }) modalParamsMl!: ModalDirective;
 
     title = 'Maestro de Tejidos';
 
@@ -29,26 +34,35 @@ export class TejidosMaestroComponent implements OnInit {
     tiposActivos: any[] = [];
 
     busqueda = '';
-    filtros: any = { cod_solupyme: '', desc_tipo: '', nombre: '', color: '', criterio: '', coste_m2: '', coste_ml: '', grupo: '' };
+    filtros: any = { cod_solupyme: '', desc_tipo: '', nombre: '', color: '', criterio: '', coste_m2: '', grupo: '' };
     filtroTipo: any = '';
     filtroImpresion = '';
     filtroEstado = 'activos';
     filtroIncompletos = false;
+    filtroMl = '';
     sortCol = '';
     sortDir: 'asc' | 'desc' = 'asc';
 
     pagina = 1;
     porPagina = 50;
 
-    form: any = {};
+    // La ventana de edición está siempre en la página: lamas y ml tienen que existir desde el principio
+    form: any = { lamas: {}, ml: {} };
     guardando = false;
 
     formTipo: any = { idrow: null, descripcion: '' };
+
+    // Coste ml: lamas disponibles, precio minuto y marcado en bloque
+    lamas: any[] = [];
+    precioMinuto: number = null;
+    precioMinutoEdit: any = null;
+    mlLamas: any = {};
 
     constructor(private service: HaruService, private toaster: ToastrService) { }
 
     ngOnInit() {
         this.loadTipos();
+        this.loadConfigMl();
         this.loadData();
     }
 
@@ -57,7 +71,11 @@ export class TejidosMaestroComponent implements OnInit {
     loadData() {
         this.service.HTTP_Get('/sm/tejidos_maestro').subscribe(
             data => {
-                this.datos = data.Table || [];
+                // ml_89, ml_127...: el coste ml de cada lama como columna, para filtrar y ordenar
+                this.datos = (data.Table || []).map(r => {
+                    Object.keys(r.ml || {}).forEach(a => r['ml_' + a] = r.ml[a]);
+                    return r;
+                });
                 const ids = new Set(this.datos.map(d => d.idrow));
                 this.seleccionados.forEach(id => { if (!ids.has(id)) { this.seleccionados.delete(id); } });
                 this.aplicarFiltros();
@@ -74,6 +92,23 @@ export class TejidosMaestroComponent implements OnInit {
             },
             err => { this.error(err, 'Error al cargar los tipos de tejido'); }
         );
+    }
+
+    loadConfigMl() {
+        this.service.HTTP_Get('/sm/tejidos_maestro/ml_config').subscribe(
+            data => {
+                this.lamas = data.lamas || [];
+                this.precioMinuto = data.precio_minuto;
+                this.lamas.forEach(l => {
+                    if (!('ml_' + l.ancho_mm in this.filtros)) { this.filtros['ml_' + l.ancho_mm] = ''; }
+                });
+            },
+            err => { this.error(err, 'Error al cargar los parámetros del coste ml'); }
+        );
+    }
+
+    tieneMl(fila: any, ancho: number): boolean {
+        return fila.ml && fila.ml.hasOwnProperty(ancho);
     }
 
     private error(err: any, defecto: string) {
@@ -95,6 +130,7 @@ export class TejidosMaestroComponent implements OnInit {
         this.filtroImpresion = '';
         this.filtroEstado = 'activos';
         this.filtroIncompletos = false;
+        this.filtroMl = '';
         this.onFiltro();
     }
 
@@ -110,6 +146,8 @@ export class TejidosMaestroComponent implements OnInit {
         }
         if (this.filtroImpresion !== '') { result = result.filter(r => !!r.impresion_digital === (this.filtroImpresion === '1')); }
         if (this.filtroIncompletos) { result = result.filter(r => r.tipo_tejido == null || r.criterio == null); }
+        if (this.filtroMl === 'con') { result = result.filter(r => Object.keys(r.ml || {}).length > 0); }
+        if (this.filtroMl === 'sin') { result = result.filter(r => Object.keys(r.ml || {}).length === 0); }
 
         if (this.busqueda.trim()) {
             const q = this.busqueda.trim().toLowerCase();
@@ -195,7 +233,10 @@ export class TejidosMaestroComponent implements OnInit {
     // ── Alta / edición ──────────────────────────────────────────────
 
     openAdd() {
-        this.form = { idrow: null, cod_solupyme: '', tipo_tejido: null, nombre: '', color: '', criterio: null, impresion_digital: false, coste_m2: null };
+        this.form = {
+            idrow: null, cod_solupyme: '', tipo_tejido: null, nombre: '', color: '', criterio: null,
+            impresion_digital: false, coste_m2: null, lamas: {}, ml: {}
+        };
         this.modalTejido.show();
     }
 
@@ -211,8 +252,9 @@ export class TejidosMaestroComponent implements OnInit {
         this.form = {
             idrow: fila.idrow, cod_solupyme: fila.cod_solupyme, tipo_tejido: fila.tipo_tejido, nombre: fila.nombre,
             color: fila.color, criterio: fila.criterio, impresion_digital: !!fila.impresion_digital, coste_m2: fila.coste_m2,
-            coste_ml: fila.coste_ml, grupo: fila.grupo
+            grupo: fila.grupo, ml: fila.ml || {}, lamas: {}
         };
+        Object.keys(fila.ml || {}).forEach(a => this.form.lamas[a] = true);
         this.modalTejido.show();
     }
 
@@ -222,18 +264,93 @@ export class TejidosMaestroComponent implements OnInit {
             return;
         }
         this.guardando = true;
-        this.service.HTTP_Post('/sm/tejidos_maestro', JSON.stringify(this.form)).subscribe(
+        const payload = Object.assign({}, this.form, {
+            lamas: this.lamas.filter(l => this.form.lamas[l.ancho_mm]).map(l => l.ancho_mm)
+        });
+        this.service.HTTP_Post('/sm/tejidos_maestro', JSON.stringify(payload)).subscribe(
             () => {
                 this.guardando = false;
                 this.toaster.success('Tejido guardado', this.title);
                 this.modalTejido.hide();
                 this.loadData();
                 this.loadTipos();
+                this.loadConfigMl();
             },
             err => {
                 this.guardando = false;
                 this.error(err, 'No se ha podido guardar el tejido');
             }
+        );
+    }
+
+    recalcular() {
+        if (!confirm('¿Recalcular el grupo y el coste ml de todos los tejidos?')) { return; }
+        this.service.HTTP_Post('/sm/tejidos_maestro/calcular', '{}').subscribe(
+            data => {
+                const sinGrupo = data.sin_grupo ? ' (' + data.sin_grupo + ' sin grupo)' : '';
+                this.toaster.success(data.calculados + ' tejidos recalculados' + sinGrupo + ', ' + data.costes_ml + ' costes ml', this.title);
+                this.loadData();
+            },
+            err => { this.error(err, 'No se han podido recalcular'); }
+        );
+    }
+
+    // ── Coste ml ────────────────────────────────────────────────────
+
+    /* Marcar o quitar el cálculo de coste ml en los tejidos seleccionados */
+    openMl() {
+        if (this.seleccionados.size === 0) {
+            this.toaster.warning('Selecciona al menos un tejido', this.title);
+            return;
+        }
+        this.mlLamas = {};
+        this.lamas.forEach(l => this.mlLamas[l.ancho_mm] = true);
+        this.modalMl.show();
+    }
+
+    get mlLamasElegidas(): number[] {
+        return this.lamas.filter(l => this.mlLamas[l.ancho_mm]).map(l => l.ancho_mm);
+    }
+
+    aplicarMl(marcar: boolean) {
+        const lamas = this.mlLamasElegidas;
+        if (lamas.length === 0) {
+            this.toaster.warning('Elige al menos una lama', this.title);
+            return;
+        }
+        const ids = Array.from(this.seleccionados);
+        this.service.HTTP_Post('/sm/tejidos_maestro/ml', JSON.stringify({ ids, lamas, marcar })).subscribe(
+            () => {
+                const texto = marcar ? 'Coste ml calculado' : 'Coste ml quitado';
+                this.toaster.success(texto + ' en ' + ids.length + ' tejido(s) (' + lamas.join(' y ') + ' mm)', this.title);
+                this.modalMl.hide();
+                this.loadData();
+                this.loadConfigMl();
+            },
+            err => { this.error(err, 'No se ha podido cambiar el coste ml'); }
+        );
+    }
+
+    openParamsMl() {
+        this.precioMinutoEdit = this.precioMinuto;
+        this.modalParamsMl.show();
+    }
+
+    guardarPrecioMinuto() {
+        const valor = this.precioMinutoEdit;
+        if (valor == null || valor === '' || isNaN(+valor) || +valor < 0) {
+            this.toaster.warning('El precio minuto tiene que ser un número mayor o igual que 0', this.title);
+            return;
+        }
+        if (!confirm('¿Cambiar el precio minuto a ' + valor + ' € y recalcular el coste ml de todos los tejidos?')) { return; }
+        this.service.HTTP_Post('/sm/tejidos_maestro/precio_minuto', JSON.stringify({ valor })).subscribe(
+            data => {
+                this.toaster.success('Precio minuto guardado; ' + data.costes_ml + ' costes ml recalculados', this.title);
+                this.modalParamsMl.hide();
+                this.loadConfigMl();
+                this.loadData();
+            },
+            err => { this.error(err, 'No se ha podido guardar el precio minuto'); }
         );
     }
 

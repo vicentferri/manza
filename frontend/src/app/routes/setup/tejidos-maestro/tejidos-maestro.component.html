@@ -41,6 +41,13 @@
                 </select>
             </div>
             <div class="col-auto">
+                <select class="form-control form-control-sm" [(ngModel)]="filtroMl" [ngModelOptions]="{ standalone: true }" (change)="onFiltro()">
+                    <option value="">Coste ml: todos</option>
+                    <option value="con">Con coste ml</option>
+                    <option value="sin">Sin coste ml</option>
+                </select>
+            </div>
+            <div class="col-auto">
                 <label class="mb-0 small">
                     <input type="checkbox" [(ngModel)]="filtroIncompletos" [ngModelOptions]="{ standalone: true }" (change)="onFiltro()" />
                     Sin tipo o sin criterio
@@ -71,10 +78,22 @@
                 <button type="button" class="btn btn-info btn-sm mr-2" [disabled]="!hayBajasSeleccionadas" (click)="cambiarActivo(true)">
                     <i class="fa fa-undo"></i> Reactivar
                 </button>
+                <button type="button" class="btn btn-primary btn-sm mr-2" [disabled]="seleccionados.size === 0" (click)="openMl()"
+                    title="Calcular o quitar el coste ml de los tejidos seleccionados">
+                    <i class="fa fa-arrows-h"></i> Coste ml
+                </button>
                 <button type="button" class="btn btn-outline-secondary btn-sm mr-1" (click)="seleccionarTodos()">Todos</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm mr-2" (click)="seleccionarNinguno()">Ninguno</button>
                 <button type="button" class="btn btn-secondary btn-sm pull-right" (click)="openTipos()">
                     <i class="fa fa-tags"></i> Tipos de Tejido
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm pull-right mr-2" (click)="recalcular()"
+                    title="Recalcular grupo y coste ml de todos los tejidos">
+                    <i class="fa fa-refresh"></i> Recalcular
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm pull-right mr-2" (click)="openParamsMl()"
+                    title="Precio minuto de mano de obra y lamas">
+                    <i class="fa fa-sliders"></i> Parámetros ml
                 </button>
             </div>
         </div>
@@ -104,8 +123,11 @@
                         <th class="tm-th-sm text-right tm-sortable" (click)="ordenar('coste_m2')">
                             Coste m² <i *ngIf="sortCol === 'coste_m2'" class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
                         </th>
-                        <th class="tm-th-sm text-right tm-calc" title="Calculado a partir del coste m²">Coste ml</th>
-                        <th class="tm-th-sm text-center tm-calc" title="Calculado">Grupo</th>
+                        <th *ngFor="let l of lamas" class="tm-th-sm text-right tm-calc tm-sortable" (click)="ordenar('ml_' + l.ancho_mm)"
+                            title="Calculado a partir del coste m² y del precio minuto de mano de obra">
+                            Coste ml {{ l.ancho_mm }} <i *ngIf="sortCol === 'ml_' + l.ancho_mm" class="fa" [ngClass]="sortDir === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc'"></i>
+                        </th>
+                        <th class="tm-th-sm text-center tm-calc" title="Letra del (coste m² + 10 %, redondeado arriba) + criterio">Grupo</th>
                     </tr>
                     <tr class="tm-filter-row">
                         <th></th>
@@ -116,7 +138,7 @@
                         <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar..." [(ngModel)]="filtros.criterio" (input)="onFiltro()" /></th>
                         <th></th>
                         <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar..." [(ngModel)]="filtros.coste_m2" (input)="onFiltro()" /></th>
-                        <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar..." [(ngModel)]="filtros.coste_ml" (input)="onFiltro()" /></th>
+                        <th *ngFor="let l of lamas"><input type="text" class="form-control form-control-sm" placeholder="Filtrar..." [(ngModel)]="filtros['ml_' + l.ancho_mm]" (input)="onFiltro()" /></th>
                         <th><input type="text" class="form-control form-control-sm" placeholder="Filtrar..." [(ngModel)]="filtros.grupo" (input)="onFiltro()" /></th>
                     </tr>
                 </thead>
@@ -139,17 +161,16 @@
                         </td>
                         <td class="text-center"><i *ngIf="fila.impresion_digital" class="fa fa-check text-success"></i></td>
                         <td class="text-right">{{ fila.coste_m2 | number:'1.2-4' }}</td>
-                        <td class="text-right tm-calc">
-                            <span *ngIf="fila.coste_ml != null">{{ fila.coste_ml | number:'1.2-4' }}</span>
-                            <small *ngIf="fila.coste_ml == null" class="text-muted">pendiente</small>
+                        <td *ngFor="let l of lamas" class="text-right tm-calc">
+                            <span *ngIf="tieneMl(fila, l.ancho_mm)">{{ fila.ml[l.ancho_mm] | number:'1.2-4' }}</span>
                         </td>
                         <td class="text-center tm-calc">
                             <span *ngIf="fila.grupo">{{ fila.grupo }}</span>
-                            <small *ngIf="!fila.grupo" class="text-muted">pendiente</small>
+                            <small *ngIf="!fila.grupo" class="text-muted">{{ fila.criterio == null ? 'sin criterio' : 'pendiente' }}</small>
                         </td>
                     </tr>
                     <tr *ngIf="datosPagina.length === 0">
-                        <td colspan="10" class="text-center text-muted">No hay tejidos con estos filtros</td>
+                        <td [attr.colspan]="9 + lamas.length" class="text-center text-muted">No hay tejidos con estos filtros</td>
                     </tr>
                 </tbody>
             </table>
@@ -235,11 +256,22 @@
                         <input type="checkbox" [(ngModel)]="form.impresion_digital" [ngModelOptions]="{ standalone: true }" />
                     </div>
                 </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label">Calcular coste ml</label>
+                    <div class="col-sm-8 pt-1">
+                        <label *ngFor="let l of lamas" class="mr-3 mb-0">
+                            <input type="checkbox" [(ngModel)]="form.lamas[l.ancho_mm]" [ngModelOptions]="{ standalone: true }" />
+                            {{ l.ancho_mm }} mm
+                        </label>
+                    </div>
+                </div>
                 <div class="form-group row mb-0" *ngIf="form.idrow">
                     <label class="col-sm-4 col-form-label text-muted">Calculados</label>
                     <div class="col-sm-8 pt-1 text-muted small">
-                        Coste ml: {{ form.coste_ml != null ? (form.coste_ml | number:'1.2-4') : 'pendiente' }} ·
                         Grupo: {{ form.grupo || 'pendiente' }}
+                        <span *ngFor="let l of lamas">
+                            <span *ngIf="tieneMl(form, l.ancho_mm)"> · Coste ml {{ l.ancho_mm }}: {{ form.ml[l.ancho_mm] | number:'1.2-4' }}</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -248,6 +280,80 @@
                     <i class="fa fa-save"></i> Guardar
                 </button>
                 <button type="button" class="btn btn-secondary btn-sm" (click)="modalTejido.hide()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL COSTE ML DE LA SELECCIÓN -->
+<div bsModal #modalMl="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Coste ml — {{ seleccionados.size }} tejido(s)</h5>
+                <button type="button" class="close" (click)="modalMl.hide()"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-2">Lamas a las que calcular (o quitar) el coste ml:</p>
+                <label *ngFor="let l of lamas" class="d-block mb-1">
+                    <input type="checkbox" [(ngModel)]="mlLamas[l.ancho_mm]" [ngModelOptions]="{ standalone: true }" />
+                    {{ l.ancho_mm }} mm
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" [disabled]="mlLamasElegidas.length === 0" (click)="aplicarMl(true)">
+                    <i class="fa fa-check"></i> Calcular
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="mlLamasElegidas.length === 0" (click)="aplicarMl(false)">
+                    <i class="fa fa-times"></i> Quitar
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalMl.hide()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL PARÁMETROS DEL COSTE ML -->
+<div bsModal #modalParamsMl="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Parámetros del coste ml</h5>
+                <button type="button" class="close" (click)="modalParamsMl.hide()"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group row">
+                    <label class="col-sm-6 col-form-label">Precio minuto mano de obra (€)</label>
+                    <div class="col-sm-6">
+                        <input type="number" class="form-control form-control-sm" min="0" step="0.01"
+                            [(ngModel)]="precioMinutoEdit" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                </div>
+                <table class="table table-sm table-bordered mb-2">
+                    <thead class="thead-light">
+                        <tr><th>Lama</th><th class="text-right">Corte bobina</th><th class="text-right">Bobina</th><th class="text-center">Tejidos</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let l of lamas">
+                            <td>{{ l.ancho_mm }} mm</td>
+                            <td class="text-right">{{ l.tiempo_corte_min | number:'1.0-2' }} min</td>
+                            <td class="text-right">{{ l.ancho_bobina_m | number:'1.0-2' }} × {{ l.alto_bobina_m | number:'1.0-2' }} m</td>
+                            <td class="text-center">{{ l.tejidos }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <small class="text-muted">
+                    Coste ml = coste m² × ancho lama + (precio minuto × minutos de corte) ÷ ml por bobina,
+                    con ml por bobina = (ancho bobina ÷ ancho lama) × alto bobina.
+                </small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm" (click)="guardarPrecioMinuto()">
+                    <i class="fa fa-save"></i> Guardar y recalcular
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="modalParamsMl.hide()">Cerrar</button>
             </div>
         </div>
     </div>

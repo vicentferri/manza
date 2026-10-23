@@ -7,8 +7,8 @@
      criterio          -> ancho del rollo en cm
      nombre + color + criterio no se repiten (VERA BLOCK 200 y 250 son tejidos distintos)
      coste_m2          -> se mantiene en la pantalla del maestro
-     coste_ml, grupo   -> calculados por un procedimiento (pendiente de definir);
-                          no se teclean
+     grupo             -> calculado por sp_tejidos_maestro_calcular (script 03); no se teclea
+     El coste ml va en SOL_TEJIDOS_MAESTRO_COSTE_ML (script 04)
    Tablas independientes: no se enlazan con SOL_ARTICULOS_TEJIDOS ni con ARTICULOS.
    No se borran tejidos: baja lógica con activo = 0.
    Idempotente: crea lo que falte y añade los tipos que no existan.
@@ -47,7 +47,6 @@ begin
 		impresion_digital bit not null constraint DF_SOL_TEJIDOS_MAESTRO_IMPRESION default 0,
 		coste_m2 decimal(10,4) not null
 			constraint CK_SOL_TEJIDOS_MAESTRO_COSTE_M2 check (coste_m2 >= 0),
-		coste_ml decimal(10,4) null,
 		grupo varchar(10) null,
 		calculado datetime null,
 		activo bit not null constraint DF_SOL_TEJIDOS_MAESTRO_ACTIVO default 1,

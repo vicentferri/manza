@@ -232,6 +232,10 @@ smapi.post('/tejidos_cliente_producto_operate', TejidosController.tejidos_client
 var TejidosMaestroController = require('../controllers/sm/tejidos_maestro');
 smapi.get('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.lista);
 smapi.post('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.guardar);
+smapi.post('/tejidos_maestro/calcular', Auth.ensureAuth, TejidosMaestroController.calcular);
+smapi.post('/tejidos_maestro/ml', Auth.ensureAuth, TejidosMaestroController.ml);
+smapi.get('/tejidos_maestro/ml_config', Auth.ensureAuth, TejidosMaestroController.ml_config);
+smapi.post('/tejidos_maestro/precio_minuto', Auth.ensureAuth, TejidosMaestroController.precio_minuto);
 smapi.post('/tejidos_maestro/activo', Auth.ensureAuth, TejidosMaestroController.activo);
 smapi.get('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipos);
 smapi.post('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipo_guardar);

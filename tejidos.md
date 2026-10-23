@@ -5,7 +5,7 @@ y todo cambio que se haga (código y BD), para que el trabajo de la rama `fabric
 (motor v3 del enrollable) pueda apoyarse en él sin pisarse.
 
 - Rama: `fabricacion-tipo-1`.
-- Estado: tablas, carga, backend y pantalla hechos en local (2026-10-22). Pendiente: procedimiento de coste ml y grupo.
+- Estado: tablas, carga, grupo, coste ml, backend y pantalla hechos en local (2026-10-23).
 - BD de trabajo: `SOLARMANES_DEV` en local. Producción la despliega el usuario.
 
 ---
@@ -25,7 +25,7 @@ para dar de alta y mantener **todos nuestros tejidos** (HoneyComb incluido). Cad
 | Coste m² | Excel / pantalla | Todos los tejidos tienen coste en m². Se mantiene en esta pantalla (no viene de Solupyme). |
 | Criterio | Excel / pantalla | |
 | Impresión digital | Excel / pantalla | Sí / No. |
-| Coste ml | **Calculado** | A partir del coste m² con una fórmula que dará el usuario. |
+| Coste ml | **Calculado** | Solo en los tejidos y lamas (89 / 127 mm) que marque el usuario (3.3). |
 | Grupo | **Calculado** | Con una fórmula que dará el usuario. |
 
 Los campos calculados nunca se teclean.
@@ -34,7 +34,8 @@ Los campos calculados nunca se teclean.
 
 1. Una fila por tejido + color.
 2. Tipos de tejido: screen, blackout, etc. Llegan en un Excel aparte.
-3. Todos los tejidos tienen coste m²; el coste ml se calcula desde el m² con una fórmula.
+3. Todos los tejidos tienen coste m²; el coste ml se calcula desde el m² con una fórmula, solo en
+   los tejidos que elija el usuario y para la lama de 89 mm, la de 127 mm o las dos.
 4. El coste se mantiene en esta pantalla.
 5. HoneyComb entra en el maestro.
 6. **La tabla se carga desde el Excel del usuario. No se toma nada de los datos actuales**
@@ -104,13 +105,28 @@ SOL_TEJIDOS_MAESTRO                     -- una fila por tejido + color (TEJIDOS.
   criterio int null         check > 0          -- ancho del rollo en cm
   impresion_digital bit not null default 0
   coste_m2 decimal(10,4) not null  check >= 0
-  coste_ml decimal(10,4) null      -- calculado (3.3)
   grupo varchar(10) null           -- calculado (3.3)
-  calculado datetime null          -- última vez que se calcularon coste_ml y grupo
+  calculado datetime null          -- última vez que se calculó el grupo
   activo bit not null default 1
   created / modified datetime, usuario int
   índices: (tipo_tejido); único (nombre, color, criterio)
+
+SOL_TEJIDOS_GRUPOS_LETRAS               -- precio de grupo → letra (2 = A … 55 = AZ), script 03
+
+SOL_TEJIDOS_PARAMETROS                  -- script 04
+  clave varchar(50) PK                  -- PRECIO_MINUTO_MO = 0,28 € (se cambia en la pantalla)
+  descripcion, valor decimal(10,4), modified, usuario
+
+SOL_TEJIDOS_LAMAS                       -- script 04: 89 y 127 mm
+  ancho_mm int PK, tiempo_corte_min, ancho_bobina_m, alto_bobina_m   (20 min, 1 × 30 m)
+
+SOL_TEJIDOS_MAESTRO_COSTE_ML            -- script 04: lamas marcadas en cada tejido
+  tejido -> SOL_TEJIDOS_MAESTRO.idrow (on delete cascade), ancho_mm -> SOL_TEJIDOS_LAMAS
+  coste_ml decimal(10,4) null, calculado datetime      PK (tejido, ancho_mm)
 ```
+
+- La columna `coste_ml` que tenía el maestro se quitó en el script 04: cada tejido puede tener
+  dos costes ml (uno por lama), y solo los que marque el usuario.
 
 - No hay borrado: baja lógica con `activo = 0`.
 - `tipo_tejido` y `criterio` admiten NULL porque el Excel trae filas sin ellos (3.2).
@@ -147,27 +163,64 @@ Análisis del Excel (2026-10-22):
 
 ### 3.3 Campos calculados (coste ml y grupo)
 
-- SP `sp_tejidos_maestro_calcular` (un tejido o todos) que aplica las fórmulas y guarda
-  `coste_ml`, `grupo` y `calculado`.
-- Hasta tener las fórmulas el SP existe pero deja los dos campos a NULL; la pantalla muestra
-  "pendiente".
-- Se recalcula al guardar un tejido, tras la carga del Excel y con un botón "Recalcular".
+**Grupo** (fórmula del usuario, 2026-10-23):
+
+1. Precio de grupo = coste m² + 10 %, redondeado a la unidad superior (`ceiling(coste_m2 * 1.10)`).
+   Siempre con el coste m², aunque el tejido se venda por ml. Si ya es entero se queda igual
+   (10,00 € → 11,00 → J). Mínimo grupo A (un precio de grupo por debajo de 2 cuenta como 2).
+2. La letra sale del precio de grupo: A = 2 €, B = 3 €, C = 4 €, D = 5 €… (alfabeto con Ñ: N = 15,
+   Ñ = 16, O = 17… Z = 28, AA = 29… AÑ = 43… AZ = 55). Tabla facilitada por el usuario, guardada en
+   `SOL_TEJIDOS_GRUPOS_LETRAS`. Por encima de 55 no hay grupo.
+3. Grupo = letra + criterio (ancho máximo de pieza en cm).
+
+Ejemplo: JÁVEA, 3,90 €/m², ancho máximo 300 cm → 3,90 × 1,10 = 4,29 → 5 → D → **D300**.
+
+- Sin criterio no hay grupo (queda "pendiente").
+**Coste ml** (calculadora del usuario `CALCULADORA PRECIO ML VERTICAL.xlsx`, 2026-10-23), por lama:
+
+| Parte | Cálculo |
+|---|---|
+| Tejido por ml | coste m² × ancho lama (m) × 1 m |
+| Corte de bobina | precio minuto mano de obra × minutos de corte |
+| ml por bobina | (ancho bobina ÷ ancho lama) × alto bobina |
+| Mano de obra por ml | corte de bobina ÷ ml por bobina |
+| **Coste ml** | tejido por ml + mano de obra por ml (4 decimales) |
+
+Ejemplo de la calculadora: 7,42 €/m², 0,28 €/min, 20 min, bobina 1 × 30 m → **0,6770** (89 mm) y
+**0,9660** (127 mm).
+
+- Solo se calcula en los tejidos que marque el usuario, y para 89 mm, 127 mm o las dos.
+- El precio minuto se cambia desde la pantalla ("Parámetros ml") y recalcula todos los costes ml.
+- Los minutos de corte y la bobina están en `SOL_TEJIDOS_LAMAS` (de momento se cambian por script).
+
+Implementación (`sqlTejidos/03_calculo_grupo.sql`, hecho en local):
+
+- Tabla `SOL_TEJIDOS_GRUPOS_LETRAS` (precio → letra, 2…55).
+- Procedimiento `sp_tejidos_maestro_calcular @idrow` (NULL = todos): guarda `grupo` y `calculado`
+  y devuelve `calculados` y `sin_grupo`. El script lo ejecuta al final para todos.
+- El backend lo llama al guardar un tejido; la pantalla tiene el botón "Recalcular grupos"
+  (`POST /tejidos_maestro/calcular`).
+- Resultado con los datos actuales: 917 con grupo (B200…L250), 18 sin grupo por no tener criterio.
+- El script `04_coste_ml.sql` amplía el mismo procedimiento para calcular también el coste ml de
+  las lamas marcadas; ahora devuelve además `costes_ml`. Con la carga inicial no hay ninguna marcada.
 
 ### 3.4 Backend
 
 Controlador `backend/controllers/sm/tejidos_maestro.js` (consultas con parámetros, mismo patrón
-que `accionamientos_nuevo.js`; no hacen falta procedimientos). Rutas en `/api/sm`, todas con
+que `accionamientos_nuevo.js`; el único procedimiento es el de cálculo, `sp_tejidos_maestro_calcular`). Rutas en `/api/sm`, todas con
 `Auth.ensureAuth`:
 
 | Método | Ruta | Qué hace |
 |---|---|---|
 | GET | `/tejidos_maestro` | Lista completa con la descripción del tipo. |
-| POST | `/tejidos_maestro` | Alta (`idrow` vacío) o modificación. Nunca escribe coste ml ni grupo. Código a 5 cifras. |
+| POST | `/tejidos_maestro` | Alta (`idrow` vacío) o modificación, y recalcula. `lamas` (opcional, `[89]`, `[127]`, `[89, 127]` o `[]`): lamas a las que calcular coste ml. Nunca escribe grupo ni coste ml a mano. Código a 5 cifras. |
 | POST | `/tejidos_maestro/activo` | `{ ids, activo }`: baja o reactivación. |
 | GET | `/tejidos_maestro/tipos` | Tipos de tejido con cuántos tejidos los usan. |
 | POST | `/tejidos_maestro/tipos` | Alta, cambio de nombre o baja de un tipo. |
-
-Pendiente: `/tejidos_maestro/calcular` cuando exista el procedimiento de coste ml y grupo.
+| POST | `/tejidos_maestro/calcular` | Recalcula grupo y coste ml de todos (`sp_tejidos_maestro_calcular`). |
+| POST | `/tejidos_maestro/ml` | `{ ids, lamas, marcar }`: marca (o quita) lamas en varios tejidos y recalcula. |
+| GET | `/tejidos_maestro/ml_config` | Precio minuto y lamas con sus parámetros. |
+| POST | `/tejidos_maestro/precio_minuto` | `{ valor }`: cambia el precio minuto y recalcula todos los costes ml. |
 
 ### 3.5 Frontend
 
@@ -178,7 +231,12 @@ usuarios; título en `shared/page-titles.ts`.
 
 - Tabla con búsqueda, filtro por columna, orden y paginación de 50.
 - Filtros rápidos: tipo (o "sin tipo"), impresión digital, activos / bajas, "sin tipo o sin criterio".
-- Alta / edición en modal (doble clic en la fila o botón Editar). Coste ml y grupo solo lectura ("pendiente").
+- Alta / edición en modal (doble clic en la fila o botón Editar), con casillas "Calcular coste ml"
+  89 mm / 127 mm. Grupo y coste ml solo lectura.
+- Columnas "Coste ml 89" y "Coste ml 127" (vacías si la lama no está marcada); filtro "con / sin coste ml".
+- Botón "Coste ml": marca o quita las lamas elegidas en los tejidos seleccionados.
+- "Parámetros ml": cambia el precio minuto (recalcula todo) y muestra los parámetros de cada lama.
+- "Recalcular": grupo y coste ml de todos.
 - Dar de baja / reactivar la selección.
 - Modal "Tipos de Tejido": alta, cambio de nombre y baja.
 
@@ -206,11 +264,16 @@ usuarios; título en `shared/page-titles.ts`.
 | 3 | Procedimientos | No hacen falta (el backend usa consultas con parámetros) |
 | 4 | Backend: controlador y rutas | **Hecho**, probado contra la BD local |
 | 5 | Frontend: pantalla, mosaico y permiso | **Hecho**; falta probarla con datos en el navegador (ver nota) |
-| 6 | Procedimiento de cálculo de coste ml y grupo | Lo definirá el usuario |
+| 6 | Cálculo del grupo (`03_calculo_grupo.sql`) | **Hecho en local** |
+| 6b | Coste ml por lama (`04_coste_ml.sql`), backend y pantalla | **Hecho en local** |
 | 7 | Uso del maestro desde tarifas / fabricación v3 y relación con las tablas actuales | Por decidir |
 
-Nota (2026-10-22): `environment.ts` está como en `main` (apunta a producción), así que la pantalla
-local no lee el backend local. La pantalla compila y se pinta; la API se probó aparte.
+Pantalla probada en el navegador contra el backend local (2026-10-23): carga, selección, coste ml en
+bloque, edición con lamas y cambio de precio minuto. `environment.ts` en local: `https://localhost:3001`
+y `api_surl: '/api'` (no se commitea).
+
+Pendiente: el token de sesión no lleva el id de usuario (solo nombre, apellidos, email y rol), así que
+`usuario` se guarda vacío en las tablas del maestro.
 
 Cada script se aplica primero en local; las pruebas en
 la BD local se deshacen al terminar.
@@ -220,7 +283,7 @@ la BD local se deshacen al terminar.
 ## 5. Preguntas abiertas
 
 - ~~P1. Criterio~~: es el ancho del rollo en cm (respondido 2026-10-22).
-- **P2. Fórmulas** de coste ml y grupo: las definirá el usuario más adelante.
+- ~~P2. Fórmulas~~: grupo y coste ml definidos (2026-10-23).
 - **P3. Futuro.** Cuándo y cómo el maestro sustituirá a `SOL_ARTICULOS_TEJIDOS`, a
   `SOL_ARTICULOS_TEJIDOS_GRUPOS` y a las tablas de HoneyComb (fase 7).
 - ~~P4. Precio m²~~: son de prueba; se cargan y se modificarán en el futuro.
@@ -239,3 +302,6 @@ la BD local se deshacen al terminar.
 | 2026-10-22 | Script 01: fuera `nombre_solupyme` (el usuario quitó `NOMBRE SP` del Excel); único (nombre, color, criterio). Tabla vacía recreada | Aplicado (`SOLARMANES_DEV`) | Pendiente |
 | 2026-10-22 | `sqlTejidos/02_carga_tejidos.sql` (generado desde `TEJIDOS.xlsx`): 935 tejidos | Aplicado (`SOLARMANES_DEV`) | Pendiente |
 | 2026-10-22 | Backend `tejidos_maestro.js` + rutas; pantalla `tejidos-maestro`, mosaico, permiso `config_tejidos`. Pruebas de la API deshechas (fila y tipo de prueba borrados, identidades reajustadas) | — | Pendiente |
+| 2026-10-23 | `sqlTejidos/03_calculo_grupo.sql`: `SOL_TEJIDOS_GRUPOS_LETRAS` (2…55), `sp_tejidos_maestro_calcular`, grupos de los 935 tejidos. Backend recalcula al guardar y ruta `/calcular`; botón en la pantalla. Pruebas deshechas | Aplicado (`SOLARMANES_DEV`) | Pendiente |
+| 2026-10-23 | `sqlTejidos/04_coste_ml.sql`: `SOL_TEJIDOS_PARAMETROS` (precio minuto 0,28), `SOL_TEJIDOS_LAMAS` (89 y 127), `SOL_TEJIDOS_MAESTRO_COSTE_ML`; fuera `SOL_TEJIDOS_MAESTRO.coste_ml`; `sp_tejidos_maestro_calcular` calcula también el coste ml. Script 01 sin `coste_ml`. Backend (rutas `/ml`, `/ml_config`, `/precio_minuto`) y pantalla. Pruebas deshechas | Aplicado (`SOLARMANES_DEV`) | Pendiente |
+| 2026-10-23 | Pantalla: se inicializa el formulario con `lamas` y `ml` (la ventana de edición, siempre en la página, rompía el refresco de toda la pantalla). Pruebas en el navegador deshechas | — | — |
