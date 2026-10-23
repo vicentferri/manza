@@ -228,6 +228,14 @@ smapi.post('/tejidos_cliente_del', TejidosController.del_tejido_cliente);
 smapi.get('/tejidos_cliente_producto', TejidosController.tejidos_cliente_producto);
 smapi.post('/tejidos_cliente_producto_operate', TejidosController.tejidos_cliente_producto_operate);
 
+/* Maestro de tejidos (SOL_TEJIDOS_MAESTRO / SOL_TEJIDOS_TIPOS, ver tejidos.md) */
+var TejidosMaestroController = require('../controllers/sm/tejidos_maestro');
+smapi.get('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.lista);
+smapi.post('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.guardar);
+smapi.post('/tejidos_maestro/activo', Auth.ensureAuth, TejidosMaestroController.activo);
+smapi.get('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipos);
+smapi.post('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipo_guardar);
+
 smapi.get('/tejidos_atributos', TejidosController.tejidos_atributos);
 smapi.post('/tejidos_atributos_put', TejidosController.put_tejidos_atributos);
 smapi.post('/tejidos_atributod_del', TejidosController.del_tejido_atributos);

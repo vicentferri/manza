@@ -161,6 +161,13 @@
     </div>
     <div class="card-body py-3">
       <div class="row">
+        <div class="col-md-2 col-sm-4 col-6 mb-2" *ngIf="can('config_tejidos')">
+          <a [routerLink]="['/routes/master/tejidos-maestro']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
+            <i class="fa fa-table fa-2x mb-1 d-block"></i>
+            <strong class="d-block">Maestro de Tejidos</strong>
+            <small class="text-muted">Tejidos, colores, costes y grupos</small>
+          </a>
+        </div>
         <div class="col-md-2 col-sm-4 col-6 mb-2">
           <a [routerLink]="['/routes/master/tejidos']" class="list-group-item list-group-item-action text-center py-3 sm-tile">
             <i class="fa fa-th fa-2x mb-1 d-block"></i>

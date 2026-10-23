@@ -5,7 +5,7 @@ y todo cambio que se haga (código y BD), para que el trabajo de la rama `fabric
 (motor v3 del enrollable) pueda apoyarse en él sin pisarse.
 
 - Rama: `fabricacion-tipo-1`.
-- Estado: **PLAN PENDIENTE DE VALIDAR**. Decisiones recibidas; esperando los Excel y las fórmulas.
+- Estado: tablas, carga, backend y pantalla hechos en local (2026-10-22). Pendiente: procedimiento de coste ml y grupo.
 - BD de trabajo: `SOLARMANES_DEV` en local. Producción la despliega el usuario.
 
 ---
@@ -82,51 +82,68 @@ existe hoy y qué habrá que decidir cuando el maestro sustituya a lo actual.
    borrará: solo dará de baja (`activo = 0`).**
 
 ---
-## 3. Propuesta (a validar)
+## 3. Propuesta
 
-### 3.1 Modelo de datos
+### 3.1 Modelo de datos (creado en local, script `sqlTejidos/01_tablas_maestro_tejidos.sql`)
 
 Tablas nuevas, independientes de las actuales (las pantallas y SPs de hoy siguen igual):
 
 ```
-SOL_TEJIDOS_TIPOS                       -- catálogo de tipos de tejido (Excel 2)
+SOL_TEJIDOS_TIPOS                       -- catálogo de tipos de tejido (15, del usuario)
   idrow int identity PK
   descripcion varchar(50) not null unique
   activo bit not null default 1
+  created / modified datetime, usuario int
 
-SOL_TEJIDOS_MAESTRO                     -- una fila por tejido + color (Excel 1)
+SOL_TEJIDOS_MAESTRO                     -- una fila por tejido + color (TEJIDOS.xlsx)
   idrow int identity PK
-  cod_solupyme varchar(20) not null unique
-  tipo_tejido int not null   -> SOL_TEJIDOS_TIPOS.idrow
+  cod_solupyme varchar(20) not null unique     -- 5 cifras con ceros: '03258'
+  tipo_tejido int null      -> SOL_TEJIDOS_TIPOS.idrow
   nombre varchar(100) not null
   color varchar(100) not null
-  coste_m2 decimal(10,4) not null
-  criterio int null
+  criterio int null         check > 0          -- ancho del rollo en cm
   impresion_digital bit not null default 0
-  coste_ml decimal(10,4) null   -- calculado (3.3)
-  grupo varchar(10) null        -- calculado (3.3)
-  calculado datetime null       -- última vez que se calcularon coste_ml y grupo
+  coste_m2 decimal(10,4) not null  check >= 0
+  coste_ml decimal(10,4) null      -- calculado (3.3)
+  grupo varchar(10) null           -- calculado (3.3)
+  calculado datetime null          -- última vez que se calcularon coste_ml y grupo
   activo bit not null default 1
   created / modified datetime, usuario int
-  unique (nombre, color)
+  índices: (tipo_tejido); único (nombre, color, criterio)
 ```
 
 - No hay borrado: baja lógica con `activo = 0`.
-- El tipo de dato de `criterio` y los largos de los textos se ajustarán a lo que traiga el Excel.
+- `tipo_tejido` y `criterio` admiten NULL porque el Excel trae filas sin ellos (3.2).
+- **No se repite nombre + color + criterio**: VERA BLOCK / VERA TRANSP 200 y 250 son tejidos
+  distintos con el mismo nombre y color (confirmado por el usuario).
+- `cod_solupyme` es texto con ceros a la izquierda, como `ARTICULOS.COD_SOLUPYME`:
+  `3258` y `03258` son artículos distintos en Solupyme.
 
 ### 3.2 Carga desde los Excel
 
-El usuario pasa dos Excel: **tipos de tejido** y **tejidos**. Con ellos se generan scripts SQL
-idempotentes (`MERGE` por `descripcion` en tipos y por `cod_solupyme` en tejidos), para que la
-misma carga se aplique en local y luego la despliegue el usuario en PROD.
+- **Tipos de tejido**: los 15 que pasó el usuario ya están en el script 01.
+- **Tejidos**: `TEJIDOS.xlsx` (raíz del repo, hoja `MASTER TEJIDOS CONFIGURADOR`), 935 filas.
+  Columnas: `CÓDIGO SP`, `CRITERIO`, `NOMBRE`, `COLOR`, `TIPO TEJIDO`,
+  `IMPRESIÓN DIGITAL`, `PRECIO/M2`, `PRECIO/ML` (vacía), `GRUPO` (vacía).
+- `sqlTejidos/02_carga_tejidos.sql` lo genera `sqlTejidos/herramientas/generar_02_carga_tejidos.js`
+  (`node sqlTejidos/herramientas/generar_02_carga_tejidos.js [Excel]`). El generador valida el Excel
+  y para si hay errores. El script solo inserta los códigos que no existen: no pisa lo cambiado
+  desde la pantalla. Cargados 935 tejidos (66 sin tipo y 18 sin criterio, se completan en la
+  pantalla; 11 con impresión digital).
 
-Antes de generar los scripts se valida el Excel y se informa al usuario de:
+Análisis del Excel (2026-10-22):
 
-- Códigos Solupyme vacíos o repetidos.
-- Tipos de tejido que no están en el Excel de tipos.
-- Coste m² vacío, no numérico o ≤ 0; criterio no numérico.
-- Impresión digital con valores que no sean sí/no (se aceptan Sí/No, S/N, 1/0, X/vacío).
-- Tejido + color repetido con distinto código.
+| Comprobación | Resultado |
+|---|---|
+| Códigos | 935, sin repetir. En el Excel son números con formato de celda `00000` (se ven `03258`, el valor es `3258`): al cargar se rellenan a 5 cifras. |
+| Tipos | Los 15 del catálogo coinciden exactos. **66 filas sin tipo** (SILKMOON RE LIFE, VIENA, ACUSTIC, DARKTEX, GALES…). |
+| Criterio | 140, 180, 200, 250, 280, 300, 320, 350. **18 filas sin criterio** (VIENA…). |
+| Color | **83 colores guardados como número sin formato**: se ven sin ceros también en Excel (ALPES `000` → `0`, GALES `063` → `63`). Se cargan así (decisión del usuario). |
+| Nombre + color | VERA BLOCK / VERA TRANSP: correcto, se distinguen por criterio. IBIZA 1: corregido por el usuario. |
+| Nombres | Algunos con espacios al final (`VERA BLOCK `): se recortan. |
+| Impresión digital | 11 `SÍ`, el resto vacío → 1 / 0. |
+| Precio m² | 2,00 a 11,34. Valores de prueba (confirmado): se cargan y se cambiarán más adelante. |
+| Precio ml / grupo | Vacíos (se calcularán). |
 
 ### 3.3 Campos calculados (coste ml y grupo)
 
@@ -138,28 +155,32 @@ Antes de generar los scripts se valida el Excel y se informa al usuario de:
 
 ### 3.4 Backend
 
-Controlador nuevo `backend/controllers/sm/tejidos_maestro.js`, montado en `/api/sm`:
+Controlador `backend/controllers/sm/tejidos_maestro.js` (consultas con parámetros, mismo patrón
+que `accionamientos_nuevo.js`; no hacen falta procedimientos). Rutas en `/api/sm`, todas con
+`Auth.ensureAuth`:
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| GET | `/tejidos_maestro` | Lista completa con el nombre del tipo. |
-| POST | `/tejidos_maestro` | Alta / modificación (SP `sp_tejidos_maestro_set`, que recalcula). |
-| POST | `/tejidos_maestro_baja` | Baja / reactivación (`activo`). |
-| POST | `/tejidos_maestro_calcular` | Recalcular coste ml y grupo de uno o de todos. |
-| GET/POST | `/tejidos_tipos` | Catálogo de tipos de tejido. |
+| GET | `/tejidos_maestro` | Lista completa con la descripción del tipo. |
+| POST | `/tejidos_maestro` | Alta (`idrow` vacío) o modificación. Nunca escribe coste ml ni grupo. Código a 5 cifras. |
+| POST | `/tejidos_maestro/activo` | `{ ids, activo }`: baja o reactivación. |
+| GET | `/tejidos_maestro/tipos` | Tipos de tejido con cuántos tejidos los usan. |
+| POST | `/tejidos_maestro/tipos` | Alta, cambio de nombre o baja de un tipo. |
+
+Pendiente: `/tejidos_maestro/calcular` cuando exista el procedimiento de coste ml y grupo.
 
 ### 3.5 Frontend
 
-Componente nuevo `routes/setup/tejidos-maestro`, ruta `/routes/master/tejidos-maestro`,
-mosaico nuevo en `setup.component.html` y permiso nuevo `config_tejidos` (como
-`config_accionamientos`). Mismo estilo que la pantalla de tejidos actual:
+Componente `routes/setup/tejidos-maestro`, ruta `/routes/master/tejidos-maestro` con
+`PermisosGuard` y permiso `config_tejidos` (los administradores entran siempre). Mosaico
+"Maestro de Tejidos" en la sección Tejidos de `setup`; permiso en la lista de la pantalla de
+usuarios; título en `shared/page-titles.ts`.
 
-- Tabla con búsqueda general, filtro por columna, orden y paginación de 50.
-- Columnas: Código Solupyme · Tipo · Nombre · Color · Coste m² · Criterio · Impresión digital ·
-  Coste ml (solo lectura) · Grupo (solo lectura).
-- Modal de alta/edición (tipo en desplegable, impresión digital como casilla).
-- Filtros rápidos: por tipo, "impresión digital", "dados de baja", "sin calcular".
-- Gestión del catálogo de tipos de tejido en un modal.
+- Tabla con búsqueda, filtro por columna, orden y paginación de 50.
+- Filtros rápidos: tipo (o "sin tipo"), impresión digital, activos / bajas, "sin tipo o sin criterio".
+- Alta / edición en modal (doble clic en la fila o botón Editar). Coste ml y grupo solo lectura ("pendiente").
+- Dar de baja / reactivar la selección.
+- Modal "Tipos de Tejido": alta, cambio de nombre y baja.
 
 ### 3.6 Ficheros que se tocan (para no pisar al otro agente)
 
@@ -167,7 +188,9 @@ mosaico nuevo en `setup.component.html` y permiso nuevo `config_tejidos` (como
   `backend/controllers/sm/tejidos_maestro.js`, `frontend/src/app/routes/setup/tejidos-maestro/`.
 - Existentes, con cambios mínimos (añadir líneas): `backend/routes/sm_routes.js`,
   `frontend/src/app/routes/setup/setup.module.ts`,
-  `frontend/src/app/routes/setup/setup/setup.component.html`.
+  `frontend/src/app/routes/setup/setup/setup.component.html`,
+  `frontend/src/app/routes/setup/usuarios/usuarios.component.ts`,
+  `frontend/src/app/shared/page-titles.ts`.
 - **No se tocan**: `sqlEnrrollable/`, `sqlHoney/`, `fabricacion_reglas.js`, las pantallas de
   tejidos actuales, `server.js`, `environment.ts`.
 
@@ -177,28 +200,32 @@ mosaico nuevo en `setup.component.html` y permiso nuevo `config_tejidos` (como
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| 0 | Este documento y validación del plan | Decisiones recibidas; falta validar la propuesta |
-| 1 | `sqlTejidos/01_tablas_maestro_tejidos.sql` (las dos tablas) en local | Pendiente |
-| 2 | `sqlTejidos/02_sps_maestro_tejidos.sql` (lista, alta/edición, baja, calcular vacío) | Pendiente |
-| 3 | Backend: controlador y rutas | Pendiente |
-| 4 | Frontend: pantalla, mosaico y permiso | Pendiente |
-| 5 | Validación de los Excel y scripts de carga `03_carga_tipos_tejido.sql`, `04_carga_tejidos.sql` | Esperando los Excel |
-| 6 | Fórmulas de coste ml y grupo en `sp_tejidos_maestro_calcular` | Esperando las fórmulas |
+| 0 | Este documento y validación del plan | Hecho |
+| 1 | `sqlTejidos/01_tablas_maestro_tejidos.sql` (las dos tablas + 15 tipos) | **Hecho en local** |
+| 2 | `sqlTejidos/02_carga_tejidos.sql` desde `TEJIDOS.xlsx` (935 tejidos) | **Hecho en local** |
+| 3 | Procedimientos | No hacen falta (el backend usa consultas con parámetros) |
+| 4 | Backend: controlador y rutas | **Hecho**, probado contra la BD local |
+| 5 | Frontend: pantalla, mosaico y permiso | **Hecho**; falta probarla con datos en el navegador (ver nota) |
+| 6 | Procedimiento de cálculo de coste ml y grupo | Lo definirá el usuario |
 | 7 | Uso del maestro desde tarifas / fabricación v3 y relación con las tablas actuales | Por decidir |
 
-Las fases 1-4 no dependen de los Excel. Cada script se aplica primero en local; las pruebas en
+Nota (2026-10-22): `environment.ts` está como en `main` (apunta a producción), así que la pantalla
+local no lee el backend local. La pantalla compila y se pinta; la API se probó aparte.
+
+Cada script se aplica primero en local; las pruebas en
 la BD local se deshacen al terminar.
 
 ---
 
 ## 5. Preguntas abiertas
 
-- **P1. Criterio.** ¿Qué representa (ancho de rollo en cm u otra cosa)? Define el tipo de dato y
-  la validación. Se puede confirmar al ver el Excel.
-- **P2. Fórmulas.** Coste ml y grupo: ¿dependen solo del coste m² y el criterio, o también del
-  tipo de tejido / impresión digital? (Lo dará el usuario.)
+- ~~P1. Criterio~~: es el ancho del rollo en cm (respondido 2026-10-22).
+- **P2. Fórmulas** de coste ml y grupo: las definirá el usuario más adelante.
 - **P3. Futuro.** Cuándo y cómo el maestro sustituirá a `SOL_ARTICULOS_TEJIDOS`, a
   `SOL_ARTICULOS_TEJIDOS_GRUPOS` y a las tablas de HoneyComb (fase 7).
+- ~~P4. Precio m²~~: son de prueba; se cargan y se modificarán en el futuro.
+- ~~P5. Filas incompletas~~: se cargan y se completan desde la pantalla.
+- ~~P6. Colores numéricos~~: se cargan así.
 
 ---
 
@@ -208,3 +235,7 @@ la BD local se deshacen al terminar.
 |---|---|---|---|
 | 2026-10-22 | Creado el documento con el análisis y el plan | — | — |
 | 2026-10-22 | Decisiones del usuario: fila por tejido + color, carga solo desde Excel, coste m² con ml calculado, impresión digital, HoneyComb incluido | — | — |
+| 2026-10-22 | `sqlTejidos/01_tablas_maestro_tejidos.sql`: tablas `SOL_TEJIDOS_TIPOS` (15 tipos) y `SOL_TEJIDOS_MAESTRO` (vacía) | Aplicado (`SOLARMANES_DEV`) | Pendiente |
+| 2026-10-22 | Script 01: fuera `nombre_solupyme` (el usuario quitó `NOMBRE SP` del Excel); único (nombre, color, criterio). Tabla vacía recreada | Aplicado (`SOLARMANES_DEV`) | Pendiente |
+| 2026-10-22 | `sqlTejidos/02_carga_tejidos.sql` (generado desde `TEJIDOS.xlsx`): 935 tejidos | Aplicado (`SOLARMANES_DEV`) | Pendiente |
+| 2026-10-22 | Backend `tejidos_maestro.js` + rutas; pantalla `tejidos-maestro`, mosaico, permiso `config_tejidos`. Pruebas de la API deshechas (fila y tipo de prueba borrados, identidades reajustadas) | — | Pendiente |

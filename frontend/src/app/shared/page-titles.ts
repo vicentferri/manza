@@ -50,6 +50,7 @@ const PAGE_TITLES: { [url: string]: PageTitle } = {
   '/routes/master/accionamientos-nuevo': T('Accionamientos', 'Accionamientos nuevo'),
 
   '/routes/master/tejidos': T('Tejidos', 'Tipos de Tejido'),
+  '/routes/master/tejidos-maestro': T('Tejidos', 'Maestro de Tejidos'),
   '/routes/master/detail/229': T('Tejidos', 'Tejidos Cliente'),
   '/routes/master/detail/212': T('Tejidos', 'Diccionario'),
   '/routes/master/tejidos-colores': T('Tejidos', 'Colores Tejidos'),
