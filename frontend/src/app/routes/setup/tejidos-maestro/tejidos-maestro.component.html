@@ -144,8 +144,8 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let fila of datosPagina" [class.table-active]="seleccionados.has(fila.idrow)"
-                        [class.tm-baja]="!fila.activo" (dblclick)="openEdit(fila)">
-                        <td class="text-center">
+                        [class.tm-baja]="!fila.activo" class="tm-fila" title="Clic para abrir el tejido" (click)="openEdit(fila)">
+                        <td class="text-center" (click)="$event.stopPropagation()" title="Marcar para acciones sobre varios tejidos">
                             <input type="checkbox" [checked]="seleccionados.has(fila.idrow)" (change)="toggleSeleccion(fila.idrow)" />
                         </td>
                         <td>{{ fila.cod_solupyme }}</td>

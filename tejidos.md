@@ -231,7 +231,8 @@ usuarios; título en `shared/page-titles.ts`.
 
 - Tabla con búsqueda, filtro por columna, orden y paginación de 50.
 - Filtros rápidos: tipo (o "sin tipo"), impresión digital, activos / bajas, "sin tipo o sin criterio".
-- Alta / edición en modal (doble clic en la fila o botón Editar), con casillas "Calcular coste ml"
+- Alta / edición en modal: un clic en la fila abre el tejido (la casilla de selección no lo abre, queda
+  para las acciones sobre varios) o botón Editar, con casillas "Calcular coste ml"
   89 mm / 127 mm. Grupo y coste ml solo lectura.
 - Columnas "Coste ml 89" y "Coste ml 127" (vacías si la lama no está marcada); filtro "con / sin coste ml".
 - Botón "Coste ml": marca o quita las lamas elegidas en los tejidos seleccionados.
@@ -305,3 +306,4 @@ la BD local se deshacen al terminar.
 | 2026-10-23 | `sqlTejidos/03_calculo_grupo.sql`: `SOL_TEJIDOS_GRUPOS_LETRAS` (2…55), `sp_tejidos_maestro_calcular`, grupos de los 935 tejidos. Backend recalcula al guardar y ruta `/calcular`; botón en la pantalla. Pruebas deshechas | Aplicado (`SOLARMANES_DEV`) | Pendiente |
 | 2026-10-23 | `sqlTejidos/04_coste_ml.sql`: `SOL_TEJIDOS_PARAMETROS` (precio minuto 0,28), `SOL_TEJIDOS_LAMAS` (89 y 127), `SOL_TEJIDOS_MAESTRO_COSTE_ML`; fuera `SOL_TEJIDOS_MAESTRO.coste_ml`; `sp_tejidos_maestro_calcular` calcula también el coste ml. Script 01 sin `coste_ml`. Backend (rutas `/ml`, `/ml_config`, `/precio_minuto`) y pantalla. Pruebas deshechas | Aplicado (`SOLARMANES_DEV`) | Pendiente |
 | 2026-10-23 | Pantalla: se inicializa el formulario con `lamas` y `ml` (la ventana de edición, siempre en la página, rompía el refresco de toda la pantalla). Pruebas en el navegador deshechas | — | — |
+| 2026-10-23 | Pantalla: un clic en la fila abre el tejido (antes doble clic); la casilla solo selecciona | — | — |

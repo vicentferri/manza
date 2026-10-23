@@ -55,3 +55,8 @@
     padding: 0.1rem 0.4rem;
     font-size: 0.75rem;
 }
+
+/* Un clic en la fila abre el tejido; la casilla de selección no */
+.tm-fila {
+    cursor: pointer;
+}
