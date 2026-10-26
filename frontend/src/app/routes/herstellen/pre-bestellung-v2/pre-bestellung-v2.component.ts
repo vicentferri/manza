@@ -14,6 +14,7 @@ import { DomSanitizer } from "@angular/platform-browser";
 import { ToastrService } from 'ngx-toastr';
 import { ModalDirective } from "ngx-bootstrap/modal";
 import { ActivatedRoute, Router } from "@angular/router";
+import { ImpresionDocumentoComponent } from "../../../shared/impresion-documento/impresion-documento.component";
 
 @Component({
   selector: "app-pre-bestellung-v2",
@@ -22,6 +23,7 @@ import { ActivatedRoute, Router } from "@angular/router";
   providers: [HaruService],
 })
 export class PreBestellungV2Component implements OnInit {
+  @ViewChild("impresion", { static: false }) impresion!: ImpresionDocumentoComponent;
   @ViewChild("gridReference", { static: false }) myGrid!: jqxGridComponent;
   @ViewChild("gridReference2", { static: false }) myGrid2!: jqxGridComponent;
   @ViewChild("gridReference4", { static: false }) myGrid4!: jqxGridComponent;
@@ -46,9 +48,6 @@ export class PreBestellungV2Component implements OnInit {
   responsables2: Array<GenType2> = [];
   zustanden: Array<GenType2> = [];
   public linkDocument: any = this.domSanitizer.bypassSecurityTrustResourceUrl(
-    "about:blank"
-  );
-  public linkInforme: any = this.domSanitizer.bypassSecurityTrustResourceUrl(
     "about:blank"
   );
   public SelectedDate: Date = new Date();
@@ -2139,20 +2138,14 @@ export class PreBestellungV2Component implements OnInit {
   }
 
   Print(item) {
-    // Se vacía el iframe y se añade un parámetro único para que el navegador
-    // no reutilice el informe anterior.
-    this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
-    const url =
-      "https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&cust=" +
-      this.SelectedClienteP +
-      "&proc=PP_PREVIEW&ids=" +
-      item +
-      "&_=" +
-      Date.now();
-    //const url = 'http://192.168.0.10/haru_server/services/bbss/preview.aspx?emp=0&cust='+this.SelectedCliente+'&proc=PP_PREVIEW&ids=' + item;
-    setTimeout(() => {
-      this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
-    }, 0);
+    const ids = [].concat(item);
+    // Un solo pedido de Leroy/Solarmanes: Crystal y, si tiene HoneyComb, su PDF. CortinaDecor (2) no tiene HoneyComb
+    // y con varios pedidos seleccionados Crystal los imprime juntos, como hasta ahora.
+    if (ids.length === 1 && this.SelectedClienteP != 2) {
+      this.impresion.cargar('pedido', ids[0], this.SelectedClienteP);
+    } else {
+      this.impresion.cargarCrystal('pedido', ids.join(','), this.SelectedClienteP);
+    }
   }
 
   CambiarEstado() {

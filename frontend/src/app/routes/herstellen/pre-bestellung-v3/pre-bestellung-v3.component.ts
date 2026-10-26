@@ -15,6 +15,7 @@ import {
   PedidosGridComponent,
   PedidosGridColumn,
 } from "../../../shared/pedidos-grid/pedidos-grid.component";
+import { ImpresionDocumentoComponent } from "../../../shared/impresion-documento/impresion-documento.component";
 
 /**
  * herstellen_v2 — Recepción de Pedidos.
@@ -39,6 +40,7 @@ export class PreBestellungV3Component implements OnInit, OnDestroy {
 
   @ViewChild("staticModal3", { static: false }) modalVisor!: ModalDirective;
   @ViewChild("staticModalI", { static: false }) modalInforme!: ModalDirective;
+  @ViewChild("impresion", { static: false }) impresion!: ImpresionDocumentoComponent;
   @ViewChild("staticModal10", { static: false }) modalFabricacion!: ModalDirective;
   @ViewChild("staticModal11", { static: false }) modalClientes!: ModalDirective;
   @ViewChild("staticModal12", { static: false }) modalRefClientes!: ModalDirective;
@@ -405,12 +407,13 @@ export class PreBestellungV3Component implements OnInit, OnDestroy {
   }
 
   Print(item: any) {
-    const url =
-      "https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&cust=" +
-      this.SelectedClienteP +
-      "&proc=PP_PREVIEW&ids=" +
-      item;
-    this.linkDocument = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
+    // Un solo pedido de Leroy/Solarmanes: Crystal y, si tiene HoneyComb, su PDF. CortinaDecor (2) no tiene HoneyComb.
+    const ids = [].concat(item);
+    if (ids.length === 1 && this.SelectedClienteP != 2) {
+      this.impresion.cargar('pedido', ids[0], this.SelectedClienteP);
+    } else {
+      this.impresion.cargarCrystal('pedido', ids.join(','), this.SelectedClienteP);
+    }
   }
 
   CambiarEstado() {

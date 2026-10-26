@@ -15,7 +15,8 @@ interface PestanaImpresion {
   nombreFichero?: string;
 }
 
-// Informes Crystal del haru_server (todo lo que no es HoneyComb)
+// Informes Crystal del haru_server (todo lo que no es HoneyComb).
+// La pantalla interna de pedidos usa el informe genérico PP_PREVIEW con el cliente (cust).
 const PROC_CRYSTAL: { [doc: string]: string } = {
   pedido: 'PP_PREVIEW_POR',
   presupuesto: 'PP_PREVIEW_PRE'
@@ -47,7 +48,8 @@ export class ImpresionDocumentoComponent implements OnDestroy {
 
   constructor(private http: HttpClient, private domSanitizer: DomSanitizer) { }
 
-  cargar(doc: DocumentoImpresion, id: number | string) {
+  /* cust: solo en la pantalla interna de pedidos, que pasa el cliente al informe de Crystal */
+  cargar(doc: DocumentoImpresion, id: number | string, cust?: number | string) {
     this.limpiar();
     const peticion = this.peticion;
     this.cargando = true;
@@ -56,7 +58,7 @@ export class ImpresionDocumentoComponent implements OnDestroy {
       info => {
         if (peticion !== this.peticion) return;
         if (info.tieneOtros || !info.tieneHoneycomb) {
-          this.pestanas.push(this.pestanaCrystal(doc, id));
+          this.pestanas.push(this.pestanaCrystal(doc, id, cust));
         }
         if (info.tieneHoneycomb) {
           this.pestanas.push({ clave: 'honeycomb', titulo: 'HoneyComb', url: null, error: false });
@@ -68,11 +70,18 @@ export class ImpresionDocumentoComponent implements OnDestroy {
       },
       () => {
         if (peticion !== this.peticion) return;
-        this.pestanas.push(this.pestanaCrystal(doc, id));
+        this.pestanas.push(this.pestanaCrystal(doc, id, cust));
         this.activa = 'crystal';
         this.cargando = false;
       }
     );
+  }
+
+  /* Solo Crystal, sin consultar al backend: varios pedidos seleccionados a la vez o clientes sin HoneyComb */
+  cargarCrystal(doc: DocumentoImpresion, ids: number | string, cust?: number | string) {
+    this.limpiar();
+    this.pestanas.push(this.pestanaCrystal(doc, ids, cust));
+    this.activa = 'crystal';
   }
 
   limpiar() {
@@ -108,9 +117,12 @@ export class ImpresionDocumentoComponent implements OnDestroy {
     );
   }
 
-  private pestanaCrystal(doc: DocumentoImpresion, id: number | string): PestanaImpresion {
+  private pestanaCrystal(doc: DocumentoImpresion, id: number | string, cust?: number | string): PestanaImpresion {
     // El parámetro _ evita que el navegador reutilice el informe anterior
-    const url = 'https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&proc=' + PROC_CRYSTAL[doc] +
+    const base = 'https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0';
+    const url = (cust !== undefined && cust !== null
+      ? base + '&cust=' + cust + '&proc=PP_PREVIEW'
+      : base + '&proc=' + PROC_CRYSTAL[doc]) +
       '&ids=' + id + '&_=' + Date.now();
     return {
       clave: 'crystal',
