@@ -35,6 +35,7 @@ import { Select2Module } from 'ng2-select2';
 import { TranslatePipe } from './translate.pipe';
 import { ImpresionDigitalSelectorComponent } from './impresion-digital-selector/impresion-digital-selector.component';
 import { PedidosGridComponent } from './pedidos-grid/pedidos-grid.component';
+import { ImpresionDocumentoComponent } from './impresion-documento/impresion-documento.component';
 
 @NgModule({
     imports: [
@@ -71,7 +72,8 @@ import { PedidosGridComponent } from './pedidos-grid/pedidos-grid.component';
         SelectableComponent,
         TranslatePipe,
         ImpresionDigitalSelectorComponent,
-        PedidosGridComponent
+        PedidosGridComponent,
+        ImpresionDocumentoComponent
     ],
     exports: [
         CommonModule,
@@ -96,7 +98,8 @@ import { PedidosGridComponent } from './pedidos-grid/pedidos-grid.component';
         MenuSelectComponent,
         TranslatePipe,
         ImpresionDigitalSelectorComponent,
-        PedidosGridComponent
+        PedidosGridComponent,
+        ImpresionDocumentoComponent
     ]
 })
 // https://github.com/ocombe/ng2-translate/issues/209

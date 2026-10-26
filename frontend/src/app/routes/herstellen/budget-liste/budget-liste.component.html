@@ -382,6 +382,7 @@
   class="modal fade"
   bsModal
   #staticModalI="bs-modal"
+  (onHidden)="impresion.limpiar()"
   tabindex="-1"
   role="dialog"
   aria-labelledby="myModalLabel"
@@ -402,12 +403,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <iframe
-          style="width: 100%; height: 850px"
-          frameborder="0"
-          [src]="linkInforme"
-        >
-        </iframe>
+        <app-impresion-documento #impresion></app-impresion-documento>
       </div>
       <div class="modal-footer">
         <button

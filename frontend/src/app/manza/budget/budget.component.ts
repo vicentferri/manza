@@ -1,12 +1,12 @@
 import { Component, OnInit, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { SMAPIService } from '../config/smapi.service';
-import { DomSanitizer } from "@angular/platform-browser";
 
 import * as _ from 'underscore';
 
 import { PagerService } from '../../shared/pager-service.service';
 import { SearchModel } from '../../models/SearchModel';
 import { ModalDirective } from 'ngx-bootstrap/modal';
+import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
 @Component({
   selector: 'app-budget',
@@ -17,12 +17,12 @@ import { ModalDirective } from 'ngx-bootstrap/modal';
 export class BudgetComponent implements OnInit {
 
   @ViewChild("staticFilter", { static: false }) filters!: ModalDirective;
+  @ViewChild("impresion", { static: false }) impresion!: ImpresionDocumentoComponent;
   @Input() cliente!: string;
   @Input() codeCentro!: string;
 
   @Output() onLoaded = new EventEmitter();
 
-  public linkDocument: any = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
   public numeroPedidos = 0;
   public fechaConsulta = new Date();
   /* VFF 20.04.2018 */
@@ -38,8 +38,7 @@ export class BudgetComponent implements OnInit {
   model = new SearchModel();
 
   constructor(private service: SMAPIService,
-    private pagerService: PagerService,
-    private domSanitizer: DomSanitizer) {
+    private pagerService: PagerService) {
 
   }
   ngOnInit() {
@@ -133,8 +132,7 @@ export class BudgetComponent implements OnInit {
   }
 
   Print(item) {
-    var url = "https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&proc=PP_PREVIEW_PRE&ids=" + item.idrow;
-    this.linkDocument = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
+    this.impresion.cargar('presupuesto', item.idrow);
   }
 
   Load(item) {
