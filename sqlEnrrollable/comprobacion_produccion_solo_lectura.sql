@@ -32,6 +32,7 @@ order by e.procedimiento
 
 select case when object_id('dbo.SOL_PEDIDOS_COLA_TIPO_1_PARAMETERS') is null then 'no' else 'sí' end as [01 tabla de parámetros],
        case when object_id('dbo.temp_sp_fabricacion_tipo_1_v3') is null then 'no' else 'sí' end as [02 procedimiento v3],
+       case when object_id('dbo.sp_enrollable_parametros_base') is null then 'no' else 'sí' end as [07 parámetros base],
        case when object_id('dbo.SOL_FABRICACION_PRODUCTOS') is null then 'no (falta sqlHoney/22)' else 'sí' end as [requisito sqlHoney 22]
 
 select count(*) as lineas_modelo_nuevo,

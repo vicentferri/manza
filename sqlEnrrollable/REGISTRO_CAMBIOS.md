@@ -17,6 +17,7 @@ reglas independiente (`ENROLLABLE_<código del sistema>`). Requisito de los scri
 | `04_busquedas_enrollable.sql` | Búsquedas del enrollable para las reglas: id → código de los catálogos `SOL_ACC_*`, tejido por tipo + color, salida de tejido; búsquedas por producto, de dos claves y con filtro en el motor. Cambia también el 02 (`descripcion2`) | 2026-10-22 | — |
 | `05_tejido_del_maestro.sql` | Búsqueda `ENR_TEJIDO_SOLUPYME`: tejido del maestro (`nacc_tejido_id`) -> código Solupyme. `ENR_TEJIDO_ARTICULO` queda marcada como antigua | 2026-10-23 | — |
 | `06_xml_cant_factor_enrollable.sql` | XML del enrollable: `CANT` y `FACTOR` según la unidad del artículo (como HoneyComb). Se deshace con `06_deshacer_...` | 2026-10-23 | — |
+| `07_parametros_enrollable.sql` | Parámetros estándar de todo juego de enrollable (57), `sp_enrollable_parametros_base`, búsquedas del maestro de tejidos y columna `sp_parametros_base` del producto | 2026-10-23 | — |
 | `comprobacion_produccion_solo_lectura.sql` | Antes y después de desplegar: huellas de los SPs que toca el 03, objetos ya existentes y líneas del modelo nuevo | — | — |
 
 ## 2026-10-22 · 01 y 02: tabla de parámetros y procedimiento
@@ -285,6 +286,35 @@ va aparte. La regla debe valer para todas las fabricaciones; el usuario eligió 
   antes salía `CANT 9, FACTOR 1,5` pasa a `CANT 1, FACTOR 1,5`. Los 40 pedidos de la muestra cambian.
 - **Pendiente:** aplicar la misma regla a japonés, vertical y Compac. Ahí mandan `CANT` = cantidad de la línea (Compac
   `CANT` 1 fijo). Con datos reales cambiarían muchas líneas; antes habría que ver una foto del XML antes y después.
+
+## 2026-10-23 · 07: parámetros estándar de la fabricación del enrollable
+
+**Decisión del usuario:** definir todos los parámetros posibles de un enrollable para todos los sistemas (vienen del
+configurador, son fáciles de definir); el equipo se encarga de las reglas. Referencia para quien escribe las reglas:
+`PARAMETROS.md`.
+
+- **57 parámetros por juego:** 28 son datos de la línea (medidas, cadena a medida, posición, impresión, salida del
+  tejido y los ids de los pasos del configurador y del tejido) y 29 son búsquedas: los códigos legibles de cada
+  catálogo `SOL_ACC_*` (búsquedas `ENR_*` del script 04) y los datos del tejido del maestro (código Solupyme, artículo,
+  nombre, color, criterio, grupo, tipo, impresión digital).
+- `sp_enrollable_parametros_base @sistema` crea los que falten en un juego. No pisa un parámetro que el equipo haya
+  cambiado ni borra nada, y devuelve cuántos ha creado. Solo vale para juegos del enrollable (error en HoneyComb).
+- El script lo aplica a todos los juegos que ya existen (en LOCAL: `ENROLLABLE_RHIN` y `ENROLLABLE_DUERO`, 57
+  cada uno; repetirlo crea 0).
+- `SOL_FABRICACION_PRODUCTOS.sp_parametros_base`: el producto dice qué procedimiento da de alta sus parámetros
+  (enrollable: `sp_enrollable_parametros_base`; HoneyComb: ninguno, sus 15 parámetros no cambian).
+- **Backend:** al añadir un sistema en la pantalla (`POST /fabricacion/sistemas`) el juego nace con sus parámetros
+  y sin reglas. Un juego no se crea solo al dar de alta un sistema en `SOL_ACC_SISTEMA`: se añade desde la pantalla.
+- Búsquedas nuevas: `ENR_TEJIDO_NOMBRE`, `_COLOR`, `_CRITERIO`, `_GRUPO`, `_IMPRESION`, `_TIPO_ID` y `ENR_TEJIDO_TIPO`.
+- No hay parámetros de cajón ZIP ni guía: el configurador nuevo no los modela todavía.
+- **Prueba** `pruebas/prueba_07_parametros.sql`, 8/8 con rollback: una línea con todos los pasos informados con
+  códigos ZZ; 38 parámetros de la línea comprobados con su valor esperado, una regla con códigos (soporte y tapa, mando) se
+  cumple, una cadena sin motor deja los pasos del motor vacíos y HoneyComb no puede usar el procedimiento.
+- La prueba de productos y sistemas (`prueba_productos_sistemas.js`) se adapta: un juego nuevo trae 57 parámetros.
+  Todas las pruebas anteriores siguen pasando; la regresión de fabricación de los tipos 2, 3, 4 y 7 es idéntica.
+- **Batería `backend/test/fabricacion`:** 3 comprobaciones pasan a fallo (medidas decimales). No vienen de este
+  cambio: esta rama no incluye los commits de medidas decimales de `main` (`068213f`, `706f291`) y la BD local ya
+  tiene esas columnas decimales. En `main` pasan.
 
 ### Pendiente
 

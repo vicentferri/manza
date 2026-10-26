@@ -173,6 +173,15 @@ async function sistema_add(req, res) {
       .query(`insert into SOL_FABRICACION_SISTEMAS
                 (sistema, descripcion, tipo_linea, tabla_origen, tabla_fabricacion, tabla_parametros, procedimiento, activo, producto, acc_sistema_id)
               values (@clave, @descripcion, @tipo, @origen, @fabricacion, @parametros, @procedimiento, 1, @producto, @acc)`);
+
+    /* Parámetros estándar del producto (p. ej. todos los datos de una línea de enrollable): el juego empieza
+       sin reglas, pero con sus parámetros. El procedimiento sale del catálogo y se valida antes de usarlo */
+    if (p.sp_parametros_base) {
+      if (!IDENTIFICADOR.test(p.sp_parametros_base)) {
+        return res.status(500).send({ message: 'KO' });
+      }
+      await pool.request().input('sistema', sql.VarChar(50), clave).execute(p.sp_parametros_base);
+    }
     res.status(200).send({ message: 'OK', sistema: clave });
   } catch (err) {
     const numero = err && (err.number || (err.originalError && err.originalError.info && err.originalError.info.number));
