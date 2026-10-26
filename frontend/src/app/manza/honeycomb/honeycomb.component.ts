@@ -8,6 +8,7 @@ import { takeUntil } from 'rxjs/operators';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { CortinaTipo } from '../config/CortinaTipo';
+import { errorPasoMedidas, PASO_MEDIDA_HONEYCOMB } from '../config/medidas';
 
 
 @Component({
@@ -268,7 +269,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     if (this.altoInvalido()) {
       return `El alto debe estar entre ${this.ALTO_MIN} y ${this.ALTO_MAX} cm`;
     }
-    return '';
+    return errorPasoMedidas({ 'Ancho': this.model.Ancho, 'Alto': this.model.Alto }, PASO_MEDIDA_HONEYCOMB);
   }
 
   // Borra el precio calculado para que no se añada a la cesta un precio desfasado

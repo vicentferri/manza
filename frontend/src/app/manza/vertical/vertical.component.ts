@@ -1,6 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { SMAPIService } from '../config/smapi.service';
 import { CortinaTipo } from '../config/CortinaTipo';
+import { errorPasoMedidas } from '../config/medidas';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { Tipo } from '../config/Tipo';
@@ -836,6 +837,14 @@ export class VerticalComponent implements OnInit, OnChanges {
          if (iProceed && this.PV_AnchoLama_2 === '-1') { iProceed = 0; strMessage = 'Debe seleccionar el Ancho de Lama (Inclinada)'; }
          if (iProceed && this.PV_TipoSoporte_2 === '-1') { iProceed = 0; strMessage = 'Debe seleccionar el Soporte (Vertical Inclinada)'; }
          if (iProceed && parseInt(this.Tipo3_Tejido_2) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Tejido (Vertical Inclinada)'; }
+      }
+
+      if (iProceed) {
+         const errorPaso = errorPasoMedidas({
+            'Ancho': this.PV_Ancho_1, 'Alto': this.PV_Alto_1, 'Ancho (Vertical Inclinada)': this.PV_Ancho_2,
+            'Altura Mínima': this.PV_AlturaMin_2, 'Altura Máxima': this.PV_AlturaMax_2
+         });
+         if (errorPaso) { iProceed = 0; strMessage = errorPaso; }
       }
 
       return { Proceed: iProceed, Message: strMessage };

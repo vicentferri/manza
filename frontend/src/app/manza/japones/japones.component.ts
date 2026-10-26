@@ -4,6 +4,7 @@ import { CortinaTipo } from '../config/CortinaTipo';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { SMAPIService } from '../config/smapi.service';
+import { errorPasoMedidas } from '../config/medidas';
 import { Tipo } from '../config/Tipo';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
@@ -578,6 +579,14 @@ export class JaponesComponent implements OnInit, OnChanges {
          if (iProceed && parseInt(this.Tipo2_TejidoColor) === -1) { iProceed = 0; strMessage = 'Debe seleccionar el Color del Tejido'; }
          if (iProceed && this.PJ_AnchoLama === '') { iProceed = 0; strMessage = 'Debe indicar el Ancho de Lama'; }
          if (iProceed && this.PJ_AltoLamaTerminada === '') { iProceed = 0; strMessage = 'Debe indicar el Alto de Lama Terminada'; }
+      }
+
+      /* Solo lo que teclea el usuario: el ancho de lama lo calcula Tarifa_Japones_Mecanismo salvo en solo lamas */
+      if (iProceed) {
+         const errorPaso = this.TipoJapones === '2'
+            ? errorPasoMedidas({ 'Ancho de Lama': this.PJ_AnchoLama, 'Alto de Lama Terminada': this.PJ_AltoLamaTerminada })
+            : errorPasoMedidas({ 'Ancho del Mecanismo': this.PJ_Ancho_2, 'Alto': this.PJ_Alto_1 });
+         if (errorPaso) { iProceed = 0; strMessage = errorPaso; }
       }
 
       return { Proceed: iProceed, Message: strMessage };

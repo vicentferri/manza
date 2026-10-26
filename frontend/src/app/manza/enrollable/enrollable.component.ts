@@ -10,6 +10,7 @@ import { Tipo3 } from '../config/Tipo3';
 import { Tipo4 } from '../config/Tipo4';
 import { TipoMando } from '../config/TipoMando';
 import { SMAPIService } from '../config/smapi.service';
+import { errorPasoMedidas } from '../config/medidas';
 import { forkJoin, of } from 'rxjs';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
@@ -1087,6 +1088,11 @@ export class EnrollableComponent implements OnInit, OnChanges {
          if (iProceed && this.esCadenaExt === 2) {
             if (this.Tipo1_AlturaCadenaM === '-1') { iProceed = 0; strMessage = 'Debe Indicar la Altura de la Cadena'; }
          }
+      }
+
+      if (iProceed) {
+         const errorPaso = errorPasoMedidas({ 'Ancho': this.Ancho, 'Alto': this.Alto });
+         if (errorPaso) { iProceed = 0; strMessage = errorPaso; }
       }
 
       return { Proceed: iProceed, Message: strMessage };

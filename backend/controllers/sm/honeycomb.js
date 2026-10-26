@@ -25,8 +25,10 @@ async function honeycomb_obtener_tarifa(req, res) {
       });
     }
 
-    const altoNum = parseFloat(alto * 0.01);
-    const anchoNum = parseFloat(ancho * 0.01);
+    // Medidas en cm de 0,1 en 0,1: se sube al cm entero antes de pasar a metros (120,3 -> 1,21),
+    // para que no se redondee a 1,20 m (Decimal(10,2)) y caiga en el tramo inferior de la tarifa
+    const altoNum = Math.ceil(parseFloat(alto)) / 100;
+    const anchoNum = Math.ceil(parseFloat(ancho)) / 100;
     const tipoTejidoNum = parseInt(tipoTejido);
 
     if (isNaN(altoNum) || isNaN(anchoNum) || isNaN(tipoTejidoNum)) {

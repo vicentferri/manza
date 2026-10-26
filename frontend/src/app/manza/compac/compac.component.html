@@ -23,7 +23,7 @@
       <div style="padding: 0.3em; width: 20%; float: left">
         <label>{{ "ANCHO INTERIOR" | translate }}</label>
         <input class="form-control form-control-sm" type="number" [min]="minancho" [max]="maxancho" step=".5"
-          [(ngModel)]="Ancho" id="Compac_ancho" [appMaxdigits]="3"
+          [(ngModel)]="Ancho" id="Compac_ancho" [appMaxdigits]="5"
           [ngModelOptions]="{ standalone: true }" required
           (blur)="Ancho_Change()" (keyup.enter)="Next($event, alto4)" />
           <small class="text-muted">{{ minancho }}-{{ maxancho }} cm</small>
@@ -32,7 +32,7 @@
         >
         <label>{{ "ANCHOEXTERIOR" | translate }}</label>
         <input #kanchoB class="form-control form-control-sm" type="number" [min]="minancho" [max]="maxancho" step=".5"
-          [(ngModel)]="compac.PC_AnchoB" id="PC_Ancho" [appMaxdigits]="3"
+          [(ngModel)]="compac.PC_AnchoB" id="PC_Ancho" [appMaxdigits]="5"
           [ngModelOptions]="{ standalone: true }" required
           (blur)="Ancho_Change()" (keyup.enter)="Next($event, alto4)"
           [disabled]="compac.PC_TipoJunquillo == '-1' || compac.PC_TipoJunquillo == 'JC'" />
@@ -41,7 +41,7 @@
       <div style="padding: 0.3em; width: 20%; float: left">
         <label>{{ "ALTO" | translate }}</label>
         <input #alto4 class="form-control form-control-sm" type="number" [min]="minalto" [max]="maxalto" step=".5"
-          [(ngModel)]="Alto" id="Compac_Alto" [appMaxdigits]="3"
+          [(ngModel)]="Alto" id="Compac_Alto" [appMaxdigits]="5"
           [ngModelOptions]="{ standalone: true }" required />
            <small class="text-muted">{{ minalto }}-{{ maxalto }} cm</small>
       </div>
@@ -93,7 +93,7 @@
     <div style="padding: 0.3em; width: 20%; float: left">
       <label>{{ "ALTURACADENA" | translate }}</label>
       <input type="number" class="form-control form-control-sm" id="Compac_AlturaCadena"
-        step=".5" [ngModelOptions]="{ standalone: true }" [(ngModel)]="AlturaCadena" [appMaxdigits]="3" />
+        step=".5" [ngModelOptions]="{ standalone: true }" [(ngModel)]="AlturaCadena" [appMaxdigits]="5" />
     </div>
     <div style="padding: 0.3em; width: 20%; float: left">
       <label>{{ "POSICIONMANDO" | translate }}:</label>
