@@ -9,7 +9,8 @@ import { AccConfiguradorService } from './acc-configurador.service';
  * Solo lo pinta config.component para clientes con el interruptor activo (SOL_ACC_CLIENTE);
  * Leroy sigue con manza-enrollable. Nada de este componente se usa en el configurador de siempre.
  *
- * Pasos: medidas → tejido (lecturas de siempre, solo dependen del cliente) → accionamiento
+ * Pasos: medidas → tejido (los del maestro marcados en Productos → Tejidos; el criterio lo elige
+ * el configurador según el ancho) → accionamiento
  * (accionamiento → sistema → cadena: tipo, aro + altura o medida, color / motor: tipo, modelo,
  * mando, cargador, batería) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
  * su color. Además: posición (Derecha/Izquierda), estancia y observaciones, impresión digital (sí/no
@@ -62,15 +63,13 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    /* cadena a medida: longitud que teclea el cliente (cm) */
    longitud: number = null;
 
-   /* tejido (modelo de siempre) */
-   alltejidos: any[] = [];
-   tiposTejido: string[] = [];
-   tejidos: any[] = [];
-   tejidosC: any[] = [];
+   /* tejido: los del maestro de tejidos disponibles para el enrollable (Productos -> Tejidos, opc.tejidos).
+      Se elige tipo -> tejido -> color; el criterio (ancho del rollo) lo elige el configurador: el menor
+      que cubra el ancho de la cortina */
    readonly salidas = [{ id: 1, text: 'Cascada' }, { id: 2, text: 'Pegado Pared' }];
-   opacidad = '';
-   tejido = '-1';
-   tejidoColor = '-1';
+   tipoTejido = '';
+   nombreTejido = '';
+   colorTejido = '';
    salida = '1';
 
    /* selección del modelo nuevo (ids como texto, por los <select>) */
@@ -96,7 +95,6 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    ngOnChanges(changes: SimpleChanges): void {
       if ((changes['Cliente'] || changes['SubCliente']) && parseInt(this.Cliente, 10) > 0) {
          this.cargarOpciones();
-         this.cargarTejidos();
          this.cargarEstancias();
       }
    }
@@ -111,25 +109,6 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       );
    }
 
-   /* Con impresión digital, las lecturas "ID" de siempre: solo tejidos y colores aptos para imprimir */
-   private cargarTejidos(despues?: () => void): void {
-      const lectura = this.impresion
-         ? this.service.getTejidosProductoID(this.Cliente, '1', this.SubCliente)
-         : this.service.getTejidosProducto(this.Cliente, '1', this.SubCliente);
-      lectura.subscribe(
-         data => {
-            this.alltejidos = data || [];
-            this.tiposTejido = [];
-            this.alltejidos.forEach(t => { if (this.tiposTejido.indexOf(t.opacidad) < 0) { this.tiposTejido.push(t.opacidad); } });
-            this.tiposTejido.sort();
-            this.opacidad = this.tiposTejido[0] || '';
-            this.cambiarOpacidad();
-            if (despues) { despues(); }
-         },
-         error => this.toaster.error(error.message)
-      );
-   }
-
    private cargarEstancias(): void {
       this.service.getEstancias(parseInt(this.Cliente, 10)).subscribe(
          data => { this.estancias = data || []; },
@@ -137,33 +116,58 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       );
    }
 
+   /* Con impresión digital solo salen los tejidos del maestro que la admiten: si el elegido no, se vacía */
    cambiarImpresion(): void {
       if (!this.impresion) { this.impresionTexto = ''; }
-      this.cargarTejidos();
+      if (this.tiposTejido.indexOf(this.tipoTejido) < 0) { this.tipoTejido = ''; }
+      if (this.nombresTejido.indexOf(this.nombreTejido) < 0) { this.nombreTejido = ''; }
+      if (this.coloresTejido.indexOf(this.colorTejido) < 0) { this.colorTejido = ''; }
+      this.autoElegirTejido();
    }
 
-   cambiarOpacidad(): void {
-      this.tejidos = this.alltejidos.filter(t => t.opacidad === this.opacidad);
-      this.tejido = '-1';
-      this.tejidosC = [];
-      this.tejidoColor = '-1';
+   cambiarTipoTejido(): void {
+      this.nombreTejido = '';
+      this.colorTejido = '';
+      this.autoElegirTejido();
    }
 
-   cambiarTejido(colorInicial?: string): void {
-      this.tejidosC = [];
-      this.tejidoColor = '-1';
-      if (this.tejido === '-1') { return; }
-      const lectura = this.impresion
-         ? this.service.getTejidosColorID(parseInt(this.tejido, 10), parseInt(this.Cliente, 10), this.SubCliente)
-         : this.service.getTejidosColor(parseInt(this.tejido, 10), parseInt(this.Cliente, 10), this.SubCliente);
-      lectura.subscribe(
-         data => {
-            this.tejidosC = data || [];
-            const inicial = colorInicial && this.tejidosC.some(c => String(c.id) === colorInicial) ? colorInicial : null;
-            this.tejidoColor = inicial || (this.tejidosC.length > 0 ? String(this.tejidosC[0].id) : '-1');
-         },
-         error => this.toaster.error(error.message)
-      );
+   cambiarNombreTejido(): void {
+      this.colorTejido = '';
+      this.autoElegirTejido();
+   }
+
+   private autoElegirTejido(): void {
+      if (!this.tipoTejido && this.tiposTejido.length === 1) { this.tipoTejido = this.tiposTejido[0]; }
+      if (!this.nombreTejido && this.nombresTejido.length === 1) { this.nombreTejido = this.nombresTejido[0]; }
+      if (!this.colorTejido && this.coloresTejido.length === 1) { this.colorTejido = this.coloresTejido[0]; }
+   }
+
+   private distintos(valores: string[]): string[] {
+      return valores.filter((v, i) => valores.indexOf(v) === i).sort();
+   }
+
+   /* Tejidos del maestro que se pueden ofrecer (con impresión digital, solo los aptos) */
+   get tejidosDisponibles(): any[] {
+      const todos = this.opc && this.opc.tejidos ? this.opc.tejidos : [];
+      return this.impresion ? todos.filter(t => t.impresion_digital) : todos;
+   }
+   etiquetaTipo(t: any): string { return t.tipo || 'Sin tipo'; }
+   get tiposTejido(): string[] { return this.distintos(this.tejidosDisponibles.map(t => this.etiquetaTipo(t))); }
+   get nombresTejido(): string[] {
+      return this.distintos(this.tejidosDisponibles.filter(t => this.etiquetaTipo(t) === this.tipoTejido).map(t => t.nombre));
+   }
+   get coloresTejido(): string[] {
+      return this.distintos(this.tejidosDisponibles.filter(t => this.etiquetaTipo(t) === this.tipoTejido && t.nombre === this.nombreTejido).map(t => t.color));
+   }
+   /* Filas del maestro del tejido + color elegidos: una por criterio (ancho del rollo) */
+   private get filasTejido(): any[] {
+      return this.tejidosDisponibles.filter(t => this.etiquetaTipo(t) === this.tipoTejido && t.nombre === this.nombreTejido && t.color === this.colorTejido);
+   }
+   /* La fila que se usa: el menor criterio que cubra el ancho de la cortina */
+   get tejidoFila(): any {
+      if (!(this.ancho > 0)) { return null; }
+      const validas = this.filasTejido.filter(t => t.criterio > 0 && t.criterio >= this.ancho).sort((a, b) => a.criterio - b.criterio);
+      return validas.length ? validas[0] : null;
    }
 
    // ─── CASCADA DEL ACCIONAMIENTO ──────────────────────────────────────────────────
@@ -273,10 +277,10 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    get contrapesoSel(): any { return this.porId(this.contrapesos, this.sel.contrapeso); }
    get coloresContrapeso(): any[] { return this.coloresDe(this.contrapesoSel, this.opc ? this.opc.coloresContrapeso : []); }
 
-   /* Ancho máximo del color de tejido elegido (ancmax), si lo tiene */
+   /* Ancho máximo del tejido + color elegidos: el mayor de sus criterios */
    get anchoMaximo(): number {
-      const c = this.tejidosC.find(x => String(x.id) === this.tejidoColor);
-      return c && c.ancmax > 0 ? c.ancmax : null;
+      const criterios = this.filasTejido.map(t => t.criterio).filter(c => c > 0);
+      return criterios.length ? Math.max(...criterios) : null;
    }
 
    etiquetaAltura(a: any): string {
@@ -288,8 +292,9 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    private validar(): string {
       if (!(this.ancho > 0) || !(this.alto > 0)) { return 'Indique el ancho y el alto'; }
       if (!(this.cantidad > 0)) { return 'Indique la cantidad'; }
-      if (this.tejido === '-1' || this.tejidoColor === '-1') { return 'Seleccione el tejido y su color'; }
-      if (this.anchoMaximo && this.ancho > this.anchoMaximo) { return 'El ancho (' + this.ancho + ' cm) supera el máximo de este tejido (' + this.anchoMaximo + ' cm)'; }
+      if (!this.tipoTejido || !this.nombreTejido || !this.colorTejido) { return 'Seleccione el tejido y su color'; }
+      if (!this.anchoMaximo) { return 'Este tejido no tiene criterio (ancho del rollo): complételo en el Maestro de tejidos'; }
+      if (!this.tejidoFila) { return 'El ancho (' + this.ancho + ' cm) supera el máximo de este tejido (' + this.anchoMaximo + ' cm)'; }
       if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
       if (!this.sel.accionamiento) { return 'Seleccione el accionamiento'; }
       if (!this.sel.sistema) { return 'Seleccione el sistema'; }
@@ -314,7 +319,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
 
    /* Lo que determina el precio: si cambia algo, el precio calculado deja de valer */
    private get firma(): string {
-      return JSON.stringify({ a: this.ancho, h: this.alto, c: this.cantidad, tj: this.tejido, tc: this.tejidoColor, i: this.impresion,
+      const fila = this.tejidoFila;
+      return JSON.stringify({ a: this.ancho, h: this.alto, c: this.cantidad, tj: fila ? fila.id : null, i: this.impresion,
                               l: this.longitud, s: this.sel, t: this.tipoTarifa });
    }
 
@@ -392,11 +398,13 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       t.impresion = this.impresion;
       t.impresion_imagen = this.impresion ? this.impresionTexto.trim() : '';
 
-      /* tejido (ids y textos de siempre) */
-      t.tej_tipo_id = parseInt(this.tejido, 10);
-      t.tej_tipo_text = nombre(this.tejidos.map(x => ({ id: x.id, nombre: x.text })), this.tejido);
-      t.tej_color_id = parseInt(this.tejidoColor, 10);
-      t.tej_color_text = nombre(this.tejidosC.map(x => ({ id: x.id, nombre: x.text })), this.tejidoColor);
+      /* tejido del maestro: ids de siempre a -1 y los textos de siempre con su nombre y color
+         (como los escribe sp_acc_pedido_tipo_1_add, script 30) */
+      const fila = this.tejidoFila;
+      t.tej_tipo_id = -1;
+      t.tej_tipo_text = fila ? fila.nombre : null;
+      t.tej_color_id = -1;
+      t.tej_color_text = fila ? fila.color : null;
       t.tej_salida_id = parseInt(this.salida, 10);
       t.tej_salida_text = nombre(this.salidas.map(x => ({ id: x.id, nombre: x.text })), this.salida);
 
@@ -435,7 +443,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
          soporte: id(this.sel.soporte), soporte_color: id(this.sel.soporte_color),
          tapa: id(this.sel.tapa), tapa_color: id(this.sel.tapa_color),
          contrapeso: id(this.sel.contrapeso), contrapeso_color: id(this.sel.contrapeso_color),
-         cadena_longitud: this.esCadena && this.esMedida ? Number(this.longitud) : null
+         cadena_longitud: this.esCadena && this.esMedida ? Number(this.longitud) : null,
+         tejido: fila ? fila.id : null
       };
       (t as any).tipo_tarifa = this.tipoTarifa;
       return t;
@@ -453,18 +462,14 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       this.estancia = item.estancia_id ? String(item.estancia_id) : '-1';
       this.observaciones = item.estancia_obs || '';
       this.longitud = item.nacc.cadena_longitud || null;
-      /* la impresión cambia la lista de tejidos: se recarga y después se elige el de la línea */
       this.impresion = !!item.impresion;
       this.impresionTexto = item.impresion_imagen || '';
-      this.cargarTejidos(() => {
-         const tejido = this.alltejidos.find(x => String(x.id) === String(item.tej_tipo_id));
-         if (tejido) {
-            this.opacidad = tejido.opacidad;
-            this.cambiarOpacidad();
-            this.tejido = String(tejido.id);
-            this.cambiarTejido(String(item.tej_color_id));
-         }
-      });
+      /* tejido del maestro de la línea (nacc.tejido): tipo, nombre y color; el criterio sale del ancho */
+      const tejido = (this.opc && this.opc.tejidos ? this.opc.tejidos : []).find(x => x.id === item.nacc.tejido);
+      this.tipoTejido = tejido ? this.etiquetaTipo(tejido) : '';
+      this.nombreTejido = tejido ? tejido.nombre : '';
+      this.colorTejido = tejido ? tejido.color : '';
+      if (!tejido) { this.toaster.warning('El tejido de esta línea ya no está disponible: elija otro', 'Configurador'); }
       this.salida = String(item.tej_salida_id || 1);
       this.limpiarSeleccion();
       Object.keys(this.sel).forEach(k => { const v = item.nacc[k]; this.sel[k] = v === null || v === undefined ? '' : String(v); });

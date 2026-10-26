@@ -2,7 +2,7 @@
 
 Este documento es el registro del modelo que hay en la base de datos (tablas `SOL_ACC_*`). Si cambia el modelo, se actualiza aquí.
 
-- **Scripts:** `C:\dev\sqlAccionamientos\01` a `29` (idempotentes; el 29 requiere el maestro de tejidos y se despliega aparte). Se despliegan todos en orden con `00_desplegar_todo.sql` (o `00_desplegar_todo_ssms.sql` desde SSMS); ver `DESPLIEGUE.md`. Desplegados en producción el 2026-10-21.
+- **Scripts:** `C:\dev\sqlAccionamientos\01` a `29` (idempotentes; del 29 al 33 requieren el maestro de tejidos y se despliegan aparte, ver `DESPLIEGUE.md` 4b). Se despliegan todos en orden con `00_desplegar_todo.sql` (o `00_desplegar_todo_ssms.sql` desde SSMS); ver `DESPLIEGUE.md`. Desplegados en producción el 2026-10-21.
 - **Registro de cambios y estado por entorno:** `C:\dev\sqlAccionamientos\REGISTRO_CAMBIOS.md`.
 - **Mantenimiento:** pantalla "Productos" (antes "Accionamientos nuevo"; `/routes/master/accionamientos-nuevo`, permiso `config_accionamientos`), con el backend en `backend/controllers/sm/accionamientos_nuevo.js` (`/api/sm/acc/*`).
 - **Configurador nuevo:** componente `manza/enrollable-nuevo`, backend `backend/controllers/sm/acc_configurador.js` (`/api/sm/acc_cfg/*`). Solo para clientes con el interruptor activo (apartado 4.13).
@@ -399,7 +399,7 @@ Script 29. Qué tejidos del maestro de tejidos (`SOL_TEJIDOS_MAESTRO`, una fila 
 
 - Una sola lista para todos los clientes (decisión del usuario, 2026-10-23).
 - En la pantalla los tejidos se agrupan solo por nombre, sin distinguir el criterio: marcar VERA BLOCK marca sus colores de 200, de 250 y de cualquier otro ancho (decisión del usuario, 2026-10-23).
-- **El configurador todavía no la lee**: sigue con los tejidos de siempre. Pasarlo al maestro (columna en la línea, precio T1/T2 y fabricación) queda para más adelante.
+- **El configurador nuevo ofrece solo estos tejidos** (scripts 30-32, 2026-10-23): tipo de tejido → tejido → color; el criterio no se elige: el configurador toma, entre los anchos de ese tejido + color, el menor que cubra el ancho de la cortina (si ninguno, "supera el ancho máximo"). Con impresión digital, solo los que la admiten en el maestro. La línea lo guarda en `nacc_tejido_id` (apartado 8) y el precio usa su grupo (T1) o la T2 de su tejido + criterio (apartado 9).
 
 ### 4.13 SOL_ACC_CLIENTE (interruptor por cliente)
 
@@ -471,6 +471,7 @@ El configurador nuevo solo lo usan los clientes con fila activa en `SOL_ACC_CLIE
 Las líneas de enrollable del flujo nuevo se graban en `SOL_PEDIDOS_COLA_TIPO_1`, como las de siempre, con los SPs `sp_acc_pedido_add` y `sp_acc_pedido_tipo_1_add` (creados en el 06; versión vigente: script 28):
 
 - La selección va en 19 columnas nulables `nacc_*` (12 del script 05, 6 del 08 y `nacc_cadena_longitud` del 10, en cm), con FK a su catálogo: `nacc_accionamiento_id`, `nacc_sistema_id`, `nacc_tipo_cadena_id`, `nacc_tipo_aro_id`, `nacc_cadena_medida_id`, `nacc_altura_id`, `nacc_color_cadena_id`, `nacc_tipo_motor_id`, `nacc_modelo_motor_id`, `nacc_mando_id`, `nacc_cargador_id`, `nacc_bateria_id`, `nacc_soporte_id`, `nacc_soporte_color_id`, `nacc_tapa_id`, `nacc_tapa_color_id`, `nacc_contrapeso_id`, `nacc_contrapeso_color_id`. En las líneas de siempre quedan a NULL.
+- **Tejido del maestro** (script 30): `nacc_tejido_id` (FK a `SOL_TEJIDOS_MAESTRO`, el tejido + color + criterio elegido). Con él, `tej_tipo_id` y `tej_color_id` van a -1 y `tej_tipo_text` / `tej_color_text` son el nombre y el color del maestro. Código -24: tejido no disponible para el enrollable, o llega también el id de siempre.
 - Una columna más, `nacc_tipo_tarifa` (`VARCHAR(2)`, 'T1' o 'T2', script 28): con qué tarifa se calculó el precio, para recalcularlo igual al recargar un presupuesto y pedirlo. NULL en las líneas de siempre.
 - Los ids antiguos de accionamiento, soporte, tapa y contrapeso (`acc_tipo_id`, `acc_marca_id`, `acc_modelo_id`, `mando_id`, `cargador`, `cad_altura_id`, `cad_color_id`, `sop_*_id`, `tap_*_id`, `con_*_id`) van a -1: nunca se mezclan ids nuevos con los antiguos.
 - Los textos que pintan la cesta, los pedidos y los informes se escriben desde `SOL_ACC_*`: `acc_tipo_text` (accionamiento), `acc_marca_text` (sistema; en motor, "sistema · tipo de motor"), `acc_modelo_text` (cadena: "tipo · aro o medida"; motor: "modelo · cargador · batería"), `mando_text`, `cad_Tipo` = 1, `cad_Altura` ("100 cm" o el tipo de medida), `cad_color_text`, y `sop_tipo_text`/`sop_color_text`, `tap_tipo_text`/`tap_color_text`, `con_tipo_text`/`con_color_text`.
@@ -515,6 +516,7 @@ Lo calcula `sp_acc_precio_linea` (versión vigente: script 25), llamado por el b
 1. **Base: tarifa del generador** (`fn_acc_precio_tarifa`, script 25). El configurador elige **T1** (tarifa por grupo de tejido) o **T2** (por tejido); el año (T14, T24...) no cuenta. Se busca en `SOL_TARIFAS_SIMULATE`:
    - enrollable (`tipoproducto` 1), activa y con `acc_sistema_id` = el sistema de la línea (script 23);
    - T1: `grupotejido` = 1 y el grupo local de la serie del tejido (`SOL_ARTICULOS_TEJIDOS_GRUPOS.nexos`); T2: `grupotejido` = 0 y el tejido;
+   - **con tejido del maestro** (script 31): T1 con el grupo cuya descripción es el grupo del maestro (`D300`); T2 con la tarifa de ese tejido + criterio (`acc_tejido_nombre` = nombre del maestro y `criterio` = el suyo), que vale para todos sus colores (opción A del usuario, 2026-10-23). En el generador se elige en "Tejido del maestro (T2)", que pone el criterio y el coste m² (el mayor de sus colores, con aviso si no coinciden); script 32;
    - si hay varias, la más reciente. Al guardar una tarifa igual en el generador, la anterior queda desactivada (script 27).
 
    El precio es la casilla del **mapa completo guardado** (`SOL_TARIFAS_SIMULATE_TABLE`, bloque 10; `mapa_fecha` dice cuándo se guardó, script 24), con el **tramo superior**: primera fila de alto mayor o igual, primera columna de ancho mayor o igual (0,40 m y de 0,20 en 0,20). Sin tarifa, sin mapa o fuera del mapa, la línea no se puede valorar. Si falta la tarifa del otro tipo, se avisa.
@@ -549,7 +551,8 @@ En curso: pantalla y backend con los dos filtros, procedimiento del enrollable q
 - Cesta mixta: con el interruptor activo, un documento con otros productos se rechaza.
 - Fabricación de las líneas nuevas (apartado 10).
 - Ancho máximo de los tejidos para clientes que no son Leroy (`vw_tejidos_colores_3009` no trae `ancmax`).
-- Que el configurador use los tejidos disponibles del maestro (4.14) en vez de los de siempre.
+- Generador: la generación múltiple no genera T2 por tejido del maestro (hay que crearlas una a una o clonando), y cambiar el coste en el Maestro de tejidos no actualiza el coste m² de sus tarifas T2.
+- Fabricación v3 de las líneas con tejido del maestro: leer `nacc_tejido_id` (el maestro lleva el código Solupyme del artículo) en vez de `tej_tipo_id`/`tej_color_id`, que van a -1.
 - Traducciones de los nombres (hoy `nombre_pt` sin uso en la pantalla).
 - Visibilidad por cliente (tablas `X_CLIENTE`), si se necesita.
 - Borrar lo que ya no se usa: `SOL_ACC_SISTEMA.sp_modelo` y `fn_acc_precio_base` (scripts 17 y 18).

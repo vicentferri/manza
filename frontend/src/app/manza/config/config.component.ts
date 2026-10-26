@@ -677,7 +677,9 @@ export class ConfigComponent implements OnInit {
                 mando: item.nacc_mando_id, cargador: item.nacc_cargador_id, bateria: item.nacc_bateria_id,
                 soporte: item.nacc_soporte_id, soporte_color: item.nacc_soporte_color_id,
                 tapa: item.nacc_tapa_id, tapa_color: item.nacc_tapa_color_id,
-                contrapeso: item.nacc_contrapeso_id, contrapeso_color: item.nacc_contrapeso_color_id
+                contrapeso: item.nacc_contrapeso_id, contrapeso_color: item.nacc_contrapeso_color_id,
+                /* tejido del maestro (script 30) */
+                tejido: item.nacc_tejido_id
               };
               /* Tarifa (T1/T2) con la que se calculó el precio: el servidor lo recalcula al pedir */
               (tipo as any).tipo_tarifa = item.nacc_tipo_tarifa;

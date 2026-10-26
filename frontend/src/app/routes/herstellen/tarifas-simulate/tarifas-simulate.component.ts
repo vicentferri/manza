@@ -81,8 +81,14 @@ export class TarifasSimulateComponent implements OnInit {
     /* Configurador nuevo: sistema de la pantalla Productos (antes "Accionamientos nuevo") al que se aplica la tarifa ('' = ninguno).
        No es el "SP Sistema" (tipo de producto de la exportación) */
     acc_sistema_id: '',
+    /* T2 del configurador nuevo con un tejido del maestro (nombre; el criterio es el de la tarifa). '' = ninguno */
+    acc_tejido_nombre: '',
     desactivar_duplicadas: false
   }
+
+  /* Tejidos del maestro (tejido + criterio) para la T2 del configurador nuevo, y el elegido ('nombre|criterio') */
+  series_maestro: any[] = [];
+  serie_maestro = '';
 
   /* Configurador nuevo: sistemas a elegir, fecha del mapa guardado y de la última exportación */
   acc_sistemas: any = [];
@@ -527,6 +533,8 @@ export class TarifasSimulateComponent implements OnInit {
     this.model.desmultiplicador_trigger = 1.9;
     this.model.desmultiplicador_value = 1.12;
     this.model.acc_sistema_id = '';
+    this.model.acc_tejido_nombre = '';
+    this.serie_maestro = '';
     this.model.desactivar_duplicadas = false;
     this.mapa_fecha = null;
     this.sync_fecha = null;
@@ -556,6 +564,11 @@ export class TarifasSimulateComponent implements OnInit {
    * 
    */
   SaveValues() {
+    /* El tejido del maestro solo vale en una T2 con sistema del configurador nuevo */
+    if (this.model.grupotejido != '0' || !this.model.acc_sistema_id) {
+      this.model.acc_tejido_nombre = '';
+      this.serie_maestro = '';
+    }
     var values = JSON.stringify(this.model);
     this.service.HTTP_Post('/sm/tarifa_simulate', values).subscribe(
       data => {
@@ -753,6 +766,8 @@ export class TarifasSimulateComponent implements OnInit {
         this.model.grupo = data.Table[0].grupo;
         this.model.grupotejido = data.Table[0].grupotejido ? '1' : '0';
         this.model.acc_sistema_id = data.Table[0].acc_sistema_id === null || data.Table[0].acc_sistema_id === undefined ? '' : String(data.Table[0].acc_sistema_id);
+        this.model.acc_tejido_nombre = data.Table[0].acc_tejido_nombre || '';
+        this.serie_maestro = this.model.acc_tejido_nombre ? this.model.acc_tejido_nombre + '|' + this.model.criterio : '';
         this.mapa_fecha = data.Table[0].mapa_fecha || null;
         this.sync_fecha = data.Table[0].op_synchronized ? (data.Table[0].op_synchr_date || null) : null;
         this.esgrupo = this.model.grupotejido == '0' ? 0 : 1;
@@ -807,6 +822,14 @@ export class TarifasSimulateComponent implements OnInit {
       error => {
         this.toaster.error('No se pudieron cargar los sistemas del configurador nuevo');
       }
+    );
+
+    /* Tejidos del maestro (tejido + criterio) para la T2 del configurador nuevo */
+    this.service.HTTP_Get('/sm/tejidos_maestro/series').subscribe(
+      data => {
+        this.series_maestro = (data.Table || []).map(t => Object.assign(t, { clave: t.nombre + '|' + t.criterio }));
+      },
+      () => { }
     );
 
     this.service.HTTP_Get('/sm/import_tables/SISTEMA').subscribe(
@@ -883,6 +906,28 @@ export class TarifasSimulateComponent implements OnInit {
 
   }
 
+
+  /* T2 del configurador nuevo: al elegir un tejido del maestro se toman su criterio y su coste m²
+     (si sus colores cuestan distinto, el mayor) y se deja sin tejido de siempre */
+  ChangeSerieMaestro() {
+    const serie = this.series_maestro.find(t => t.clave === this.serie_maestro);
+    if (!serie) {
+      this.model.acc_tejido_nombre = '';
+      return;
+    }
+    this.model.acc_tejido_nombre = serie.nombre;
+    this.model.criterio = serie.criterio;
+    this.model.preciom2 = serie.coste_max;
+    this.model.tejido = -1;
+    if (serie.coste_min !== serie.coste_max) {
+      this.toaster.warning('Los colores de ' + serie.nombre + ' cuestan entre ' + serie.coste_min + ' y ' + serie.coste_max +
+        ' €/m²: se usa el mayor. Puede cambiarlo en Precio m².', 'Tarifa T2');
+    }
+  }
+
+  get serieMaestroSel(): any {
+    return this.series_maestro.find(t => t.clave === this.serie_maestro) || null;
+  }
 
   ChangeTejido(event) {
     this.getCoste(event.target.value);

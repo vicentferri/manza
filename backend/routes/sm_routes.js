@@ -238,6 +238,7 @@ smapi.get('/tejidos_maestro/ml_config', Auth.ensureAuth, TejidosMaestroControlle
 smapi.post('/tejidos_maestro/precio_minuto', Auth.ensureAuth, TejidosMaestroController.precio_minuto);
 smapi.post('/tejidos_maestro/activo', Auth.ensureAuth, TejidosMaestroController.activo);
 smapi.get('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipos);
+smapi.get('/tejidos_maestro/series', Auth.ensureAuth, TejidosMaestroController.series);
 smapi.post('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipo_guardar);
 
 smapi.get('/tejidos_atributos', TejidosController.tejidos_atributos);

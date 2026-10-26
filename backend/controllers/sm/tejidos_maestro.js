@@ -320,7 +320,28 @@ async function tipo_guardar(req, res) {
   }
 }
 
+/* GET /tejidos_maestro/series — tejidos del maestro agrupados por nombre + criterio, para la tarifa
+   T2 del generador (script 32: una T2 vale para todos los colores de un tejido + criterio).
+   coste_min / coste_max: si no coinciden, los colores tienen costes distintos y la tarifa usará uno */
+async function series(req, res) {
+  try {
+    const pool = await sql.connect();
+    const result = await pool.request().query(`
+      select m.nombre, m.criterio, count(*) as colores, min(m.coste_m2) as coste_min, max(m.coste_m2) as coste_max,
+             min(t.descripcion) as tipo
+      from dbo.SOL_TEJIDOS_MAESTRO m
+      left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+      where m.activo = 1 and m.criterio is not null
+      group by m.nombre, m.criterio
+      order by m.nombre, m.criterio`);
+    res.status(200).send({ Table: result.recordset });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
 module.exports = {
+  series,
   lista,
   guardar,
   calcular,

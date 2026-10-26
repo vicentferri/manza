@@ -876,7 +876,8 @@ function tarifa_simulate(req,res)
     var idrow = req.params.idrow;
 
             /* acc_sistema_id y mapa_fecha: configurador nuevo (scripts 23-24 de sqlAccionamientos) */
-            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,criterio,preciom2,preciomontaje,bloqueo,desmultiplicador,desmultiplicador_trigger,desmultiplicador_value,tipoproducto,grupotejido,grupo,densidad,sp_sistema,sp_modelo,sp_accionamiento,sp_tejido,acc_sistema_id,mapa_fecha,op_synchronized,op_synchr_date from sol_tarifas_simulate ";
+            /* acc_tejido_nombre: T2 de un tejido del maestro (script 31) */
+            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,criterio,preciom2,preciomontaje,bloqueo,desmultiplicador,desmultiplicador_trigger,desmultiplicador_value,tipoproducto,grupotejido,grupo,densidad,sp_sistema,sp_modelo,sp_accionamiento,sp_tejido,acc_sistema_id,mapa_fecha,acc_tejido_nombre,op_synchronized,op_synchr_date from sol_tarifas_simulate ";
             sqlquery += " where idrow = " + idrow;
                 new sql.Request().query(sqlquery, (err2,result) => {
 
@@ -1494,6 +1495,11 @@ function Simulation(req,res){
         if (accSistema !== null && isNaN(accSistema)) accSistema = -1;
         request.input('acc_sistema_id',sql.Int,accSistema);
         request.input('desactivar_duplicadas',sql.Bit,body.desactivar_duplicadas ? 1 : 0);
+        /* Script 32: T2 de un tejido del maestro (nombre; el criterio es el de la tarifa). Si no llega,
+           '-' = no tocarlo; vacío = quitarlo */
+        var accTejido = body.acc_tejido_nombre === undefined ? '-'
+            : (body.acc_tejido_nombre === null ? '' : String(body.acc_tejido_nombre).trim().substring(0, 100));
+        request.input('acc_tejido_nombre',sql.VarChar(100),accTejido);
         request.execute('sp_tarifas_simulate',
         function(err, recordsets, returnValue) {
 
@@ -1507,14 +1513,23 @@ function Simulation(req,res){
                 {
                     res.status(400).send({message: 'Para el configurador nuevo la tarifa tiene que ser de enrollable y tener el grupo (T1) o el tejido (T2) elegido'});
                 }
+                else if (recordsets.returnValue == -12)
+                {
+                    res.status(400).send({message: 'El tejido del maestro no existe (activo) con el criterio de la tarifa'});
+                }
                 else if (recordsets.returnValue == -11)
                 {
                     /* Otra tarifa activa igual: se devuelve cuál, para que la pantalla pida confirmación */
                     new sql.Request()
                         .input('idrow',sql.Int,body.idrow).input('sistema',sql.Int,accSistema)
                         .input('grupotejido',sql.Int,body.grupotejido).input('grupo',sql.Int,body.grupo).input('tejido',sql.Int,body.tejido)
-                        .query("select idrow, nombre from SOL_TARIFAS_SIMULATE where idrow <> @idrow and activa = 1 and acc_sistema_id = @sistema and tipoproducto = 1 " +
-                               "and isnull(grupotejido,0) = isnull(@grupotejido,0) and ((isnull(@grupotejido,0) = 1 and grupo = @grupo) or (isnull(@grupotejido,0) = 0 and tejido = @tejido))",
+                        .input('tejnombre',sql.VarChar(100),accTejido).input('criterio',sql.Int,body.criterio)
+                        /* misma regla que sp_tarifas_simulate (scripts 27 y 32): en T2, por tejido de siempre o por tejido del maestro + criterio */
+                        .query("declare @n varchar(100) = case when @tejnombre = '-' then (select acc_tejido_nombre from SOL_TARIFAS_SIMULATE where idrow = @idrow) else nullif(@tejnombre, '') end; " +
+                               "select idrow, nombre from SOL_TARIFAS_SIMULATE where idrow <> @idrow and activa = 1 and acc_sistema_id = @sistema and tipoproducto = 1 " +
+                               "and isnull(grupotejido,0) = isnull(@grupotejido,0) and ((isnull(@grupotejido,0) = 1 and grupo = @grupo) " +
+                               "or (isnull(@grupotejido,0) = 0 and @n is null and acc_tejido_nombre is null and tejido = @tejido) " +
+                               "or (isnull(@grupotejido,0) = 0 and @n is not null and acc_tejido_nombre = @n and criterio = @criterio))",
                         (err2, result) => {
                             var duplicadas = err2 ? [] : result.recordset;
                             var tipo = parseInt(body.grupotejido, 10) === 1 ? 'T1' : 'T2';
@@ -1720,7 +1735,11 @@ function tarifas_simulate_search(req,res){
 
     let estado = (req.params.estado == null) ? '-1' : req.params.estado;
 
-            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,preciom2,desmultiplicador,bloqueo,criterio,dbo.fn_tarifa_tejido_grupo(tejido,grupo) as desctejido ";
+            /* desctejido: en una T2 de un tejido del maestro (script 31), "TEJIDO - 250 cm (maestro)" */
+            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,preciom2,desmultiplicador,bloqueo,criterio," +
+                "isnull((select s.acc_tejido_nombre + ' - ' + cast(s.criterio as varchar(10)) + ' cm (maestro)' from SOL_TARIFAS_SIMULATE s " +
+                "where s.idrow = vw_sol_tarifas_simulate.idrow and s.acc_tejido_nombre is not null) collate database_default, " +
+                "dbo.fn_tarifa_tejido_grupo(tejido,grupo) collate database_default) as desctejido ";
             sqlquery += ",fn_sistema,fn_modelo,fn_accionamiento,sp_tejido,fn_grupo,op_synchronize,op_synchronized,op_synchr_date,sp_tarifa ";
             sqlquery += "  from vw_sol_tarifas_simulate ";
             if (estado != '-1'){

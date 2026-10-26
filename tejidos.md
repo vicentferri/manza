@@ -293,6 +293,16 @@ la BD local se deshacen al terminar.
 
 ---
 
+## 5b. Para la fabricación por reglas (otra sesión)
+
+Desde el 2026-10-23 las líneas del configurador nuevo llevan el tejido del maestro en
+`SOL_PEDIDOS_COLA_TIPO_1.nacc_tejido_id` (y en presupuestos), y `tej_tipo_id` / `tej_color_id` a -1. La
+fabricación v3 (búsqueda "tejido por tipo + color" de `sqlEnrrollable/04`) tiene que leer
+`nacc_tejido_id`: el maestro da nombre, color, criterio y el **código Solupyme**, que es
+`ARTICULOS.COD_SOLUPYME` del artículo del tejido. No se ha tocado nada de la fabricación.
+
+---
+
 ## 6. Registro de cambios
 
 | Fecha | Cambio | Local | PROD |
@@ -308,3 +318,5 @@ la BD local se deshacen al terminar.
 | 2026-10-23 | Pantalla: se inicializa el formulario con `lamas` y `ml` (la ventana de edición, siempre en la página, rompía el refresco de toda la pantalla). Pruebas en el navegador deshechas | — | — |
 | 2026-10-23 | Pantalla: un clic en la fila abre el tejido (antes doble clic); la casilla solo selecciona | — | — |
 | 2026-10-23 | Pantalla Productos → apartado Tejidos: qué tejidos del maestro salen en el configurador del enrollable (`SOL_ACC_PRODUCTO_TEJIDO`, script 29 de sqlAccionamientos). El configurador todavía no la usa | Aplicado (`SOLARMANES_DEV`, vacía) | Pendiente |
+| 2026-10-23 | Configurador nuevo con los tejidos del maestro: la línea guarda `nacc_tejido_id`, criterio por ancho, precio T1 por el grupo del maestro y T2 por tejido + criterio (`acc_tejido_nombre`), generador con "Tejido del maestro (T2)" (scripts 30-32 de sqlAccionamientos) | Aplicado (`SOLARMANES_DEV`) | Pendiente |
+| 2026-10-23 | Revisado "Generar Tarifa" con T2 del maestro: mapa idéntico al del tejido de siempre; corregida la generación múltiple (script 33 de sqlAccionamientos); buscador de tarifas con el tejido del maestro | Aplicado (`SOLARMANES_DEV`) | Pendiente |

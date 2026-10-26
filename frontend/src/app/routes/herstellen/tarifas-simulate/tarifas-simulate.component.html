@@ -86,8 +86,10 @@
             <div class="row" [hidden]="esgrupo">
               <div class="col col-12">
                 <label form="tejido">Tejidos</label>
+                <!-- Con un tejido del maestro elegido (T2 del configurador nuevo) el tejido de siempre no se usa -->
                 <select name="Tejidos" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
-                  [disabled]="model.bloqueo === 1" [(ngModel)]="model.tejido" (change)="ChangeTejido($event)">
+                  [disabled]="model.bloqueo === 1 || !!serie_maestro" [title]="serie_maestro ? 'Tarifa de un tejido del maestro: el tejido de siempre no se usa' : ''"
+                  [(ngModel)]="model.tejido" (change)="ChangeTejido($event)">
                   <option *ngFor="let pow of lista_tejidos" [value]="pow.idrow">
                     {{ pow.descripcion }}
                   </option>
@@ -216,10 +218,22 @@
               <option *ngFor="let s of acc_sistemas" [value]="s.id">{{ s.nombre }}</option>
             </select>
           </div>
-          <div class="col col-9 pt-4">
+          <!-- T2 del configurador nuevo: tejido del maestro (tejido + criterio, vale para todos sus colores) -->
+          <div class="col col-3" *ngIf="model.grupotejido == '0' && model.acc_sistema_id">
+            <label>Tejido del maestro (T2)</label>
+            <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
+              [disabled]="model.bloqueo === 1" [(ngModel)]="serie_maestro" (change)="ChangeSerieMaestro()">
+              <option value="">— Ninguno (tejido de siempre) —</option>
+              <option *ngFor="let t of series_maestro" [value]="t.clave">{{ t.nombre }} · {{ t.criterio }} cm · {{ t.colores }} colores</option>
+            </select>
+            <small *ngIf="serieMaestroSel && serieMaestroSel.coste_min !== serieMaestroSel.coste_max" class="text-warning">
+              Sus colores cuestan entre {{ serieMaestroSel.coste_min | number:'1.2-2' }} y {{ serieMaestroSel.coste_max | number:'1.2-2' }} €/m²
+            </small>
+          </div>
+          <div class="col pt-4" [class.col-9]="!(model.grupotejido == '0' && model.acc_sistema_id)" [class.col-6]="model.grupotejido == '0' && model.acc_sistema_id">
             <small class="text-muted">
               Para que el configurador nuevo encuentre esta tarifa. Con <strong>Grupo</strong> es una tarifa T1 y con
-              <strong>Tejido</strong> una T2. Si ya hay otra tarifa activa igual, al guardar se le pedirá confirmación y la
+              <strong>Tejido</strong> una T2 (con los tejidos del maestro, elija el tejido del maestro: vale para todos sus colores). Si ya hay otra tarifa activa igual, al guardar se le pedirá confirmación y la
               anterior quedará desactivada. No cambia la exportación (los campos SP siguen igual).
             </small>
           </div>
