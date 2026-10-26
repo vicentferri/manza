@@ -26,7 +26,7 @@ const DOCUMENTOS = {
     lineasHoneycomb: 'dbo.vw_report_bestellung_lines_7',
     ordenLineas: 'linea, id',
     textoFecha: 'Fecha pedido',
-    conPrecios: false
+    conPrecios: true
   },
   presupuesto: {
     cabecera: 'dbo.SOL_PRESUPUESTOS_COLA',
