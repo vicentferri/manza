@@ -50,24 +50,10 @@ function formatFecha(fecha) {
   return dosDigitos(fecha.getUTCDate()) + '-' + dosDigitos(fecha.getUTCMonth() + 1) + '-' + fecha.getUTCFullYear();
 }
 
-// T7_Fecha_Entrega es varchar: se aceptan dd-mm-aaaa, dd/mm/aaaa y aaaa-mm-dd
-function leerFechaTexto(texto) {
-  const t = String(texto || '').trim();
-  let m = t.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
-  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));
-  m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-  return null;
-}
-
-// Fecha prevista: la entrega más tardía de las líneas; en blanco si ninguna tiene fecha
-function fechaPrevista(lineas) {
-  let maxima = null;
-  lineas.forEach(function (l) {
-    const f = leerFechaTexto(l.T7_Fecha_Entrega);
-    if (f && (!maxima || f > maxima)) maxima = f;
-  });
-  return maxima ? formatFecha(maxima) : '';
+// Fecha prevista: un día más que la fecha del pedido o presupuesto
+function fechaPrevista(fecha) {
+  if (!(fecha instanceof Date) || isNaN(fecha)) return '';
+  return formatFecha(new Date(fecha.getTime() + 24 * 60 * 60 * 1000));
 }
 
 // Medidas sin ceros de sobra: 264.50 -> 264.5, 100.00 -> 100
@@ -150,7 +136,7 @@ async function leerDatos(pool, doc, id) {
     .input('id', sql.Int, id)
     .query(
       'select ancho, alto, cantidad, tej_tipo_text, tej_color_text, color_perfil_text, ' +
-      '  hc_accionamiento_text, T7_PVP, T7_PVP_C1, T7_Fecha_Entrega ' +
+      '  hc_accionamiento_text, T7_PVP, T7_PVP_C1 ' +
       'from ' + doc.lineasHoneycomb + ' where IDROW = @id order by ' + doc.ordenLineas
     );
 
@@ -195,7 +181,7 @@ function montarModelo(doc, datos, nombreFichero) {
     referencia: texto(c.REFCLIENTE) || String(c.IDROW),
     textoFecha: doc.textoFecha,
     fecha: formatFecha(c.FECHA),
-    fechaPrevista: fechaPrevista(datos.lineas),
+    fechaPrevista: fechaPrevista(c.FECHA),
     conPrecios: doc.conPrecios,
     hojas: hojas,
     total: fmtImporte.format(total) + ' €',
