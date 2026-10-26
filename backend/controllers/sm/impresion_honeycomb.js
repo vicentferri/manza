@@ -16,8 +16,8 @@ const pdf = require('../../services/pdf');
 
 const PLANTILLA = path.join(__dirname, '../../templates/honeycomb/documento.hbs');
 
-// Filas mínimas de la tabla: si hay menos líneas se rellena con filas vacías, como en el modelo
-const FILAS_MINIMAS = 7;
+// Líneas por hoja: cada hoja lleva exactamente estas filas, la última se rellena con filas vacías
+const FILAS_POR_HOJA = 10;
 
 const DOCUMENTOS = {
   pedido: {
@@ -162,8 +162,13 @@ function montarModelo(doc, datos, nombreFichero) {
     };
   });
 
-  const vacias = [];
-  for (let i = filas.length; i < FILAS_MINIMAS; i++) vacias.push({});
+  const hojas = [];
+  for (let i = 0; i < Math.max(filas.length, 1); i += FILAS_POR_HOJA) {
+    const hoja = filas.slice(i, i + FILAS_POR_HOJA);
+    const vacias = [];
+    for (let j = hoja.length; j < FILAS_POR_HOJA; j++) vacias.push({});
+    hojas.push({ filas: hoja, vacias: vacias, ultima: i + FILAS_POR_HOJA >= filas.length });
+  }
 
   const hoy = new Date();
   return {
@@ -174,8 +179,7 @@ function montarModelo(doc, datos, nombreFichero) {
     fecha: formatFecha(c.FECHA),
     fechaPrevista: fechaPrevista(datos.lineas),
     conPrecios: doc.conPrecios,
-    filas: filas,
-    vacias: vacias,
+    hojas: hojas,
     total: fmtImporte.format(total) + ' €'
   };
 }
