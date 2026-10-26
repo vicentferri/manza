@@ -143,7 +143,7 @@ async function leerDatos(pool, doc, id) {
   return { cabecera: cab.recordset[0], lineas: lin.recordset };
 }
 
-function montarModelo(doc, datos) {
+function montarModelo(doc, datos, nombreFichero) {
   const c = datos.cabecera;
   let total = 0;
 
@@ -167,6 +167,7 @@ function montarModelo(doc, datos) {
 
   const hoy = new Date();
   return {
+    nombreFichero: nombreFichero,
     fechaImpresion: dosDigitos(hoy.getDate()) + '/' + dosDigitos(hoy.getMonth() + 1) + '/' + String(hoy.getFullYear()).slice(-2),
     referencia: texto(c.REFCLIENTE) || String(c.IDROW),
     textoFecha: doc.textoFecha,
@@ -198,12 +199,14 @@ async function impresion_honeycomb_pdf(req, res) {
       return res.status(404).json({ error: 'El ' + req.params.doc + ' ' + p.id + ' no tiene líneas HoneyComb' });
     }
 
-    const buffer = await pdf.generarPdf(generarHtml(montarModelo(p.doc, datos)), { landscape: true });
+    // El título del documento es el nombre con el que el visor del navegador propone guardarlo
+    const nombreFichero = 'HoneyComb_' + req.params.doc + '_' + p.id;
+    const buffer = await pdf.generarPdf(generarHtml(montarModelo(p.doc, datos, nombreFichero)), { landscape: true, titulo: nombreFichero });
 
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Length': buffer.length,
-      'Content-Disposition': 'inline; filename="HoneyComb_' + req.params.doc + '_' + p.id + '.pdf"',
+      'Content-Disposition': 'inline; filename="' + nombreFichero + '.pdf"',
       'Cache-Control': 'no-store'
     });
     res.end(buffer);

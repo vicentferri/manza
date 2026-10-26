@@ -9,6 +9,7 @@
      afecta el certificado autofirmado. Las imágenes y fuentes tienen que ir embebidas. */
 
 var puppeteer = require('puppeteer');
+var PDFDocument = require('pdf-lib').PDFDocument;
 
 var MAX_CONCURRENTES = 3;
 var TIMEOUT_MS = 30000;
@@ -57,11 +58,22 @@ function liberarTurno() {
 	}
 }
 
+async function ponerTitulo(pdf, titulo) {
+	var documento = await PDFDocument.load(pdf, { updateMetadata: false });
+	documento.setTitle(titulo);
+	return Buffer.from(await documento.save());
+}
+
 /* Devuelve un Buffer con el PDF del HTML recibido.
    opciones: las de page.pdf() de Puppeteer (format, landscape, margin, headerTemplate...).
-   Por defecto A4 vertical con fondos impresos. */
+   Por defecto A4 vertical con fondos impresos.
+   opciones.titulo: título del documento. Chrome no lo escribe en el PDF, y el visor del navegador
+   lo usa como nombre al descargarlo; por eso se añade después con pdf-lib. */
 exports.generarPdf = async function (html, opciones) {
 	await pedirTurno();
+	var titulo = opciones && opciones.titulo;
+	opciones = Object.assign({}, opciones);
+	delete opciones.titulo;
 	var page = null;
 	try {
 		var browser = await obtenerNavegador();
@@ -72,8 +84,8 @@ exports.generarPdf = async function (html, opciones) {
 			format: 'A4',
 			printBackground: true,
 			preferCSSPageSize: true
-		}, opciones || {}));
-		return Buffer.from(pdf);
+		}, opciones));
+		return titulo ? await ponerTitulo(pdf, titulo) : Buffer.from(pdf);
 	} finally {
 		if (page) {
 			await page.close().catch(function () { });

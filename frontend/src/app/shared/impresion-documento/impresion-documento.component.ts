@@ -56,7 +56,7 @@ export class ImpresionDocumentoComponent implements OnDestroy {
           this.pestanas.push(this.pestanaCrystal(doc, id));
         }
         if (info.tieneHoneycomb) {
-          this.pestanas.push({ clave: 'honeycomb', titulo: 'HONEYCOMB', url: null, error: false });
+          this.pestanas.push({ clave: 'honeycomb', titulo: 'HoneyComb', url: null, error: false });
           this.cargarHoneycomb(doc, id, peticion);
         } else {
           this.cargando = false;
