@@ -77,7 +77,11 @@ go
 -- La columna coste_ml del maestro se sustituye por la tabla anterior (solo se quita si está vacía)
 if col_length('dbo.SOL_TEJIDOS_MAESTRO', 'coste_ml') is not null
 begin
-	if exists (select 1 from dbo.SOL_TEJIDOS_MAESTRO where coste_ml is not null)
+	/* La consulta va en SQL dinámico: si la columna no existe, un lote que la nombra no compila
+	   aunque este bloque no llegue a ejecutarse (error 207 en una BD nueva) */
+	declare @con_datos int
+	exec sp_executesql N'select @n = count(*) from dbo.SOL_TEJIDOS_MAESTRO where coste_ml is not null', N'@n int output', @n = @con_datos output
+	if @con_datos > 0
 		raiserror('SOL_TEJIDOS_MAESTRO.coste_ml tiene datos: revisar antes de quitarla', 16, 1)
 	else
 		exec('alter table dbo.SOL_TEJIDOS_MAESTRO drop column coste_ml')
