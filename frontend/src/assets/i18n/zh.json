@@ -241,5 +241,9 @@
     "NO PUEDE INTRODUCIR UN ALTO INFERIOR AL ALTO MÃNIMO DE": "不能输入小于最小高度的高度",
     "PENDIENTE": "待处理",
     "FINALIZADO": "已完成",
-    "IMPRIMIR": "打印"
+    "IMPRIMIR": "打印",
+    "RESTO DE PRODUCTOS": "其他产品",
+    "GENERANDO DOCUMENTO": "正在生成文档...",
+    "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB": "无法生成 HoneyComb PDF",
+    "DESCARGAR": "下载"
 }

@@ -1,0 +1,23 @@
+.impresion-pestanas {
+  margin-bottom: 10px;
+}
+
+.impresion-pestanas .nav-link {
+  cursor: pointer;
+}
+
+.impresion-visor {
+  width: 100%;
+  height: 850px;
+}
+
+.impresion-descarga {
+  margin-bottom: 8px;
+  text-align: right;
+}
+
+.impresion-cargando {
+  padding: 40px 0;
+  text-align: center;
+  color: #777;
+}

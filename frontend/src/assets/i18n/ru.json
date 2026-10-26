@@ -241,5 +241,9 @@
     "NO PUEDE INTRODUCIR UN ALTO INFERIOR AL ALTO MÃNIMO DE": "Нельзя ввести высоту меньше минимальной высоты",
     "PENDIENTE": "В ожидании",
     "FINALIZADO": "Завершено",
-    "IMPRIMIR": "Печать"
+    "IMPRIMIR": "Печать",
+    "RESTO DE PRODUCTOS": "Другие товары",
+    "GENERANDO DOCUMENTO": "Создание документа...",
+    "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB": "Не удалось создать PDF HoneyComb",
+    "DESCARGAR": "Скачать"
 }

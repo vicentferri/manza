@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>{{nombreFichero}}</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm 14mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #000; }
+  .hoja { break-after: page; page-break-after: always; }
+  .hoja.ultima { break-after: auto; page-break-after: auto; }
+  .fecha-impresion { font-size: 8pt; margin: 0 0 4mm; }
+  h1 { font-size: 11.5pt; font-weight: bold; margin: 0 0 5mm; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #a6a6a6; text-align: center; vertical-align: middle; padding: 1mm 2.5mm; }
+  th { background: #ececec; font-weight: bold; height: 9mm; }
+  td { height: 13.5mm; }
+  td.producto { text-align: left; }
+  td.importe { text-align: right; white-space: nowrap; }
+  td.c1 { white-space: nowrap; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+  tr.total td { font-weight: bold; height: 10mm; }
+  tr.total td.etiqueta { text-align: right; }
+</style>
+</head>
+<body>
+  {{#each hojas}}
+  <div class="hoja{{#if ultima}} ultima{{/if}}">
+    <p class="fecha-impresion">{{../fechaImpresion}}</p>
+    <h1>{{../referencia}} - {{../textoFecha}}: {{../fecha}} - Fecha prevista: {{../fechaPrevista}}</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Color tejido</th>
+          <th>Color mecanismo</th>
+          <th>Accionamiento</th>
+          <th>Ancho cm</th>
+          <th>Alto cm</th>
+          <th>Cantidad</th>
+          <th>C1</th>
+          {{#if ../conPrecios}}<th>Precio</th>{{/if}}
+        </tr>
+      </thead>
+      <tbody>
+        {{#each filas}}
+        <tr>
+          <td class="producto">{{producto}}</td>
+          <td>{{colorTejido}}</td>
+          <td>{{colorMecanismo}}</td>
+          <td>{{accionamiento}}</td>
+          <td>{{ancho}}</td>
+          <td>{{alto}}</td>
+          <td>{{cantidad}}</td>
+          <td class="c1">{{c1}}</td>
+          {{#if ../../conPrecios}}<td class="importe">{{precio}}</td>{{/if}}
+        </tr>
+        {{/each}}
+        {{#each vacias}}
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>{{#if ../../conPrecios}}<td></td>{{/if}}</tr>
+        {{/each}}
+        {{#if ultima}}
+        <tr class="total">
+          <td class="etiqueta" colspan="7">Total HoneyComb</td>
+          <td class="c1">{{../totalC1}}</td>
+          {{#if ../conPrecios}}<td class="importe">{{../total}}</td>{{/if}}
+        </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+  {{/each}}
+</body>
+</html>

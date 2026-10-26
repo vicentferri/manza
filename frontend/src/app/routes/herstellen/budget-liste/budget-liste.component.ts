@@ -4,6 +4,7 @@ import { HaruService } from '../../../services/haru.service';
 import { GenType2 } from '../../../models/GenType2';
 import { DomSanitizer } from "@angular/platform-browser";
 import { ToastrService } from 'ngx-toastr';
+import { ImpresionDocumentoComponent } from '../../../shared/impresion-documento/impresion-documento.component';
 
 interface HeaderItem {
   // Add all properties you use in the template
@@ -46,6 +47,7 @@ interface DocumentLine {
 export class BudgetListeComponent implements OnInit {
 
   @ViewChild('gridReference', { static: false }) myGrid!: jqxGridComponent;
+  @ViewChild('impresion', { static: false }) impresion!: ImpresionDocumentoComponent;
   public staticModal;
 
   firmaID = "";
@@ -58,7 +60,6 @@ export class BudgetListeComponent implements OnInit {
   responsables2: Array<GenType2> = [];
   zustanden: Array<GenType2> = [];
   public linkDocument: any = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
-  public linkInforme: any = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
   public SelectedDate: Date = new Date();
   public SelectedDate2: Date = new Date();
   public responsable = "-1";
@@ -411,13 +412,7 @@ export class BudgetListeComponent implements OnInit {
   }
 
   Print(item) {
-    // Se vacía el iframe y se añade un parámetro único para que el navegador
-    // no reutilice el informe anterior.
-    this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl("about:blank");
-    var url = "https://www.manzasm.com/vw/haru_server/services/bbss/preview.aspx?emp=0&proc=PP_PREVIEW_PRE&ids=" + item + "&_=" + Date.now();
-    setTimeout(() => {
-      this.linkInforme = this.domSanitizer.bypassSecurityTrustResourceUrl(url);
-    }, 0);
+    this.impresion.cargar('presupuesto', item);
   }
 
   EnlazarFactura() {

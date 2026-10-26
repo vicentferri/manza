@@ -97,5 +97,9 @@
     "COLORLAMA3": "Color Lama 3",
     "COLORLAMA4": "Color Lama 4",
     "COLORLAMA5": "Color Lama 5",
-    "TEJIDO": "Teixit"
+    "TEJIDO": "Teixit",
+    "RESTO DE PRODUCTOS": "Resta de productes",
+    "GENERANDO DOCUMENTO": "Generant el document...",
+    "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB": "No s'ha pogut generar el PDF de la HoneyComb",
+    "DESCARGAR": "Descarregar"
 }
