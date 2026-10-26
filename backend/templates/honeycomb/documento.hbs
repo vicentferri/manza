@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4 landscape; margin: 14mm 18mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; color: #000; }
+  .fecha-impresion { font-size: 8pt; margin: 0 0 9mm; }
+  h1 { font-size: 12pt; font-weight: bold; margin: 0; }
+  .titulo { margin-bottom: 8mm; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #a6a6a6; text-align: center; vertical-align: middle; padding: 2mm 3mm; }
+  th { background: #ececec; font-weight: bold; height: 14mm; }
+  td { height: 18mm; }
+  td.producto { text-align: left; }
+  td.importe { text-align: right; white-space: nowrap; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+  tr.total td { font-weight: bold; height: 12mm; }
+  tr.total td.etiqueta { text-align: right; }
+</style>
+</head>
+<body>
+  <p class="fecha-impresion">{{fechaImpresion}}</p>
+  <div class="titulo">
+    <h1>{{referencia}} - {{textoFecha}}: {{fecha}} - Fecha prevista: {{fechaPrevista}}</h1>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Color tejido</th>
+        <th>Color mecanismo</th>
+        <th>Accionamiento</th>
+        <th>Ancho cm</th>
+        <th>Alto cm</th>
+        <th>Cantidad</th>
+        {{#if conPrecios}}<th>Precio</th>{{/if}}
+      </tr>
+    </thead>
+    <tbody>
+      {{#each filas}}
+      <tr>
+        <td class="producto">{{producto}}</td>
+        <td>{{colorTejido}}</td>
+        <td>{{colorMecanismo}}</td>
+        <td>{{accionamiento}}</td>
+        <td>{{ancho}}</td>
+        <td>{{alto}}</td>
+        <td>{{cantidad}}</td>
+        {{#if ../conPrecios}}<td class="importe">{{precio}}</td>{{/if}}
+      </tr>
+      {{/each}}
+      {{#each vacias}}
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td>{{#if ../conPrecios}}<td></td>{{/if}}</tr>
+      {{/each}}
+      {{#if conPrecios}}
+      <tr class="total">
+        <td class="etiqueta" colspan="7">Total HoneyComb</td>
+        <td class="importe">{{total}}</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</body>
+</html>

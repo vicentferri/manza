@@ -580,6 +580,11 @@ smapi.get('/honeycomb/snapshot', Auth.ensureAuth, HoneyCombController.honeycomb_
 smapi.get('/honeycomb/historial', Auth.ensureAuth, HoneyCombController.honeycomb_historial);
 smapi.get('/honeycomb/historial_restaurar', Auth.ensureAuth, HoneyCombController.honeycomb_historial_restaurar);
 
+/* Impresión HoneyComb en PDF (Puppeteer). doc = pedido | presupuesto; el resto de productos sigue con Crystal */
+var ImpresionHoneyCombController = require('../controllers/sm/impresion_honeycomb');
+smapi.get('/honeycomb/impresion/info/:doc/:id', Auth.ensureAuth, ImpresionHoneyCombController.impresion_honeycomb_info);
+smapi.get('/honeycomb/impresion/pdf/:doc/:id', Auth.ensureAuth, ImpresionHoneyCombController.impresion_honeycomb_pdf);
+
 smapi.get('/honeycomb_tipostejido', HoneyCombController.honeycomb_tipostejido);
 smapi.get('/honeycomb_colorestejido/:tipotejido', HoneyCombController.honeycomb_colorestejido);
 smapi.get('/honeycomb_coloresperfil', HoneyCombController.honeycomb_coloresperfil);
