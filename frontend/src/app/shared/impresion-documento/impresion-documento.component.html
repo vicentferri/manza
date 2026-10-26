@@ -18,6 +18,11 @@
     <div class="alert alert-danger" *ngIf="p.error">
       {{ "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB" | translate }}
     </div>
+    <div class="impresion-descarga" *ngIf="p.descarga">
+      <a class="btn btn-sm btn-outline-secondary" [href]="p.descarga" [download]="p.nombreFichero">
+        <i class="fa fa-download"></i>&nbsp;{{ "DESCARGAR" | translate }} {{ p.nombreFichero }}
+      </a>
+    </div>
     <iframe *ngIf="p.url" class="impresion-visor" frameborder="0" [src]="p.url"></iframe>
   </div>
 </ng-container>

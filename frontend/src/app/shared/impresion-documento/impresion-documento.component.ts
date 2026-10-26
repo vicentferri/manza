@@ -1,6 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { environment } from '../../../environments/environment';
 
 export type DocumentoImpresion = 'pedido' | 'presupuesto';
@@ -10,6 +10,9 @@ interface PestanaImpresion {
   titulo: string;
   url: SafeResourceUrl | null;
   error: boolean;
+  // Descarga con nombre propio: el botón del visor del navegador guarda el PDF con el nombre aleatorio de su URL temporal
+  descarga?: SafeUrl;
+  nombreFichero?: string;
 }
 
 // Informes Crystal del haru_server (todo lo que no es HoneyComb)
@@ -93,6 +96,8 @@ export class ImpresionDocumentoComponent implements OnDestroy {
         if (peticion !== this.peticion) return;
         this.urlBlob = URL.createObjectURL(pdf);
         pestana.url = this.domSanitizer.bypassSecurityTrustResourceUrl(this.urlBlob);
+        pestana.descarga = this.domSanitizer.bypassSecurityTrustUrl(this.urlBlob);
+        pestana.nombreFichero = 'HoneyComb_' + doc + '_' + id + '.pdf';
         this.cargando = false;
       },
       () => {
