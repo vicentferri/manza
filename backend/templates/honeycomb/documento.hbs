@@ -33,6 +33,7 @@
         <tr>
           <th>Producto</th>
           <th>Color tejido</th>
+          <th>Código</th>
           <th>Color mecanismo</th>
           <th>Accionamiento</th>
           <th>Ancho cm</th>
@@ -47,6 +48,7 @@
         <tr>
           <td class="producto">{{producto}}</td>
           <td>{{colorTejido}}</td>
+          <td>{{../../codigoTejido}}</td>
           <td>{{colorMecanismo}}</td>
           <td>{{accionamiento}}</td>
           <td>{{ancho}}</td>
@@ -57,11 +59,11 @@
         </tr>
         {{/each}}
         {{#each vacias}}
-        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>{{#if ../../conPrecios}}<td></td>{{/if}}</tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>{{#if ../../conPrecios}}<td></td>{{/if}}</tr>
         {{/each}}
         {{#if ultima}}
         <tr class="total">
-          <td class="etiqueta" colspan="7">Total HoneyComb</td>
+          <td class="etiqueta" colspan="8">Total HoneyComb</td>
           <td class="c1">{{../totalC1}}</td>
           {{#if ../conPrecios}}<td class="importe">{{../total}}</td>{{/if}}
         </tr>
