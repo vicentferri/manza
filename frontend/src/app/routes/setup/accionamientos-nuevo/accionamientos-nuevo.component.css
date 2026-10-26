@@ -313,6 +313,14 @@
     vertical-align: middle;
 }
 
+/* ---------- Tejidos disponibles ---------- */
+
+.acc-tej-filtro { max-width: 230px; }
+.acc-tej-check { width: 34px; text-align: center; }
+.acc-tej-grupo { cursor: pointer; }
+.acc-tej-tabla .acc-matriz-modelo td:first-child { padding-left: 0.3rem; }
+.acc-tej-tabla .acc-matriz-modelo td:nth-child(2) { padding-left: 30px; }
+
 /* ---------- Suplementos de precio ---------- */
 .acc-th-sup { width: 120px; }
 

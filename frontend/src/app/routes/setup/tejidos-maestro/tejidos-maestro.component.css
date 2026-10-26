@@ -1,0 +1,62 @@
+.tm-table-container {
+    max-height: 560px;
+    overflow-y: auto;
+}
+
+.tm-table thead th {
+    white-space: nowrap;
+    background-color: #f8f9fa;
+    vertical-align: middle;
+}
+
+.tm-table thead tr:first-child th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.tm-filter-row th {
+    padding: 4px 6px;
+}
+
+.tm-filter-row input {
+    font-size: 0.78rem;
+    min-width: 60px;
+}
+
+.tm-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.tm-sortable:hover {
+    background-color: #e9ecef;
+}
+
+.tm-th-xs { width: 60px; }
+.tm-th-sm { width: 100px; }
+.tm-th-md { width: 200px; }
+
+/* Columnas calculadas: solo lectura */
+.tm-calc {
+    background-color: #f4f6f8;
+}
+
+.tm-baja td {
+    color: #9aa0a6;
+}
+
+.tm-tipos-container {
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+.btn-xs {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.75rem;
+}
+
+/* Un clic en la fila abre el tejido; la casilla de selección no */
+.tm-fila {
+    cursor: pointer;
+}

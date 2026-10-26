@@ -78,8 +78,14 @@ export class ArtikelnFacCdV3Component implements OnInit {
   operadoresCondicion = OPERADORES_CONDICION;
   operadoresConsumo = OPERADORES_CONSUMO;
 
+  /* Producto (HoneyComb, Enrollable...) y sistema: cada pareja es un juego de fabricación separado,
+     con su clave en `sistema` (HONEYCOMB, ENROLLABLE_RHIN...). Los productos sin sistemas tienen un solo juego */
+  productos: any = [];
+  producto: any = '';
   sistemas: any = [];
   sistema = '';
+  sistemasDisponibles: any = [];
+  sistemaNuevo: any = '';
   clientes: any = [];
   columnas: any = [];
   parametros: any = [];
@@ -112,6 +118,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     name: '',
     tipo: 'COLUMNA',
     origen: '',
+    origen2: '',
     orden: 0,
     busqueda: '',
     tabla: ''
@@ -292,7 +299,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     if (!p) return '';
     if (p.tipo == 'BUSQUEDA') {
       let b = this.busquedas.find(x => x.busqueda == p.busqueda);
-      return p.origen + ' → ' + (b ? b.descripcion : p.busqueda);
+      return String(p.origen || '').replace(';', ' + ') + ' → ' + (b ? b.descripcion : p.busqueda);
     }
     if (p.tipo == 'TABLA') {
       return p.origen + ' → tabla ' + p.tabla;
@@ -457,7 +464,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     this.myGrid3.createComponent(this.settingsDet);
     this.myGrid4.createComponent(this.settings4);
     this.performResize();
-    this.loadSistemas();
+    this.loadProductos();
   }
 
   ngOnInit() {
@@ -546,19 +553,71 @@ export class ArtikelnFacCdV3Component implements OnInit {
     return (error.error && error.error.message) ? error.error.message : error.message;
   }
 
-  /* ---------------- SISTEMA / CLIENTES ---------------- */
+  /* ---------------- PRODUCTO / SISTEMA / CLIENTES ---------------- */
 
-  loadSistemas() {
-    this.service.HTTP_Get('/sm/fabricacion/sistemas').subscribe(
+  /* Al entrar se elige HoneyComb si está (lo que había hasta ahora) o el primer producto */
+  loadProductos() {
+    this.service.HTTP_Get('/sm/fabricacion/productos').subscribe(
       data => {
-        this.sistemas = data.Table;
-        if (this.sistemas.length > 0) {
-          this.sistema = this.sistemas[0].sistema;
-          this.ChangeSistema();
+        this.productos = data.Table;
+        if (this.productos.length > 0) {
+          const honeycomb = this.productos.find(p => p.producto == 7);
+          this.producto = (honeycomb || this.productos[0]).producto;
+          this.ChangeProducto();
         }
       },
       error => {
         this.toaster.error(this.errorMessage(error));
+      });
+  }
+
+  get productoConSistema(): boolean {
+    const p = this.productos.find(x => x.producto == this.producto);
+    return !!(p && p.con_sistema);
+  }
+
+  /* Nombre del juego elegido para los títulos ("Enrollable · Rhin", "HoneyComb") */
+  get nombreJuego(): string {
+    const s = this.sistemas.find(x => x.sistema == this.sistema);
+    return s ? s.descripcion : this.sistema;
+  }
+
+  ChangeProducto() {
+    this.loadSistemas();
+  }
+
+  /* Juegos del producto; con `elegir`, se queda en ese juego (p. ej. el que se acaba de crear) */
+  loadSistemas(elegir?: string) {
+    this.service.HTTP_Get('/sm/fabricacion/sistemas?producto=' + encodeURIComponent(this.producto)).subscribe(
+      data => {
+        this.sistemas = data.Table;
+        this.sistemasDisponibles = data.Disponibles || [];
+        this.sistemaNuevo = '';
+        const elegido = elegir && this.sistemas.find(s => s.sistema == elegir);
+        this.sistema = elegido ? elegido.sistema : (this.sistemas.length > 0 ? this.sistemas[0].sistema : '');
+        this.ChangeSistema();
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error));
+      });
+  }
+
+  /* Crea el juego vacío del producto para el sistema elegido: no copia nada de otros sistemas */
+  AnadirSistema() {
+    if (!this.sistemaNuevo) {
+      this.toaster.warning('Elija el sistema que quiere añadir', 'Sistemas');
+      return;
+    }
+    let values = JSON.stringify({ producto: this.producto, acc_sistema_id: this.sistemaNuevo });
+    this.service.HTTP_Post('/sm/fabricacion/sistemas', values).subscribe(
+      data => {
+        if (data.message == 'OK') {
+          this.toaster.success('Sistema añadido, sin reglas', 'Sistemas');
+          this.loadSistemas(data.sistema);
+        }
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error), 'Sistemas');
       });
   }
 
@@ -696,6 +755,13 @@ export class ArtikelnFacCdV3Component implements OnInit {
       .map(p => p.name);
   }
 
+  /* Búsqueda de dos claves (p. ej. tipo de tejido + color): el parámetro tiene dos entradas */
+  get busquedaDosClaves(): boolean {
+    if (this.modelParam.tipo != 'BUSQUEDA') return false;
+    let b = this.busquedas.find(x => x.busqueda == this.modelParam.busqueda);
+    return !!(b && b.dos_claves);
+  }
+
   validarParametro() {
     this.erroresParametro = [];
     let anteriores = this.parametrosAnteriores();
@@ -715,6 +781,14 @@ export class ArtikelnFacCdV3Component implements OnInit {
       if (this.modelParam.tipo == 'BUSQUEDA' && !this.modelParam.busqueda) {
         this.erroresParametro.push('Elija la búsqueda');
       }
+      if (this.busquedaDosClaves) {
+        if (!this.modelParam.origen2) {
+          this.erroresParametro.push('Esta búsqueda necesita un segundo parámetro de entrada');
+        }
+        else if (anteriores.indexOf(this.modelParam.origen2) < 0) {
+          this.erroresParametro.push('El segundo parámetro de entrada tiene que tener un orden menor que ' + this.modelParam.orden);
+        }
+      }
       if (this.modelParam.tipo == 'TABLA' && !this.modelParam.tabla) {
         this.erroresParametro.push('Elija la tabla de valores');
       }
@@ -726,18 +800,25 @@ export class ArtikelnFacCdV3Component implements OnInit {
   CambiarTipoParametro() {
     this.erroresParametro = [];
     this.modelParam.origen = '';
+    this.modelParam.origen2 = '';
   }
 
   SaveParameter() {
     if (!this.validarParametro()) {
       return;
     }
-    let values = JSON.stringify(Object.assign({ sistema: this.sistema }, this.modelParam));
+    /* Búsqueda de dos claves: las dos entradas viajan juntas en origen ('@A;@B') */
+    let param: any = Object.assign({ sistema: this.sistema }, this.modelParam);
+    param.origen = this.busquedaDosClaves ? param.origen + ';' + param.origen2 : param.origen;
+    delete param.origen2;
+    let values = JSON.stringify(param);
     this.service.HTTP_Post('/sm/fabricacion/parametros', values).subscribe(
       data => {
         if (data.message == 'OK') {
           this.toaster.success('Guardado', 'Parámetros');
           this.loadParameters();
+          /* Un parámetro de búsqueda con nombres (p. ej. soporte) trae su desplegable de valores */
+          this.loadValoresParametros();
         }
       },
       error => {
@@ -752,8 +833,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
       this.DelParameter(row.name);
     }
     else {
+      let origenes = String(row.origen || '').split(';');
       this.modelParam = {
-        name: row.name, tipo: row.tipo, origen: row.origen, orden: row.orden,
+        name: row.name, tipo: row.tipo, origen: origenes[0], origen2: origenes[1] || '', orden: row.orden,
         busqueda: row.busqueda || '', tabla: row.tabla || ''
       };
       this.erroresParametro = [];
@@ -767,6 +849,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
         data => {
           if (data.message == 'OK') {
             this.loadParameters();
+            this.loadValoresParametros();
           }
         },
         error => {
@@ -1498,8 +1581,21 @@ export class ArtikelnFacCdV3Component implements OnInit {
     let values = JSON.stringify({ idPedido: this.model2.idrow, sistema: this.sistema });
     this.service.HTTP_Post('/sm/fabricacion/simular', values).subscribe(
       data => {
+        /* Enrollable: solo se muestran las líneas del sistema elegido */
+        let omitidas = data.Omitidas;
+        if (omitidas && (omitidas.otros_sistemas > 0 || omitidas.modelo_antiguo > 0)) {
+          let partes = [];
+          if (omitidas.otros_sistemas > 0) {
+            partes.push(omitidas.otros_sistemas + (omitidas.otros_sistemas == 1 ? ' línea de otro sistema' : ' líneas de otros sistemas'));
+          }
+          if (omitidas.modelo_antiguo > 0) {
+            partes.push(omitidas.modelo_antiguo + (omitidas.modelo_antiguo == 1 ? ' línea' : ' líneas')
+              + ' del modelo antiguo de accionamientos (no se fabrican por reglas)');
+          }
+          this.toaster.info('No se muestran ' + partes.join(' ni ') + '.', 'Simulación', { timeOut: 10000 });
+        }
         if (data.Parametros.length == 0) {
-          this.toaster.warning('El pedido no tiene líneas de ' + this.sistema, 'Simulación');
+          this.toaster.warning('El pedido no tiene líneas de ' + this.nombreJuego, 'Simulación');
         }
         else {
           let pedido = data.Pedido || {};

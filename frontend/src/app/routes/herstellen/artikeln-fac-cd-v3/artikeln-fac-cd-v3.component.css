@@ -318,7 +318,24 @@
   padding-top: 6px;
 }
 
-/* Cabecera: etiqueta "Sistema" y desplegable con la misma altura y tamaño de letra */
+/* Cabecera: producto, sistema y "Añadir sistema" en una fila */
+.fab-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fab-cabecera > .fab-sistema {
+  width: auto;
+}
+
+.fab-sistema > .input-group-append > .btn {
+  height: 30px;
+  font-size: 13px;
+}
+
+/* Cabecera: etiqueta y desplegable con la misma altura y tamaño de letra */
 .fab-sistema > .input-group-prepend > .input-group-text,
 .fab-sistema > select.form-control.form-control-sm {
   height: 30px;

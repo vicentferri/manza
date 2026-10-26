@@ -9,7 +9,8 @@ const sql = require('mssql');
  * Scripts: C:\dev\sqlAccionamientos\ (04 interruptor, 05 y 08 columnas nacc_, 06 y 09 SPs de alta,
  *          07 soportes, tapas y contrapesos, 10 longitud de la cadena a medida,
  *          11-13 presupuestos y su conversión en pedido, 16-22 precio: suplementos, tarifa por
- *          sistema, precio base, valoración de la línea, desglose y alta con precio)
+ *          sistema, precio base, valoración de la línea, desglose y alta con precio,
+ *          29-31 tejidos del maestro: los disponibles, la línea los guarda y el precio T1/T2 con ellos)
  *
  *   GET  /api/sm/acc_cfg/activo/:cliente       ¿usa el configurador nuevo?
  *   GET  /api/sm/acc_cfg/opciones/:cliente     árbol de opciones activas, con sus relaciones
@@ -43,7 +44,8 @@ const ERRORES_LINEA = {
   '-20': 'El motor no está disponible para ese sistema',
   '-21': 'Precio de la línea incoherente',
   '-22': 'Desglose del precio no válido',
-  '-23': 'Falta la tarifa (T1 o T2) con la que se calculó el precio'
+  '-23': 'Falta la tarifa (T1 o T2) con la que se calculó el precio',
+  '-24': 'El tejido no está disponible en el configurador'
 };
 
 function entero(value) {
@@ -145,6 +147,16 @@ async function opciones(req, res) {
       q('select contrapeso_id, color_contrapeso_id from dbo.SOL_ACC_CONTRAPESO_COLOR')
     ]);
 
+    /* Tejidos del maestro disponibles para el enrollable (Productos -> Tejidos, script 29): una fila
+       por tejido + color + criterio. El configurador elige el criterio según el ancho de la cortina */
+    const tejidos = await q(`
+      select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, m.impresion_digital, t.descripcion as tipo
+      from dbo.SOL_ACC_PRODUCTO_TEJIDO pt
+      join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = pt.tejido and m.activo = 1
+      left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+      where pt.producto = 1
+      order by t.descripcion, m.nombre, m.color, m.criterio`);
+
     /* Solo se enlazan ids de opciones activas: una opción oculta desaparece de todas las listas */
     const activos = (filas) => new Set(filas.map(f => f.id));
     const sisActivos = activos(sistemas), colActivos = activos(colores), manActivos = activos(mandos),
@@ -195,7 +207,8 @@ async function opciones(req, res) {
       contrapesos: contrapesos.map(x => Object.assign(x, { colores: filtrar(colPorContrapeso[x.id], colConActivos) })),
       coloresSoporte,
       coloresTapa,
-      coloresContrapeso
+      coloresContrapeso,
+      tejidos
     });
   } catch (err) {
     console.error(err);
@@ -222,6 +235,8 @@ async function precioLinea(pool, cliente, l) {
     .input('alto', sql.Decimal(12, 2), entero(l.alto))
     .input('cantidad', sql.Int, entero(l.cantidad) || 1)
     .input('tej_tipo_id', sql.Int, enteroAntiguo(l.tej_tipo_id))
+    /* script 31: tejido del maestro (con él, tej_tipo_id llega a -1) */
+    .input('tejido_maestro', sql.Int, entero(n.tejido))
     .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
     .input('tipo_tarifa', sql.VarChar(2), TIPOS_TARIFA.includes(l.tipo_tarifa) ? l.tipo_tarifa : null)
     .input('accionamiento', sql.Int, entero(n.accionamiento))
@@ -311,7 +326,8 @@ const DOCUMENTOS = {
                  nacc: { accionamiento, sistema, tipo_cadena, tipo_aro, cadena_medida, altura,
                          color_cadena, tipo_motor, modelo_motor, mando, cargador, bateria,
                          soporte, soporte_color, tapa, tapa_color, contrapeso, contrapeso_color,
-                         cadena_longitud (cm, solo en la cadena a medida) },
+                         cadena_longitud (cm, solo en la cadena a medida),
+                         tejido (SOL_TEJIDOS_MAESTRO.idrow; con él tej_tipo_id/tej_color_id van a -1) },
                  y los pasos que siguen en el modelo antiguo con los nombres de CortinaTipo:
                  acc_tubo_id, acc_posicion_id, tej_tipo_id, tej_color_id, tej_salida_id,
                  Tipo1_Cajon, Tipo1_Guia, impresion, impresion_imagen, instrucciones, estancia_id, estancia_obs }
@@ -385,6 +401,8 @@ async function alta(doc, req, res) {
         .input('tapa_color', sql.Int, entero(n.tapa_color))
         .input('contrapeso', sql.Int, entero(n.contrapeso))
         .input('contrapeso_color', sql.Int, entero(n.contrapeso_color))
+        /* script 30: tejido del maestro */
+        .input('tejido', sql.Int, entero(n.tejido))
         .input('acc_tubo_id', sql.Int, enteroAntiguo(l.acc_tubo_id))
         .input('acc_posicion_id', sql.Int, enteroAntiguo(l.acc_posicion_id))
         .input('tej_tipo_id', sql.Int, enteroAntiguo(l.tej_tipo_id))

@@ -26,26 +26,32 @@
    <!-- TEJIDO -->
    <div class="enx-seccion">
       <div class="enx-titulo">2. Tejido</div>
+      <div *ngIf="opc && tejidosDisponibles.length === 0" class="enx-error mb-2">
+         No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }}. Márquelos en Configuración → Productos → Tejidos.
+      </div>
       <div class="row">
          <div class="col-md-3 col-6 form-group">
             <label>{{ "TIPO DE TEJIDO" | translate }}</label>
-            <select class="form-control form-control-sm" [(ngModel)]="opacidad" [ngModelOptions]="{ standalone: true }" (change)="cambiarOpacidad()">
+            <select class="form-control form-control-sm" [(ngModel)]="tipoTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipoTejido()">
+               <option value="">Seleccionar</option>
                <option *ngFor="let o of tiposTejido" [value]="o">{{ o }}</option>
             </select>
          </div>
          <div class="col-md-3 col-6 form-group">
             <label>{{ "SERIE" | translate }}</label>
-            <select class="form-control form-control-sm" [(ngModel)]="tejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTejido()">
-               <option value="-1">Seleccionar</option>
-               <option *ngFor="let t of tejidos" [value]="t.id">{{ t.text }}</option>
+            <select class="form-control form-control-sm" [(ngModel)]="nombreTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarNombreTejido()" [disabled]="!tipoTejido">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let n of nombresTejido" [value]="n">{{ n }}</option>
             </select>
          </div>
          <div class="col-md-3 col-6 form-group">
             <label>{{ "COLOR" | translate }}<span *ngIf="anchoMaximo" class="enx-nota"> (ancho máx. {{ anchoMaximo }} cm)</span></label>
-            <select class="form-control form-control-sm" [(ngModel)]="tejidoColor" [ngModelOptions]="{ standalone: true }" [disabled]="tejidosC.length === 0">
-               <option value="-1">Seleccionar</option>
-               <option *ngFor="let c of tejidosC" [value]="c.id">{{ c.text }}</option>
+            <select class="form-control form-control-sm" [(ngModel)]="colorTejido" [ngModelOptions]="{ standalone: true }" [disabled]="!nombreTejido">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
             </select>
+            <small *ngIf="tejidoFila" class="enx-nota">Rollo de {{ tejidoFila.criterio }} cm<span *ngIf="tejidoFila.grupo"> · grupo {{ tejidoFila.grupo }}</span></small>
+            <small *ngIf="colorTejido && ancho > 0 && !tejidoFila && anchoMaximo" class="enx-error">Supera el ancho máximo ({{ anchoMaximo }} cm)</small>
          </div>
          <div class="col-md-3 col-6 form-group">
             <label>{{ "SALIDA" | translate }}</label>

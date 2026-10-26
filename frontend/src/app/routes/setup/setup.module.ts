@@ -25,6 +25,7 @@ import { PromocionesMonitorComponent } from './promociones-monitor/promociones-m
 import { IncrementosGenericosComponent } from './incrementos-genericos/incrementos-genericos.component';
 import { TejidosColoresComponent } from './tejidos-colores/tejidos-colores.component';
 import { TejidosComponent } from './tejidos/tejidos.component';
+import { TejidosMaestroComponent } from './tejidos-maestro/tejidos-maestro.component';
 import { ImpresionDigitalComponent } from './impresion-digital/impresion-digital.component';
 import { ClientesGestionComponent } from './clientes-gestion/clientes-gestion.component';
 import { PermisosGuard } from '../../services/PermisosGuard';
@@ -34,6 +35,7 @@ import { AccRelacionComponent } from './accionamientos-nuevo/acc-relacion.compon
 import { AccMotoresSistemaComponent } from './accionamientos-nuevo/acc-motores-sistema.component';
 import { AccSuplementosComponent } from './accionamientos-nuevo/acc-suplementos.component';
 import { AccSuplementosResumenComponent } from './accionamientos-nuevo/acc-suplementos-resumen.component';
+import { AccTejidosComponent } from './accionamientos-nuevo/acc-tejidos.component';
 
 
 const routes: Routes = [
@@ -56,6 +58,7 @@ const routes: Routes = [
     { path: 'incrementos-genericos', component: IncrementosGenericosComponent },
     { path: 'tejidos-colores',  component: TejidosColoresComponent },
     { path: 'tejidos',          component: TejidosComponent },
+    { path: 'tejidos-maestro',  component: TejidosMaestroComponent, canActivate: [PermisosGuard], data: { permiso: 'config_tejidos' } },
     { path: 'impresion-digital', component: ImpresionDigitalComponent },
     { path: 'accionamientos-nuevo', component: AccionamientosNuevoComponent, canActivate: [PermisosGuard], data: { permiso: 'config_accionamientos' } }
 ];
@@ -79,9 +82,9 @@ const routes: Routes = [
         PromocionesClientesComponent, MandosCargadoresComponent, UsuariosComponent,
         AccionamientosRadioTipoComponent, AccionamientosRadioTipoClienteComponent,
         PromocionesMonitorComponent, IncrementosGenericosComponent,
-        TejidosColoresComponent, TejidosComponent, ImpresionDigitalComponent,
+        TejidosColoresComponent, TejidosComponent, TejidosMaestroComponent, ImpresionDigitalComponent,
         AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent,
-        AccSuplementosComponent, AccSuplementosResumenComponent
+        AccSuplementosComponent, AccSuplementosResumenComponent, AccTejidosComponent
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]

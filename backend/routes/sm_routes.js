@@ -228,6 +228,19 @@ smapi.post('/tejidos_cliente_del', TejidosController.del_tejido_cliente);
 smapi.get('/tejidos_cliente_producto', TejidosController.tejidos_cliente_producto);
 smapi.post('/tejidos_cliente_producto_operate', TejidosController.tejidos_cliente_producto_operate);
 
+/* Maestro de tejidos (SOL_TEJIDOS_MAESTRO / SOL_TEJIDOS_TIPOS, ver tejidos.md) */
+var TejidosMaestroController = require('../controllers/sm/tejidos_maestro');
+smapi.get('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.lista);
+smapi.post('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.guardar);
+smapi.post('/tejidos_maestro/calcular', Auth.ensureAuth, TejidosMaestroController.calcular);
+smapi.post('/tejidos_maestro/ml', Auth.ensureAuth, TejidosMaestroController.ml);
+smapi.get('/tejidos_maestro/ml_config', Auth.ensureAuth, TejidosMaestroController.ml_config);
+smapi.post('/tejidos_maestro/precio_minuto', Auth.ensureAuth, TejidosMaestroController.precio_minuto);
+smapi.post('/tejidos_maestro/activo', Auth.ensureAuth, TejidosMaestroController.activo);
+smapi.get('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipos);
+smapi.get('/tejidos_maestro/series', Auth.ensureAuth, TejidosMaestroController.series);
+smapi.post('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipo_guardar);
+
 smapi.get('/tejidos_atributos', TejidosController.tejidos_atributos);
 smapi.post('/tejidos_atributos_put', TejidosController.put_tejidos_atributos);
 smapi.post('/tejidos_atributod_del', TejidosController.del_tejido_atributos);
@@ -510,7 +523,9 @@ smapi.get('/honeycomb_obtener_tarifa', HoneyCombController.honeycomb_obtener_tar
 
 /* FABRICACION POR REGLAS (motor v3: HoneyComb y futuros sistemas) - pantalla artikeln_fab_cd_v3 */
 var FabricacionReglasController = require('../controllers/sm/fabricacion_reglas');
+smapi.get('/fabricacion/productos', Auth.ensureAuth, FabricacionReglasController.productos);
 smapi.get('/fabricacion/sistemas', Auth.ensureAuth, FabricacionReglasController.sistemas);
+smapi.post('/fabricacion/sistemas', Auth.ensureAuth, FabricacionReglasController.sistema_add);
 smapi.get('/fabricacion/clientes', Auth.ensureAuth, FabricacionReglasController.clientes);
 smapi.get('/fabricacion/articulos', Auth.ensureAuth, FabricacionReglasController.articulos);
 smapi.get('/fabricacion/reglas', Auth.ensureAuth, FabricacionReglasController.reglas);
@@ -532,6 +547,9 @@ smapi.post('/fabricacion/tablas/delete', Auth.ensureAuth, FabricacionReglasContr
 
 /* Modelo nuevo de accionamientos (SOL_ACC_*). Las rutas de relaciones van antes que las de catálogo */
 var AccionamientosNuevoController = require('../controllers/sm/accionamientos_nuevo');
+/* Tejidos disponibles por producto (script 29): antes de /acc/:catalogo para que no la tape */
+smapi.get('/acc/tejidos/:producto', Auth.ensureAuth, AccionamientosNuevoController.tejidos);
+smapi.post('/acc/tejidos/:producto', Auth.ensureAuth, AccionamientosNuevoController.tejidos_guardar);
 smapi.get('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion_guardar);
 smapi.get('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores);
