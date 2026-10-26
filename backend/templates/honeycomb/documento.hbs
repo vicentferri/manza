@@ -17,6 +17,7 @@
   td { height: 13.5mm; }
   td.producto { text-align: left; }
   td.importe { text-align: right; white-space: nowrap; }
+  td.c1 { white-space: nowrap; }
   tr { break-inside: avoid; page-break-inside: avoid; }
   tr.total td { font-weight: bold; height: 10mm; }
   tr.total td.etiqueta { text-align: right; }
@@ -37,6 +38,7 @@
           <th>Ancho cm</th>
           <th>Alto cm</th>
           <th>Cantidad</th>
+          <th>C1</th>
           {{#if ../conPrecios}}<th>Precio</th>{{/if}}
         </tr>
       </thead>
@@ -50,18 +52,20 @@
           <td>{{ancho}}</td>
           <td>{{alto}}</td>
           <td>{{cantidad}}</td>
+          <td class="c1">{{c1}}</td>
           {{#if ../../conPrecios}}<td class="importe">{{precio}}</td>{{/if}}
         </tr>
         {{/each}}
         {{#each vacias}}
-        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td>{{#if ../../conPrecios}}<td></td>{{/if}}</tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>{{#if ../../conPrecios}}<td></td>{{/if}}</tr>
         {{/each}}
-        {{#if ultima}}{{#if ../conPrecios}}
+        {{#if ultima}}
         <tr class="total">
           <td class="etiqueta" colspan="7">Total HoneyComb</td>
-          <td class="importe">{{../total}}</td>
+          <td class="c1">{{../totalC1}}</td>
+          {{#if ../conPrecios}}<td class="importe">{{../total}}</td>{{/if}}
         </tr>
-        {{/if}}{{/if}}
+        {{/if}}
       </tbody>
     </table>
   </div>

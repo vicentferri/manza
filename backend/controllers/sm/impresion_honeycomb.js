@@ -76,6 +76,20 @@ function formatMedida(valor) {
   return String(Number(valor));
 }
 
+// C1 de una línea en céntimos. Formato habitual "C1 0018167"; algunas líneas antiguas lo guardan como importe (181.67)
+function centimosC1(valor) {
+  const t = String(valor === null || valor === undefined ? '' : valor).trim();
+  let m = t.match(/^C1\s*(\d+)$/i);
+  if (m) return parseInt(m[1], 10);
+  m = t.match(/^\d+(?:[.,]\d+)?$/);
+  if (m) return Math.round(parseFloat(t.replace(',', '.')) * 100);
+  return null;
+}
+
+function formatC1(centimos) {
+  return 'C1 ' + String(centimos).padStart(7, '0');
+}
+
 function texto(valor) {
   return valor === null || valor === undefined ? '' : String(valor).trim();
 }
@@ -136,7 +150,7 @@ async function leerDatos(pool, doc, id) {
     .input('id', sql.Int, id)
     .query(
       'select ancho, alto, cantidad, tej_tipo_text, tej_color_text, color_perfil_text, ' +
-      '  hc_accionamiento_text, T7_PVP, T7_Fecha_Entrega ' +
+      '  hc_accionamiento_text, T7_PVP, T7_PVP_C1, T7_Fecha_Entrega ' +
       'from ' + doc.lineasHoneycomb + ' where IDROW = @id order by ' + doc.ordenLineas
     );
 
@@ -146,10 +160,13 @@ async function leerDatos(pool, doc, id) {
 function montarModelo(doc, datos, nombreFichero) {
   const c = datos.cabecera;
   let total = 0;
+  let totalC1 = 0;
 
   const filas = datos.lineas.map(function (l) {
     const importe = Number(l.T7_PVP) || 0;
     total += importe;
+    const c1 = centimosC1(l.T7_PVP_C1);
+    if (c1 !== null) totalC1 += c1;
     return {
       producto: 'HoneyComb' + (texto(l.tej_tipo_text) ? ' - ' + texto(l.tej_tipo_text) : ''),
       colorTejido: texto(l.tej_color_text),
@@ -158,6 +175,7 @@ function montarModelo(doc, datos, nombreFichero) {
       ancho: formatMedida(l.ancho),
       alto: formatMedida(l.alto),
       cantidad: l.cantidad,
+      c1: c1 !== null ? formatC1(c1) : texto(l.T7_PVP_C1),
       precio: fmtImporte.format(importe) + ' €'
     };
   });
@@ -180,7 +198,8 @@ function montarModelo(doc, datos, nombreFichero) {
     fechaPrevista: fechaPrevista(datos.lineas),
     conPrecios: doc.conPrecios,
     hojas: hojas,
-    total: fmtImporte.format(total) + ' €'
+    total: fmtImporte.format(total) + ' €',
+    totalC1: formatC1(totalC1)
   };
 }
 
