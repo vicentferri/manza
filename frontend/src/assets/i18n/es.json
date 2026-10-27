@@ -106,5 +106,7 @@
     "RESTO DE PRODUCTOS": "Resto de productos",
     "GENERANDO DOCUMENTO": "Generando documento...",
     "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB": "No se ha podido generar el PDF de la HoneyComb",
-    "DESCARGAR": "Descargar"
+    "DESCARGAR": "Descargar",
+    "COLOR_TEJIDO": "COLOR TEJIDO",
+    "COLOR_PERFIL": "COLOR PERFIL"
 }
