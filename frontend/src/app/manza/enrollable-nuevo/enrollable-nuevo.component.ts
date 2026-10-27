@@ -9,10 +9,10 @@ import { AccConfiguradorService } from './acc-configurador.service';
  * Solo lo pinta config.component para clientes con el interruptor activo (SOL_ACC_CLIENTE);
  * Leroy sigue con manza-enrollable. Nada de este componente se usa en el configurador de siempre.
  *
- * Pasos: medidas → tejido (los del maestro marcados en Productos → Tejidos; el criterio lo elige
- * el configurador según el ancho) → accionamiento
- * (accionamiento → sistema → cadena: tipo, aro + altura o medida, color / motor: tipo, modelo,
- * mando, cargador, batería) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
+ * Pasos: medidas → accionamiento
+ * (accionamiento → sistema → cadena: tipo, altura o longitud, color / motor: tipo, modelo,
+ * mando, cargador, batería) → tejido (los del maestro que ofrece el sistema elegido, Productos → Tejidos;
+ * el criterio lo elige el configurador según el ancho) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
  * su color. Además: posición (Derecha/Izquierda), estancia y observaciones, impresión digital (sí/no
  * y un texto; con sí, solo tejidos aptos) y longitud tecleada en la cadena a medida.
  * Cajón y guía llegarán cuando estén en el modelo nuevo.
@@ -63,7 +63,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    /* cadena a medida: longitud que teclea el cliente (cm) */
    longitud: number = null;
 
-   /* tejido: los del maestro de tejidos disponibles para el enrollable (Productos -> Tejidos, opc.tejidos).
+   /* tejido: los del maestro de tejidos que ofrece el sistema elegido (Productos -> Tejidos, opc.tejidos, script 36).
       Se elige tipo -> tejido -> color; el criterio (ancho del rollo) lo elige el configurador: el menor
       que cubra el ancho de la cortina */
    readonly salidas = [{ id: 1, text: 'Cascada' }, { id: 2, text: 'Pegado Pared' }];
@@ -119,6 +119,11 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    /* Con impresión digital solo salen los tejidos del maestro que la admiten: si el elegido no, se vacía */
    cambiarImpresion(): void {
       if (!this.impresion) { this.impresionTexto = ''; }
+      this.revisarTejido();
+   }
+
+   /* El tejido elegido se mantiene mientras siga disponible (sistema e impresión); si no, se vacía */
+   private revisarTejido(): void {
       if (this.tiposTejido.indexOf(this.tipoTejido) < 0) { this.tipoTejido = ''; }
       if (this.nombresTejido.indexOf(this.nombreTejido) < 0) { this.nombreTejido = ''; }
       if (this.coloresTejido.indexOf(this.colorTejido) < 0) { this.colorTejido = ''; }
@@ -146,9 +151,11 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       return valores.filter((v, i) => valores.indexOf(v) === i).sort();
    }
 
-   /* Tejidos del maestro que se pueden ofrecer (con impresión digital, solo los aptos) */
+   /* Tejidos del maestro que se pueden ofrecer: los del sistema elegido (script 36) y, con impresión
+      digital, solo los aptos. Sin sistema, ninguno */
    get tejidosDisponibles(): any[] {
-      const todos = this.opc && this.opc.tejidos ? this.opc.tejidos : [];
+      const sistema = parseInt(this.sel.sistema, 10);
+      const todos = this.opc && this.opc.tejidos && sistema ? this.opc.tejidos.filter(t => (t.sistemas || []).indexOf(sistema) >= 0) : [];
       return this.impresion ? todos.filter(t => t.impresion_digital) : todos;
    }
    etiquetaTipo(t: any): string { return t.tipo || 'Sin tipo'; }
@@ -173,26 +180,30 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    // ─── CASCADA DEL ACCIONAMIENTO ──────────────────────────────────────────────────
 
    private limpiarSeleccion(): void {
-      this.sel = { accionamiento: '', sistema: '', tipo_cadena: '', tipo_aro: '', altura: '', cadena_medida: '',
+      this.sel = { accionamiento: '', sistema: '', tipo_cadena: '', altura: '',
                    color_cadena: '', tipo_motor: '', modelo_motor: '', mando: '', cargador: '', bateria: '',
                    soporte: '', soporte_color: '', tapa: '', tapa_color: '', contrapeso: '', contrapeso_color: '' };
    }
 
    /* Al cambiar un paso se vacían los que dependen de él */
    cambiar(paso: string): void {
-      const orden = ['accionamiento', 'sistema', 'tipo_cadena', 'tipo_motor', 'modelo_motor', 'soporte', 'tapa', 'contrapeso'];
+      const orden = ['accionamiento', 'sistema', 'tipo_cadena', 'altura', 'tipo_motor', 'modelo_motor', 'soporte', 'tapa', 'contrapeso'];
       const piezasSistema = ['soporte', 'soporte_color', 'tapa', 'tapa_color'];
       const dependientes: { [p: string]: string[] } = {
-         accionamiento: ['sistema', 'tipo_cadena', 'tipo_aro', 'altura', 'cadena_medida', 'color_cadena', 'tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
+         accionamiento: ['sistema', 'tipo_cadena', 'altura', 'color_cadena', 'tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
          sistema: ['tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
          soporte: ['soporte_color'],
          tapa: ['tapa_color'],
          contrapeso: ['contrapeso_color'],
-         tipo_cadena: ['tipo_aro', 'altura', 'cadena_medida', 'color_cadena'],
+         tipo_cadena: ['altura', 'color_cadena'],
+         /* en Aro cadena, cada altura tiene sus colores (script 34) */
+         altura: ['color_cadena'],
          tipo_motor: ['modelo_motor', 'mando', 'cargador', 'bateria'],
          modelo_motor: ['mando', 'cargador', 'bateria']
       };
       if (orden.indexOf(paso) >= 0) { (dependientes[paso] || []).forEach(p => this.sel[p] = ''); }
+      /* los tejidos dependen del sistema */
+      if (paso === 'accionamiento' || paso === 'sistema') { this.revisarTejido(); }
       /* Si un paso solo tiene una opción, se elige sola */
       this.autoElegir();
    }
@@ -205,7 +216,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       let cambio = true;
       while (cambio) {
          cambio = unica(this.accionamientos, 'accionamiento') || unica(this.sistemas, 'sistema') ||
-                  (this.esCadena && (unica(this.tiposCadena, 'tipo_cadena') || unica(this.aros, 'tipo_aro') || unica(this.medidas, 'cadena_medida'))) ||
+                  (this.esCadena && (unica(this.tiposCadena, 'tipo_cadena') || unica(this.alturas, 'altura'))) ||
                   (this.esMotor && (unica(this.tiposMotor, 'tipo_motor') || unica(this.modelos, 'modelo_motor'))) ||
                   unica(this.soportes, 'soporte') || unica(this.coloresSoporte, 'soporte_color') ||
                   unica(this.tapas, 'tapa') || unica(this.coloresTapa, 'tapa_color') ||
@@ -234,12 +245,12 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    get tipoCadenaSel(): any { return this.porId(this.tiposCadena, this.sel.tipo_cadena); }
    get esAro(): boolean { return !!this.tipoCadenaSel && this.tipoCadenaSel.codigo === 'ARO_CADENA'; }
    get esMedida(): boolean { return !!this.tipoCadenaSel && this.tipoCadenaSel.codigo === 'CADENA_A_MEDIDA'; }
-   get aros(): any[] { return this.esAro ? this.tipoCadenaSel.aros : []; }
-   get medidas(): any[] { return this.esMedida ? this.tipoCadenaSel.medidas : []; }
    get alturas(): any[] { return this.esAro && this.opc ? this.opc.alturas : []; }
+   get alturaSel(): any { return this.porId(this.alturas, this.sel.altura); }
+   /* Aro cadena: los colores de la altura elegida (script 34); los demás tipos: los del tipo de cadena */
    get coloresCadena(): any[] {
-      const t = this.tipoCadenaSel;
-      return t ? this.opc.colores.filter(c => t.colores.indexOf(c.id) >= 0) : [];
+      const origen = this.esAro ? this.alturaSel : this.tipoCadenaSel;
+      return origen ? this.opc.colores.filter(c => (origen.colores || []).indexOf(c.id) >= 0) : [];
    }
 
    /* Tipos de motor del accionamiento MOTOR con algún modelo asignado al sistema elegido */
@@ -292,17 +303,16 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    private validar(): string {
       if (!(this.ancho > 0) || !(this.alto > 0)) { return 'Indique el ancho y el alto'; }
       if (!(this.cantidad > 0)) { return 'Indique la cantidad'; }
+      if (!this.sel.accionamiento) { return 'Seleccione el accionamiento'; }
+      if (!this.sel.sistema) { return 'Seleccione el sistema'; }
       if (!this.tipoTejido || !this.nombreTejido || !this.colorTejido) { return 'Seleccione el tejido y su color'; }
       if (!this.anchoMaximo) { return 'Este tejido no tiene criterio (ancho del rollo): complételo en el Maestro de tejidos'; }
       if (!this.tejidoFila) { return 'El ancho (' + this.ancho + ' cm) supera el máximo de este tejido (' + this.anchoMaximo + ' cm)'; }
       if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
-      if (!this.sel.accionamiento) { return 'Seleccione el accionamiento'; }
-      if (!this.sel.sistema) { return 'Seleccione el sistema'; }
       if (!this.posicion) { return 'Seleccione la posición del accionamiento'; }
       if (this.esCadena) {
          if (!this.sel.tipo_cadena) { return 'Seleccione el tipo de cadena'; }
-         if (this.esAro && (!this.sel.tipo_aro || !this.sel.altura)) { return 'Seleccione el tipo de aro y la altura'; }
-         if (this.esMedida && !this.sel.cadena_medida) { return 'Seleccione el tipo de cadena a medida'; }
+         if (this.esAro && !this.sel.altura) { return 'Seleccione la altura'; }
          if (this.esMedida && !(this.longitud > 0)) { return 'Indique la longitud de la cadena'; }
          if (this.coloresCadena.length > 0 && !this.sel.color_cadena) { return 'Seleccione el color de la cadena'; }
       }
@@ -414,8 +424,9 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       t.acc_marca_text = unir(nombre(this.sistemas, this.sel.sistema), this.esMotor ? nombre(this.tiposMotor, this.sel.tipo_motor) : null);
       t.cad_Tipo = this.esCadena ? 1 : -1;
       if (this.esCadena) {
-         t.acc_modelo_text = unir(nombre(this.tiposCadena, this.sel.tipo_cadena), nombre(this.aros, this.sel.tipo_aro), nombre(this.medidas, this.sel.cadena_medida));
-         const altura = this.porId(this.alturas, this.sel.altura);
+         const altura = this.alturaSel;
+         /* como el SP: "Aro cadena · 100 CM" o "Cadena a medida" (la longitud va en cad_Altura) */
+         t.acc_modelo_text = unir(nombre(this.tiposCadena, this.sel.tipo_cadena), altura ? this.etiquetaAltura(altura) : null);
          t.cad_Altura = altura ? this.etiquetaAltura(altura) : (this.esMedida ? Number(this.longitud) + ' cm' : null);
          t.cad_altura_text = t.cad_Altura;
          t.cad_color_text = nombre(this.coloresCadena, this.sel.color_cadena);
@@ -436,8 +447,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       /* la selección nueva, que es lo que graba el backend */
       (t as any).nacc = {
          accionamiento: id(this.sel.accionamiento), sistema: id(this.sel.sistema),
-         tipo_cadena: id(this.sel.tipo_cadena), tipo_aro: id(this.sel.tipo_aro), altura: id(this.sel.altura),
-         cadena_medida: id(this.sel.cadena_medida), color_cadena: id(this.sel.color_cadena),
+         tipo_cadena: id(this.sel.tipo_cadena), altura: id(this.sel.altura),
+         color_cadena: id(this.sel.color_cadena),
          tipo_motor: id(this.sel.tipo_motor), modelo_motor: id(this.sel.modelo_motor),
          mando: id(this.sel.mando), cargador: id(this.sel.cargador), bateria: id(this.sel.bateria),
          soporte: id(this.sel.soporte), soporte_color: id(this.sel.soporte_color),
@@ -465,7 +476,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       this.impresion = !!item.impresion;
       this.impresionTexto = item.impresion_imagen || '';
       /* tejido del maestro de la línea (nacc.tejido): tipo, nombre y color; el criterio sale del ancho */
-      const tejido = (this.opc && this.opc.tejidos ? this.opc.tejidos : []).find(x => x.id === item.nacc.tejido);
+      const tejido = (this.opc && this.opc.tejidos ? this.opc.tejidos : [])
+         .find(x => x.id === item.nacc.tejido && (x.sistemas || []).indexOf(item.nacc.sistema) >= 0);
       this.tipoTejido = tejido ? this.etiquetaTipo(tejido) : '';
       this.nombreTejido = tejido ? tejido.nombre : '';
       this.colorTejido = tejido ? tejido.color : '';

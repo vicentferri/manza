@@ -23,63 +23,9 @@
       </div>
    </div>
 
-   <!-- TEJIDO -->
-   <div class="enx-seccion">
-      <div class="enx-titulo">2. Tejido</div>
-      <div *ngIf="opc && tejidosDisponibles.length === 0" class="enx-error mb-2">
-         No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }}. Márquelos en Configuración → Productos → Tejidos.
-      </div>
-      <div class="row">
-         <div class="col-md-3 col-6 form-group">
-            <label>{{ "TIPO DE TEJIDO" | translate }}</label>
-            <select class="form-control form-control-sm" [(ngModel)]="tipoTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipoTejido()">
-               <option value="">Seleccionar</option>
-               <option *ngFor="let o of tiposTejido" [value]="o">{{ o }}</option>
-            </select>
-         </div>
-         <div class="col-md-3 col-6 form-group">
-            <label>{{ "SERIE" | translate }}</label>
-            <select class="form-control form-control-sm" [(ngModel)]="nombreTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarNombreTejido()" [disabled]="!tipoTejido">
-               <option value="">Seleccionar</option>
-               <option *ngFor="let n of nombresTejido" [value]="n">{{ n }}</option>
-            </select>
-         </div>
-         <div class="col-md-3 col-6 form-group">
-            <label>{{ "COLOR" | translate }}<span *ngIf="anchoMaximo" class="enx-nota"> (ancho máx. {{ anchoMaximo }} cm)</span></label>
-            <select class="form-control form-control-sm" [(ngModel)]="colorTejido" [ngModelOptions]="{ standalone: true }" [disabled]="!nombreTejido">
-               <option value="">Seleccionar</option>
-               <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
-            </select>
-            <small *ngIf="tejidoFila" class="enx-nota">Rollo de {{ tejidoFila.criterio }} cm<span *ngIf="tejidoFila.grupo"> · grupo {{ tejidoFila.grupo }}</span></small>
-            <small *ngIf="colorTejido && ancho > 0 && !tejidoFila && anchoMaximo" class="enx-error">Supera el ancho máximo ({{ anchoMaximo }} cm)</small>
-         </div>
-         <div class="col-md-3 col-6 form-group">
-            <label>{{ "SALIDA" | translate }}</label>
-            <select class="form-control form-control-sm" [(ngModel)]="salida" [ngModelOptions]="{ standalone: true }">
-               <option *ngFor="let s of salidas" [value]="s.id">{{ s.text }}</option>
-            </select>
-         </div>
-      </div>
-      <div class="row">
-         <div class="col-md-6 form-group">
-            <label>{{ "IMPRESION DIGITAL" | translate }}</label>
-            <div class="input-group input-group-sm">
-               <div class="input-group-prepend">
-                  <span class="input-group-text">
-                     <input type="checkbox" [(ngModel)]="impresion" [ngModelOptions]="{ standalone: true }" (change)="cambiarImpresion()" />
-                  </span>
-               </div>
-               <input type="text" class="form-control" maxlength="250" placeholder="Texto de la impresión"
-                  [(ngModel)]="impresionTexto" [ngModelOptions]="{ standalone: true }" [disabled]="!impresion" />
-            </div>
-            <small *ngIf="impresion" class="enx-nota">Solo se muestran los tejidos aptos para impresión digital.</small>
-         </div>
-      </div>
-   </div>
-
    <!-- ACCIONAMIENTO (modelo nuevo) -->
    <div class="enx-seccion">
-      <div class="enx-titulo">3. Accionamiento</div>
+      <div class="enx-titulo">2. Accionamiento</div>
 
       <div *ngIf="cargando" class="text-muted small"><i class="fa fa-spinner fa-spin"></i> Cargando opciones...</div>
       <div *ngIf="!cargando && !opc" class="enx-error">No se han podido cargar las opciones de accionamiento.</div>
@@ -121,13 +67,6 @@
             </div>
             <ng-container *ngIf="esAro">
                <div class="col-md-3 col-6 form-group">
-                  <label>Tipo de aro</label>
-                  <select class="form-control form-control-sm" [(ngModel)]="sel.tipo_aro" [ngModelOptions]="{ standalone: true }" (change)="cambiar('tipo_aro')">
-                     <option value="">Seleccionar</option>
-                     <option *ngFor="let a of aros" [value]="a.id">{{ a.nombre }}</option>
-                  </select>
-               </div>
-               <div class="col-md-3 col-6 form-group">
                   <label>Altura</label>
                   <select class="form-control form-control-sm" [(ngModel)]="sel.altura" [ngModelOptions]="{ standalone: true }" (change)="cambiar('altura')">
                      <option value="">Seleccionar</option>
@@ -135,13 +74,6 @@
                   </select>
                </div>
             </ng-container>
-            <div class="col-md-3 col-6 form-group" *ngIf="esMedida">
-               <label>Tipo de cadena a medida</label>
-               <select class="form-control form-control-sm" [(ngModel)]="sel.cadena_medida" [ngModelOptions]="{ standalone: true }" (change)="cambiar('cadena_medida')">
-                  <option value="">Seleccionar</option>
-                  <option *ngFor="let m of medidas" [value]="m.id">{{ m.nombre }}</option>
-               </select>
-            </div>
             <div class="col-md-2 col-6 form-group" *ngIf="esMedida">
                <label>Longitud (cm)</label>
                <input type="number" class="form-control form-control-sm" min="1" step="0.5" [(ngModel)]="longitud" [ngModelOptions]="{ standalone: true }" />
@@ -195,6 +127,62 @@
             </div>
          </div>
       </ng-container>
+   </div>
+
+   <!-- TEJIDO -->
+   <div class="enx-seccion">
+      <div class="enx-titulo">3. Tejido</div>
+      <!-- cada sistema tiene sus tejidos (script 36): primero se elige el sistema -->
+      <div *ngIf="opc && !sel.sistema" class="text-muted small mb-2">Elija antes el accionamiento y el sistema: cada sistema tiene sus tejidos.</div>
+      <div *ngIf="opc && sel.sistema && tejidosDisponibles.length === 0" class="enx-error mb-2">
+         No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }} para este sistema. Márquelos en Configuración → Productos → Tejidos.
+      </div>
+      <div class="row">
+         <div class="col-md-3 col-6 form-group">
+            <label>{{ "TIPO DE TEJIDO" | translate }}</label>
+            <select class="form-control form-control-sm" [(ngModel)]="tipoTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipoTejido()" [disabled]="!sel.sistema">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let o of tiposTejido" [value]="o">{{ o }}</option>
+            </select>
+         </div>
+         <div class="col-md-3 col-6 form-group">
+            <label>{{ "SERIE" | translate }}</label>
+            <select class="form-control form-control-sm" [(ngModel)]="nombreTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarNombreTejido()" [disabled]="!tipoTejido">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let n of nombresTejido" [value]="n">{{ n }}</option>
+            </select>
+         </div>
+         <div class="col-md-3 col-6 form-group">
+            <label>{{ "COLOR" | translate }}<span *ngIf="anchoMaximo" class="enx-nota"> (ancho máx. {{ anchoMaximo }} cm)</span></label>
+            <select class="form-control form-control-sm" [(ngModel)]="colorTejido" [ngModelOptions]="{ standalone: true }" [disabled]="!nombreTejido">
+               <option value="">Seleccionar</option>
+               <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
+            </select>
+            <small *ngIf="tejidoFila" class="enx-nota">Rollo de {{ tejidoFila.criterio }} cm<span *ngIf="tejidoFila.grupo"> · grupo {{ tejidoFila.grupo }}</span></small>
+            <small *ngIf="colorTejido && ancho > 0 && !tejidoFila && anchoMaximo" class="enx-error">Supera el ancho máximo ({{ anchoMaximo }} cm)</small>
+         </div>
+         <div class="col-md-3 col-6 form-group">
+            <label>{{ "SALIDA" | translate }}</label>
+            <select class="form-control form-control-sm" [(ngModel)]="salida" [ngModelOptions]="{ standalone: true }">
+               <option *ngFor="let s of salidas" [value]="s.id">{{ s.text }}</option>
+            </select>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-md-6 form-group">
+            <label>{{ "IMPRESION DIGITAL" | translate }}</label>
+            <div class="input-group input-group-sm">
+               <div class="input-group-prepend">
+                  <span class="input-group-text">
+                     <input type="checkbox" [(ngModel)]="impresion" [ngModelOptions]="{ standalone: true }" (change)="cambiarImpresion()" />
+                  </span>
+               </div>
+               <input type="text" class="form-control" maxlength="250" placeholder="Texto de la impresión"
+                  [(ngModel)]="impresionTexto" [ngModelOptions]="{ standalone: true }" [disabled]="!impresion" />
+            </div>
+            <small *ngIf="impresion" class="enx-nota">Solo se muestran los tejidos aptos para impresión digital.</small>
+         </div>
+      </div>
    </div>
 
    <!-- SOPORTE, TAPA Y CONTRAPESO (modelo nuevo) -->

@@ -28,7 +28,7 @@
             <thead class="thead-light">
                 <tr>
                     <th class="acc-th-orden" *ngIf="!busqueda" title="Orden en el configurador"></th>
-                    <th>{{ conValor ? 'Valor' + (unidad ? ' (' + unidad + ')' : '') : 'Nombre' }}</th>
+                    <th>Nombre</th>
                     <th class="acc-th-uso">Uso</th>
                     <th class="acc-th-sup" title="Importe que suma al precio de la cortina. ··· para precios por cliente, sistema o tramos">Suplemento (€)</th>
                     <th class="acc-th-visible text-center" title="Visible en el configurador">Visible</th>
@@ -46,7 +46,7 @@
                             (click)="mover(d, 1, $event)"><i class="fa fa-chevron-down"></i></button>
                     </td>
                     <td>
-                        <div class="acc-nombre">
+                        <div class="acc-nombre" [class.text-nowrap]="conValor">
                             {{ etiqueta(d) }}
                             <i *ngIf="d.protegido" class="fa fa-lock text-muted ml-1" title="Fijo: no se puede borrar"></i>
                         </div>

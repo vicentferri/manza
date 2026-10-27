@@ -405,8 +405,6 @@ insert @b values
 	('ENR_SISTEMA',          'Enrollable: sistema -> código',                 'SOL_ACC_SISTEMA',            'id', 'codigo', null, null, null, 'nombre'),
 	('ENR_ACCIONAMIENTO',    'Enrollable: accionamiento -> código',           'SOL_ACC_ACCIONAMIENTO',      'id', 'codigo', null, null, null, 'nombre'),
 	('ENR_TIPO_CADENA',      'Enrollable: tipo de cadena -> código',          'SOL_ACC_TIPO_CADENA',        'id', 'codigo', null, null, null, 'nombre'),
-	('ENR_TIPO_ARO',         'Enrollable: tipo de aro de cadena -> código',   'SOL_ACC_TIPO_ARO_CADENA',    'id', 'codigo', null, null, null, 'nombre'),
-	('ENR_CADENA_MEDIDA',    'Enrollable: medida de cadena -> código',        'SOL_ACC_TIPO_CADENA_MEDIDA', 'id', 'codigo', null, null, null, 'nombre'),
 	('ENR_ALTURA',           'Enrollable: altura de mando -> código',         'SOL_ACC_ALTURA',             'id', 'codigo', null, null, null, 'nombre'),
 	('ENR_ALTURA_VALOR',     'Enrollable: altura de mando -> valor',          'SOL_ACC_ALTURA',             'id', 'valor',  null, null, null, null),
 	('ENR_COLOR_CADENA',     'Enrollable: color de cadena -> código',         'SOL_ACC_COLOR_CADENA',       'id', 'codigo', null, null, null, 'nombre'),

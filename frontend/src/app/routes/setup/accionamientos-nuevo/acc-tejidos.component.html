@@ -1,12 +1,26 @@
 <div class="acc-bloque">
     <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
-        <strong>Tejidos del enrollable</strong>
-        <span class="text-muted small ml-2">{{ totalDisponibles }} disponibles de {{ tejidos.length }}</span>
+        <strong class="mr-2">Tejidos del sistema</strong>
+        <select class="form-control form-control-sm acc-tej-filtro mr-2" [ngModel]="sistema" (ngModelChange)="cambiarSistema($event)" [ngModelOptions]="{ standalone: true }">
+            <option *ngFor="let s of sistemas" [ngValue]="s.id">{{ s.nombre }}{{ s.activo ? '' : ' (oculto)' }}</option>
+        </select>
+        <span class="text-muted small" *ngIf="sistema && cargado">{{ totalDisponibles }} disponibles de {{ tejidos.length }}</span>
         <span class="acc-estado ml-2" *ngIf="estado === 'guardando'"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
         <span class="acc-estado acc-estado-ok ml-2" *ngIf="estado === 'guardado'"><i class="fa fa-check"></i> Guardado</span>
     </div>
+    <div class="d-flex align-items-center flex-wrap mb-2" *ngIf="sistema && otrosSistemas.length > 0">
+        <span class="small text-muted mr-2">Copiar de otro sistema:</span>
+        <select class="form-control form-control-sm acc-tej-filtro mr-2" [(ngModel)]="origenCopia" [ngModelOptions]="{ standalone: true }">
+            <option [ngValue]="null">Elegir sistema...</option>
+            <option *ngFor="let s of otrosSistemas" [ngValue]="s.id">{{ s.nombre }}</option>
+        </select>
+        <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!origenCopia || copiando" (click)="copiar()"
+            title="El sistema elegido arriba pasa a tener exactamente los tejidos de este (se quitan los que tenga ahora)">
+            <i class="fa" [ngClass]="copiando ? 'fa-spinner fa-spin' : 'fa-files-o'"></i> Copiar
+        </button>
+    </div>
     <div class="acc-ayuda mb-2">
-        Marque los tejidos (cada color por separado) que se ofrecen en el configurador. La casilla de cada tejido marca o quita
+        Marque los tejidos (cada color por separado) que ofrece este sistema en el configurador. La casilla de cada tejido marca o quita
         todos sus colores. Los tejidos y sus datos se mantienen en el <a [routerLink]="['/routes/master/tejidos-maestro']">Maestro de tejidos</a>.
     </div>
 
@@ -35,7 +49,8 @@
         </span>
     </div>
 
-    <div *ngIf="cargado && tejidos.length === 0" class="acc-vacio">No hay tejidos activos en el Maestro de tejidos.</div>
+    <div *ngIf="!sistema && cargado" class="acc-vacio">No hay sistemas. Añádalos en Listas de opciones → Sistemas.</div>
+    <div *ngIf="sistema && cargado && tejidos.length === 0" class="acc-vacio">No hay tejidos activos en el Maestro de tejidos.</div>
 
     <div class="acc-matriz-container" *ngIf="tejidos.length > 0">
         <table class="table table-sm acc-matriz acc-tej-tabla mb-0">

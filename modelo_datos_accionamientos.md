@@ -2,7 +2,7 @@
 
 Este documento es el registro del modelo que hay en la base de datos (tablas `SOL_ACC_*`). Si cambia el modelo, se actualiza aquí.
 
-- **Scripts:** `C:\dev\sqlAccionamientos\01` a `33` (idempotentes; del 29 al 33 requieren el maestro de tejidos y se despliegan aparte, ver `DESPLIEGUE.md` 4b). Se despliegan todos en orden con `00_desplegar_todo.sql` (o `00_desplegar_todo_ssms.sql` desde SSMS); ver `DESPLIEGUE.md`. Desplegados en producción el 2026-10-21.
+- **Scripts:** `C:\dev\sqlAccionamientos\01` a `36` (idempotentes; del 29 al 33 requieren el maestro de tejidos y se despliegan aparte, ver `DESPLIEGUE.md` 4b; el 34 quita los tipos de aro, apartado 4.4, y el 35 los tipos de cadena a medida, apartado 4.6; van con `sqlEnrrollable/08`; el 36 pasa los tejidos disponibles a cada sistema, apartado 4.14). Se despliegan todos en orden con `00_desplegar_todo.sql` (o `00_desplegar_todo_ssms.sql` desde SSMS); ver `DESPLIEGUE.md`. Desplegados en producción el 2026-10-21.
 - **Registro de cambios y estado por entorno:** `C:\dev\sqlAccionamientos\REGISTRO_CAMBIOS.md`.
 - **Mantenimiento:** pantalla "Productos" (antes "Accionamientos nuevo"; `/routes/master/productos`, sección "Nuevo sistema": solo `jrumi@` y `jmartinez@`), con el backend en `backend/controllers/sm/accionamientos_nuevo.js` (`/api/sm/acc/*`).
 - **Configurador nuevo:** componente `manza/enrollable-nuevo`, backend `backend/controllers/sm/acc_configurador.js` (`/api/sm/acc_cfg/*`). Solo para clientes con el interruptor activo (apartado 4.13).
@@ -26,10 +26,10 @@ flowchart TD
     C -->|Motor| TM[Tipo de Motor<br/>con algún modelo en el sistema]
     C -->|Sin cadena| FIN[Fin de la configuración]
 
-    TC -->|Aro cadena| TAC[Tipo Aro Cadena]
-    TC -->|Cadena a medida| TCM[Tipo Cadena a Medida]
-    TAC --> ALT[Altura<br/>todas disponibles]
-    TC --> COL[Color Cadena<br/>filtrado por tipo de cadena]
+    TC -->|Aro cadena| ALT[Altura]
+    TC -->|Cadena a medida| LON[Longitud<br/>la teclea el cliente]
+    ALT --> COLA[Color Cadena<br/>filtrado por altura]
+    LON --> COL[Color Cadena<br/>filtrado por tipo de cadena]
 
     TM --> MM[Modelo Motor<br/>del tipo y asignado al sistema]
     MM --> MAN[Mandos<br/>filtrado por modelo]
@@ -76,28 +76,10 @@ classDiagram
         +int orden
         +bool activo
     }
-    class TipoAroCadena {
-        +int id
-        +int tipo_cadena_id
-        +string codigo
-        +string nombre
-        +string nombre_pt
-        +int orden
-        +bool activo
-    }
     class Altura {
         +int id
         +string codigo
         +decimal valor
-        +string nombre
-        +string nombre_pt
-        +int orden
-        +bool activo
-    }
-    class TipoCadenaMedida {
-        +int id
-        +int tipo_cadena_id
-        +string codigo
         +string nombre
         +string nombre_pt
         +int orden
@@ -156,10 +138,9 @@ classDiagram
 
     Accionamiento "*" -- "*" Sistema : disponible en
     Accionamiento "1" -- "0..*" TipoCadena : si es Cadena
-    TipoCadena "1" -- "0..*" TipoAroCadena : si es Aro cadena
-    TipoCadena "1" -- "0..*" TipoCadenaMedida : si es Cadena a medida
-    TipoAroCadena "*" -- "*" Altura : todas con todas
-    TipoCadena "*" -- "*" ColorCadena : colores permitidos
+    TipoCadena "1" -- "0..*" Altura : si es Aro cadena (todas)
+    Altura "*" -- "*" ColorCadena : colores de cada altura (Aro cadena)
+    TipoCadena "*" -- "*" ColorCadena : colores permitidos (Cadena a medida)
     Accionamiento "1" -- "0..*" TipoMotor : si es Motor
     TipoMotor "1" -- "0..*" ModeloMotor : modelos
     ModeloMotor "*" -- "*" Sistema : disponible en
@@ -278,23 +259,17 @@ Solo aplica cuando el accionamiento es **Cadena**.
 
 Dos tipos son **fijos** y los crea el script `03_datos_tipos_cadena_fijos.sql`: Aro cadena (código `ARO_CADENA`) y Cadena a medida (`CADENA_A_MEDIDA`). El backend no deja borrarlos ni cambiarles el código; sí renombrarlos u ocultarlos. Cualquier otro tipo de cadena que se añada solo tiene colores.
 
-### 4.4 SOL_ACC_TIPO_ARO_CADENA
+### 4.4 SOL_ACC_TIPO_ARO_CADENA (borrada)
 
-Solo aplica cuando el tipo de cadena es **Aro cadena** (`ARO_CADENA`): el backend no deja colgarlo de otro.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| id | INT | PK, IDENTITY | Identificador |
-| tipo_cadena_id | INT | FK → SOL_ACC_TIPO_CADENA.id, NOT NULL | Tipo de cadena padre (Aro cadena) |
-| codigo | VARCHAR(50) | NOT NULL, UNIQUE | Código estable |
-| nombre | VARCHAR(100) | NOT NULL | Nombre del tipo de aro. Único dentro del tipo de cadena |
-| nombre_pt | VARCHAR(100) | NULL | Traducción PT |
-| orden | INT | NOT NULL, DEFAULT 0 | Orden |
-| activo | BIT | NOT NULL, DEFAULT 1 | Visible en el configurador |
+Borrada por el script 34 (2026-10-27, decisión del usuario): los "tipos de aro cadena" eran en realidad las alturas
+(100 CM, 125 CM...). Sus filas pasaron a `SOL_ACC_ALTURA` con el mismo código, nombre, orden y visible, y se borraron
+la tabla y las columnas `nacc_tipo_aro_id` de pedidos y presupuestos (ninguna línea las usaba).
 
 ### 4.5 SOL_ACC_ALTURA
 
-Catálogo de alturas. Todas las alturas son válidas para todos los tipos de aro cadena, por lo que **no necesita tabla intermedia**: al elegir cualquier tipo de aro cadena se muestran todas las alturas activas. En la pantalla se gestionan dentro del tipo de cadena **Aro cadena** (pestaña Alturas), no en Listas de opciones.
+Alturas del **Aro cadena**: cada altura es un aro (100 CM, 125 CM...). Cada una admite sus colores
+(`SOL_ACC_ALTURA_COLOR`, script 34): no todas las alturas tienen todos los colores. En la pantalla se gestionan dentro del
+tipo de cadena **Aro cadena** (pestaña Alturas: al elegir una se marcan sus colores), no en Listas de opciones.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -306,23 +281,16 @@ Catálogo de alturas. Todas las alturas son válidas para todos los tipos de aro
 | orden | INT | NOT NULL, DEFAULT 0 | Orden |
 | activo | BIT | NOT NULL, DEFAULT 1 | Visible en el configurador |
 
-### 4.6 SOL_ACC_TIPO_CADENA_MEDIDA
+### 4.6 SOL_ACC_TIPO_CADENA_MEDIDA (borrada)
 
-Solo aplica cuando el tipo de cadena es **Cadena a medida** (`CADENA_A_MEDIDA`): el backend no deja colgarlo de otro.
-
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| id | INT | PK, IDENTITY | Identificador |
-| tipo_cadena_id | INT | FK → SOL_ACC_TIPO_CADENA.id, NOT NULL | Tipo de cadena padre (Cadena a medida) |
-| codigo | VARCHAR(50) | NOT NULL, UNIQUE | Código estable |
-| nombre | VARCHAR(100) | NOT NULL | Nombre del tipo de cadena a medida. Único dentro del tipo de cadena |
-| nombre_pt | VARCHAR(100) | NULL | Traducción PT |
-| orden | INT | NOT NULL, DEFAULT 0 | Orden |
-| activo | BIT | NOT NULL, DEFAULT 1 | Visible en el configurador |
+Borrada por el script 35 (2026-10-27, decisión del usuario): en **Cadena a medida** el usuario elige el tipo de cadena,
+teclea la longitud (`nacc_cadena_longitud`, script 10) y elige el color (los del tipo de cadena,
+`SOL_ACC_TIPO_CADENA_COLOR`). No hay "tipos de cadena a medida". La tabla estaba vacía; se borraron también las columnas
+`nacc_cadena_medida_id` de pedidos y presupuestos.
 
 ### 4.7 SOL_ACC_COLOR_CADENA
 
-Catálogo de colores, compartido por Aro cadena y Cadena a medida.
+Catálogo de colores, compartido por Aro cadena (por altura, `SOL_ACC_ALTURA_COLOR`) y Cadena a medida (por tipo de cadena, `SOL_ACC_TIPO_CADENA_COLOR`).
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -386,20 +354,25 @@ Script 07. Las tres tablas tienen la estructura común de los catálogos (`id`, 
 
 `SOL_ACC_COLOR_SOPORTE`, `SOL_ACC_COLOR_TAPA` y `SOL_ACC_COLOR_CONTRAPESO` (script 07): un catálogo de colores **por pieza**, con la estructura común. El usuario elige un color para cada pieza (cadena, soporte, tapa y contrapeso), y cada pieza marca qué colores de su catálogo admite.
 
-### 4.14 SOL_ACC_PRODUCTO_TEJIDO (tejidos disponibles)
+### 4.14 SOL_ACC_SISTEMA_TEJIDO (tejidos disponibles por sistema)
 
-Script 29. Qué tejidos del maestro de tejidos (`SOL_TEJIDOS_MAESTRO`, una fila por tejido + color; ver `tejidos.md`) se ofrecen en cada producto del configurador. Se mantiene en el apartado **Tejidos** de la pantalla Productos.
+Script 36 (2026-10-27, decisión del usuario: un solo nivel, por sistema). Qué tejidos del maestro de tejidos
+(`SOL_TEJIDOS_MAESTRO`, una fila por tejido + color; ver `tejidos.md`) ofrece cada sistema en el configurador. Se mantiene en el
+apartado **Tejidos** de la pantalla Productos: arriba se elige el sistema; "Copiar de otro sistema" deja el sistema con exactamente
+los tejidos de otro (`POST /api/sm/acc/tejidos/:sistema/copiar`). Sustituye a `SOL_ACC_PRODUCTO_TEJIDO` (script 29, una sola lista
+para todo el enrollable), que se borró: sus tejidos pasaron a todos los sistemas.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
-| producto | INT | PK, FK → SOL_ARTICULOS_PRODUCTOS.idrow | 1 = enrollable (el único de momento) |
-| tejido | INT | PK, FK → SOL_TEJIDOS_MAESTRO.idrow (on delete cascade) | Tejido + color disponible |
+| sistema_id | INT | PK, FK → SOL_ACC_SISTEMA.id | Sistema |
+| tejido | INT | PK, FK → SOL_TEJIDOS_MAESTRO.idrow (on delete cascade) | Tejido + color disponible en ese sistema |
 | created | DATETIME | NOT NULL, DEFAULT getdate() | Alta |
 | usuario | VARCHAR(100) | NULL | Email del usuario que lo marcó (el token no lleva id) |
 
-- Una sola lista para todos los clientes (decisión del usuario, 2026-10-23).
+- Una lista por sistema, la misma para todos los clientes.
+- El alta de línea y de presupuesto exigen que el tejido sea del sistema de la línea (-24).
 - En la pantalla los tejidos se agrupan solo por nombre, sin distinguir el criterio: marcar VERA BLOCK marca sus colores de 200, de 250 y de cualquier otro ancho (decisión del usuario, 2026-10-23).
-- **El configurador nuevo ofrece solo estos tejidos** (scripts 30-32, 2026-10-23): tipo de tejido → tejido → color; el criterio no se elige: el configurador toma, entre los anchos de ese tejido + color, el menor que cubra el ancho de la cortina (si ninguno, "supera el ancho máximo"). Con impresión digital, solo los que la admiten en el maestro. La línea lo guarda en `nacc_tejido_id` (apartado 8) y el precio usa su grupo (T1) o la T2 de su tejido + criterio (apartado 9).
+- **El configurador nuevo ofrece solo los tejidos del sistema elegido** (scripts 30-32 y 36): el tejido va detrás del accionamiento y el sistema (1 Medidas, 2 Accionamiento, 3 Tejido, 4 Soporte, tapa y contrapeso); al cambiar de sistema, el tejido se mantiene si el nuevo también lo tiene y si no se vacía. Tipo de tejido → tejido → color; el criterio no se elige: el configurador toma, entre los anchos de ese tejido + color, el menor que cubra el ancho de la cortina (si ninguno, "supera el ancho máximo"). Con impresión digital, solo los que la admiten en el maestro. La línea lo guarda en `nacc_tejido_id` (apartado 8) y el precio usa su grupo (T1) o la T2 de su tejido + criterio (apartado 9).
 
 ### 4.13 SOL_ACC_CLIENTE (interruptor por cliente)
 
@@ -423,7 +396,8 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 |---|---|---|---|
 | SOL_ACC_ACCIONAMIENTO_SISTEMA | accionamiento_id → SOL_ACC_ACCIONAMIENTO.id | sistema_id → SOL_ACC_SISTEMA.id | Qué sistemas aparecen para cada accionamiento |
 | SOL_ACC_MODELO_MOTOR_SISTEMA | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | sistema_id → SOL_ACC_SISTEMA.id | Qué motores (modelos) ofrece cada sistema. Script 14; sustituye a `SOL_ACC_TIPO_MOTOR_SISTEMA` (relación por tipo, borrada) |
-| SOL_ACC_TIPO_CADENA_COLOR | tipo_cadena_id → SOL_ACC_TIPO_CADENA.id | color_cadena_id → SOL_ACC_COLOR_CADENA.id | Qué colores aparecen para Aro cadena y para Cadena a medida |
+| SOL_ACC_TIPO_CADENA_COLOR | tipo_cadena_id → SOL_ACC_TIPO_CADENA.id | color_cadena_id → SOL_ACC_COLOR_CADENA.id | Qué colores aparecen para Cadena a medida (y cualquier otro tipo que no sea Aro cadena) |
+| SOL_ACC_ALTURA_COLOR | altura_id → SOL_ACC_ALTURA.id | color_cadena_id → SOL_ACC_COLOR_CADENA.id | Qué colores admite cada altura de Aro cadena (script 34) |
 | SOL_ACC_MODELO_MOTOR_MANDO | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | mando_id → SOL_ACC_MANDO.id | Qué mandos aparecen para cada modelo |
 | SOL_ACC_MODELO_MOTOR_CARGADOR | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | cargador_id → SOL_ACC_CARGADOR.id | Qué cargadores aparecen para cada modelo |
 | SOL_ACC_MODELO_MOTOR_BATERIA | modelo_motor_id → SOL_ACC_MODELO_MOTOR.id | bateria_id → SOL_ACC_BATERIA.id | Qué baterías aparecen para cada modelo |
@@ -439,10 +413,9 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 |---|---|---|---|
 | Accionamiento | Sistema | N:M | Tabla SOL_ACC_ACCIONAMIENTO_SISTEMA |
 | Accionamiento (Cadena) | Tipo de Cadena | 1:N | FK `accionamiento_id` en SOL_ACC_TIPO_CADENA |
-| Tipo de Cadena (Aro cadena) | Tipo Aro Cadena | 1:N | FK `tipo_cadena_id` en SOL_ACC_TIPO_ARO_CADENA |
-| Tipo Aro Cadena | Altura | Todas con todas | Sin tabla intermedia |
-| Tipo de Cadena (Cadena a medida) | Tipo Cadena a Medida | 1:N | FK `tipo_cadena_id` en SOL_ACC_TIPO_CADENA_MEDIDA |
-| Tipo de Cadena | Color Cadena | N:M | Tabla SOL_ACC_TIPO_CADENA_COLOR |
+| Tipo de Cadena (Aro cadena) | Altura | Todas | Sin tabla intermedia: Aro cadena ofrece todas las alturas activas |
+| Altura | Color Cadena | N:M | Tabla SOL_ACC_ALTURA_COLOR |
+| Tipo de Cadena (salvo Aro cadena) | Color Cadena | N:M | Tabla SOL_ACC_TIPO_CADENA_COLOR |
 | Accionamiento (Motor) | Tipo de Motor | 1:N | FK `accionamiento_id` en SOL_ACC_TIPO_MOTOR |
 | Modelo Motor | Sistema | N:M | Tabla SOL_ACC_MODELO_MOTOR_SISTEMA (el tipo se deduce de sus modelos) |
 | Tipo de Motor | Modelo Motor | 1:N | FK `tipo_motor_id` en SOL_ACC_MODELO_MOTOR |
@@ -458,9 +431,9 @@ Se usan cuando una opción puede servir para varios elementos del paso anterior.
 
 ## 7. Reglas de negocio
 
-1. Un tipo de cadena solo puede colgar del accionamiento de código `CADENA`, y un tipo de motor solo del de código `MOTOR`. Un tipo de aro cadena solo puede colgar del tipo de cadena `ARO_CADENA`, y un tipo de cadena a medida solo de `CADENA_A_MEDIDA`. La FK garantiza que el padre existe. Que el padre sea el correcto lo valida el **backend** (la base de datos no lo fuerza), y el padre de un registro no se puede cambiar al editarlo.
+1. Un tipo de cadena solo puede colgar del accionamiento de código `CADENA`, y un tipo de motor solo del de código `MOTOR`. La FK garantiza que el padre existe. Que el padre sea el correcto lo valida el **backend** (la base de datos no lo fuerza), y el padre de un registro no se puede cambiar al editarlo.
 2. En cada paso solo se muestran registros con `activo = 1`.
-3. Si se añade una altura nueva, aparece automáticamente para todos los tipos de aro cadena.
+3. Una altura nueva aparece en Aro cadena, pero sin colores: hay que marcar los que admite. En Aro cadena el color es de los de la altura elegida.
 4. Mandos, cargadores y baterías son opcionales por modelo: si un modelo de motor no tiene ninguno marcado, ese paso no se muestra en el configurador.
 5. Un registro del que dependen otros (hijos o relaciones marcadas) no se puede borrar: se desactiva (`activo = 0`).
 
@@ -470,12 +443,12 @@ El configurador nuevo solo lo usan los clientes con fila activa en `SOL_ACC_CLIE
 
 Las líneas de enrollable del flujo nuevo se graban en `SOL_PEDIDOS_COLA_TIPO_1`, como las de siempre, con los SPs `sp_acc_pedido_add` y `sp_acc_pedido_tipo_1_add` (creados en el 06; versión vigente: script 28):
 
-- La selección va en 19 columnas nulables `nacc_*` (12 del script 05, 6 del 08 y `nacc_cadena_longitud` del 10, en cm), con FK a su catálogo: `nacc_accionamiento_id`, `nacc_sistema_id`, `nacc_tipo_cadena_id`, `nacc_tipo_aro_id`, `nacc_cadena_medida_id`, `nacc_altura_id`, `nacc_color_cadena_id`, `nacc_tipo_motor_id`, `nacc_modelo_motor_id`, `nacc_mando_id`, `nacc_cargador_id`, `nacc_bateria_id`, `nacc_soporte_id`, `nacc_soporte_color_id`, `nacc_tapa_id`, `nacc_tapa_color_id`, `nacc_contrapeso_id`, `nacc_contrapeso_color_id`. En las líneas de siempre quedan a NULL.
+- La selección va en 17 columnas nulables `nacc_*` (10 del script 05, 6 del 08 y `nacc_cadena_longitud` del 10, en cm; el 34 borró `nacc_tipo_aro_id` y el 35 `nacc_cadena_medida_id`), con FK a su catálogo: `nacc_accionamiento_id`, `nacc_sistema_id`, `nacc_tipo_cadena_id`, `nacc_altura_id`, `nacc_color_cadena_id`, `nacc_tipo_motor_id`, `nacc_modelo_motor_id`, `nacc_mando_id`, `nacc_cargador_id`, `nacc_bateria_id`, `nacc_soporte_id`, `nacc_soporte_color_id`, `nacc_tapa_id`, `nacc_tapa_color_id`, `nacc_contrapeso_id`, `nacc_contrapeso_color_id`. En las líneas de siempre quedan a NULL.
 - **Tejido del maestro** (script 30): `nacc_tejido_id` (FK a `SOL_TEJIDOS_MAESTRO`, el tejido + color + criterio elegido). Con él, `tej_tipo_id` y `tej_color_id` van a -1 y `tej_tipo_text` / `tej_color_text` son el nombre y el color del maestro. Código -24: tejido no disponible para el enrollable, o llega también el id de siempre.
 - Una columna más, `nacc_tipo_tarifa` (`VARCHAR(2)`, 'T1' o 'T2', script 28): con qué tarifa se calculó el precio, para recalcularlo igual al recargar un presupuesto y pedirlo. NULL en las líneas de siempre.
 - Los ids antiguos de accionamiento, soporte, tapa y contrapeso (`acc_tipo_id`, `acc_marca_id`, `acc_modelo_id`, `mando_id`, `cargador`, `cad_altura_id`, `cad_color_id`, `sop_*_id`, `tap_*_id`, `con_*_id`) van a -1: nunca se mezclan ids nuevos con los antiguos.
-- Los textos que pintan la cesta, los pedidos y los informes se escriben desde `SOL_ACC_*`: `acc_tipo_text` (accionamiento), `acc_marca_text` (sistema; en motor, "sistema · tipo de motor"), `acc_modelo_text` (cadena: "tipo · aro o medida"; motor: "modelo · cargador · batería"), `mando_text`, `cad_Tipo` = 1, `cad_Altura` ("100 cm" o el tipo de medida), `cad_color_text`, y `sop_tipo_text`/`sop_color_text`, `tap_tipo_text`/`tap_color_text`, `con_tipo_text`/`con_color_text`.
-- **Cadena:** dos tipos, Aro cadena (aro + altura de la lista) y Cadena a medida (el cliente teclea la longitud, que va en `nacc_cadena_longitud` y en `cad_Altura` como "150 cm"). La cadena metálica no es un tipo: es un color de cadena ("Metálico") que se da de alta a mano.
+- Los textos que pintan la cesta, los pedidos y los informes se escriben desde `SOL_ACC_*`: `acc_tipo_text` (accionamiento), `acc_marca_text` (sistema; en motor, "sistema · tipo de motor"), `acc_modelo_text` (cadena: "Aro cadena · 100 CM" o "Cadena a medida"; motor: "modelo · cargador · batería"), `mando_text`, `cad_Tipo` = 1, `cad_Altura` ("100 cm" o el tipo de medida), `cad_color_text`, y `sop_tipo_text`/`sop_color_text`, `tap_tipo_text`/`tap_color_text`, `con_tipo_text`/`con_color_text`.
+- **Cadena:** dos tipos, Aro cadena (la altura de la lista, con sus colores) y Cadena a medida (sin tipos: el cliente teclea la longitud, que va en `nacc_cadena_longitud` y en `cad_Altura` como "150 cm", y elige el color). La cadena metálica no es un tipo: es un color de cadena ("Metálico") que se da de alta a mano.
 - **Pasos que siguen en las columnas de siempre:** posición del accionamiento (`acc_posicion_id` 1 Derecha / 2 Izquierda), estancia y observaciones (`Estancia_ID`, `Estancia`), impresión digital (`impresion` sí/no, `impresion_imagen` con el texto) y el tejido.
 - El SP valida la combinación (sistema del accionamiento, tipo de cadena y sus hijos, colores permitidos, modelo de motor del tipo y asignado al sistema (-20, script 15), modelo y sus mandos, cargadores y baterías, soporte y tapa del sistema, colores de cada pieza).
 - Con precio (scripts 21 y 28): el backend lo calcula antes de grabar (apartado 9) y el SP graba las columnas de siempre multiplicadas por la cantidad (`T1_Cantidad`, `T1_Tejido`, `T1_Inc_Mando`, `T1_Inc_Cargador`, `T1_Inc_Contrapeso`, `T1_Inc_CadenaMetalica`, `T1_PVP`; `T1_Inc_Impresion` = 0) y el desglose en `SOL_ACC_LINEA_PRECIO`. Una línea sin precio no se graba.

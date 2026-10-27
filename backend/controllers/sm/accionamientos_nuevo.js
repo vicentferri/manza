@@ -17,14 +17,13 @@ const CATALOGOS = {
   accionamientos:      { tabla: 'SOL_ACC_ACCIONAMIENTO', protegidos: ['CADENA', 'MOTOR', 'SIN_CADENA'] },
   sistemas:            { tabla: 'SOL_ACC_SISTEMA' },
   colores_cadena:      { tabla: 'SOL_ACC_COLOR_CADENA' },
+  /* Alturas de Aro cadena (script 34: son los antiguos tipos de aro), cada una con sus colores */
   alturas:             { tabla: 'SOL_ACC_ALTURA', valor: true },
   mandos:              { tabla: 'SOL_ACC_MANDO' },
   cargadores:          { tabla: 'SOL_ACC_CARGADOR' },
   baterias:            { tabla: 'SOL_ACC_BATERIA' },
   tipos_cadena:        { tabla: 'SOL_ACC_TIPO_CADENA', padre: 'accionamiento_id', tablaPadre: 'SOL_ACC_ACCIONAMIENTO', codigoPadre: 'CADENA',
                          protegidos: ['ARO_CADENA', 'CADENA_A_MEDIDA'] },
-  tipos_aro_cadena:    { tabla: 'SOL_ACC_TIPO_ARO_CADENA', padre: 'tipo_cadena_id', tablaPadre: 'SOL_ACC_TIPO_CADENA', codigoPadre: 'ARO_CADENA' },
-  tipos_cadena_medida: { tabla: 'SOL_ACC_TIPO_CADENA_MEDIDA', padre: 'tipo_cadena_id', tablaPadre: 'SOL_ACC_TIPO_CADENA', codigoPadre: 'CADENA_A_MEDIDA' },
   tipos_motor:         { tabla: 'SOL_ACC_TIPO_MOTOR', padre: 'accionamiento_id', tablaPadre: 'SOL_ACC_ACCIONAMIENTO', codigoPadre: 'MOTOR' },
   modelos_motor:       { tabla: 'SOL_ACC_MODELO_MOTOR', padre: 'tipo_motor_id', tablaPadre: 'SOL_ACC_TIPO_MOTOR' },
   /* Soportes y tapas genéricos (cada sistema marca los suyos); contrapesos para todos los sistemas.
@@ -43,6 +42,9 @@ const RELACIONES = {
                            catOrigen: 'accionamientos', catDestino: 'sistemas' },
   tipo_cadena_color:     { tabla: 'SOL_ACC_TIPO_CADENA_COLOR', origen: 'tipo_cadena_id', destino: 'color_cadena_id',
                            catOrigen: 'tipos_cadena', catDestino: 'colores_cadena' },
+  /* Aro cadena: colores que admite cada altura (script 34); Cadena a medida sigue con tipo_cadena_color */
+  altura_color:          { tabla: 'SOL_ACC_ALTURA_COLOR', origen: 'altura_id', destino: 'color_cadena_id',
+                           catOrigen: 'alturas', catDestino: 'colores_cadena' },
   modelo_motor_mando:    { tabla: 'SOL_ACC_MODELO_MOTOR_MANDO', origen: 'modelo_motor_id', destino: 'mando_id',
                            catOrigen: 'modelos_motor', catDestino: 'mandos' },
   modelo_motor_cargador: { tabla: 'SOL_ACC_MODELO_MOTOR_CARGADOR', origen: 'modelo_motor_id', destino: 'cargador_id',
@@ -460,7 +462,7 @@ async function matriz_motores_guardar(req, res) {
 
 const MEDIDAS = ['ANCHO', 'ALTO', 'LONGITUD'];
 /* La longitud de la cadena solo tiene sentido en los elementos de la cadena */
-const CATALOGOS_CADENA = ['tipos_cadena', 'tipos_aro_cadena', 'tipos_cadena_medida', 'alturas', 'colores_cadena'];
+const CATALOGOS_CADENA = ['tipos_cadena', 'alturas', 'colores_cadena'];
 
 /* Nombre que se enseña de un elemento (las alturas pueden no tener nombre: su valor en cm) */
 function nombreElemento(cat, alias) {
@@ -636,31 +638,36 @@ async function clientes(req, res) {
   }
 }
 
-/* ---------------- TEJIDOS DISPONIBLES (script 29) ---------------- */
+/* ---------------- TEJIDOS DISPONIBLES (scripts 29 y 36) ---------------- */
 
-/* Tejidos del maestro (SOL_TEJIDOS_MAESTRO, una fila por tejido + color) que se ofrecen en un
-   producto del configurador (SOL_ACC_PRODUCTO_TEJIDO). Una sola lista para todos los clientes.
-   De momento solo el enrollable; el configurador todavía no la lee */
-async function productoValido(pool, producto) {
-  if (producto === null) return false;
-  const r = await pool.request().input('producto', sql.Int, producto)
-    .query('select 1 as ok from dbo.SOL_ARTICULOS_PRODUCTOS where idrow = @producto');
+/* Tejidos del maestro (SOL_TEJIDOS_MAESTRO, una fila por tejido + color) que ofrece cada sistema del
+   configurador (SOL_ACC_SISTEMA_TEJIDO, script 36). Una sola lista por sistema para todos los clientes */
+async function sistemaValido(pool, sistema) {
+  if (sistema === null) return false;
+  const r = await pool.request().input('sistema', sql.Int, sistema)
+    .query('select 1 as ok from dbo.SOL_ACC_SISTEMA where id = @sistema');
   return r.recordset.length > 0;
 }
 
-/* GET /acc/tejidos/:producto — los tejidos activos del maestro, con disponible = 1/0 */
+async function disponiblesSistema(pool, sistema) {
+  const r = await pool.request().input('sistema', sql.Int, sistema)
+    .query('select count(*) as n from dbo.SOL_ACC_SISTEMA_TEJIDO where sistema_id = @sistema');
+  return r.recordset[0].n;
+}
+
+/* GET /acc/tejidos/:sistema — los tejidos activos del maestro, con disponible = 1/0 en ese sistema */
 async function tejidos(req, res) {
-  const producto = entero(req.params.producto);
+  const sistema = entero(req.params.sistema);
   try {
     const pool = await sql.connect();
-    if (!await productoValido(pool, producto)) return res.status(400).send({ message: 'Producto no válido' });
-    const r = await pool.request().input('producto', sql.Int, producto).query(`
+    if (!await sistemaValido(pool, sistema)) return res.status(400).send({ message: 'Sistema no válido' });
+    const r = await pool.request().input('sistema', sql.Int, sistema).query(`
       select m.idrow as id, m.cod_solupyme, m.nombre, m.color, m.tipo_tejido, t.descripcion as tipo,
              m.criterio, m.impresion_digital, m.coste_m2, m.grupo,
              case when pt.tejido is null then 0 else 1 end as disponible
       from dbo.SOL_TEJIDOS_MAESTRO m
       left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
-      left join dbo.SOL_ACC_PRODUCTO_TEJIDO pt on pt.tejido = m.idrow and pt.producto = @producto
+      left join dbo.SOL_ACC_SISTEMA_TEJIDO pt on pt.tejido = m.idrow and pt.sistema_id = @sistema
       where m.activo = 1
       order by m.nombre, m.criterio, m.color`);
     res.status(200).send({ Table: r.recordset });
@@ -669,9 +676,9 @@ async function tejidos(req, res) {
   }
 }
 
-/* POST /acc/tejidos/:producto { ids: [...], disponible } — marca o quita varios tejidos de una vez */
+/* POST /acc/tejidos/:sistema { ids: [...], disponible } — marca o quita varios tejidos de una vez */
 async function tejidos_guardar(req, res) {
-  const producto = entero(req.params.producto);
+  const sistema = entero(req.params.sistema);
   const body = req.body || {};
   const ids = [...new Set((body.ids || []).map(entero).filter(n => n !== null))];
   if (ids.length === 0) return res.status(400).send({ message: 'Faltan los tejidos' });
@@ -679,7 +686,7 @@ async function tejidos_guardar(req, res) {
   let transaction;
   try {
     const pool = await sql.connect();
-    if (!await productoValido(pool, producto)) return res.status(400).send({ message: 'Producto no válido' });
+    if (!await sistemaValido(pool, sistema)) return res.status(400).send({ message: 'Sistema no válido' });
     const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
 
     transaction = new sql.Transaction(pool);
@@ -688,26 +695,60 @@ async function tejidos_guardar(req, res) {
     for (let i = 0; i < ids.length; i += 500) {
       const lote = ids.slice(i, i + 500);
       const request = new sql.Request(transaction)
-        .input('producto', sql.Int, producto)
+        .input('sistema', sql.Int, sistema)
         .input('usuario', sql.VarChar(100), usuario);
       lote.forEach((id, j) => request.input('id' + j, sql.Int, id));
       const enIds = lote.map((id, j) => '@id' + j).join(', ');
       if (body.disponible) {
         /* Solo tejidos activos del maestro; los que ya están se dejan como estaban */
         await request.query(`
-          insert into dbo.SOL_ACC_PRODUCTO_TEJIDO (producto, tejido, usuario)
-          select @producto, m.idrow, @usuario from dbo.SOL_TEJIDOS_MAESTRO m
+          insert into dbo.SOL_ACC_SISTEMA_TEJIDO (sistema_id, tejido, usuario)
+          select @sistema, m.idrow, @usuario from dbo.SOL_TEJIDOS_MAESTRO m
           where m.idrow in (${enIds}) and m.activo = 1
-            and not exists (select 1 from dbo.SOL_ACC_PRODUCTO_TEJIDO pt where pt.producto = @producto and pt.tejido = m.idrow)`);
+            and not exists (select 1 from dbo.SOL_ACC_SISTEMA_TEJIDO pt where pt.sistema_id = @sistema and pt.tejido = m.idrow)`);
       } else {
-        await request.query(`delete from dbo.SOL_ACC_PRODUCTO_TEJIDO where producto = @producto and tejido in (${enIds})`);
+        await request.query(`delete from dbo.SOL_ACC_SISTEMA_TEJIDO where sistema_id = @sistema and tejido in (${enIds})`);
       }
     }
     await transaction.commit();
 
-    const total = await pool.request().input('producto', sql.Int, producto)
-      .query('select count(*) as n from dbo.SOL_ACC_PRODUCTO_TEJIDO where producto = @producto');
-    res.status(200).send({ message: 'OK', disponibles: total.recordset[0].n });
+    res.status(200).send({ message: 'OK', disponibles: await disponiblesSistema(pool, sistema) });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/tejidos/:sistema/copiar { origen } — el sistema pasa a tener exactamente los tejidos del
+   sistema origen (los suyos de antes se quitan). Todo en una transacción */
+async function tejidos_copiar(req, res) {
+  const sistema = entero(req.params.sistema);
+  const origen = entero((req.body || {}).origen);
+  if (origen === sistema) return res.status(400).send({ message: 'Elija otro sistema del que copiar' });
+
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    if (!await sistemaValido(pool, sistema) || !await sistemaValido(pool, origen)) {
+      return res.status(400).send({ message: 'Sistema no válido' });
+    }
+    const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const request = new sql.Request(transaction)
+      .input('sistema', sql.Int, sistema)
+      .input('origen', sql.Int, origen)
+      .input('usuario', sql.VarChar(100), usuario);
+    await request.query(`
+      delete from dbo.SOL_ACC_SISTEMA_TEJIDO where sistema_id = @sistema;
+      insert into dbo.SOL_ACC_SISTEMA_TEJIDO (sistema_id, tejido, usuario)
+      select @sistema, st.tejido, @usuario from dbo.SOL_ACC_SISTEMA_TEJIDO st where st.sistema_id = @origen`);
+    await transaction.commit();
+
+    res.status(200).send({ message: 'OK', disponibles: await disponiblesSistema(pool, sistema) });
   } catch (err) {
     if (transaction) {
       try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
@@ -719,6 +760,7 @@ async function tejidos_guardar(req, res) {
 module.exports = {
   tejidos,
   tejidos_guardar,
+  tejidos_copiar,
   suplementos,
   suplemento_fijo,
   suplementos_guardar,

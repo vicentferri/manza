@@ -13,12 +13,13 @@
    Parámetros (id = dato de la línea; sin sufijo = código legible, que sale de su catálogo SOL_ACC_*):
      Datos de la línea: @CANTIDAD @ANCHO @ALTO @CADENA_LONGITUD (cm, cadena a medida) @POSICION_ID / @POSICION
        (derecha o izquierda) @IMPRESION (0 / 1) @SALIDA_TEJIDO_ID / @SALIDA_TEJIDO / @SALIDA_TEJIDO_ARTICULO
-     Pasos del configurador: @SISTEMA @ACCIONAMIENTO @TIPO_CADENA @TIPO_ARO @CADENA_MEDIDA @ALTURA
+     Pasos del configurador: @SISTEMA @ACCIONAMIENTO @TIPO_CADENA @ALTURA
        @ALTURA_VALOR @COLOR_CADENA @TIPO_MOTOR @MODELO_MOTOR @MANDO @CARGADOR @BATERIA @SOPORTE
        @COLOR_SOPORTE @TAPA @COLOR_TAPA @CONTRAPESO @COLOR_CONTRAPESO (cada uno con su _ID)
      Tejido del maestro: @TEJIDO_ID @TEJIDO_REFERENCIA (código Solupyme) @TEJIDO_ARTICULO @TEJIDO_NOMBRE
        @TEJIDO_COLOR @TEJIDO_CRITERIO @TEJIDO_GRUPO @TEJIDO_TIPO_ID / @TEJIDO_TIPO @TEJIDO_IMPRESION
    Un paso que la línea no usa (p. ej. @MANDO en una cadena) queda vacío.
+   Sin tipo de aro ni tipo de cadena a medida desde el 2026-10-27 (ver 08): 53 parámetros.
    Requisito: sqlEnrrollable/04 y 05 y sqlTejidos/01. Idempotente.
    ===================================================================== */
 set ansi_nulls on
@@ -102,8 +103,6 @@ begin
 		('@SISTEMA_ID',          'COLUMNA',  'nacc_sistema_id',        110, null),
 		('@ACCIONAMIENTO_ID',    'COLUMNA',  'nacc_accionamiento_id',  120, null),
 		('@TIPO_CADENA_ID',      'COLUMNA',  'nacc_tipo_cadena_id',    130, null),
-		('@TIPO_ARO_ID',         'COLUMNA',  'nacc_tipo_aro_id',       140, null),
-		('@CADENA_MEDIDA_ID',    'COLUMNA',  'nacc_cadena_medida_id',  150, null),
 		('@ALTURA_ID',           'COLUMNA',  'nacc_altura_id',         160, null),
 		('@COLOR_CADENA_ID',     'COLUMNA',  'nacc_color_cadena_id',   170, null),
 		('@TIPO_MOTOR_ID',       'COLUMNA',  'nacc_tipo_motor_id',     180, null),
@@ -122,8 +121,6 @@ begin
 		('@SISTEMA',             'BUSQUEDA', '@SISTEMA_ID',            310, 'ENR_SISTEMA'),
 		('@ACCIONAMIENTO',       'BUSQUEDA', '@ACCIONAMIENTO_ID',      320, 'ENR_ACCIONAMIENTO'),
 		('@TIPO_CADENA',         'BUSQUEDA', '@TIPO_CADENA_ID',        330, 'ENR_TIPO_CADENA'),
-		('@TIPO_ARO',            'BUSQUEDA', '@TIPO_ARO_ID',           340, 'ENR_TIPO_ARO'),
-		('@CADENA_MEDIDA',       'BUSQUEDA', '@CADENA_MEDIDA_ID',      350, 'ENR_CADENA_MEDIDA'),
 		('@ALTURA',              'BUSQUEDA', '@ALTURA_ID',             360, 'ENR_ALTURA'),
 		('@ALTURA_VALOR',        'BUSQUEDA', '@ALTURA_ID',             370, 'ENR_ALTURA_VALOR'),
 		('@COLOR_CADENA',        'BUSQUEDA', '@COLOR_CADENA_ID',       380, 'ENR_COLOR_CADENA'),

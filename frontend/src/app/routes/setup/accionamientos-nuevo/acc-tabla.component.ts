@@ -104,9 +104,9 @@ export class AccTablaComponent implements OnChanges {
         return d.id;
     }
 
+    /* Con valor (alturas): el nombre si lo tiene ("100 CM"); si no, el valor con su unidad ("100 cm") */
     etiqueta(d: any): string {
-        const valor = d.valor + (this.unidad ? ' ' + this.unidad : '');
-        return this.conValor ? (d.nombre ? d.nombre + ' (' + valor + ')' : valor) : d.nombre;
+        return this.conValor ? (d.nombre || d.valor + (this.unidad ? ' ' + this.unidad : '')) : d.nombre;
     }
 
     cargar() {
