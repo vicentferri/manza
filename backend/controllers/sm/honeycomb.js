@@ -707,7 +707,8 @@ async function honeycomb_tiposaccionamiento(req, res) {
         ELSE 0 
       END AS TieneImagen
     FROM sol_articulos_honeycomb_tiposaccionamiento t
-    ORDER BY t.idTipoAccionamiento
+    -- Primero el accionamiento sin recargo: el configurador marca el primero por defecto
+    ORDER BY t.Incremento, t.idTipoAccionamiento
       `);
 
     res.json(result.recordset);
