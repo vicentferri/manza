@@ -4,7 +4,7 @@ Este documento es el registro del modelo que hay en la base de datos (tablas `SO
 
 - **Scripts:** `C:\dev\sqlAccionamientos\01` a `33` (idempotentes; del 29 al 33 requieren el maestro de tejidos y se despliegan aparte, ver `DESPLIEGUE.md` 4b). Se despliegan todos en orden con `00_desplegar_todo.sql` (o `00_desplegar_todo_ssms.sql` desde SSMS); ver `DESPLIEGUE.md`. Desplegados en producción el 2026-10-21.
 - **Registro de cambios y estado por entorno:** `C:\dev\sqlAccionamientos\REGISTRO_CAMBIOS.md`.
-- **Mantenimiento:** pantalla "Productos" (antes "Accionamientos nuevo"; `/routes/master/accionamientos-nuevo`, permiso `config_accionamientos`), con el backend en `backend/controllers/sm/accionamientos_nuevo.js` (`/api/sm/acc/*`).
+- **Mantenimiento:** pantalla "Productos" (antes "Accionamientos nuevo"; `/routes/master/productos`, sección "Nuevo sistema": solo `jrumi@` y `jmartinez@`), con el backend en `backend/controllers/sm/accionamientos_nuevo.js` (`/api/sm/acc/*`).
 - **Configurador nuevo:** componente `manza/enrollable-nuevo`, backend `backend/controllers/sm/acc_configurador.js` (`/api/sm/acc_cfg/*`). Solo para clientes con el interruptor activo (apartado 4.13).
 - **Fabricación:** cada sistema tiene su propio juego de reglas en el motor v3 (apartado 10).
 

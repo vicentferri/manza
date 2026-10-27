@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
+import { esUsuarioNuevoSistema } from '../shared/nuevo-sistema';
 
 /**
  * PermisosGuard
@@ -9,6 +10,7 @@ import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from
  * Reglas:
  *   - CLIENTES → redirigidos siempre a /manza/config/ (sin acceso a /routes)
  *   - ADMIN    → pase libre a todo el sistema
+ *   - nuevoSistema → solo los usuarios de shared/nuevo-sistema.ts (ni siquiera el resto de admins)
  *   - soloAdmin → solo el administrador puede acceder (ej: /routes/master/usuarios)
  *   - permiso  → el usuario debe tener ese módulo en su lista de permisos
  */
@@ -35,6 +37,15 @@ export class PermisosGuard implements CanActivate {
 
     // REGLA 1: Clientes → acceso bloqueado a /routes/*
     if (tipo === 'cliente') {
+      this.router.navigate(['/manza/config/']);
+      return false;
+    }
+
+    // REGLA 1b: Sección "Nuevo sistema" → solo los usuarios autorizados (tampoco pasa el resto de admins)
+    if (route.data['nuevoSistema'] === true) {
+      if (esUsuarioNuevoSistema(user)) {
+        return true;
+      }
       this.router.navigate(['/manza/config/']);
       return false;
     }

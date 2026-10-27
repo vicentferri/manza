@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { setSidebarHidden } from '../../shared/sidebar-state';
+import { esUsuarioNuevoSistema } from '../../shared/nuevo-sistema';
 
 @Component({
   selector: 'app-sidebar',
@@ -41,6 +42,11 @@ export class SidebarComponent implements OnInit {
   /** ¿El usuario logueado es administrador total? */
   isAdmin(): boolean {
     return this.currentUser && this.currentUser.isAdmin === true;
+  }
+
+  /** ¿Puede ver la sección "Nuevo sistema"? Solo los usuarios de shared/nuevo-sistema.ts */
+  esNuevoSistema(): boolean {
+    return esUsuarioNuevoSistema(this.currentUser);
   }
 
   /** ¿El usuario tiene permiso para un módulo concreto? */

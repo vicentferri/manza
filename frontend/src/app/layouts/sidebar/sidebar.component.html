@@ -106,18 +106,32 @@
     </li>
   </ul>
 
-  <!-- ─── 3. FABRICACIÓN ──────────────────────────────────────────────────── -->
-  <ul class="nav" *ngIf="can('fab_config')">
+  <!-- ─── 3. NUEVO SISTEMA (solo usuarios de shared/nuevo-sistema.ts) ─────── -->
+  <ul class="nav" *ngIf="esNuevoSistema()">
     <li class="nav-item nav-dropdown" routerLinkActive="open" appNavDropdown>
       <a class="nav-link nav-dropdown-toggle" href="#" appNavDropdownToggle>
-        <i class="icon-puzzle"></i>Fabricación
+        <i class="icon-puzzle"></i>Nuevo sistema
       </a>
       <ul class="nav-dropdown-items">
-        <li class="nav-item" *ngIf="can('fab_config')">
-          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/artikeln_fab_cd_v3']">
-            <span class="menu-padding-left">Configuración</span>
+
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master/productos']">
+            <span class="menu-padding-left">Productos</span>
           </a>
         </li>
+
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/master/tejidos-maestro']">
+            <span class="menu-padding-left">Maestro de Tejidos</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/routes/herstellen/artikeln_fab_cd_v3']">
+            <span class="menu-padding-left">Fabricación</span>
+          </a>
+        </li>
+
       </ul>
     </li>
   </ul>

@@ -51,7 +51,7 @@ const routes: Routes = [
   { path: 'artikeln_fab_fij', component: ArtikelnFabFijComponent, data: { title: 'Gestión de Artículos' } },
   { path: 'artikeln_fab_cd', component: ArtikelnFabCdComponent, canActivate: [PermisosGuard], data: { title: 'Gestión de Artículos', permiso: 'cdeco_atributos' } },
   { path: 'artikeln_fab_cd_v2', component: ArtikelnFabCdV2Component, canActivate: [PermisosGuard], data: { title: 'Gestión de Fabricación', permiso: 'cdeco_config' } },
-  { path: 'artikeln_fab_cd_v3', component: ArtikelnFacCdV3Component, canActivate: [PermisosGuard], data: { title: 'Gestión de Fabricación', permiso: 'fab_config' } },
+  { path: 'artikeln_fab_cd_v3', component: ArtikelnFacCdV3Component, canActivate: [PermisosGuard], data: { title: 'Gestión de Fabricación', nuevoSistema: true } },
   { path: 'budgetliste', component: BudgetListeComponent, canActivate: [PermisosGuard], data: { title: 'Presupuestos', permiso: 'config_presupuestos' } },
   { path: 'headbestell', component: HeadBestellungComponent, data: { title: 'Gestión de Pedidos' } },
   { path: 'bestell', component: BestellungComponent, data: { title: 'Gestión de Pedidos' } },
