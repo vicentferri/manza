@@ -172,9 +172,7 @@ function montarModelo(doc, datos, nombreFichero) {
   const hojas = [];
   for (let i = 0; i < Math.max(filas.length, 1); i += FILAS_POR_HOJA) {
     const hoja = filas.slice(i, i + FILAS_POR_HOJA);
-    const vacias = [];
-    for (let j = hoja.length; j < FILAS_POR_HOJA; j++) vacias.push({});
-    hojas.push({ filas: hoja, vacias: vacias, ultima: i + FILAS_POR_HOJA >= filas.length });
+    hojas.push({ filas: hoja, ultima: i + FILAS_POR_HOJA >= filas.length });
   }
 
   const hoy = new Date();
