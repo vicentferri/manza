@@ -48,8 +48,6 @@ export class UsuariosComponent implements OnInit {
             { clave: 'config_clientes_gestion',  label: 'Gestión de Clientes' },
             { clave: 'config_promociones',       label: 'Promociones' },
             { clave: 'config_campos',            label: 'Gestión de Campos' },
-            { clave: 'config_accionamientos',    label: 'Productos' },
-            { clave: 'config_tejidos',           label: 'Maestro de Tejidos' },
             { clave: 'config_articulos',         label: 'Artículos' },
             { clave: 'config_pedidos',           label: 'Pedidos' },
             { clave: 'config_presupuestos',      label: 'Presupuestos' },
@@ -59,9 +57,6 @@ export class UsuariosComponent implements OnInit {
             { clave: 'tarifas_clientes',  label: 'Tarifas de Clientes' },
             { clave: 'tarifas_leroy',     label: 'Tarifas Leroy Merlín' },
             { clave: 'tarifas_backup',    label: 'Backup' },
-        ]},
-        { grupo: 'Fabricación', modulos: [
-            { clave: 'fab_config', label: 'Configuración' },
         ]},
         { grupo: 'Cortinadecor', modulos: [
             { clave: 'cdeco_tejidos',   label: 'Tejidos' },

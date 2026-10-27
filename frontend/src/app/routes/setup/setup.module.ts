@@ -58,9 +58,9 @@ const routes: Routes = [
     { path: 'incrementos-genericos', component: IncrementosGenericosComponent },
     { path: 'tejidos-colores',  component: TejidosColoresComponent },
     { path: 'tejidos',          component: TejidosComponent },
-    { path: 'tejidos-maestro',  component: TejidosMaestroComponent, canActivate: [PermisosGuard], data: { permiso: 'config_tejidos' } },
+    { path: 'tejidos-maestro',  component: TejidosMaestroComponent, canActivate: [PermisosGuard], data: { nuevoSistema: true } },
     { path: 'impresion-digital', component: ImpresionDigitalComponent },
-    { path: 'accionamientos-nuevo', component: AccionamientosNuevoComponent, canActivate: [PermisosGuard], data: { permiso: 'config_accionamientos' } }
+    { path: 'productos', component: AccionamientosNuevoComponent, canActivate: [PermisosGuard], data: { nuevoSistema: true } }
 ];
 
 

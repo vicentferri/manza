@@ -2,6 +2,8 @@
 
 var express = require('express');
 var Auth = require('../middlewares/authenticated');
+/* Sección "Nuevo sistema" (accionamientos, maestro de tejidos, fabricación por reglas): solo usuarios autorizados */
+var NuevoSistema = [Auth.ensureAuth, Auth.ensureNuevoSistema];
 
 var multipart = require('connect-multiparty');
 var md_upload = multipart({ uploadDir: './uploads/tarifas' });
@@ -230,16 +232,17 @@ smapi.post('/tejidos_cliente_producto_operate', TejidosController.tejidos_client
 
 /* Maestro de tejidos (SOL_TEJIDOS_MAESTRO / SOL_TEJIDOS_TIPOS, ver tejidos.md) */
 var TejidosMaestroController = require('../controllers/sm/tejidos_maestro');
-smapi.get('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.lista);
-smapi.post('/tejidos_maestro', Auth.ensureAuth, TejidosMaestroController.guardar);
-smapi.post('/tejidos_maestro/calcular', Auth.ensureAuth, TejidosMaestroController.calcular);
-smapi.post('/tejidos_maestro/ml', Auth.ensureAuth, TejidosMaestroController.ml);
-smapi.get('/tejidos_maestro/ml_config', Auth.ensureAuth, TejidosMaestroController.ml_config);
-smapi.post('/tejidos_maestro/precio_minuto', Auth.ensureAuth, TejidosMaestroController.precio_minuto);
-smapi.post('/tejidos_maestro/activo', Auth.ensureAuth, TejidosMaestroController.activo);
-smapi.get('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipos);
+smapi.get('/tejidos_maestro', NuevoSistema, TejidosMaestroController.lista);
+smapi.post('/tejidos_maestro', NuevoSistema, TejidosMaestroController.guardar);
+smapi.post('/tejidos_maestro/calcular', NuevoSistema, TejidosMaestroController.calcular);
+smapi.post('/tejidos_maestro/ml', NuevoSistema, TejidosMaestroController.ml);
+smapi.get('/tejidos_maestro/ml_config', NuevoSistema, TejidosMaestroController.ml_config);
+smapi.post('/tejidos_maestro/precio_minuto', NuevoSistema, TejidosMaestroController.precio_minuto);
+smapi.post('/tejidos_maestro/activo', NuevoSistema, TejidosMaestroController.activo);
+smapi.get('/tejidos_maestro/tipos', NuevoSistema, TejidosMaestroController.tipos);
+/* Lectura abierta a cualquier usuario con sesión: la usa tarifas-simulate */
 smapi.get('/tejidos_maestro/series', Auth.ensureAuth, TejidosMaestroController.series);
-smapi.post('/tejidos_maestro/tipos', Auth.ensureAuth, TejidosMaestroController.tipo_guardar);
+smapi.post('/tejidos_maestro/tipos', NuevoSistema, TejidosMaestroController.tipo_guardar);
 
 smapi.get('/tejidos_atributos', TejidosController.tejidos_atributos);
 smapi.post('/tejidos_atributos_put', TejidosController.put_tejidos_atributos);
@@ -523,47 +526,52 @@ smapi.get('/honeycomb_obtener_tarifa', HoneyCombController.honeycomb_obtener_tar
 
 /* FABRICACION POR REGLAS (motor v3: HoneyComb y futuros sistemas) - pantalla artikeln_fab_cd_v3 */
 var FabricacionReglasController = require('../controllers/sm/fabricacion_reglas');
-smapi.get('/fabricacion/productos', Auth.ensureAuth, FabricacionReglasController.productos);
-smapi.get('/fabricacion/sistemas', Auth.ensureAuth, FabricacionReglasController.sistemas);
-smapi.post('/fabricacion/sistemas', Auth.ensureAuth, FabricacionReglasController.sistema_add);
-smapi.get('/fabricacion/clientes', Auth.ensureAuth, FabricacionReglasController.clientes);
-smapi.get('/fabricacion/articulos', Auth.ensureAuth, FabricacionReglasController.articulos);
-smapi.get('/fabricacion/reglas', Auth.ensureAuth, FabricacionReglasController.reglas);
-smapi.post('/fabricacion/reglas', Auth.ensureAuth, FabricacionReglasController.regla_add);
-smapi.post('/fabricacion/reglas/update', Auth.ensureAuth, FabricacionReglasController.regla_update);
-smapi.post('/fabricacion/reglas/save', Auth.ensureAuth, FabricacionReglasController.regla_save);
-smapi.post('/fabricacion/reglas/delete', Auth.ensureAuth, FabricacionReglasController.regla_delete);
-smapi.get('/fabricacion/parametros', Auth.ensureAuth, FabricacionReglasController.parametros);
-smapi.get('/fabricacion/parametros/valores', Auth.ensureAuth, FabricacionReglasController.parametros_valores);
-smapi.get('/fabricacion/columnas', Auth.ensureAuth, FabricacionReglasController.columnas);
-smapi.post('/fabricacion/parametros', Auth.ensureAuth, FabricacionReglasController.parametro_edit);
-smapi.post('/fabricacion/parametros/delete', Auth.ensureAuth, FabricacionReglasController.parametro_delete);
-smapi.post('/fabricacion/simular', Auth.ensureAuth, FabricacionReglasController.simular);
-smapi.get('/fabricacion/busquedas', Auth.ensureAuth, FabricacionReglasController.busquedas);
-smapi.get('/fabricacion/tablas', Auth.ensureAuth, FabricacionReglasController.tablas);
-smapi.get('/fabricacion/tablas/valores', Auth.ensureAuth, FabricacionReglasController.tabla_valores);
-smapi.post('/fabricacion/tablas', Auth.ensureAuth, FabricacionReglasController.tabla_guardar);
-smapi.post('/fabricacion/tablas/delete', Auth.ensureAuth, FabricacionReglasController.tabla_delete);
+smapi.get('/fabricacion/productos', NuevoSistema, FabricacionReglasController.productos);
+smapi.get('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistemas);
+smapi.post('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistema_add);
+smapi.get('/fabricacion/clientes', NuevoSistema, FabricacionReglasController.clientes);
+smapi.get('/fabricacion/articulos', NuevoSistema, FabricacionReglasController.articulos);
+smapi.get('/fabricacion/reglas', NuevoSistema, FabricacionReglasController.reglas);
+smapi.post('/fabricacion/reglas', NuevoSistema, FabricacionReglasController.regla_add);
+smapi.post('/fabricacion/reglas/update', NuevoSistema, FabricacionReglasController.regla_update);
+smapi.post('/fabricacion/reglas/save', NuevoSistema, FabricacionReglasController.regla_save);
+smapi.post('/fabricacion/reglas/delete', NuevoSistema, FabricacionReglasController.regla_delete);
+smapi.get('/fabricacion/parametros', NuevoSistema, FabricacionReglasController.parametros);
+smapi.get('/fabricacion/parametros/valores', NuevoSistema, FabricacionReglasController.parametros_valores);
+smapi.get('/fabricacion/columnas', NuevoSistema, FabricacionReglasController.columnas);
+smapi.post('/fabricacion/parametros', NuevoSistema, FabricacionReglasController.parametro_edit);
+smapi.post('/fabricacion/parametros/delete', NuevoSistema, FabricacionReglasController.parametro_delete);
+smapi.post('/fabricacion/simular', NuevoSistema, FabricacionReglasController.simular);
+smapi.get('/fabricacion/busquedas', NuevoSistema, FabricacionReglasController.busquedas);
+smapi.get('/fabricacion/tablas', NuevoSistema, FabricacionReglasController.tablas);
+smapi.get('/fabricacion/tablas/valores', NuevoSistema, FabricacionReglasController.tabla_valores);
+smapi.post('/fabricacion/tablas', NuevoSistema, FabricacionReglasController.tabla_guardar);
+smapi.post('/fabricacion/tablas/delete', NuevoSistema, FabricacionReglasController.tabla_delete);
 
 /* Modelo nuevo de accionamientos (SOL_ACC_*). Las rutas de relaciones van antes que las de catálogo */
 var AccionamientosNuevoController = require('../controllers/sm/accionamientos_nuevo');
 /* Tejidos disponibles por producto (script 29): antes de /acc/:catalogo para que no la tape */
-smapi.get('/acc/tejidos/:producto', Auth.ensureAuth, AccionamientosNuevoController.tejidos);
-smapi.post('/acc/tejidos/:producto', Auth.ensureAuth, AccionamientosNuevoController.tejidos_guardar);
-smapi.get('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion);
-smapi.post('/acc/rel/:relacion/:id', Auth.ensureAuth, AccionamientosNuevoController.relacion_guardar);
-smapi.get('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores);
-smapi.post('/acc/matriz/motores', Auth.ensureAuth, AccionamientosNuevoController.matriz_motores_guardar);
-smapi.get('/acc/suplementos', Auth.ensureAuth, AccionamientosNuevoController.suplementos_resumen);
-smapi.get('/acc/clientes', Auth.ensureAuth, AccionamientosNuevoController.clientes);
-smapi.get('/acc/sup/:catalogo/:id', Auth.ensureAuth, AccionamientosNuevoController.suplementos);
-smapi.post('/acc/sup/:catalogo/:id', Auth.ensureAuth, AccionamientosNuevoController.suplementos_guardar);
-smapi.post('/acc/sup/:catalogo/:id/fijo', Auth.ensureAuth, AccionamientosNuevoController.suplemento_fijo);
-smapi.get('/acc/:catalogo', Auth.ensureAuth, AccionamientosNuevoController.lista);
-smapi.post('/acc/:catalogo', Auth.ensureAuth, AccionamientosNuevoController.guardar);
-smapi.post('/acc/:catalogo/visible', Auth.ensureAuth, AccionamientosNuevoController.visible);
-smapi.post('/acc/:catalogo/orden', Auth.ensureAuth, AccionamientosNuevoController.orden);
-smapi.post('/acc/:catalogo/delete', Auth.ensureAuth, AccionamientosNuevoController.borrar);
+smapi.get('/acc/tejidos/:producto', NuevoSistema, AccionamientosNuevoController.tejidos);
+smapi.post('/acc/tejidos/:producto', NuevoSistema, AccionamientosNuevoController.tejidos_guardar);
+smapi.get('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion);
+smapi.post('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion_guardar);
+smapi.get('/acc/matriz/motores', NuevoSistema, AccionamientosNuevoController.matriz_motores);
+smapi.post('/acc/matriz/motores', NuevoSistema, AccionamientosNuevoController.matriz_motores_guardar);
+smapi.get('/acc/suplementos', NuevoSistema, AccionamientosNuevoController.suplementos_resumen);
+smapi.get('/acc/clientes', NuevoSistema, AccionamientosNuevoController.clientes);
+smapi.get('/acc/sup/:catalogo/:id', NuevoSistema, AccionamientosNuevoController.suplementos);
+smapi.post('/acc/sup/:catalogo/:id', NuevoSistema, AccionamientosNuevoController.suplementos_guardar);
+smapi.post('/acc/sup/:catalogo/:id/fijo', NuevoSistema, AccionamientosNuevoController.suplemento_fijo);
+/* Solo la lista de sistemas queda abierta a cualquier usuario con sesión: la usa tarifas-simulate */
+smapi.get('/acc/sistemas', Auth.ensureAuth, function (req, res) {
+    req.params.catalogo = 'sistemas';
+    AccionamientosNuevoController.lista(req, res);
+});
+smapi.get('/acc/:catalogo', NuevoSistema, AccionamientosNuevoController.lista);
+smapi.post('/acc/:catalogo', NuevoSistema, AccionamientosNuevoController.guardar);
+smapi.post('/acc/:catalogo/visible', NuevoSistema, AccionamientosNuevoController.visible);
+smapi.post('/acc/:catalogo/orden', NuevoSistema, AccionamientosNuevoController.orden);
+smapi.post('/acc/:catalogo/delete', NuevoSistema, AccionamientosNuevoController.borrar);
 
 /* Configurador nuevo de accionamientos (clientes con el interruptor SOL_ACC_CLIENTE; Leroy no pasa por aquí) */
 var AccConfiguradorController = require('../controllers/sm/acc_configurador');
