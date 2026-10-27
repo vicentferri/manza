@@ -9,10 +9,10 @@ import { AccConfiguradorService } from './acc-configurador.service';
  * Solo lo pinta config.component para clientes con el interruptor activo (SOL_ACC_CLIENTE);
  * Leroy sigue con manza-enrollable. Nada de este componente se usa en el configurador de siempre.
  *
- * Pasos: medidas → tejido (los del maestro marcados en Productos → Tejidos; el criterio lo elige
- * el configurador según el ancho) → accionamiento
+ * Pasos: medidas → accionamiento
  * (accionamiento → sistema → cadena: tipo, altura o longitud, color / motor: tipo, modelo,
- * mando, cargador, batería) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
+ * mando, cargador, batería) → tejido (los del maestro que ofrece el sistema elegido, Productos → Tejidos;
+ * el criterio lo elige el configurador según el ancho) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
  * su color. Además: posición (Derecha/Izquierda), estancia y observaciones, impresión digital (sí/no
  * y un texto; con sí, solo tejidos aptos) y longitud tecleada en la cadena a medida.
  * Cajón y guía llegarán cuando estén en el modelo nuevo.
@@ -63,7 +63,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    /* cadena a medida: longitud que teclea el cliente (cm) */
    longitud: number = null;
 
-   /* tejido: los del maestro de tejidos disponibles para el enrollable (Productos -> Tejidos, opc.tejidos).
+   /* tejido: los del maestro de tejidos que ofrece el sistema elegido (Productos -> Tejidos, opc.tejidos, script 36).
       Se elige tipo -> tejido -> color; el criterio (ancho del rollo) lo elige el configurador: el menor
       que cubra el ancho de la cortina */
    readonly salidas = [{ id: 1, text: 'Cascada' }, { id: 2, text: 'Pegado Pared' }];
@@ -119,6 +119,11 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    /* Con impresión digital solo salen los tejidos del maestro que la admiten: si el elegido no, se vacía */
    cambiarImpresion(): void {
       if (!this.impresion) { this.impresionTexto = ''; }
+      this.revisarTejido();
+   }
+
+   /* El tejido elegido se mantiene mientras siga disponible (sistema e impresión); si no, se vacía */
+   private revisarTejido(): void {
       if (this.tiposTejido.indexOf(this.tipoTejido) < 0) { this.tipoTejido = ''; }
       if (this.nombresTejido.indexOf(this.nombreTejido) < 0) { this.nombreTejido = ''; }
       if (this.coloresTejido.indexOf(this.colorTejido) < 0) { this.colorTejido = ''; }
@@ -146,9 +151,11 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       return valores.filter((v, i) => valores.indexOf(v) === i).sort();
    }
 
-   /* Tejidos del maestro que se pueden ofrecer (con impresión digital, solo los aptos) */
+   /* Tejidos del maestro que se pueden ofrecer: los del sistema elegido (script 36) y, con impresión
+      digital, solo los aptos. Sin sistema, ninguno */
    get tejidosDisponibles(): any[] {
-      const todos = this.opc && this.opc.tejidos ? this.opc.tejidos : [];
+      const sistema = parseInt(this.sel.sistema, 10);
+      const todos = this.opc && this.opc.tejidos && sistema ? this.opc.tejidos.filter(t => (t.sistemas || []).indexOf(sistema) >= 0) : [];
       return this.impresion ? todos.filter(t => t.impresion_digital) : todos;
    }
    etiquetaTipo(t: any): string { return t.tipo || 'Sin tipo'; }
@@ -195,6 +202,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
          modelo_motor: ['mando', 'cargador', 'bateria']
       };
       if (orden.indexOf(paso) >= 0) { (dependientes[paso] || []).forEach(p => this.sel[p] = ''); }
+      /* los tejidos dependen del sistema */
+      if (paso === 'accionamiento' || paso === 'sistema') { this.revisarTejido(); }
       /* Si un paso solo tiene una opción, se elige sola */
       this.autoElegir();
    }
@@ -294,12 +303,12 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    private validar(): string {
       if (!(this.ancho > 0) || !(this.alto > 0)) { return 'Indique el ancho y el alto'; }
       if (!(this.cantidad > 0)) { return 'Indique la cantidad'; }
+      if (!this.sel.accionamiento) { return 'Seleccione el accionamiento'; }
+      if (!this.sel.sistema) { return 'Seleccione el sistema'; }
       if (!this.tipoTejido || !this.nombreTejido || !this.colorTejido) { return 'Seleccione el tejido y su color'; }
       if (!this.anchoMaximo) { return 'Este tejido no tiene criterio (ancho del rollo): complételo en el Maestro de tejidos'; }
       if (!this.tejidoFila) { return 'El ancho (' + this.ancho + ' cm) supera el máximo de este tejido (' + this.anchoMaximo + ' cm)'; }
       if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
-      if (!this.sel.accionamiento) { return 'Seleccione el accionamiento'; }
-      if (!this.sel.sistema) { return 'Seleccione el sistema'; }
       if (!this.posicion) { return 'Seleccione la posición del accionamiento'; }
       if (this.esCadena) {
          if (!this.sel.tipo_cadena) { return 'Seleccione el tipo de cadena'; }
@@ -467,7 +476,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       this.impresion = !!item.impresion;
       this.impresionTexto = item.impresion_imagen || '';
       /* tejido del maestro de la línea (nacc.tejido): tipo, nombre y color; el criterio sale del ancho */
-      const tejido = (this.opc && this.opc.tejidos ? this.opc.tejidos : []).find(x => x.id === item.nacc.tejido);
+      const tejido = (this.opc && this.opc.tejidos ? this.opc.tejidos : [])
+         .find(x => x.id === item.nacc.tejido && (x.sistemas || []).indexOf(item.nacc.sistema) >= 0);
       this.tipoTejido = tejido ? this.etiquetaTipo(tejido) : '';
       this.nombreTejido = tejido ? tejido.nombre : '';
       this.colorTejido = tejido ? tejido.color : '';

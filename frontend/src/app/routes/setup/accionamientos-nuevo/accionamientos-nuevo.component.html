@@ -228,10 +228,10 @@
                 <!-- TEJIDOS DISPONIBLES EN EL CONFIGURADOR -->
                 <ng-container *ngIf="seccion === 'tejidos'">
                     <div class="acc-intro">
-                        Tejidos del <strong>Maestro de tejidos</strong> que se ofrecen en el configurador del enrollable. Una sola lista para todos los clientes.
-                        De momento el configurador sigue mostrando los tejidos de siempre: esta lista se usará cuando se pase al maestro.
+                        Tejidos del <strong>Maestro de tejidos</strong> que ofrece cada sistema en el configurador del enrollable. Una lista por sistema,
+                        la misma para todos los clientes: el configurador enseña los del sistema que elige el cliente.
                     </div>
-                    <app-acc-tejidos [producto]="1"></app-acc-tejidos>
+                    <app-acc-tejidos></app-acc-tejidos>
                 </ng-container>
 
                 <!-- SUPLEMENTOS (resumen de todos los precios) -->

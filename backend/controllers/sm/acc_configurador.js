@@ -10,7 +10,8 @@ const sql = require('mssql');
  *          07 soportes, tapas y contrapesos, 10 longitud de la cadena a medida,
  *          11-13 presupuestos y su conversión en pedido, 16-22 precio: suplementos, tarifa por
  *          sistema, precio base, valoración de la línea, desglose y alta con precio,
- *          29-31 tejidos del maestro: los disponibles, la línea los guarda y el precio T1/T2 con ellos)
+ *          29-31 tejidos del maestro: los disponibles, la línea los guarda y el precio T1/T2 con ellos;
+ *          36 los disponibles son por sistema)
  *
  *   GET  /api/sm/acc_cfg/activo/:cliente       ¿usa el configurador nuevo?
  *   GET  /api/sm/acc_cfg/opciones/:cliente     árbol de opciones activas, con sus relaciones
@@ -147,15 +148,22 @@ async function opciones(req, res) {
       q('select contrapeso_id, color_contrapeso_id from dbo.SOL_ACC_CONTRAPESO_COLOR')
     ]);
 
-    /* Tejidos del maestro disponibles para el enrollable (Productos -> Tejidos, script 29): una fila
-       por tejido + color + criterio. El configurador elige el criterio según el ancho de la cortina */
-    const tejidos = await q(`
-      select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, m.impresion_digital, t.descripcion as tipo
-      from dbo.SOL_ACC_PRODUCTO_TEJIDO pt
-      join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = pt.tejido and m.activo = 1
+    /* Tejidos del maestro disponibles en algún sistema (Productos -> Tejidos, script 36): una fila por
+       tejido + color + criterio, con los sistemas que lo ofrecen. El configurador enseña los del sistema
+       elegido y elige el criterio según el ancho de la cortina */
+    const tejidosFilas = await q(`
+      select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, m.impresion_digital, t.descripcion as tipo, st.sistema_id
+      from dbo.SOL_ACC_SISTEMA_TEJIDO st
+      join dbo.SOL_ACC_SISTEMA s on s.id = st.sistema_id and s.activo = 1
+      join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = st.tejido and m.activo = 1
       left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
-      where pt.producto = 1
       order by t.descripcion, m.nombre, m.color, m.criterio`);
+    const tejidos = [];
+    const tejidoPorId = {};
+    tejidosFilas.forEach(({ sistema_id, ...t }) => {
+      if (!tejidoPorId[t.id]) { tejidoPorId[t.id] = Object.assign(t, { sistemas: [] }); tejidos.push(tejidoPorId[t.id]); }
+      tejidoPorId[t.id].sistemas.push(sistema_id);
+    });
 
     /* Solo se enlazan ids de opciones activas: una opción oculta desaparece de todas las listas */
     const activos = (filas) => new Set(filas.map(f => f.id));

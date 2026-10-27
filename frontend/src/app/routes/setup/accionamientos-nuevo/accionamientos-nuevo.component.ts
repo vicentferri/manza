@@ -28,7 +28,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, alturas y colores', icono: 'fa-link' },
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
         { id: 'soportes', paso: '4', label: 'Soportes y tapas', ayuda: 'Qué soportes y tapas tiene cada sistema', icono: 'fa-th-large' },
-        { id: 'tejidos', paso: '', label: 'Tejidos', ayuda: 'Los que salen en el configurador', icono: 'fa-th' },
+        { id: 'tejidos', paso: '', label: 'Tejidos', ayuda: 'Los que ofrece cada sistema', icono: 'fa-th' },
         { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' },
         { id: 'suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
