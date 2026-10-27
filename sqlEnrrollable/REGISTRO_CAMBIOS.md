@@ -17,7 +17,8 @@ reglas independiente (`ENROLLABLE_<código del sistema>`). Requisito de los scri
 | `04_busquedas_enrollable.sql` | Búsquedas del enrollable para las reglas: id → código de los catálogos `SOL_ACC_*`, tejido por tipo + color, salida de tejido; búsquedas por producto, de dos claves y con filtro en el motor. Cambia también el 02 (`descripcion2`) | 2026-10-22 | — |
 | `05_tejido_del_maestro.sql` | Búsqueda `ENR_TEJIDO_SOLUPYME`: tejido del maestro (`nacc_tejido_id`) -> código Solupyme. `ENR_TEJIDO_ARTICULO` queda marcada como antigua | 2026-10-23 | — |
 | `06_xml_cant_factor_enrollable.sql` | XML del enrollable: `CANT` y `FACTOR` según la unidad del artículo (como HoneyComb). Se deshace con `06_deshacer_...` | 2026-10-23 | — |
-| `07_parametros_enrollable.sql` | Parámetros estándar de todo juego de enrollable (57), `sp_enrollable_parametros_base`, búsquedas del maestro de tejidos y columna `sp_parametros_base` del producto | 2026-10-23 | — |
+| `07_parametros_enrollable.sql` | Parámetros estándar de todo juego de enrollable (57; 53 desde el 08), `sp_enrollable_parametros_base`, búsquedas del maestro de tejidos y columna `sp_parametros_base` del producto | 2026-10-23 | — |
+| `08_alturas_sin_tipo_de_aro.sql` | Va con `sqlAccionamientos/34` y `35`: las reglas del enrollable pasan de `@TIPO_ARO` a `@ALTURA` (mismo código), fuera los parámetros `@TIPO_ARO`/`@TIPO_ARO_ID` y `@CADENA_MEDIDA`/`@CADENA_MEDIDA_ID` y las búsquedas `ENR_TIPO_ARO` y `ENR_CADENA_MEDIDA`. Después, repetir el 07 (ya sin tipo de aro) | 2026-10-27 | — |
 | `comprobacion_produccion_solo_lectura.sql` | Antes y después de desplegar: huellas de los SPs que toca el 03, objetos ya existentes y líneas del modelo nuevo | — | — |
 
 ## 2026-10-22 · 01 y 02: tabla de parámetros y procedimiento
@@ -322,3 +323,34 @@ configurador, son fáciles de definir); el equipo se encarga de las reglas. Refe
 - Regla CANT / FACTOR por unidad en japonés, vertical y Compac (el usuario decidió no tocarlos de momento).
 - 2.6 (comparación, aparcada): hoja y parámetros por pedido, con diferencias frente a otro pedido.
 - 2.7: guía de reglas del enrollable. Reparar `backend/test/fabricacion/run.js`.
+
+## 2026-10-27 · 08: sin tipo de aro (con sqlAccionamientos/34)
+
+**Decisión del usuario:** los "tipos de aro cadena" eran las alturas. Queda solo la altura, con sus colores (todos al
+principio), se borra el tipo de aro y se reescriben las reglas de RHIN que lo usaban.
+
+- `08_alturas_sin_tipo_de_aro.sql`: 37 reglas de `ENROLLABLE_RHIN` pasan de `@TIPO_ARO == 100_CM` a `@ALTURA == 100_CM`
+  (el 34 crea las alturas con el mismo código); borra los parámetros `@TIPO_ARO` y `@TIPO_ARO_ID` de los juegos del
+  enrollable y la búsqueda `ENR_TIPO_ARO`. Se para sin tocar nada si una regla usa `@TIPO_ARO_ID` o si otro parámetro
+  depende del tipo de aro. Idempotente.
+- `04` y `07` ya no tienen el tipo de aro: el juego nace con **55** parámetros. Tras el 08 hay que repetir el 07 para
+  redefinir `sp_enrollable_parametros_base` (el 08 avisa si no).
+- Orden: 08 → 07 → `sqlAccionamientos/34` → `sqlAccionamientos/12` (el 34 se para si el 08 no se ha ejecutado).
+- Pruebas en LOCAL: `pruebas/foto_fabricacion_alturas.js`: fabricación de RHIN para una línea de Aro cadena con cada una
+  de las 8 alturas, antes (con tipo de aro) y después (con altura): **idéntica** (152 componentes). `prueba_07_parametros.sql`
+  (ahora 55): todo OK. Repetir 08 y 34: no cambian nada.
+
+## 2026-10-27 · 08 ampliado: sin tipo de cadena a medida (con sqlAccionamientos/35)
+
+**Decisión del usuario:** en Cadena a medida no hay tipos: el usuario elige el tipo de cadena, teclea la longitud y
+elige el color. El 35 borra `SOL_ACC_TIPO_CADENA_MEDIDA` y `nacc_cadena_medida_id`.
+
+- `08` (aún sin desplegar) quita también `@CADENA_MEDIDA`, `@CADENA_MEDIDA_ID` y la búsqueda `ENR_CADENA_MEDIDA`, y se para si
+  una regla usa `@CADENA_MEDIDA` (ninguna: las de RHIN usan `@TIPO_CADENA == CADENA_A_MEDIDA` y el color).
+- `04` y `07` ya no los tienen: el juego nace con **53** parámetros. Sigue `@CADENA_LONGITUD`.
+- Orden: 08 → 07 → `sqlAccionamientos/34` → `35` → `12`.
+- Pruebas en LOCAL: `pruebas/foto_fabricacion_cadena_medida.js` (RHIN, Cadena a medida de 150 cm con cada color):
+  **idéntica** antes y después (93 componentes); Aro cadena sigue idéntica a la foto del principio (152);
+  `prueba_07_parametros.sql` (53): todo OK. Repetir 08 y 35: no cambian nada.
+- Visto al hacer la foto (no se ha tocado; es cosa de las reglas): la regla de la cadena continua de Cadena a medida
+  consume 0,01 m (1 cm) en vez de la longitud (`@CADENA_LONGITUD`), y el peso Shanghai beige sale dos veces.

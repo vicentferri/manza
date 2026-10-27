@@ -1,6 +1,6 @@
 # Parámetros de la fabricación del enrollable
 
-Todo juego de reglas de un sistema (`ENROLLABLE_<código del sistema>`) nace con estos **57 parámetros**
+Todo juego de reglas de un sistema (`ENROLLABLE_<código del sistema>`) nace con estos **53 parámetros**
 (script `07_parametros_enrollable.sql`; la pantalla de reglas los crea al añadir un sistema). Son todos los datos
 que trae una línea del configurador nuevo. Las reglas se escriben con ellos; los parámetros no se tocan.
 
@@ -32,9 +32,7 @@ Cada paso tiene su id (`..._ID`, el de la línea) y su **código legible**, el `
 | `@SISTEMA` | `@SISTEMA_ID` | Sistema (`RHIN`, `DUERO`...) |
 | `@ACCIONAMIENTO` | `@ACCIONAMIENTO_ID` | `CADENA`, `MOTOR`, `SIN_CADENA` |
 | `@TIPO_CADENA` | `@TIPO_CADENA_ID` | Tipo de cadena |
-| `@TIPO_ARO` | `@TIPO_ARO_ID` | Tipo de aro de cadena |
-| `@CADENA_MEDIDA` | `@CADENA_MEDIDA_ID` | Tipo de cadena a medida |
-| `@ALTURA`, `@ALTURA_VALOR` | `@ALTURA_ID` | Altura de la cadena (código y valor en cm) |
+| `@ALTURA`, `@ALTURA_VALOR` | `@ALTURA_ID` | Altura del Aro cadena (código `100_CM` y valor en cm). Desde el 2026-10-27 no hay tipo de aro: la altura es el aro (`08`) |
 | `@COLOR_CADENA` | `@COLOR_CADENA_ID` | Color de cadena |
 | `@TIPO_MOTOR` | `@TIPO_MOTOR_ID` | Tipo de motor |
 | `@MODELO_MOTOR` | `@MODELO_MOTOR_ID` | Modelo de motor |

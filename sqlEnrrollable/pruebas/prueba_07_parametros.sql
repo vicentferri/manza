@@ -1,7 +1,7 @@
 /* Prueba del 07 (parámetros estándar del enrollable) contra la BD local, con rollback: no deja restos.
    Línea 9348 del pedido real 7304 con TODOS los pasos del configurador informados con códigos ZZ, en un juego ZZ
    creado con sp_enrollable_parametros_base:
-     - el juego recibe los 57 parámetros y repetir el procedimiento no crea ninguno ni pisa lo cambiado
+     - el juego recibe los 53 parámetros y repetir el procedimiento no crea ninguno ni pisa lo cambiado
      - cada parámetro de la línea lleva el valor esperado (ids, códigos, altura, tejido del maestro, salida)
      - una línea de cadena sin motor deja vacíos los parámetros del motor
      - dos reglas escritas con los códigos (soporte y tapa; mando) se cumplen o no según la línea
@@ -13,7 +13,7 @@ set xact_abort on
 declare @pedido int = 7304, @B int = 9348
 declare @fallos int = 0
 declare @n int, @r int, @creados int, @total int
-declare @sis int, @cadena int, @motor int, @tcad int, @aro int, @med int, @alt int, @ccad int, @tmot int, @mmot int, @man int, @car int, @bat int
+declare @sis int, @cadena int, @motor int, @tcad int, @alt int, @ccad int, @tmot int, @mmot int, @man int, @car int, @bat int
 declare @sop int, @csop int, @tap int, @ctap int, @con int, @ccon int
 declare @juego varchar(50) = 'ENROLLABLE_ZZ_PAR'
 declare @t table(creados int)
@@ -26,9 +26,7 @@ select @motor = id from SOL_ACC_ACCIONAMIENTO where codigo = 'MOTOR'
 
 insert SOL_ACC_SISTEMA (codigo, nombre) values ('ZZ_PAR', 'ZZ par') set @sis = scope_identity()
 insert SOL_ACC_TIPO_CADENA (accionamiento_id, codigo, nombre) values (@cadena, 'ZZTCAD', 'ZZ tipo cadena') set @tcad = scope_identity()
-insert SOL_ACC_TIPO_ARO_CADENA (tipo_cadena_id, codigo, nombre) values (@tcad, 'ZZARO', 'ZZ aro') set @aro = scope_identity()
-insert SOL_ACC_TIPO_CADENA_MEDIDA (tipo_cadena_id, codigo, nombre) values (@tcad, 'ZZMED', 'ZZ medida') set @med = scope_identity()
-insert SOL_ACC_ALTURA (codigo, valor, nombre) values ('ZZALT', 125, 'ZZ altura') set @alt = scope_identity()
+insert SOL_ACC_ALTURA (codigo, valor, nombre) values ('ZZALT', 999, 'ZZ altura') set @alt = scope_identity()
 insert SOL_ACC_COLOR_CADENA (codigo, nombre) values ('ZZCCAD', 'ZZ color cadena') set @ccad = scope_identity()
 insert SOL_ACC_TIPO_MOTOR (accionamiento_id, codigo, nombre) values (@motor, 'ZZTMOT', 'ZZ tipo motor') set @tmot = scope_identity()
 insert SOL_ACC_MODELO_MOTOR (tipo_motor_id, codigo, nombre) values (@tmot, 'ZZMMOT', 'ZZ modelo motor') set @mmot = scope_identity()
@@ -50,7 +48,7 @@ from SOL_FABRICACION_PRODUCTOS where producto = 1
 insert @t execute sp_enrollable_parametros_base @juego
 select @creados = creados from @t
 select @n = count(*) from SOL_FABRICACION_PARAMETROS where sistema = @juego
-if @creados = 57 and @n = 57 print 'OK    el juego recibe 57 parámetros'
+if @creados = 53 and @n = 53 print 'OK    el juego recibe 53 parámetros'
 else begin print 'FALLO parámetros creados: ' + cast(@creados as varchar) + ' / ' + cast(@n as varchar); set @fallos += 1 end
 
 update SOL_FABRICACION_PARAMETROS set orden = 9999 where sistema = @juego and name = '@ANCHO'
@@ -58,15 +56,15 @@ delete @t
 insert @t execute sp_enrollable_parametros_base @juego
 select @creados = creados from @t
 select @n = count(*) from SOL_FABRICACION_PARAMETROS where sistema = @juego
-if @creados = 0 and @n = 57 and (select orden from SOL_FABRICACION_PARAMETROS where sistema = @juego and name = '@ANCHO') = 9999
+if @creados = 0 and @n = 53 and (select orden from SOL_FABRICACION_PARAMETROS where sistema = @juego and name = '@ANCHO') = 9999
 	print 'OK    repetirlo no crea nada y respeta un parámetro cambiado'
 else begin print 'FALLO al repetir: ' + cast(@creados as varchar); set @fallos += 1 end
 update SOL_FABRICACION_PARAMETROS set orden = 20 where sistema = @juego and name = '@ANCHO'
 
 /* ---- línea con todos los pasos: cadena a medida con altura ---- */
 update SOL_PEDIDOS_COLA_TIPO_1 set
-	nacc_accionamiento_id = @cadena, nacc_sistema_id = @sis, nacc_tipo_cadena_id = @tcad, nacc_tipo_aro_id = @aro,
-	nacc_cadena_medida_id = @med, nacc_altura_id = @alt, nacc_color_cadena_id = @ccad, nacc_tipo_motor_id = @tmot,
+	nacc_accionamiento_id = @cadena, nacc_sistema_id = @sis, nacc_tipo_cadena_id = @tcad,
+	nacc_altura_id = @alt, nacc_color_cadena_id = @ccad, nacc_tipo_motor_id = @tmot,
 	nacc_modelo_motor_id = @mmot, nacc_mando_id = @man, nacc_cargador_id = @car, nacc_bateria_id = @bat,
 	nacc_soporte_id = @sop, nacc_soporte_color_id = @csop, nacc_tapa_id = @tap, nacc_tapa_color_id = @ctap,
 	nacc_contrapeso_id = @con, nacc_contrapeso_color_id = @ccon, nacc_cadena_longitud = 150,
@@ -89,8 +87,8 @@ insert @esperado values
 	('@POSICION_ID', '1'), ('@POSICION', 'DERECHA'), ('@IMPRESION', '1'),
 	('@SALIDA_TEJIDO_ID', '2'), ('@SALIDA_TEJIDO', 'PEGADO PARED'), ('@SALIDA_TEJIDO_ARTICULO', @idsal),
 	('@SISTEMA_ID', cast(@sis as varchar)), ('@SISTEMA', 'ZZ_PAR'),
-	('@ACCIONAMIENTO', 'CADENA'), ('@TIPO_CADENA', 'ZZTCAD'), ('@TIPO_ARO', 'ZZARO'), ('@CADENA_MEDIDA', 'ZZMED'),
-	('@ALTURA', 'ZZALT'), ('@ALTURA_VALOR', '125.00'), ('@COLOR_CADENA', 'ZZCCAD'),
+	('@ACCIONAMIENTO', 'CADENA'), ('@TIPO_CADENA', 'ZZTCAD'),
+	('@ALTURA', 'ZZALT'), ('@ALTURA_VALOR', '999.00'), ('@COLOR_CADENA', 'ZZCCAD'),
 	('@TIPO_MOTOR', 'ZZTMOT'), ('@MODELO_MOTOR', 'ZZMMOT'), ('@MANDO', 'ZZMAN'), ('@CARGADOR', 'ZZCAR'), ('@BATERIA', 'ZZBAT'),
 	('@SOPORTE', 'ZZSOP'), ('@COLOR_SOPORTE', 'ZZCSOP'), ('@TAPA', 'ZZTAP'), ('@COLOR_TAPA', 'ZZCTAP'),
 	('@CONTRAPESO', 'ZZCON'), ('@COLOR_CONTRAPESO', 'ZZCCON'),

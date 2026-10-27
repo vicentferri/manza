@@ -49,7 +49,7 @@
                                     vacio="No hay sistemas. Añádalos en Listas de opciones → Sistemas."
                                     (cambio)="recargaAcc = recargaAcc + 1"></app-acc-relacion>
                                 <div *ngIf="accionamientoSel.codigo === 'CADENA'" class="acc-siguiente">
-                                    Los tipos de cadena, aros y colores se configuran en el paso 2.
+                                    Los tipos de cadena, alturas y colores se configuran en el paso 2.
                                     <button type="button" class="btn btn-outline-primary btn-sm ml-2" (click)="cambiarSeccion('cadena')">Ir a Cadena <i class="fa fa-arrow-right"></i></button>
                                 </div>
                                 <div *ngIf="accionamientoSel.codigo === 'MOTOR'" class="acc-siguiente">
@@ -79,8 +79,8 @@
                     </ng-container>
                     <ng-container *ngIf="accCadena">
                         <div class="acc-intro">
-                            Elija un tipo de cadena y configure sus opciones a la derecha: <strong>Aro cadena</strong> tiene tipos de aro y alturas,
-                            <strong>Cadena a medida</strong> tiene sus propios tipos, y todos tienen colores.
+                            Elija un tipo de cadena y configure sus opciones a la derecha: <strong>Aro cadena</strong> tiene alturas, cada una con sus colores;
+                            <strong>Cadena a medida</strong> tiene sus colores (la longitud la teclea el cliente).
                             Estos dos tipos son fijos (<i class="fa fa-lock"></i>): se pueden renombrar u ocultar, pero no borrar.
                         </div>
                         <div class="row">
@@ -93,20 +93,26 @@
                                 <ng-container *ngIf="tipoCadenaSel; else elijaTipoCadena">
                                     <div class="acc-detalle-titulo">{{ tipoCadenaSel.nombre }}</div>
                                     <ul class="nav nav-tabs acc-tabs">
-                                        <li class="nav-item" *ngIf="tipoCadenaSel.codigo === 'ARO_CADENA'"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'aros'" (click)="pestanaCadena = 'aros'">Tipos de aro</a></li>
                                         <li class="nav-item" *ngIf="tipoCadenaSel.codigo === 'ARO_CADENA'"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'alturas'" (click)="pestanaCadena = 'alturas'">Alturas</a></li>
-                                        <li class="nav-item" *ngIf="tipoCadenaSel.codigo === 'CADENA_A_MEDIDA'"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'medidas'" (click)="pestanaCadena = 'medidas'">Cadena a medida</a></li>
-                                        <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'colores'" (click)="pestanaCadena = 'colores'">Colores</a></li>
+                                        <!-- En Aro cadena los colores van por altura (script 34) -->
+                                        <li class="nav-item" *ngIf="tipoCadenaSel.codigo !== 'ARO_CADENA'"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaCadena === 'colores'" (click)="pestanaCadena = 'colores'">Colores</a></li>
                                     </ul>
-                                    <app-acc-tabla *ngIf="pestanaCadena === 'aros' && tipoCadenaSel.codigo === 'ARO_CADENA'" catalogo="tipos_aro_cadena" titulo="Tipos de aro cadena" singular="tipo de aro"
-                                        padreCampo="tipo_cadena_id" [padreId]="tipoCadenaSel.id"
-                                        (cambio)="recargaTipoCadena = recargaTipoCadena + 1"></app-acc-tabla>
-                                    <app-acc-tabla *ngIf="pestanaCadena === 'alturas' && tipoCadenaSel.codigo === 'ARO_CADENA'" catalogo="alturas" titulo="Alturas" singular="altura"
-                                        [conValor]="true" unidad="cm"
-                                        ayuda="Valen para todos los tipos de aro: si añade una altura, aparece en todos."></app-acc-tabla>
-                                    <app-acc-tabla *ngIf="pestanaCadena === 'medidas' && tipoCadenaSel.codigo === 'CADENA_A_MEDIDA'" catalogo="tipos_cadena_medida" titulo="Tipos de cadena a medida" singular="tipo de cadena a medida"
-                                        padreCampo="tipo_cadena_id" [padreId]="tipoCadenaSel.id"
-                                        (cambio)="recargaTipoCadena = recargaTipoCadena + 1"></app-acc-tabla>
+                                    <div class="row" *ngIf="pestanaCadena === 'alturas' && tipoCadenaSel.codigo === 'ARO_CADENA'">
+                                        <div class="col-xl-6">
+                                            <app-acc-tabla catalogo="alturas" titulo="Alturas" singular="altura"
+                                                [conValor]="true" unidad="cm"
+                                                ayuda="Cada altura es un aro de cadena. Elija una para marcar sus colores."
+                                                (seleccion)="alturaSel = $event"></app-acc-tabla>
+                                        </div>
+                                        <div class="col-xl-6">
+                                            <app-acc-relacion *ngIf="alturaSel; else elijaAltura" relacion="altura_color" [id]="alturaSel.id"
+                                                [titulo]="'Colores de la altura: ' + (alturaSel.nombre || alturaSel.valor + ' cm')"
+                                                vacio="No hay colores. Añádalos en Listas de opciones → Colores de cadena."></app-acc-relacion>
+                                            <ng-template #elijaAltura>
+                                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija una altura para marcar sus colores.</div>
+                                            </ng-template>
+                                        </div>
+                                    </div>
                                     <app-acc-relacion *ngIf="pestanaCadena === 'colores'" relacion="tipo_cadena_color" [id]="tipoCadenaSel.id"
                                         titulo="Colores permitidos"
                                         vacio="No hay colores. Añádalos en Listas de opciones → Colores de cadena."

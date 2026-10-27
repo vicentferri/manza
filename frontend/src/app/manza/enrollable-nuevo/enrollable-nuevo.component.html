@@ -121,13 +121,6 @@
             </div>
             <ng-container *ngIf="esAro">
                <div class="col-md-3 col-6 form-group">
-                  <label>Tipo de aro</label>
-                  <select class="form-control form-control-sm" [(ngModel)]="sel.tipo_aro" [ngModelOptions]="{ standalone: true }" (change)="cambiar('tipo_aro')">
-                     <option value="">Seleccionar</option>
-                     <option *ngFor="let a of aros" [value]="a.id">{{ a.nombre }}</option>
-                  </select>
-               </div>
-               <div class="col-md-3 col-6 form-group">
                   <label>Altura</label>
                   <select class="form-control form-control-sm" [(ngModel)]="sel.altura" [ngModelOptions]="{ standalone: true }" (change)="cambiar('altura')">
                      <option value="">Seleccionar</option>
@@ -135,13 +128,6 @@
                   </select>
                </div>
             </ng-container>
-            <div class="col-md-3 col-6 form-group" *ngIf="esMedida">
-               <label>Tipo de cadena a medida</label>
-               <select class="form-control form-control-sm" [(ngModel)]="sel.cadena_medida" [ngModelOptions]="{ standalone: true }" (change)="cambiar('cadena_medida')">
-                  <option value="">Seleccionar</option>
-                  <option *ngFor="let m of medidas" [value]="m.id">{{ m.nombre }}</option>
-               </select>
-            </div>
             <div class="col-md-2 col-6 form-group" *ngIf="esMedida">
                <label>Longitud (cm)</label>
                <input type="number" class="form-control form-control-sm" min="1" step="0.5" [(ngModel)]="longitud" [ngModelOptions]="{ standalone: true }" />

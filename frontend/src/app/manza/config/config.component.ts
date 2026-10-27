@@ -670,8 +670,8 @@ export class ConfigComponent implements OnInit {
             if (item.nacc_accionamiento_id) {
               (tipo as any).nacc = {
                 accionamiento: item.nacc_accionamiento_id, sistema: item.nacc_sistema_id,
-                tipo_cadena: item.nacc_tipo_cadena_id, tipo_aro: item.nacc_tipo_aro_id, altura: item.nacc_altura_id,
-                cadena_medida: item.nacc_cadena_medida_id, color_cadena: item.nacc_color_cadena_id,
+                tipo_cadena: item.nacc_tipo_cadena_id, altura: item.nacc_altura_id,
+                color_cadena: item.nacc_color_cadena_id,
                 cadena_longitud: item.nacc_cadena_longitud,
                 tipo_motor: item.nacc_tipo_motor_id, modelo_motor: item.nacc_modelo_motor_id,
                 mando: item.nacc_mando_id, cargador: item.nacc_cargador_id, bateria: item.nacc_bateria_id,

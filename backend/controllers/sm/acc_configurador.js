@@ -27,9 +27,9 @@ const ERRORES_LINEA = {
   '-3': 'Accionamiento no válido',
   '-4': 'El sistema no está disponible para ese accionamiento',
   '-5': 'Tipo de cadena no válido',
-  '-6': 'Tipo de aro o de cadena a medida no válido para ese tipo de cadena',
+  '-6': 'Hay datos de cadena que no corresponden a ese tipo de cadena',
   '-7': 'Altura no válida',
-  '-8': 'El color no está permitido para ese tipo de cadena',
+  '-8': 'El color no está permitido para esa altura o ese tipo de cadena',
   '-9': 'Hay datos de cadena o de motor que no corresponden al accionamiento',
   '-10': 'Tipo de motor no válido',
   '-11': 'Modelo de motor no válido',
@@ -111,16 +111,14 @@ async function opciones(req, res) {
     const lista = (tabla, extra = '') =>
       q(`select id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, nombre`);
 
-    const [accionamientos, sistemas, tiposCadena, aros, medidas, alturas, colores,
+    const [accionamientos, sistemas, tiposCadena, alturas, colores,
            tiposMotor, modelos, mandos, cargadores, baterias,
-           accSis, cadCol, motSis, modMan, modCar, modBat,
+           accSis, cadCol, altCol, motSis, modMan, modCar, modBat,
            soportes, tapas, contrapesos, coloresSoporte, coloresTapa, coloresContrapeso,
            sopSis, tapSis, sopCol, tapCol, conCol] = await Promise.all([
       lista('SOL_ACC_ACCIONAMIENTO'),
       lista('SOL_ACC_SISTEMA'),
       q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_CADENA where activo = 1 order by orden, nombre`),
-      q(`select id, tipo_cadena_id, codigo, nombre from dbo.SOL_ACC_TIPO_ARO_CADENA where activo = 1 order by orden, nombre`),
-      q(`select id, tipo_cadena_id, codigo, nombre from dbo.SOL_ACC_TIPO_CADENA_MEDIDA where activo = 1 order by orden, nombre`),
       q(`select id, codigo, valor, nombre from dbo.SOL_ACC_ALTURA where activo = 1 order by orden, valor`),
       lista('SOL_ACC_COLOR_CADENA'),
       q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_MOTOR where activo = 1 order by orden, nombre`),
@@ -130,6 +128,8 @@ async function opciones(req, res) {
       lista('SOL_ACC_BATERIA'),
       q('select accionamiento_id, sistema_id from dbo.SOL_ACC_ACCIONAMIENTO_SISTEMA'),
       q('select tipo_cadena_id, color_cadena_id from dbo.SOL_ACC_TIPO_CADENA_COLOR'),
+      /* script 34: colores de cadena que admite cada altura (Aro cadena) */
+      q('select altura_id, color_cadena_id from dbo.SOL_ACC_ALTURA_COLOR'),
       q('select modelo_motor_id, sistema_id from dbo.SOL_ACC_MODELO_MOTOR_SISTEMA'),
       q('select modelo_motor_id, mando_id from dbo.SOL_ACC_MODELO_MOTOR_MANDO'),
       q('select modelo_motor_id, cargador_id from dbo.SOL_ACC_MODELO_MOTOR_CARGADOR'),
@@ -166,6 +166,7 @@ async function opciones(req, res) {
 
     const sisPorAcc = agrupar(accSis, 'accionamiento_id', 'sistema_id');
     const colPorTipo = agrupar(cadCol, 'tipo_cadena_id', 'color_cadena_id');
+    const colPorAltura = agrupar(altCol, 'altura_id', 'color_cadena_id');
     const sisPorModelo = agrupar(motSis, 'modelo_motor_id', 'sistema_id');
     const manPorModelo = agrupar(modMan, 'modelo_motor_id', 'mando_id');
     const carPorModelo = agrupar(modCar, 'modelo_motor_id', 'cargador_id');
@@ -180,11 +181,10 @@ async function opciones(req, res) {
       accionamientos: accionamientos.map(a => Object.assign(a, { sistemas: filtrar(sisPorAcc[a.id], sisActivos) })),
       sistemas,
       tiposCadena: tiposCadena.map(t => Object.assign(t, {
-        colores: filtrar(colPorTipo[t.id], colActivos),
-        aros: aros.filter(x => x.tipo_cadena_id === t.id).map(({ id, codigo, nombre }) => ({ id, codigo, nombre })),
-        medidas: medidas.filter(x => x.tipo_cadena_id === t.id).map(({ id, codigo, nombre }) => ({ id, codigo, nombre }))
+        colores: filtrar(colPorTipo[t.id], colActivos)
       })),
-      alturas,
+      /* Aro cadena: cada altura con sus colores (script 34; antes había además tipos de aro) */
+      alturas: alturas.map(a => Object.assign(a, { colores: filtrar(colPorAltura[a.id], colActivos) })),
       colores,
       /* Cada modelo con los sistemas a los que está asignado; el tipo, con los de sus modelos
          (un tipo aparece en un sistema si alguno de sus modelos está asignado a él) */
@@ -242,8 +242,6 @@ async function precioLinea(pool, cliente, l) {
     .input('accionamiento', sql.Int, entero(n.accionamiento))
     .input('sistema', sql.Int, entero(n.sistema))
     .input('tipo_cadena', sql.Int, entero(n.tipo_cadena))
-    .input('tipo_aro', sql.Int, entero(n.tipo_aro))
-    .input('cadena_medida', sql.Int, entero(n.cadena_medida))
     .input('altura', sql.Int, entero(n.altura))
     .input('cadena_longitud', sql.Decimal(10, 2), decimal(n.cadena_longitud))
     .input('color_cadena', sql.Int, entero(n.color_cadena))
@@ -323,7 +321,7 @@ const DOCUMENTOS = {
 
 /* POST /acc_cfg/pedido/:cliente/:ref y /acc_cfg/presupuesto/:cliente/:ref   body: [ líneas ]
    Cada línea: { TipoCortina: 1, ancho, alto, cantidad, codeCentro, tipo_tarifa ('T1' o 'T2'),
-                 nacc: { accionamiento, sistema, tipo_cadena, tipo_aro, cadena_medida, altura,
+                 nacc: { accionamiento, sistema, tipo_cadena, altura,
                          color_cadena, tipo_motor, modelo_motor, mando, cargador, bateria,
                          soporte, soporte_color, tapa, tapa_color, contrapeso, contrapeso_color,
                          cadena_longitud (cm, solo en la cadena a medida),
@@ -385,8 +383,6 @@ async function alta(doc, req, res) {
         .input('accionamiento', sql.Int, entero(n.accionamiento))
         .input('sistema', sql.Int, entero(n.sistema))
         .input('tipo_cadena', sql.Int, entero(n.tipo_cadena))
-        .input('tipo_aro', sql.Int, entero(n.tipo_aro))
-        .input('cadena_medida', sql.Int, entero(n.cadena_medida))
         .input('altura', sql.Int, entero(n.altura))
         .input('cadena_longitud', sql.Decimal(10, 2), decimal(n.cadena_longitud))
         .input('color_cadena', sql.Int, entero(n.color_cadena))

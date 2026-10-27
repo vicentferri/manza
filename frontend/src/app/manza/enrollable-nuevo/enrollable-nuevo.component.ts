@@ -11,7 +11,7 @@ import { AccConfiguradorService } from './acc-configurador.service';
  *
  * Pasos: medidas → tejido (los del maestro marcados en Productos → Tejidos; el criterio lo elige
  * el configurador según el ancho) → accionamiento
- * (accionamiento → sistema → cadena: tipo, aro + altura o medida, color / motor: tipo, modelo,
+ * (accionamiento → sistema → cadena: tipo, altura o longitud, color / motor: tipo, modelo,
  * mando, cargador, batería) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
  * su color. Además: posición (Derecha/Izquierda), estancia y observaciones, impresión digital (sí/no
  * y un texto; con sí, solo tejidos aptos) y longitud tecleada en la cadena a medida.
@@ -173,22 +173,24 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    // ─── CASCADA DEL ACCIONAMIENTO ──────────────────────────────────────────────────
 
    private limpiarSeleccion(): void {
-      this.sel = { accionamiento: '', sistema: '', tipo_cadena: '', tipo_aro: '', altura: '', cadena_medida: '',
+      this.sel = { accionamiento: '', sistema: '', tipo_cadena: '', altura: '',
                    color_cadena: '', tipo_motor: '', modelo_motor: '', mando: '', cargador: '', bateria: '',
                    soporte: '', soporte_color: '', tapa: '', tapa_color: '', contrapeso: '', contrapeso_color: '' };
    }
 
    /* Al cambiar un paso se vacían los que dependen de él */
    cambiar(paso: string): void {
-      const orden = ['accionamiento', 'sistema', 'tipo_cadena', 'tipo_motor', 'modelo_motor', 'soporte', 'tapa', 'contrapeso'];
+      const orden = ['accionamiento', 'sistema', 'tipo_cadena', 'altura', 'tipo_motor', 'modelo_motor', 'soporte', 'tapa', 'contrapeso'];
       const piezasSistema = ['soporte', 'soporte_color', 'tapa', 'tapa_color'];
       const dependientes: { [p: string]: string[] } = {
-         accionamiento: ['sistema', 'tipo_cadena', 'tipo_aro', 'altura', 'cadena_medida', 'color_cadena', 'tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
+         accionamiento: ['sistema', 'tipo_cadena', 'altura', 'color_cadena', 'tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
          sistema: ['tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
          soporte: ['soporte_color'],
          tapa: ['tapa_color'],
          contrapeso: ['contrapeso_color'],
-         tipo_cadena: ['tipo_aro', 'altura', 'cadena_medida', 'color_cadena'],
+         tipo_cadena: ['altura', 'color_cadena'],
+         /* en Aro cadena, cada altura tiene sus colores (script 34) */
+         altura: ['color_cadena'],
          tipo_motor: ['modelo_motor', 'mando', 'cargador', 'bateria'],
          modelo_motor: ['mando', 'cargador', 'bateria']
       };
@@ -205,7 +207,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       let cambio = true;
       while (cambio) {
          cambio = unica(this.accionamientos, 'accionamiento') || unica(this.sistemas, 'sistema') ||
-                  (this.esCadena && (unica(this.tiposCadena, 'tipo_cadena') || unica(this.aros, 'tipo_aro') || unica(this.medidas, 'cadena_medida'))) ||
+                  (this.esCadena && (unica(this.tiposCadena, 'tipo_cadena') || unica(this.alturas, 'altura'))) ||
                   (this.esMotor && (unica(this.tiposMotor, 'tipo_motor') || unica(this.modelos, 'modelo_motor'))) ||
                   unica(this.soportes, 'soporte') || unica(this.coloresSoporte, 'soporte_color') ||
                   unica(this.tapas, 'tapa') || unica(this.coloresTapa, 'tapa_color') ||
@@ -234,12 +236,12 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    get tipoCadenaSel(): any { return this.porId(this.tiposCadena, this.sel.tipo_cadena); }
    get esAro(): boolean { return !!this.tipoCadenaSel && this.tipoCadenaSel.codigo === 'ARO_CADENA'; }
    get esMedida(): boolean { return !!this.tipoCadenaSel && this.tipoCadenaSel.codigo === 'CADENA_A_MEDIDA'; }
-   get aros(): any[] { return this.esAro ? this.tipoCadenaSel.aros : []; }
-   get medidas(): any[] { return this.esMedida ? this.tipoCadenaSel.medidas : []; }
    get alturas(): any[] { return this.esAro && this.opc ? this.opc.alturas : []; }
+   get alturaSel(): any { return this.porId(this.alturas, this.sel.altura); }
+   /* Aro cadena: los colores de la altura elegida (script 34); los demás tipos: los del tipo de cadena */
    get coloresCadena(): any[] {
-      const t = this.tipoCadenaSel;
-      return t ? this.opc.colores.filter(c => t.colores.indexOf(c.id) >= 0) : [];
+      const origen = this.esAro ? this.alturaSel : this.tipoCadenaSel;
+      return origen ? this.opc.colores.filter(c => (origen.colores || []).indexOf(c.id) >= 0) : [];
    }
 
    /* Tipos de motor del accionamiento MOTOR con algún modelo asignado al sistema elegido */
@@ -301,8 +303,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       if (!this.posicion) { return 'Seleccione la posición del accionamiento'; }
       if (this.esCadena) {
          if (!this.sel.tipo_cadena) { return 'Seleccione el tipo de cadena'; }
-         if (this.esAro && (!this.sel.tipo_aro || !this.sel.altura)) { return 'Seleccione el tipo de aro y la altura'; }
-         if (this.esMedida && !this.sel.cadena_medida) { return 'Seleccione el tipo de cadena a medida'; }
+         if (this.esAro && !this.sel.altura) { return 'Seleccione la altura'; }
          if (this.esMedida && !(this.longitud > 0)) { return 'Indique la longitud de la cadena'; }
          if (this.coloresCadena.length > 0 && !this.sel.color_cadena) { return 'Seleccione el color de la cadena'; }
       }
@@ -414,8 +415,9 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       t.acc_marca_text = unir(nombre(this.sistemas, this.sel.sistema), this.esMotor ? nombre(this.tiposMotor, this.sel.tipo_motor) : null);
       t.cad_Tipo = this.esCadena ? 1 : -1;
       if (this.esCadena) {
-         t.acc_modelo_text = unir(nombre(this.tiposCadena, this.sel.tipo_cadena), nombre(this.aros, this.sel.tipo_aro), nombre(this.medidas, this.sel.cadena_medida));
-         const altura = this.porId(this.alturas, this.sel.altura);
+         const altura = this.alturaSel;
+         /* como el SP: "Aro cadena · 100 CM" o "Cadena a medida" (la longitud va en cad_Altura) */
+         t.acc_modelo_text = unir(nombre(this.tiposCadena, this.sel.tipo_cadena), altura ? this.etiquetaAltura(altura) : null);
          t.cad_Altura = altura ? this.etiquetaAltura(altura) : (this.esMedida ? Number(this.longitud) + ' cm' : null);
          t.cad_altura_text = t.cad_Altura;
          t.cad_color_text = nombre(this.coloresCadena, this.sel.color_cadena);
@@ -436,8 +438,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       /* la selección nueva, que es lo que graba el backend */
       (t as any).nacc = {
          accionamiento: id(this.sel.accionamiento), sistema: id(this.sel.sistema),
-         tipo_cadena: id(this.sel.tipo_cadena), tipo_aro: id(this.sel.tipo_aro), altura: id(this.sel.altura),
-         cadena_medida: id(this.sel.cadena_medida), color_cadena: id(this.sel.color_cadena),
+         tipo_cadena: id(this.sel.tipo_cadena), altura: id(this.sel.altura),
+         color_cadena: id(this.sel.color_cadena),
          tipo_motor: id(this.sel.tipo_motor), modelo_motor: id(this.sel.modelo_motor),
          mando: id(this.sel.mando), cargador: id(this.sel.cargador), bateria: id(this.sel.bateria),
          soporte: id(this.sel.soporte), soporte_color: id(this.sel.soporte_color),

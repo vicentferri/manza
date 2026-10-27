@@ -25,7 +25,7 @@ export class AccionamientosNuevoComponent implements OnInit {
 
     readonly secciones = [
         { id: 'accionamientos', paso: '1', label: 'Accionamientos', ayuda: 'Qué sistemas tiene cada uno', icono: 'fa-hand-pointer-o' },
-        { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, aros, alturas, medidas y colores', icono: 'fa-link' },
+        { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, alturas y colores', icono: 'fa-link' },
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
         { id: 'soportes', paso: '4', label: 'Soportes y tapas', ayuda: 'Qué soportes y tapas tiene cada sistema', icono: 'fa-th-large' },
         { id: 'tejidos', paso: '', label: 'Tejidos', ayuda: 'Los que salen en el configurador', icono: 'fa-th' },
@@ -46,7 +46,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'contrapesos', label: 'Contrapesos', singular: 'contrapeso', colores: 'contrapeso_color', tituloColores: 'Colores del contrapeso',
           vacioColores: 'No hay colores de contrapeso. Añádalos en la pestaña Colores de contrapeso.',
           ayuda: 'Valen para todos los sistemas.' },
-        { id: 'colores_cadena', label: 'Colores de cadena', singular: 'color', ayuda: 'Se asignan a cada tipo de cadena en el paso 2.' },
+        { id: 'colores_cadena', label: 'Colores de cadena', singular: 'color', ayuda: 'Se asignan en el paso 2: a cada altura de Aro cadena y a los demás tipos de cadena.' },
         { id: 'colores_soporte', label: 'Colores de soporte', singular: 'color', ayuda: 'Se marcan en cada soporte (pestaña Soportes).' },
         { id: 'colores_tapa', label: 'Colores de tapa', singular: 'color', ayuda: 'Se marcan en cada tapa (pestaña Tapas).' },
         { id: 'colores_contrapeso', label: 'Colores de contrapeso', singular: 'color', ayuda: 'Se marcan en cada contrapeso (pestaña Contrapesos).' },
@@ -58,8 +58,8 @@ export class AccionamientosNuevoComponent implements OnInit {
 
     /* Nombre de cada lista para el resumen de suplementos (claves de CATALOGOS del backend) */
     readonly nombresListas: { [clave: string]: string } = Object.assign({
-        accionamientos: 'Accionamientos', tipos_cadena: 'Tipos de cadena', tipos_aro_cadena: 'Tipos de aro',
-        tipos_cadena_medida: 'Cadena a medida', alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores'
+        accionamientos: 'Accionamientos', tipos_cadena: 'Tipos de cadena',
+        alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores'
     }, ...this.listas.map(l => ({ [l.id]: l.label })));
 
     /* Los tipos de cadena y de motor cuelgan de los accionamientos fijos CADENA y MOTOR */
@@ -69,7 +69,9 @@ export class AccionamientosNuevoComponent implements OnInit {
 
     accionamientoSel: any = null;
     tipoCadenaSel: any = null;
-    pestanaCadena = 'aros';
+    pestanaCadena = 'alturas';
+    /* Aro cadena: altura elegida, para marcar sus colores */
+    alturaSel: any = null;
     tipoMotorSel: any = null;
     /* Paso 3: 'modelos' (tipo → modelo → accesorios) o 'sistemas' (motores por sistema) */
     vistaMotor = 'modelos';
@@ -97,6 +99,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         this.seccion = id;
         this.accionamientoSel = null;
         this.tipoCadenaSel = null;
+        this.alturaSel = null;
         this.tipoMotorSel = null;
         this.modeloMotorSel = null;
         this.sistemaSel = null;
@@ -109,12 +112,13 @@ export class AccionamientosNuevoComponent implements OnInit {
         this.listaSel = null;
     }
 
-    /* Cada tipo de cadena enseña solo lo que le corresponde: aros (ARO_CADENA), medidas (CADENA_A_MEDIDA) y colores (todos) */
+    /* Cada tipo de cadena enseña solo lo que le corresponde: alturas con sus colores (ARO_CADENA) y colores (los demás) */
     seleccionTipoCadena(fila: any) {
         if (!fila || !this.tipoCadenaSel || fila.id !== this.tipoCadenaSel.id) {
-            this.pestanaCadena = fila && fila.codigo === 'ARO_CADENA' ? 'aros' : fila && fila.codigo === 'CADENA_A_MEDIDA' ? 'medidas' : 'colores';
+            this.pestanaCadena = fila && fila.codigo === 'ARO_CADENA' ? 'alturas' : 'colores';
         }
         this.tipoCadenaSel = fila;
+        this.alturaSel = null;
     }
 
     seleccionTipoMotor(fila: any) {

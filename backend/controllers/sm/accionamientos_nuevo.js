@@ -17,14 +17,13 @@ const CATALOGOS = {
   accionamientos:      { tabla: 'SOL_ACC_ACCIONAMIENTO', protegidos: ['CADENA', 'MOTOR', 'SIN_CADENA'] },
   sistemas:            { tabla: 'SOL_ACC_SISTEMA' },
   colores_cadena:      { tabla: 'SOL_ACC_COLOR_CADENA' },
+  /* Alturas de Aro cadena (script 34: son los antiguos tipos de aro), cada una con sus colores */
   alturas:             { tabla: 'SOL_ACC_ALTURA', valor: true },
   mandos:              { tabla: 'SOL_ACC_MANDO' },
   cargadores:          { tabla: 'SOL_ACC_CARGADOR' },
   baterias:            { tabla: 'SOL_ACC_BATERIA' },
   tipos_cadena:        { tabla: 'SOL_ACC_TIPO_CADENA', padre: 'accionamiento_id', tablaPadre: 'SOL_ACC_ACCIONAMIENTO', codigoPadre: 'CADENA',
                          protegidos: ['ARO_CADENA', 'CADENA_A_MEDIDA'] },
-  tipos_aro_cadena:    { tabla: 'SOL_ACC_TIPO_ARO_CADENA', padre: 'tipo_cadena_id', tablaPadre: 'SOL_ACC_TIPO_CADENA', codigoPadre: 'ARO_CADENA' },
-  tipos_cadena_medida: { tabla: 'SOL_ACC_TIPO_CADENA_MEDIDA', padre: 'tipo_cadena_id', tablaPadre: 'SOL_ACC_TIPO_CADENA', codigoPadre: 'CADENA_A_MEDIDA' },
   tipos_motor:         { tabla: 'SOL_ACC_TIPO_MOTOR', padre: 'accionamiento_id', tablaPadre: 'SOL_ACC_ACCIONAMIENTO', codigoPadre: 'MOTOR' },
   modelos_motor:       { tabla: 'SOL_ACC_MODELO_MOTOR', padre: 'tipo_motor_id', tablaPadre: 'SOL_ACC_TIPO_MOTOR' },
   /* Soportes y tapas genéricos (cada sistema marca los suyos); contrapesos para todos los sistemas.
@@ -43,6 +42,9 @@ const RELACIONES = {
                            catOrigen: 'accionamientos', catDestino: 'sistemas' },
   tipo_cadena_color:     { tabla: 'SOL_ACC_TIPO_CADENA_COLOR', origen: 'tipo_cadena_id', destino: 'color_cadena_id',
                            catOrigen: 'tipos_cadena', catDestino: 'colores_cadena' },
+  /* Aro cadena: colores que admite cada altura (script 34); Cadena a medida sigue con tipo_cadena_color */
+  altura_color:          { tabla: 'SOL_ACC_ALTURA_COLOR', origen: 'altura_id', destino: 'color_cadena_id',
+                           catOrigen: 'alturas', catDestino: 'colores_cadena' },
   modelo_motor_mando:    { tabla: 'SOL_ACC_MODELO_MOTOR_MANDO', origen: 'modelo_motor_id', destino: 'mando_id',
                            catOrigen: 'modelos_motor', catDestino: 'mandos' },
   modelo_motor_cargador: { tabla: 'SOL_ACC_MODELO_MOTOR_CARGADOR', origen: 'modelo_motor_id', destino: 'cargador_id',
@@ -460,7 +462,7 @@ async function matriz_motores_guardar(req, res) {
 
 const MEDIDAS = ['ANCHO', 'ALTO', 'LONGITUD'];
 /* La longitud de la cadena solo tiene sentido en los elementos de la cadena */
-const CATALOGOS_CADENA = ['tipos_cadena', 'tipos_aro_cadena', 'tipos_cadena_medida', 'alturas', 'colores_cadena'];
+const CATALOGOS_CADENA = ['tipos_cadena', 'alturas', 'colores_cadena'];
 
 /* Nombre que se enseña de un elemento (las alturas pueden no tener nombre: su valor en cm) */
 function nombreElemento(cat, alias) {
