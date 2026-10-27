@@ -19,6 +19,9 @@ const PLANTILLA = path.join(__dirname, '../../templates/honeycomb/documento.hbs'
 // Líneas por hoja: cada hoja lleva exactamente estas filas, la última se rellena con filas vacías
 const FILAS_POR_HOJA = 10;
 
+// Código del tejido HoneyComb: el mismo para todas las líneas
+const CODIGO_TEJIDO = '48007280';
+
 const DOCUMENTOS = {
   pedido: {
     cabecera: 'dbo.SOL_PEDIDOS_COLA',
@@ -183,6 +186,7 @@ function montarModelo(doc, datos, nombreFichero) {
     fecha: formatFecha(c.FECHA),
     fechaPrevista: fechaPrevista(c.FECHA),
     conPrecios: doc.conPrecios,
+    codigoTejido: CODIGO_TEJIDO,
     hojas: hojas,
     total: fmtImporte.format(total) + ' €',
     totalC1: formatC1(totalC1)

@@ -245,5 +245,7 @@
     "RESTO DE PRODUCTOS": "Другие товары",
     "GENERANDO DOCUMENTO": "Создание документа...",
     "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB": "Не удалось создать PDF HoneyComb",
-    "DESCARGAR": "Скачать"
+    "DESCARGAR": "Скачать",
+    "COLOR_TEJIDO": "ЦВЕТ ТКАНИ",
+    "COLOR_PERFIL": "ЦВЕТ ПРОФИЛЯ"
 }
