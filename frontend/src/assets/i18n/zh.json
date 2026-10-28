@@ -248,6 +248,8 @@
     "NO SE HA PODIDO GENERAR EL PDF DEL ENROLLABLE": "无法生成卷帘的 PDF",
     "ANTIGUO": "旧版",
     "NUEVO": "新版",
+    "A PRODUCCIÓN": "送生产",
+    "NO SE HA PODIDO GENERAR EL PDF DE PRODUCCIÓN": "无法生成生产 PDF",
     "DESCARGAR": "下载",
     "COLOR_TEJIDO": "面料颜色",
     "COLOR_PERFIL": "型材颜色"

@@ -5,13 +5,17 @@ import { environment } from '../../../environments/environment';
 
 export type DocumentoImpresion = 'pedido' | 'presupuesto';
 
+type ClavePestana = 'crystal' | 'pdf' | 'produccion';
+
 interface PestanaImpresion {
-  clave: 'crystal' | 'pdf';
+  clave: ClavePestana;
   titulo: string;
   url: SafeResourceUrl | null;
   // Contenido que se carga en el visor la primera vez que se muestra la pestaña: Chrome no dibuja un PDF
   // que se carga dentro de un marco oculto (se ve en blanco)
   pendiente?: () => SafeResourceUrl;
+  // PDF que se pide al backend la primera vez que se muestra la pestaña ("A producción")
+  cargarAlMostrar?: () => void;
   error: boolean;
   textoError?: string;
   // Descarga con nombre propio: el botón del visor del navegador guarda el PDF con el nombre aleatorio de su URL temporal
@@ -26,14 +30,16 @@ const PROC_CRYSTAL: { [doc: string]: string } = {
   presupuesto: 'PP_PREVIEW_PRE'
 };
 
-// true: dos pestañas, "Antiguo" con el informe de Crystal de siempre y "Nuevo" con el enrollable (clientes 1, 4 y 5)
-//       y la HoneyComb en un único PDF con el resumen de precios (/api/sm/impresion).
+// true: tres pestañas, "Antiguo" con el informe de Crystal de siempre, "Nuevo" con el enrollable (clientes 1, 4 y 5)
+//       y la HoneyComb en un único PDF con el resumen de precios (/api/sm/impresion) y "A producción" con el mismo
+//       PDF sin códigos de tejido, precios ni totales (?modo=produccion).
 // false: como antes, solo la HoneyComb en PDF (/api/sm/honeycomb/impresion) y el resto con Crystal.
 const IMPRESION_ENROLLABLE = true;
 
 /*
   Visor de impresión de pedidos y presupuestos.
-  - Con enrollable o HoneyComb: pestaña "Antiguo" (Crystal, todo el documento) y "Nuevo" (PDF del backend, Puppeteer).
+  - Con enrollable o HoneyComb: pestaña "Antiguo" (Crystal, todo el documento), "Nuevo" (PDF del backend, Puppeteer)
+    y "A producción" (el mismo PDF sin precios).
   - Sin ninguno de los dos: solo Crystal, como hasta ahora.
   Si no se puede consultar el contenido del documento se muestra Crystal, para que imprimir
   siga funcionando aunque falle la parte nueva.
@@ -46,11 +52,11 @@ const IMPRESION_ENROLLABLE = true;
 export class ImpresionDocumentoComponent implements OnDestroy {
 
   pestanas: PestanaImpresion[] = [];
-  activa: 'crystal' | 'pdf' = 'crystal';
+  activa: ClavePestana = 'crystal';
   cargando = false;
 
   private urlApi = environment.host_ip + (IMPRESION_ENROLLABLE ? '/api/sm/impresion' : '/api/sm/honeycomb/impresion');
-  private urlBlob: string | null = null;
+  private urlsBlob: string[] = [];
   // Evita que la respuesta de una impresión anterior pise la actual
   private peticion = 0;
 
@@ -85,12 +91,24 @@ export class ImpresionDocumentoComponent implements OnDestroy {
             error: false,
             textoError: contenido.enrollable ? 'NO SE HA PODIDO GENERAR EL PDF DEL ENROLLABLE' : 'NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB'
           });
-          this.cargarPdf(doc, id, productos.join('_'), peticion);
+          this.cargarPdf('pdf', doc, id, '', productos.join('_'), peticion);
+          if (IMPRESION_ENROLLABLE) {
+            const produccion: PestanaImpresion = {
+              clave: 'produccion',
+              titulo: 'A PRODUCCIÓN',
+              url: null,
+              error: false,
+              textoError: 'NO SE HA PODIDO GENERAR EL PDF DE PRODUCCIÓN'
+            };
+            produccion.cargarAlMostrar = () => this.cargarPdf('produccion', doc, id, '?modo=produccion', 'Produccion', peticion);
+            this.pestanas.push(produccion);
+          }
         } else {
           this.cargando = false;
         }
-        // Con PDF propio se abre directamente; la otra pestaña queda al lado
-        this.activar(this.pestanas[IMPRESION_ENROLLABLE ? this.pestanas.length - 1 : 0].clave);
+        // Con PDF propio se abre directamente ("Nuevo"); las otras pestañas quedan al lado
+        const abrir = this.pestanas.find(p => p.clave === 'pdf');
+        this.activar(IMPRESION_ENROLLABLE && abrir ? abrir.clave : this.pestanas[0].clave);
       },
       () => {
         if (peticion !== this.peticion) return;
@@ -109,9 +127,14 @@ export class ImpresionDocumentoComponent implements OnDestroy {
   }
 
   /* Muestra una pestaña y carga su contenido si aún no se había cargado */
-  activar(clave: 'crystal' | 'pdf') {
+  activar(clave: ClavePestana) {
     this.activa = clave;
     const pestana = this.pestanas.find(p => p.clave === clave);
+    if (pestana && pestana.cargarAlMostrar) {
+      const cargar = pestana.cargarAlMostrar;
+      pestana.cargarAlMostrar = undefined;
+      cargar();
+    }
     if (pestana && pestana.pendiente) {
       pestana.url = pestana.pendiente();
       pestana.pendiente = undefined;
@@ -122,27 +145,26 @@ export class ImpresionDocumentoComponent implements OnDestroy {
     this.peticion++;
     this.pestanas = [];
     this.cargando = false;
-    if (this.urlBlob) {
-      URL.revokeObjectURL(this.urlBlob);
-      this.urlBlob = null;
-    }
+    this.urlsBlob.forEach(url => URL.revokeObjectURL(url));
+    this.urlsBlob = [];
   }
 
   ngOnDestroy() {
     this.limpiar();
   }
 
-  private cargarPdf(doc: DocumentoImpresion, id: number | string, prefijo: string, peticion: number) {
-    const pestana = this.pestanas.find(p => p.clave === 'pdf');
-    this.http.get(this.urlApi + '/pdf/' + doc + '/' + id, { headers: this.cabeceras(), responseType: 'blob' }).subscribe(
+  /* parametros: '' o '?modo=produccion'; prefijo: inicio del nombre con el que se descarga */
+  private cargarPdf(clave: ClavePestana, doc: DocumentoImpresion, id: number | string, parametros: string, prefijo: string, peticion: number) {
+    const pestana = this.pestanas.find(p => p.clave === clave);
+    this.http.get(this.urlApi + '/pdf/' + doc + '/' + id + parametros, { headers: this.cabeceras(), responseType: 'blob' }).subscribe(
       pdf => {
         if (peticion !== this.peticion) return;
-        this.urlBlob = URL.createObjectURL(pdf);
-        const urlBlob = this.urlBlob;
+        const urlBlob = URL.createObjectURL(pdf);
+        this.urlsBlob.push(urlBlob);
         pestana.pendiente = () => this.domSanitizer.bypassSecurityTrustResourceUrl(urlBlob);
-        pestana.descarga = this.domSanitizer.bypassSecurityTrustUrl(this.urlBlob);
+        pestana.descarga = this.domSanitizer.bypassSecurityTrustUrl(urlBlob);
         pestana.nombreFichero = prefijo + '_' + doc + '_' + id + '.pdf';
-        if (this.activa === 'pdf') this.activar('pdf');
+        if (this.activa === clave) this.activar(clave);
         this.cargando = false;
       },
       () => {
