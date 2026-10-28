@@ -79,7 +79,7 @@ async function leerLineas(pool, doc, id, cliente) {
     .query(
       'select t.ancho, t.alto, t.cantidad, t.acc_tipo_id, t.acc_marca_text, t.acc_modelo_text, t.acc_posicion_text, ' +
       '  t.sop_tipo_text, t.sop_color_text, t.tej_tipo_text, t.tej_color_text, t.tej_salida_text, ' +
-      '  t.con_tipo_text, t.con_color_text, t.cad_color_text, t.cad_Altura, t.impresion, t.impresion_imagen, ' +
+      '  t.con_tipo_text, t.con_color_text, t.cad_color_text, t.cad_Tipo, t.cad_Altura, t.impresion, t.impresion_imagen, ' +
       '  t.mando_text, t.Estancia, t.T1_PVP, t.T1_PVP_C1, ca.descripcion as cargador_text, ' +
       '  dbo.AT_Tejido_color_codigoprov_Cliente(t.tej_tipo_id, @cliente, t.tej_color_id) as codigo48 ' +
       'from ' + doc.lineas + ' l ' +
@@ -89,6 +89,23 @@ async function leerLineas(pool, doc, id, cliente) {
       'order by l.ID, t.id'
     );
   return r.recordset;
+}
+
+/* El configurador guarda la altura como texto: "150" en la cadena normal y "125 cms" en la continua y la metálica
+   cuando la eligen de la lista; en la metálica, lo que escriben a mano en "Indicar Altura" se guarda solo con el número.
+   Cadena (cad_Tipo 0): "A medida 150". Continua (1): "Aro 125". Metálica (2): "Aro 125" si es de la lista
+   (lleva "cms") y "A medida 137" si la escribieron. */
+function alturaCadena(l) {
+  const texto = c.texto(l.cad_Altura);
+  const m = texto.match(/^\d+(?:[.,]\d+)?/);
+  if (!m || !(parseFloat(m[0].replace(',', '.')) > 0)) return '';
+  const altura = c.formatMedida(m[0].replace(',', '.'));
+  switch (c.texto(l.cad_Tipo)) {
+    case '0': return 'A medida ' + altura;
+    case '1': return 'Aro ' + altura;
+    case '2': return (/cms/i.test(texto) ? 'Aro ' : 'A medida ') + altura;
+    default: return altura;
+  }
 }
 
 /* Una línea del pedido -> su plantilla, la fila y una entrada por cortina con su parte del precio y del C1 */
@@ -115,7 +132,7 @@ function filaDeLinea(l) {
     fila.cargador = c.texto(l.cargador_text);
   } else {
     fila.colorCadena = c.texto(l.cad_color_text);
-    fila.alturaCadena = Number(l.cad_Altura) > 0 ? c.formatMedida(l.cad_Altura) : '';
+    fila.alturaCadena = alturaCadena(l);
   }
 
   // T1_PVP y T1_PVP_C1 son de la línea entera (todas sus cortinas)

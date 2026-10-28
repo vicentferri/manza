@@ -8,7 +8,9 @@
 
    GET /api/sm/impresion/info/:doc/:id  -> { enrollable, honeycomb }
    GET /api/sm/impresion/pdf/:doc/:id   -> application/pdf
-   doc = 'pedido' | 'presupuesto', id = IDROW del pedido o presupuesto. */
+   GET /api/sm/impresion/pdf/:doc/:id?modo=produccion -> el mismo PDF para producción (pestaña "A producción"):
+       sin las columnas 48, Código, C1 y Precio, sin filas de total y sin resumen
+   doc ='pedido' | 'presupuesto', id = IDROW del pedido o presupuesto. */
 
 const sql = require('mssql');
 const fs = require('fs');
@@ -143,6 +145,25 @@ function montarResumen(enr, hc) {
   return filas;
 }
 
+// Columnas que no salen en el PDF de producción (pestaña "A producción"): códigos de tejido y precios
+const COLUMNAS_SIN_PRODUCCION = ['48', 'Código', 'C1', 'Precio'];
+
+/* Las mismas secciones sin esas columnas ni la fila de total */
+function seccionesProduccion(secciones) {
+  return secciones.map(function (s) {
+    const quedan = [];
+    s.columnas.forEach(function (col, i) {
+      if (COLUMNAS_SIN_PRODUCCION.indexOf(col.titulo) < 0) quedan.push(i);
+    });
+    return {
+      titulo: s.titulo,
+      columnas: quedan.map(function (i) { return s.columnas[i]; }),
+      filas: s.filas.map(function (fila) { return quedan.map(function (i) { return fila[i]; }); }),
+      total: null
+    };
+  });
+}
+
 // La plantilla se lee en cada impresión: es pequeña y así un cambio no obliga a reiniciar
 function generarHtml(modelo) {
   const plantilla = Handlebars.compile(fs.readFileSync(PLANTILLA, 'utf8'));
@@ -167,16 +188,18 @@ async function impresion_documento_pdf(req, res) {
     if (!enr && !hc) {
       return res.status(404).json({ error: 'El ' + req.params.doc + ' ' + p.id + ' no tiene enrollable ni HoneyComb para imprimir aquí' });
     }
+    // ?modo=produccion: el mismo documento sin códigos de tejido, precios, totales ni resumen
+    const produccion = req.query && req.query.modo === 'produccion';
     const secciones = (enr ? enr.secciones : []).concat(hc ? hc.secciones : []);
 
     // El título del documento es el nombre con el que el visor del navegador propone guardarlo
-    const nombreFichero = [enr ? 'Enrollable' : '', hc ? 'HoneyComb' : ''].filter(Boolean).join('_') +
+    const nombreFichero = (produccion ? 'Produccion' : [enr ? 'Enrollable' : '', hc ? 'HoneyComb' : ''].filter(Boolean).join('_')) +
       '_' + req.params.doc + '_' + p.id;
     const hoy = new Date();
     const modelo = {
       nombreFichero: nombreFichero,
-      secciones: secciones,
-      resumen: montarResumen(enr, hc)
+      secciones: produccion ? seccionesProduccion(secciones) : secciones,
+      resumen: produccion ? null : montarResumen(enr, hc)
     };
     const datosCabecera = {
       fechaImpresion: c.dosDigitos(hoy.getDate()) + '/' + c.dosDigitos(hoy.getMonth() + 1) + '/' + hoy.getFullYear(),

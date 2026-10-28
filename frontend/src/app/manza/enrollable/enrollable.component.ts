@@ -77,7 +77,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    Tipo1_Tubo: string = '-1';
    Tipo1_AlturaCadena: string = '-1';
    Tipo1_AlturaCadenaM: string = '-1';
-   Tipo1_AlturaCadenaM2: string = '-1';
+   Tipo1_AlturaCadenaM2: string = '';
    Tipo1_ColorCadena: string = '-1';
    Tipo1_RadioMando_Label: string = 'Mando:';
    Tipo1_RadioMando_Disabled: boolean = false;
@@ -866,12 +866,29 @@ export class EnrollableComponent implements OnInit, OnChanges {
       }
    }
 
+   // Cadena metálica con "Indicar Altura" (9999): la altura que escribieron, solo el número; null si está vacía o no es válida
+   alturaMetalicaEscrita(): string | null {
+      const n = parseFloat(String(this.Tipo1_AlturaCadenaM2).replace(',', '.'));
+      return n > 0 ? String(n) : null;
+   }
+
+   // Altura con la que se busca la tarifa de la cadena metálica: la de la lista o la escrita
+   alturaTarifaCadenaM(): string | null {
+      return this.Tipo1_AlturaCadenaM === '9999' ? this.alturaMetalicaEscrita() : this.Tipo1_AlturaCadenaM;
+   }
+
    Tarifa_AlturaCadena(): void {
       if (this.esCadena === 1 && this.esCadenaExt === 2) {
          if (this.Tipo1_AlturaCadenaM === '-1') {
             this.Tipo1_AlturaCadenaM = this.alturaCadenaM[0].text;
          }
-         const altura = this.Tipo1_AlturaCadenaM;
+         const altura = this.alturaTarifaCadenaM();
+         if (altura === null) {
+            this.Tipo1_Cadena_Label = 'Altura:';
+            this.precios.T1_Inc_CadenaMetalica = 0;
+            this.precios.T1_Inc_CadenaMetalica_C1 = '';
+            return;
+         }
          const cantidad = Number(this.Cantidad);
          this.service.getTarifaAlturaCadena('1', this.Cliente, altura).subscribe(
             data => {
@@ -1044,6 +1061,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Tubo = "-1";
       this.Tipo1_AlturaCadena = "-1";
       this.Tipo1_AlturaCadenaM = "-1";
+      this.Tipo1_AlturaCadenaM2 = '';
       this.AlturaCadena = 0;
       this.Tipo1_ColorCadena = "-1";
       this.Tipo1_Estancia = "-1";
@@ -1087,6 +1105,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          }
          if (iProceed && this.esCadenaExt === 2) {
             if (this.Tipo1_AlturaCadenaM === '-1') { iProceed = 0; strMessage = 'Debe Indicar la Altura de la Cadena'; }
+            if (iProceed && this.Tipo1_AlturaCadenaM === '9999' && this.alturaMetalicaEscrita() === null) { iProceed = 0; strMessage = 'Debe Indicar la Altura de la Cadena'; }
          }
       }
 
@@ -1162,6 +1181,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          if (this.esCadenaExt === 2) {
             const pos = this.getPos(this.alturaCadenaM, parseInt(this.Tipo1_AlturaCadenaM));
             if (pos >= 0) alturaCadena = this.alturaCadenaM[pos].text;
+            if (this.Tipo1_AlturaCadenaM === '9999') alturaCadena = this.alturaMetalicaEscrita() || '';
             colorCadena = 'Metálica';
          }
       }
@@ -1253,7 +1273,18 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.Tipo1_AlturaCadena = item.cad_Altura;
       } else if (item.cad_Tipo === '2') {
          this.Cadena(2);
-         this.Tipo1_AlturaCadenaM = item.cad_Altura;
+         // De la lista se guarda "150 cms" (el valor de la opción es el número); lo escrito a mano, solo el número
+         const altura = String(item.cad_Altura == null ? '' : item.cad_Altura).trim();
+         const numero = parseFloat(altura);
+         if (/cms$/i.test(altura) && numero > 0) {
+            this.Tipo1_AlturaCadenaM = String(numero);
+         } else if (numero > 0) {
+            this.Tipo1_AlturaCadenaM = '9999';
+            this.Tipo1_AlturaCadenaM2 = String(numero);
+         } else {
+            this.Tipo1_AlturaCadenaM = item.cad_Altura;
+         }
+         this.tarifaCadena();
       }
 
       // Accionamiento: Tipo -> Marca -> Color(/Mando); Soporte/Tapa/Contrapeso/Cajon/Guia dependen de Marca
@@ -1474,6 +1505,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                if (pos >= 0) {
                   alturaCadena = this.alturaCadenaM[pos].text;
                }
+               if (this.Tipo1_AlturaCadenaM === '9999') alturaCadena = this.alturaMetalicaEscrita() || '';
                colorCadena = "Metálica";
             }
          }
@@ -1518,8 +1550,9 @@ export class EnrollableComponent implements OnInit, OnChanges {
 */
 
    Recalcular_Tipo1(): void {
-      const cadena$ = this.esCadena === 1 && this.esCadenaExt === 2
-         ? this.service.getTarifaAlturaCadena('1', this.Cliente, this.Tipo1_AlturaCadenaM)
+      const alturaCadenaM = this.alturaTarifaCadenaM();
+      const cadena$ = this.esCadena === 1 && this.esCadenaExt === 2 && alturaCadenaM !== null
+         ? this.service.getTarifaAlturaCadena('1', this.Cliente, alturaCadenaM)
          : of(null);
 
       const contrapeso$ = this.Ancho !== '' && this.Tipo1_Contrapeso !== '-1'

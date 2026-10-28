@@ -248,6 +248,8 @@
     "NO SE HA PODIDO GENERAR EL PDF DEL ENROLLABLE": "Не удалось создать PDF рулонной шторы",
     "ANTIGUO": "Старый",
     "NUEVO": "Новый",
+    "A PRODUCCIÓN": "В производство",
+    "NO SE HA PODIDO GENERAR EL PDF DE PRODUCCIÓN": "Не удалось создать PDF для производства",
     "DESCARGAR": "Скачать",
     "COLOR_TEJIDO": "ЦВЕТ ТКАНИ",
     "COLOR_PERFIL": "ЦВЕТ ПРОФИЛЯ"
