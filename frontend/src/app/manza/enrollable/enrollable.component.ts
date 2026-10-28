@@ -77,7 +77,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    Tipo1_Tubo: string = '-1';
    Tipo1_AlturaCadena: string = '-1';
    Tipo1_AlturaCadenaM: string = '-1';
-   Tipo1_AlturaCadenaM2: string = '-1';
+   Tipo1_AlturaCadenaM2: string = '';
    Tipo1_ColorCadena: string = '-1';
    Tipo1_RadioMando_Label: string = 'Mando:';
    Tipo1_RadioMando_Disabled: boolean = false;
@@ -1061,7 +1061,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Tubo = "-1";
       this.Tipo1_AlturaCadena = "-1";
       this.Tipo1_AlturaCadenaM = "-1";
-      this.Tipo1_AlturaCadenaM2 = "-1";
+      this.Tipo1_AlturaCadenaM2 = '';
       this.AlturaCadena = 0;
       this.Tipo1_ColorCadena = "-1";
       this.Tipo1_Estancia = "-1";
