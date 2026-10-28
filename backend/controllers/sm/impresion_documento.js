@@ -23,13 +23,17 @@ const honeycomb = require('./impresion_honeycomb');
 
 const PLANTILLA = path.join(__dirname, '../../templates/documento/documento.hbs');
 
-/* Cabecera y pie de cada hoja. Chrome los pinta fuera del documento: no heredan sus estilos (todo en línea,
-   con el tamaño de letra explícito) y solo rellenan las clases pageNumber y totalPages. */
+/* Cabecera y pie de cada hoja. La cabecera lleva además la referencia del documento (GUID), el cliente y el centro.
+   Chrome los pinta fuera del documento: no heredan sus estilos (todo en línea, con el tamaño de letra explícito)
+   y solo rellenan las clases pageNumber y totalPages. */
 const CABECERA = Handlebars.compile(
-  '<div style="width:100%; margin:0 10mm; font-family:Arial, Helvetica, sans-serif; color:#000;">' +
+  '<div style="width:calc(100% - 20mm); margin:0 10mm; font-family:Arial, Helvetica, sans-serif; color:#000;">' +
   '<div style="font-size:8pt; margin-bottom:3mm;">Fecha: {{fechaImpresion}}</div>' +
-  '<div style="font-size:11.5pt; font-weight:bold;">{{textoDocumento}}: {{referencia}} - {{textoFecha}}: {{fecha}}' +
-  ' - Fecha prevista: {{fechaPrevista}}</div></div>'
+  // El título va en una sola línea: si la referencia del cliente es muy larga se corta, para no pisar la tabla
+  '<div style="font-size:10.5pt; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{textoDocumento}}: {{referencia}} - {{textoFecha}}: {{fecha}}' +
+  ' - Fecha prevista: {{fechaPrevista}}</div>' +
+  '{{#if guid}}<div style="font-size:9pt; margin-top:1mm;">Referencia: {{guid}}</div>{{/if}}' +
+  '{{#if clienteCentro}}<div style="font-size:9pt; margin-top:1mm;">{{clienteCentro}}</div>{{/if}}</div>'
 );
 const PIE = '<div style="width:100%; margin:0 10mm; font-family:Arial, Helvetica, sans-serif; font-size:8pt; text-align:right;">' +
   'Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>';
@@ -178,7 +182,15 @@ async function impresion_documento_pdf(req, res) {
     const pool = await sql.connect();
     const cab = await pool.request()
       .input('id', sql.Int, p.id)
-      .query('select IDROW, FECHA, REFCLIENTE, CLIENTE from ' + p.doc.cabecera + ' where IDROW = @id');
+      .query(
+        'select d.IDROW, d.FECHA, d.REFCLIENTE, d.REFERENCIA, d.CLIENTE, c.NomCliente as nombreCliente, ' +
+        '  e.nombre as nombreCentro ' +
+        'from ' + p.doc.cabecera + ' d ' +
+        'left join dbo.NH_CLIENTES c on c.IdCliente = d.CLIENTE ' +
+        // El centro (tienda) es el domicilio de entrega del cliente
+        'left join dbo.NH_CLIENTES_DOMICILIOS e on e.idrow = d.CLIENTE_ENTREGA ' +
+        'where d.IDROW = @id'
+      );
     if (!cab.recordset.length) {
       return res.status(404).json({ error: 'No existe el ' + req.params.doc + ' ' + p.id });
     }
@@ -212,7 +224,13 @@ async function impresion_documento_pdf(req, res) {
       referencia: c.texto(cabecera.REFCLIENTE) || String(cabecera.IDROW),
       textoFecha: p.doc.textoFecha,
       fecha: c.formatFecha(cabecera.FECHA),
-      fechaPrevista: c.fechaPrevista(cabecera.FECHA)
+      fechaPrevista: c.fechaPrevista(cabecera.FECHA),
+      // REFERENCIA es el identificador único del pedido o presupuesto; REFCLIENTE, el texto que escribe el cliente
+      guid: c.texto(cabecera.REFERENCIA),
+      clienteCentro: [
+        c.texto(cabecera.nombreCliente) ? 'Cliente: ' + c.texto(cabecera.nombreCliente) : '',
+        c.texto(cabecera.nombreCentro) ? 'Centro: ' + c.texto(cabecera.nombreCentro) : ''
+      ].filter(Boolean).join(' - ')
     };
     // La cabecera del pedido y el número de página se repiten en cada hoja (cabecera y pie de Chrome)
     const buffer = await pdf.generarPdf(generarHtml(modelo), {
@@ -221,7 +239,7 @@ async function impresion_documento_pdf(req, res) {
       displayHeaderFooter: true,
       headerTemplate: CABECERA(datosCabecera),
       footerTemplate: PIE,
-      margin: { top: '24mm', bottom: '12mm', left: '10mm', right: '10mm' }
+      margin: { top: '38mm', bottom: '12mm', left: '10mm', right: '10mm' }
     });
 
     res.set({
