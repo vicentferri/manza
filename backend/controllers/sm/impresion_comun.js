@@ -87,7 +87,7 @@ function repartir(cent, n) {
 /* Bloque del documento: un título y su tabla. Los bloques van seguidos en la misma hoja y solo se pasa
    a otra cuando se llena; la tabla repite allí sus títulos de columna.
    columnas: [{ titulo }], filas: [[{ valor, clase }]].
-   total (opcional): fila de total al final, { etiqueta, c1, precio }; C1 y Precio son siempre las dos
+   total (opcional): fila de total al final, { etiqueta, c1, precio }; C1 y PVP son siempre las dos
    últimas columnas. */
 function seccion(titulo, columnas, filas, total) {
   return {

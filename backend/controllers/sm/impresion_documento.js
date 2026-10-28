@@ -9,7 +9,7 @@
    GET /api/sm/impresion/info/:doc/:id  -> { enrollable, honeycomb }
    GET /api/sm/impresion/pdf/:doc/:id   -> application/pdf
    GET /api/sm/impresion/pdf/:doc/:id?modo=produccion -> el mismo PDF para producción (pestaña "A producción"):
-       sin las columnas 48, Código, C1 y Precio, sin filas de total y sin resumen
+       sin las columnas 48, Código, C1 y PVP, sin filas de total y sin resumen
    doc ='pedido' | 'presupuesto', id = IDROW del pedido o presupuesto. */
 
 const sql = require('mssql');
@@ -75,7 +75,7 @@ async function leerHoneycomb(pool, nombreDoc, id) {
 
   const modelo = honeycomb.montarModelo(honeycomb.DOCUMENTOS[nombreDoc], datos, '');
   const columnas = ['Producto', 'Color tejido', 'Código', 'Color mecanismo', 'Accionamiento', 'Ancho cm', 'Alto cm',
-    'Cantidad', 'C1', 'Precio'].map(function (titulo) { return { titulo: titulo }; });
+    'Cantidad', 'C1', 'PVP'].map(function (titulo) { return { titulo: titulo }; });
   // montarModelo reparte las filas en hojas de 10 (las de su PDF propio); aquí van todas seguidas
   const filas = [];
   modelo.hojas.forEach(function (hoja) {
@@ -146,20 +146,21 @@ function montarResumen(enr, hc) {
 }
 
 // Columnas que no salen en el PDF de producción (pestaña "A producción"): códigos de tejido y precios
-const COLUMNAS_SIN_PRODUCCION = ['48', 'Código', 'C1', 'Precio'];
+const COLUMNAS_SIN_PRODUCCION = ['48', 'Código', 'C1', 'PVP'];
 
-/* Las mismas secciones sin esas columnas ni la fila de total */
-function seccionesProduccion(secciones) {
+/* Las mismas secciones sin las columnas de esos títulos.
+   Producción: sin fila de total. Presupuesto (solo quita C1): el total se queda con el PVP. */
+function quitarColumnas(secciones, titulos, conTotal) {
   return secciones.map(function (s) {
     const quedan = [];
     s.columnas.forEach(function (col, i) {
-      if (COLUMNAS_SIN_PRODUCCION.indexOf(col.titulo) < 0) quedan.push(i);
+      if (titulos.indexOf(col.titulo) < 0) quedan.push(i);
     });
     return {
       titulo: s.titulo,
       columnas: quedan.map(function (i) { return s.columnas[i]; }),
       filas: s.filas.map(function (fila) { return quedan.map(function (i) { return fila[i]; }); }),
-      total: null
+      total: conTotal && s.total ? Object.assign({}, s.total, { colspan: quedan.length - 1, sinC1: true }) : null
     };
   });
 }
@@ -196,10 +197,14 @@ async function impresion_documento_pdf(req, res) {
     const nombreFichero = (produccion ? 'Produccion' : [enr ? 'Enrollable' : '', hc ? 'HoneyComb' : ''].filter(Boolean).join('_')) +
       '_' + req.params.doc + '_' + p.id;
     const hoy = new Date();
+    // Los presupuestos no llevan C1: solo el PVP en las tablas, los totales y el resumen
+    const conC1 = req.params.doc !== 'presupuesto';
     const modelo = {
       nombreFichero: nombreFichero,
-      secciones: produccion ? seccionesProduccion(secciones) : secciones,
-      resumen: produccion ? null : montarResumen(enr, hc)
+      secciones: produccion ? quitarColumnas(secciones, COLUMNAS_SIN_PRODUCCION, false)
+        : conC1 ? secciones : quitarColumnas(secciones, ['C1'], true),
+      resumen: produccion ? null : montarResumen(enr, hc),
+      conC1: conC1
     };
     const datosCabecera = {
       fechaImpresion: c.dosDigitos(hoy.getDate()) + '/' + c.dosDigitos(hoy.getMonth() + 1) + '/' + hoy.getFullYear(),

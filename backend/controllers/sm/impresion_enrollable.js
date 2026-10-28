@@ -16,7 +16,7 @@ const MINIMO_AGRUPAR = 5;
 const TIPO_MOTOR = 3;
 
 /* Columnas de cada plantilla. 'impresion', 'estancia' y 'cantidad' solo salen si alguna fila las lleva.
-   C1 y Precio van siempre al final (la fila de total cuenta con ello). */
+   C1 y PVP van siempre al final (la fila de total cuenta con ello). */
 const COLUMNAS = {
   cadena: [
     { campo: 'producto', titulo: 'Producto', clase: 'producto' },
@@ -35,7 +35,7 @@ const COLUMNAS = {
     { campo: 'estancia', titulo: 'Estancia' },
     { campo: 'cantidad', titulo: 'Cantidad' },
     { campo: 'c1', titulo: 'C1', clase: 'c1' },
-    { campo: 'precio', titulo: 'Precio', clase: 'importe' }
+    { campo: 'precio', titulo: 'PVP', clase: 'importe' }
   ],
   motor: [
     { campo: 'producto', titulo: 'Producto', clase: 'producto' },
@@ -56,7 +56,7 @@ const COLUMNAS = {
     { campo: 'estancia', titulo: 'Estancia' },
     { campo: 'cantidad', titulo: 'Cantidad' },
     { campo: 'c1', titulo: 'C1', clase: 'c1' },
-    { campo: 'precio', titulo: 'Precio', clase: 'importe' }
+    { campo: 'precio', titulo: 'PVP', clase: 'importe' }
   ]
 };
 
