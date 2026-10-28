@@ -91,15 +91,19 @@ async function leerLineas(pool, doc, id, cliente) {
   return r.recordset;
 }
 
-/* El configurador guarda la altura como texto: "150" en la cadena normal y "125 cms" en la continua y la metálica.
-   Cadena (cad_Tipo 0): "A medida 150". Continua (1): "Aro 125". Metálica (2): "125". */
+/* El configurador guarda la altura como texto: "150" en la cadena normal y "125 cms" en la continua y la metálica
+   cuando la eligen de la lista; en la metálica, lo que escriben a mano en "Indicar Altura" se guarda solo con el número.
+   Cadena (cad_Tipo 0): "A medida 150". Continua (1): "Aro 125". Metálica (2): "Aro 125" si es de la lista
+   (lleva "cms") y "A medida 137" si la escribieron. */
 function alturaCadena(l) {
-  const m = c.texto(l.cad_Altura).match(/^\d+(?:[.,]\d+)?/);
-  if (!m) return '';
+  const texto = c.texto(l.cad_Altura);
+  const m = texto.match(/^\d+(?:[.,]\d+)?/);
+  if (!m || !(parseFloat(m[0].replace(',', '.')) > 0)) return '';
   const altura = c.formatMedida(m[0].replace(',', '.'));
   switch (c.texto(l.cad_Tipo)) {
     case '0': return 'A medida ' + altura;
     case '1': return 'Aro ' + altura;
+    case '2': return (/cms/i.test(texto) ? 'Aro ' : 'A medida ') + altura;
     default: return altura;
   }
 }
