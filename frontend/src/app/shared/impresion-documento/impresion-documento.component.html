@@ -16,7 +16,7 @@
       <i class="fa fa-spinner fa-spin"></i>&nbsp;{{ "GENERANDO DOCUMENTO" | translate }}
     </div>
     <div class="alert alert-danger" *ngIf="p.error">
-      {{ "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB" | translate }}
+      {{ p.textoError | translate }}
     </div>
     <div class="impresion-descarga" *ngIf="p.descarga">
       <a class="btn btn-sm btn-outline-secondary" [href]="p.descarga" [download]="p.nombreFichero">
