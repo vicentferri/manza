@@ -1,6 +1,6 @@
 <ul class="nav nav-tabs impresion-pestanas" *ngIf="pestanas.length > 1">
   <li class="nav-item" *ngFor="let p of pestanas">
-    <a class="nav-link" href="javascript:void(0)" [class.active]="activa === p.clave" (click)="activa = p.clave">
+    <a class="nav-link" href="javascript:void(0)" [class.active]="activa === p.clave" (click)="activar(p.clave)">
       {{ p.titulo | translate }}
     </a>
   </li>
@@ -16,7 +16,7 @@
       <i class="fa fa-spinner fa-spin"></i>&nbsp;{{ "GENERANDO DOCUMENTO" | translate }}
     </div>
     <div class="alert alert-danger" *ngIf="p.error">
-      {{ "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB" | translate }}
+      {{ p.textoError | translate }}
     </div>
     <div class="impresion-descarga" *ngIf="p.descarga">
       <a class="btn btn-sm btn-outline-secondary" [href]="p.descarga" [download]="p.nombreFichero">

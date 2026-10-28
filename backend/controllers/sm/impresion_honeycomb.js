@@ -229,5 +229,10 @@ async function impresion_honeycomb_pdf(req, res) {
 
 module.exports = {
   impresion_honeycomb_info,
-  impresion_honeycomb_pdf
+  impresion_honeycomb_pdf,
+  // Para el PDF conjunto con el enrollable (impresion_documento.js)
+  DOCUMENTOS,
+  CODIGO_TEJIDO,
+  leerDatos,
+  montarModelo
 };
