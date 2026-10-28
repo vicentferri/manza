@@ -107,6 +107,8 @@
     "GENERANDO DOCUMENTO": "Generando documento...",
     "NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB": "No se ha podido generar el PDF de la HoneyComb",
     "NO SE HA PODIDO GENERAR EL PDF DEL ENROLLABLE": "No se ha podido generar el PDF del enrollable",
+    "ANTIGUO": "Antiguo",
+    "NUEVO": "Nuevo",
     "DESCARGAR": "Descargar",
     "COLOR_TEJIDO": "COLOR TEJIDO",
     "COLOR_PERFIL": "COLOR PERFIL"

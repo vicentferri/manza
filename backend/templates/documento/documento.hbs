@@ -16,7 +16,16 @@
   th { background: #ececec; font-weight: bold; height: 11mm; font-size: 7.5pt; }
   td { height: 13.5mm; }
   td.producto { text-align: left; }
+  td.importe { text-align: right; white-space: nowrap; }
+  td.c1 { white-space: nowrap; }
   tr { break-inside: avoid; page-break-inside: avoid; }
+  tr.total td { font-weight: bold; height: 10mm; }
+  tr.total td.etiqueta { text-align: right; }
+  /* Resumen de precios al final del documento */
+  .resumen { width: 55%; margin: 6mm 0 0 auto; break-inside: avoid; page-break-inside: avoid; }
+  .resumen td { height: 8mm; text-align: left; }
+  .resumen td.c1, .resumen td.importe { text-align: right; width: 22%; }
+  .resumen tr.total td { font-weight: bold; font-size: 9.5pt; background: #ececec; border-top: 2px solid #000; border-bottom: 2px solid #000; }
 </style>
 </head>
 <body>
@@ -36,8 +45,31 @@
           {{#each this}}<td class="{{clase}}">{{valor}}</td>{{/each}}
         </tr>
         {{/each}}
+        {{#if total}}
+        <tr class="total">
+          <td class="etiqueta" colspan="{{total.colspan}}">{{total.etiqueta}}</td>
+          <td class="c1">{{total.c1}}</td>
+          <td class="importe">{{total.precio}}</td>
+        </tr>
+        {{/if}}
       </tbody>
     </table>
+    {{#if resumen}}
+    <table class="resumen">
+      <thead>
+        <tr><th>Resumen</th><th>C1</th><th>Importe</th></tr>
+      </thead>
+      <tbody>
+        {{#each resumen}}
+        <tr class="{{clase}}">
+          <td>{{etiqueta}}</td>
+          <td class="c1">{{c1}}</td>
+          <td class="importe">{{precio}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{/if}}
   </div>
   {{/each}}
 </body>

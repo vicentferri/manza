@@ -1,16 +1,12 @@
 import { Component, OnDestroy } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
-import { forkJoin, Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export type DocumentoImpresion = 'pedido' | 'presupuesto';
 
-type ClavePestana = 'crystal' | 'honeycomb' | 'enrollable';
-
 interface PestanaImpresion {
-  clave: ClavePestana;
+  clave: 'crystal' | 'pdf';
   titulo: string;
   url: SafeResourceUrl | null;
   error: boolean;
@@ -20,41 +16,24 @@ interface PestanaImpresion {
   nombreFichero?: string;
 }
 
-// Informes Crystal del haru_server (todo lo que no sale en los PDF propios).
+// Informes Crystal del haru_server (todo lo que no sale en el PDF propio).
 // La pantalla interna de pedidos usa el informe genérico PP_PREVIEW con el cliente (cust).
 const PROC_CRYSTAL: { [doc: string]: string } = {
   pedido: 'PP_PREVIEW_POR',
   presupuesto: 'PP_PREVIEW_PRE'
 };
 
-// Impresión del enrollable en PDF propio (clientes 1, 4 y 5). Con false el enrollable vuelve a imprimirse
-// solo con Crystal, como antes, y no se llama a la API del enrollable.
+// true: dos pestañas, "Antiguo" con el informe de Crystal de siempre y "Nuevo" con el enrollable (clientes 1, 4 y 5)
+//       y la HoneyComb en un único PDF con el resumen de precios (/api/sm/impresion).
+// false: como antes, solo la HoneyComb en PDF (/api/sm/honeycomb/impresion) y el resto con Crystal.
 const IMPRESION_ENROLLABLE = true;
-
-// PDF propios: pestaña, ruta de la API y prefijo del nombre del fichero
-const PDF_PROPIOS: { [clave: string]: { titulo: string, api: string, fichero: string, textoError: string } } = {
-  enrollable: {
-    titulo: 'ENROLLABLE',
-    api: '/api/sm/enrollable/impresion',
-    fichero: 'Enrollable',
-    textoError: 'NO SE HA PODIDO GENERAR EL PDF DEL ENROLLABLE'
-  },
-  honeycomb: {
-    titulo: 'HoneyComb',
-    api: '/api/sm/honeycomb/impresion',
-    fichero: 'HoneyComb',
-    textoError: 'NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB'
-  }
-};
 
 /*
   Visor de impresión de pedidos y presupuestos.
-  - El enrollable (si IMPRESION_ENROLLABLE) y la HoneyComb salen en PDF del backend (Puppeteer).
-  - El resto de productos, con el informe de Crystal, como hasta ahora.
-  - Si el documento tiene varias cosas, una pestaña por cada una.
+  - Con enrollable o HoneyComb: pestaña "Antiguo" (Crystal, todo el documento) y "Nuevo" (PDF del backend, Puppeteer).
+  - Sin ninguno de los dos: solo Crystal, como hasta ahora.
   Si no se puede consultar el contenido del documento se muestra Crystal, para que imprimir
-  siga funcionando aunque falle la parte nueva. Si falla solo la consulta del enrollable,
-  el enrollable se imprime con Crystal.
+  siga funcionando aunque falle la parte nueva.
 */
 @Component({
   selector: 'app-impresion-documento',
@@ -64,10 +43,11 @@ const PDF_PROPIOS: { [clave: string]: { titulo: string, api: string, fichero: st
 export class ImpresionDocumentoComponent implements OnDestroy {
 
   pestanas: PestanaImpresion[] = [];
-  activa: ClavePestana = 'crystal';
+  activa: 'crystal' | 'pdf' = 'crystal';
   cargando = false;
 
-  private urlsBlob: string[] = [];
+  private urlApi = environment.host_ip + (IMPRESION_ENROLLABLE ? '/api/sm/impresion' : '/api/sm/honeycomb/impresion');
+  private urlBlob: string | null = null;
   // Evita que la respuesta de una impresión anterior pise la actual
   private peticion = 0;
 
@@ -79,33 +59,35 @@ export class ImpresionDocumentoComponent implements OnDestroy {
     const peticion = this.peticion;
     this.cargando = true;
 
-    const infoEnrollable: Observable<any> = IMPRESION_ENROLLABLE
-      ? this.http.get<any>(this.urlApi('enrollable') + '/info/' + doc + '/' + id, { headers: this.cabeceras() })
-        .pipe(catchError(() => of(null)))
-      : of(null);
-
-    forkJoin([
-      this.http.get<any>(this.urlApi('honeycomb') + '/info/' + doc + '/' + id, { headers: this.cabeceras() }),
-      infoEnrollable
-    ]).subscribe(
-      ([honeycomb, enrollable]) => {
+    this.http.get<any>(this.urlApi + '/info/' + doc + '/' + id, { headers: this.cabeceras() }).subscribe(
+      info => {
         if (peticion !== this.peticion) return;
-        // Sin respuesta del enrollable, el enrollable va con Crystal (tieneOtros de la HoneyComb lo incluye)
-        const conEnrollable = !!(enrollable && enrollable.tieneEnrollable);
-        const tieneOtros = enrollable ? enrollable.tieneOtros : honeycomb.tieneOtros;
-        if (tieneOtros || (!conEnrollable && !honeycomb.tieneHoneycomb)) {
-          this.pestanas.push(this.pestanaCrystal(doc, id, cust));
+        // Respuesta de /api/sm/impresion: { enrollable, honeycomb }; Crystal sale siempre, en "Antiguo"
+        // Respuesta de /api/sm/honeycomb/impresion: { tieneHoneycomb, tieneOtros }
+        const contenido = IMPRESION_ENROLLABLE
+          ? { enrollable: info.enrollable, honeycomb: info.honeycomb, crystal: true }
+          : { enrollable: false, honeycomb: info.tieneHoneycomb, crystal: info.tieneOtros || !info.tieneHoneycomb };
+
+        if (contenido.crystal) {
+          const crystal = this.pestanaCrystal(doc, id, cust);
+          if (IMPRESION_ENROLLABLE) crystal.titulo = 'ANTIGUO';
+          this.pestanas.push(crystal);
         }
-        const pendientes: ClavePestana[] = [];
-        if (conEnrollable) pendientes.push('enrollable');
-        if (honeycomb.tieneHoneycomb) pendientes.push('honeycomb');
-        pendientes.forEach(clave => {
-          const p = PDF_PROPIOS[clave];
-          this.pestanas.push({ clave: clave, titulo: p.titulo, url: null, error: false, textoError: p.textoError });
-          this.cargarPdf(clave, doc, id, peticion);
-        });
-        this.cargando = pendientes.length > 0;
-        this.activa = this.pestanas[0].clave;
+        if (contenido.enrollable || contenido.honeycomb) {
+          const productos = [contenido.enrollable ? 'Enrollable' : '', contenido.honeycomb ? 'HoneyComb' : ''].filter(p => p);
+          this.pestanas.push({
+            clave: 'pdf',
+            titulo: IMPRESION_ENROLLABLE ? 'NUEVO' : 'HoneyComb',
+            url: null,
+            error: false,
+            textoError: contenido.enrollable ? 'NO SE HA PODIDO GENERAR EL PDF DEL ENROLLABLE' : 'NO SE HA PODIDO GENERAR EL PDF DE LA HONEYCOMB'
+          });
+          this.cargarPdf(doc, id, productos.join('_'), peticion);
+        } else {
+          this.cargando = false;
+        }
+        // Con PDF propio se abre directamente; la otra pestaña queda al lado
+        this.activa = this.pestanas[this.pestanas.length - 1].clave;
       },
       () => {
         if (peticion !== this.peticion) return;
@@ -127,34 +109,31 @@ export class ImpresionDocumentoComponent implements OnDestroy {
     this.peticion++;
     this.pestanas = [];
     this.cargando = false;
-    this.urlsBlob.forEach(url => URL.revokeObjectURL(url));
-    this.urlsBlob = [];
+    if (this.urlBlob) {
+      URL.revokeObjectURL(this.urlBlob);
+      this.urlBlob = null;
+    }
   }
 
   ngOnDestroy() {
     this.limpiar();
   }
 
-  private urlApi(clave: string): string {
-    return environment.host_ip + PDF_PROPIOS[clave].api;
-  }
-
-  private cargarPdf(clave: ClavePestana, doc: DocumentoImpresion, id: number | string, peticion: number) {
-    const pestana = this.pestanas.find(p => p.clave === clave);
-    this.http.get(this.urlApi(clave) + '/pdf/' + doc + '/' + id, { headers: this.cabeceras(), responseType: 'blob' }).subscribe(
+  private cargarPdf(doc: DocumentoImpresion, id: number | string, prefijo: string, peticion: number) {
+    const pestana = this.pestanas.find(p => p.clave === 'pdf');
+    this.http.get(this.urlApi + '/pdf/' + doc + '/' + id, { headers: this.cabeceras(), responseType: 'blob' }).subscribe(
       pdf => {
         if (peticion !== this.peticion) return;
-        const urlBlob = URL.createObjectURL(pdf);
-        this.urlsBlob.push(urlBlob);
-        pestana.url = this.domSanitizer.bypassSecurityTrustResourceUrl(urlBlob);
-        pestana.descarga = this.domSanitizer.bypassSecurityTrustUrl(urlBlob);
-        pestana.nombreFichero = PDF_PROPIOS[clave].fichero + '_' + doc + '_' + id + '.pdf';
-        this.cargando = this.pestanas.some(p => p.clave !== 'crystal' && !p.url && !p.error);
+        this.urlBlob = URL.createObjectURL(pdf);
+        pestana.url = this.domSanitizer.bypassSecurityTrustResourceUrl(this.urlBlob);
+        pestana.descarga = this.domSanitizer.bypassSecurityTrustUrl(this.urlBlob);
+        pestana.nombreFichero = prefijo + '_' + doc + '_' + id + '.pdf';
+        this.cargando = false;
       },
       () => {
         if (peticion !== this.peticion) return;
         pestana.error = true;
-        this.cargando = this.pestanas.some(p => p.clave !== 'crystal' && !p.url && !p.error);
+        this.cargando = false;
       }
     );
   }
