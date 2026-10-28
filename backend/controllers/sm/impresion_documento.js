@@ -8,7 +8,7 @@
 
    GET /api/sm/impresion/info/:doc/:id  -> { enrollable, honeycomb }
    GET /api/sm/impresion/pdf/:doc/:id   -> application/pdf
-   GET /api/sm/impresion/pdf/:doc/:id?modo=produccion -> el mismo PDF para producción (pestaña "A producción"):
+   GET /api/sm/impresion/pdf/:doc/:id?modo=produccion -> el mismo PDF para producción (pestaña "Producción"):
        sin las columnas 48, Código, C1 y PVP, sin filas de total y sin resumen
    doc ='pedido' | 'presupuesto', id = IDROW del pedido o presupuesto. */
 
@@ -145,7 +145,7 @@ function montarResumen(enr, hc) {
   return filas;
 }
 
-// Columnas que no salen en el PDF de producción (pestaña "A producción"): códigos de tejido y precios
+// Columnas que no salen en el PDF de producción (pestaña "Producción"): códigos de tejido y precios
 const COLUMNAS_SIN_PRODUCCION = ['48', 'Código', 'C1', 'PVP'];
 
 /* Las mismas secciones sin las columnas de esos títulos.

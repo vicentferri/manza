@@ -14,7 +14,7 @@ interface PestanaImpresion {
   // Contenido que se carga en el visor la primera vez que se muestra la pestaña: Chrome no dibuja un PDF
   // que se carga dentro de un marco oculto (se ve en blanco)
   pendiente?: () => SafeResourceUrl;
-  // PDF que se pide al backend la primera vez que se muestra la pestaña ("A producción")
+  // PDF que se pide al backend la primera vez que se muestra la pestaña ("Producción")
   cargarAlMostrar?: () => void;
   error: boolean;
   textoError?: string;
@@ -31,7 +31,7 @@ const PROC_CRYSTAL: { [doc: string]: string } = {
 };
 
 // true: tres pestañas, "Antiguo" con el informe de Crystal de siempre, "Nuevo" con el enrollable (clientes 1, 4 y 5)
-//       y la HoneyComb en un único PDF con el resumen de precios (/api/sm/impresion) y "A producción" con el mismo
+//       y la HoneyComb en un único PDF con el resumen de precios (/api/sm/impresion) y "Producción" con el mismo
 //       PDF sin códigos de tejido, precios ni totales (?modo=produccion).
 // false: como antes, solo la HoneyComb en PDF (/api/sm/honeycomb/impresion) y el resto con Crystal.
 const IMPRESION_ENROLLABLE = true;
@@ -39,7 +39,7 @@ const IMPRESION_ENROLLABLE = true;
 /*
   Visor de impresión de pedidos y presupuestos.
   - Con enrollable o HoneyComb: pestaña "Antiguo" (Crystal, todo el documento), "Nuevo" (PDF del backend, Puppeteer)
-    y "A producción" (el mismo PDF sin precios).
+    y "Producción" (el mismo PDF sin precios).
   - Sin ninguno de los dos: solo Crystal, como hasta ahora.
   Si no se puede consultar el contenido del documento se muestra Crystal, para que imprimir
   siga funcionando aunque falle la parte nueva.
@@ -95,7 +95,7 @@ export class ImpresionDocumentoComponent implements OnDestroy {
           if (IMPRESION_ENROLLABLE) {
             const produccion: PestanaImpresion = {
               clave: 'produccion',
-              titulo: 'A PRODUCCIÓN',
+              titulo: 'PRODUCCIÓN',
               url: null,
               error: false,
               textoError: 'NO SE HA PODIDO GENERAR EL PDF DE PRODUCCIÓN'
