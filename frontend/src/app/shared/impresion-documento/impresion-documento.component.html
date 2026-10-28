@@ -1,6 +1,6 @@
 <ul class="nav nav-tabs impresion-pestanas" *ngIf="pestanas.length > 1">
   <li class="nav-item" *ngFor="let p of pestanas">
-    <a class="nav-link" href="javascript:void(0)" [class.active]="activa === p.clave" (click)="activa = p.clave">
+    <a class="nav-link" href="javascript:void(0)" [class.active]="activa === p.clave" (click)="activar(p.clave)">
       {{ p.titulo | translate }}
     </a>
   </li>

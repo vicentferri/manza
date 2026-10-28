@@ -9,6 +9,9 @@ interface PestanaImpresion {
   clave: 'crystal' | 'pdf';
   titulo: string;
   url: SafeResourceUrl | null;
+  // Contenido que se carga en el visor la primera vez que se muestra la pestaña: Chrome no dibuja un PDF
+  // que se carga dentro de un marco oculto (se ve en blanco)
+  pendiente?: () => SafeResourceUrl;
   error: boolean;
   textoError?: string;
   // Descarga con nombre propio: el botón del visor del navegador guarda el PDF con el nombre aleatorio de su URL temporal
@@ -87,12 +90,12 @@ export class ImpresionDocumentoComponent implements OnDestroy {
           this.cargando = false;
         }
         // Con PDF propio se abre directamente; la otra pestaña queda al lado
-        this.activa = this.pestanas[this.pestanas.length - 1].clave;
+        this.activar(this.pestanas[IMPRESION_ENROLLABLE ? this.pestanas.length - 1 : 0].clave);
       },
       () => {
         if (peticion !== this.peticion) return;
         this.pestanas.push(this.pestanaCrystal(doc, id, cust));
-        this.activa = 'crystal';
+        this.activar('crystal');
         this.cargando = false;
       }
     );
@@ -102,7 +105,17 @@ export class ImpresionDocumentoComponent implements OnDestroy {
   cargarCrystal(doc: DocumentoImpresion, ids: number | string, cust?: number | string) {
     this.limpiar();
     this.pestanas.push(this.pestanaCrystal(doc, ids, cust));
-    this.activa = 'crystal';
+    this.activar('crystal');
+  }
+
+  /* Muestra una pestaña y carga su contenido si aún no se había cargado */
+  activar(clave: 'crystal' | 'pdf') {
+    this.activa = clave;
+    const pestana = this.pestanas.find(p => p.clave === clave);
+    if (pestana && pestana.pendiente) {
+      pestana.url = pestana.pendiente();
+      pestana.pendiente = undefined;
+    }
   }
 
   limpiar() {
@@ -125,9 +138,11 @@ export class ImpresionDocumentoComponent implements OnDestroy {
       pdf => {
         if (peticion !== this.peticion) return;
         this.urlBlob = URL.createObjectURL(pdf);
-        pestana.url = this.domSanitizer.bypassSecurityTrustResourceUrl(this.urlBlob);
+        const urlBlob = this.urlBlob;
+        pestana.pendiente = () => this.domSanitizer.bypassSecurityTrustResourceUrl(urlBlob);
         pestana.descarga = this.domSanitizer.bypassSecurityTrustUrl(this.urlBlob);
         pestana.nombreFichero = prefijo + '_' + doc + '_' + id + '.pdf';
+        if (this.activa === 'pdf') this.activar('pdf');
         this.cargando = false;
       },
       () => {
@@ -148,7 +163,8 @@ export class ImpresionDocumentoComponent implements OnDestroy {
     return {
       clave: 'crystal',
       titulo: 'RESTO DE PRODUCTOS',
-      url: this.domSanitizer.bypassSecurityTrustResourceUrl(url),
+      url: null,
+      pendiente: () => this.domSanitizer.bypassSecurityTrustResourceUrl(url),
       error: false
     };
   }
