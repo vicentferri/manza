@@ -46,8 +46,8 @@ const DOCUMENTOS = {
   }
 };
 
-/* Columnas de cada plantilla. 'impresion' y 'cantidad' solo salen si alguna fila las lleva.
-   Estancia se imprime pero no cuenta para decidir si dos cortinas son iguales. */
+/* Columnas de cada plantilla. 'impresion', 'estancia' y 'cantidad' solo salen si alguna fila las lleva.
+   Estancia no cuenta para decidir si dos cortinas son iguales. */
 const COLUMNAS = {
   cadena: [
     { campo: 'producto', titulo: 'Producto', clase: 'producto' },
@@ -87,7 +87,7 @@ const COLUMNAS = {
   ]
 };
 
-const COLUMNAS_OPCIONALES = ['impresion', 'cantidad'];
+const COLUMNAS_OPCIONALES = ['impresion', 'estancia', 'cantidad'];
 const NO_AGRUPAN = ['estancia', 'cantidad'];
 
 function dosDigitos(n) {
@@ -206,8 +206,8 @@ function filaDeLinea(l) {
   };
   if (motor) {
     fila.motor = texto(l.acc_modelo_text);
-    fila.bateria = texto(l.acc_marca_text);
-    fila.mando = texto(l.mando_text);
+    fila.bateria = texto(l.acc_marca_text) || 'SIN BATERÍA';
+    fila.mando = texto(l.mando_text) || 'SIN MANDO';
     fila.cargador = texto(l.cargador_text);
   } else {
     fila.colorCadena = texto(l.cad_color_text);
