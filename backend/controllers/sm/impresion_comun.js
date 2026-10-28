@@ -22,8 +22,6 @@ const DOCUMENTOS = {
   }
 };
 
-const FILAS_POR_HOJA = 10;
-
 const fmtImporte = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function dosDigitos(n) {
@@ -86,18 +84,18 @@ function repartir(cent, n) {
   return partes;
 }
 
-/* Parte las filas en hojas de FILAS_POR_HOJA. columnas: [{ titulo }], filas: [[{ valor, clase }]].
-   total (opcional): fila de total en la última hoja, { etiqueta, c1, precio }; C1 y Precio son
-   siempre las dos últimas columnas. */
-function hojas(columnas, filas, total) {
-  const resultado = [];
-  for (let i = 0; i < filas.length; i += FILAS_POR_HOJA) {
-    resultado.push({ columnas: columnas, filas: filas.slice(i, i + FILAS_POR_HOJA) });
-  }
-  if (total && resultado.length) {
-    resultado[resultado.length - 1].total = Object.assign({ colspan: columnas.length - 2 }, total);
-  }
-  return resultado;
+/* Bloque del documento: un título y su tabla. Los bloques van seguidos en la misma hoja y solo se pasa
+   a otra cuando se llena; la tabla repite allí sus títulos de columna.
+   columnas: [{ titulo }], filas: [[{ valor, clase }]].
+   total (opcional): fila de total al final, { etiqueta, c1, precio }; C1 y Precio son siempre las dos
+   últimas columnas. */
+function seccion(titulo, columnas, filas, total) {
+  return {
+    titulo: titulo,
+    columnas: columnas,
+    filas: filas,
+    total: total ? Object.assign({ colspan: columnas.length - 2 }, total) : null
+  };
 }
 
 function validarParametros(req, res) {
@@ -122,6 +120,6 @@ module.exports = {
   formatC1,
   formatImporte,
   repartir,
-  hojas,
+  seccion,
   validarParametros
 };

@@ -2,7 +2,7 @@
 
 /* Hojas del enrollable (tipo 1) para la impresión en PDF del pedido o presupuesto (impresion_documento.js).
    Solo para los clientes de CLIENTES (Leroy, Leroy Web y Solarmanes); el resto imprime el enrollable con Crystal.
-   Dos plantillas, según el accionamiento de cada línea: primero las hojas de cadena y después las de motor. */
+   Dos plantillas, según el accionamiento de cada línea: primero el bloque de cadena y después el de motor. */
 
 const sql = require('mssql');
 const c = require('./impresion_comun');
@@ -175,13 +175,16 @@ function agrupar(lineas, columnas) {
   return filas;
 }
 
-function hojasDePlantilla(nombre, lineas) {
-  if (!lineas.length) return [];
+const TITULOS = { cadena: 'Enrollable - Cadena', motor: 'Enrollable - Motor' };
+
+function seccionDePlantilla(nombre, lineas) {
+  if (!lineas.length) return null;
   const filas = agrupar(lineas, COLUMNAS[nombre]);
   const columnas = COLUMNAS[nombre].filter(function (col) {
     return COLUMNAS_OPCIONALES.indexOf(col.campo) < 0 || filas.some(function (f) { return f[col.campo]; });
   });
-  return c.hojas(
+  return c.seccion(
+    TITULOS[nombre],
     columnas.map(function (col) { return { titulo: col.titulo }; }),
     filas.map(function (f) {
       return columnas.map(function (col) { return { valor: f[col.campo], clase: col.clase || '' }; });
@@ -190,7 +193,7 @@ function hojasDePlantilla(nombre, lineas) {
 }
 
 /* Hojas y totales del enrollable del documento, o null si no tiene enrollable o el cliente no imprime así.
-   Devuelve { hojas, precio, c1 } con los totales en céntimos (c1 = null si alguna línea no lo tiene). */
+   Devuelve { secciones, precio, c1 } con los totales en céntimos (c1 = null si alguna línea no lo tiene). */
 async function leer(pool, doc, id, cliente) {
   if (!aplica(cliente)) return null;
   const lineas = await leerLineas(pool, doc, id, cliente);
@@ -206,15 +209,16 @@ async function leer(pool, doc, id, cliente) {
 
   const precio = sumar(unidades, 'precio');
   const c1 = sumar(unidades, 'c1');
-  const hojas = hojasDePlantilla('cadena', porPlantilla.cadena).concat(hojasDePlantilla('motor', porPlantilla.motor));
-  const ultima = hojas[hojas.length - 1];
+  const secciones = [seccionDePlantilla('cadena', porPlantilla.cadena), seccionDePlantilla('motor', porPlantilla.motor)]
+    .filter(Boolean);
+  const ultima = secciones[secciones.length - 1];
   ultima.total = {
     colspan: ultima.columnas.length - 2,
     etiqueta: 'Total Enrollable',
     c1: c1 === null ? '' : c.formatC1(c1),
     precio: c.formatImporte(precio)
   };
-  return { hojas: hojas, precio: precio, c1: c1 };
+  return { secciones: secciones, precio: precio, c1: c1 };
 }
 
 module.exports = {

@@ -21,6 +21,17 @@ const honeycomb = require('./impresion_honeycomb');
 
 const PLANTILLA = path.join(__dirname, '../../templates/documento/documento.hbs');
 
+/* Cabecera y pie de cada hoja. Chrome los pinta fuera del documento: no heredan sus estilos (todo en línea,
+   con el tamaño de letra explícito) y solo rellenan las clases pageNumber y totalPages. */
+const CABECERA = Handlebars.compile(
+  '<div style="width:100%; margin:0 10mm; font-family:Arial, Helvetica, sans-serif; color:#000;">' +
+  '<div style="font-size:8pt; margin-bottom:3mm;">Fecha: {{fechaImpresion}}</div>' +
+  '<div style="font-size:11.5pt; font-weight:bold;">{{textoDocumento}}: {{referencia}} - {{textoFecha}}: {{fecha}}' +
+  ' - Fecha prevista: {{fechaPrevista}}</div></div>'
+);
+const PIE = '<div style="width:100%; margin:0 10mm; font-family:Arial, Helvetica, sans-serif; font-size:8pt; text-align:right;">' +
+  'Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>';
+
 async function leerResumen(pool, doc, id) {
   const r = await pool.request()
     .input('id', sql.Int, id)
@@ -55,7 +66,7 @@ async function impresion_documento_info(req, res) {
   }
 }
 
-/* Hojas de la HoneyComb con las filas y el total que monta impresion_honeycomb.js */
+/* Bloque de la HoneyComb con las filas y el total que monta impresion_honeycomb.js */
 async function leerHoneycomb(pool, nombreDoc, id) {
   const datos = await honeycomb.leerDatos(pool, honeycomb.DOCUMENTOS[nombreDoc], id);
   if (!datos || !datos.lineas.length) return null;
@@ -63,6 +74,7 @@ async function leerHoneycomb(pool, nombreDoc, id) {
   const modelo = honeycomb.montarModelo(honeycomb.DOCUMENTOS[nombreDoc], datos, '');
   const columnas = ['Producto', 'Color tejido', 'Código', 'Color mecanismo', 'Accionamiento', 'Ancho cm', 'Alto cm',
     'Cantidad', 'C1', 'Precio'].map(function (titulo) { return { titulo: titulo }; });
+  // montarModelo reparte las filas en hojas de 10 (las de su PDF propio); aquí van todas seguidas
   const filas = [];
   modelo.hojas.forEach(function (hoja) {
     hoja.filas.forEach(function (f) {
@@ -90,11 +102,11 @@ async function leerHoneycomb(pool, nombreDoc, id) {
   });
 
   return {
-    hojas: c.hojas(columnas, filas, {
+    secciones: [c.seccion('HoneyComb', columnas, filas, {
       etiqueta: 'Total HoneyComb',
       c1: c1 === null ? '' : c.formatC1(c1),
       precio: c.formatImporte(precio)
-    }),
+    })],
     precio: precio,
     c1: c1
   };
@@ -155,9 +167,7 @@ async function impresion_documento_pdf(req, res) {
     if (!enr && !hc) {
       return res.status(404).json({ error: 'El ' + req.params.doc + ' ' + p.id + ' no tiene enrollable ni HoneyComb para imprimir aquí' });
     }
-    const hojas = (enr ? enr.hojas : []).concat(hc ? hc.hojas : []);
-    hojas[hojas.length - 1].ultima = true;
-    hojas[hojas.length - 1].resumen = montarResumen(enr, hc);
+    const secciones = (enr ? enr.secciones : []).concat(hc ? hc.secciones : []);
 
     // El título del documento es el nombre con el que el visor del navegador propone guardarlo
     const nombreFichero = [enr ? 'Enrollable' : '', hc ? 'HoneyComb' : ''].filter(Boolean).join('_') +
@@ -165,15 +175,26 @@ async function impresion_documento_pdf(req, res) {
     const hoy = new Date();
     const modelo = {
       nombreFichero: nombreFichero,
+      secciones: secciones,
+      resumen: montarResumen(enr, hc)
+    };
+    const datosCabecera = {
       fechaImpresion: c.dosDigitos(hoy.getDate()) + '/' + c.dosDigitos(hoy.getMonth() + 1) + '/' + hoy.getFullYear(),
       textoDocumento: p.doc.textoDocumento,
       referencia: c.texto(cabecera.REFCLIENTE) || String(cabecera.IDROW),
       textoFecha: p.doc.textoFecha,
       fecha: c.formatFecha(cabecera.FECHA),
-      fechaPrevista: c.fechaPrevista(cabecera.FECHA),
-      hojas: hojas
+      fechaPrevista: c.fechaPrevista(cabecera.FECHA)
     };
-    const buffer = await pdf.generarPdf(generarHtml(modelo), { landscape: true, titulo: nombreFichero });
+    // La cabecera del pedido y el número de página se repiten en cada hoja (cabecera y pie de Chrome)
+    const buffer = await pdf.generarPdf(generarHtml(modelo), {
+      landscape: true,
+      titulo: nombreFichero,
+      displayHeaderFooter: true,
+      headerTemplate: CABECERA(datosCabecera),
+      footerTemplate: PIE,
+      margin: { top: '24mm', bottom: '12mm', left: '10mm', right: '10mm' }
+    });
 
     res.set({
       'Content-Type': 'application/pdf',
