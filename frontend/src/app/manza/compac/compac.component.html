@@ -179,6 +179,7 @@
             [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_TejidoColor" (change)="ChangeTipo4Color()">
             <option *ngFor="let pow of tejidos_compac_colores" [value]="pow.id">{{ pow.text }}</option>
           </select>
+          <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo4_Tejido" [color]="Tipo4_TejidoColor" [colores]="tejidos_compac_colores"></app-tejido-imagen>
         </div>
       </div>
     </div>

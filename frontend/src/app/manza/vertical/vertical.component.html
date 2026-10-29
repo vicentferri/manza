@@ -175,6 +175,7 @@
               [hidden]="TipoVertical == '3'">
               <option *ngFor="let pow of pv_tejidosC_1" [value]="pow.id">{{ pow.text }}</option>
             </select>
+            <app-tejido-imagen *ngIf="TipoVertical != '3'" [cliente]="Cliente" [tejido]="Tipo3_Tejido" [color]="Tipo3_TejidoColor1" [colores]="pv_tejidosC_1"></app-tejido-imagen>
           </div>
           <div class="col-3 pt-2" [hidden]="!PV_SEL_1">
             <label [hidden]="TipoVertical != '1'">{{ "COLOR2" | translate }}</label>
@@ -330,6 +331,7 @@
               (change)="Vertical_TejidosCombinados()" (blur)="Vertical_TejidosCombinados()">
               <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
             </select>
+            <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo3_Tejido_2" [color]="Tipo3_TejidoColor1_2" [colores]="pv_tejidosC_2"></app-tejido-imagen>
           </div>
           <div class="col-3 pt-2" [hidden]="!PV_SEL_2">
             <label>{{ "COLOR2" | translate }}</label>

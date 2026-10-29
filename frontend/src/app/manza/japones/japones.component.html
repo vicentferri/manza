@@ -234,6 +234,7 @@
             (change)="ChangeTipo2Color()" (blur)="ChangeTipo2Color()">
             <option *ngFor="let pow of pj_tejidosC" [value]="pow.id">{{ pow.text }}</option>
           </select>
+          <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor" [colores]="pj_tejidosC"></app-tejido-imagen>
         </div>
       </div>
 

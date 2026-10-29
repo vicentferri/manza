@@ -219,6 +219,15 @@ smapi.get('/tejidos_maestro/tipos', NuevoSistema, TejidosMaestroController.tipos
 smapi.get('/tejidos_maestro/series', Auth.ensureAuth, TejidosMaestroController.series);
 smapi.post('/tejidos_maestro/tipos', NuevoSistema, TejidosMaestroController.tipo_guardar);
 
+/* Imágenes de los colores de tejido de Leroy Merlín (SOL_TEJIDOS_COLORES_IMAGENES, ver sqlTejidos/05).
+   caras e imagen van sin sesión: el configurador las pide desde <img> */
+var TejidosImagenesController = require('../controllers/sm/tejidos_imagenes');
+smapi.get('/tejidos_imagenes', NuevoSistema, TejidosImagenesController.lista);
+smapi.get('/tejidos_imagenes/caras/:tejido/:color', TejidosImagenesController.caras);
+smapi.get('/tejidos_imagenes/imagen/:tejido/:color/:cara', TejidosImagenesController.imagen);
+smapi.post('/tejidos_imagenes/imagen/:tejido/:color/:cara', NuevoSistema, TejidosImagenesController.subir);
+smapi.delete('/tejidos_imagenes/imagen/:tejido/:color/:cara', NuevoSistema, TejidosImagenesController.borrar);
+
 smapi.get('/tejidos_atributos', TejidosController.tejidos_atributos);
 smapi.post('/tejidos_atributos_put', TejidosController.put_tejidos_atributos);
 smapi.post('/tejidos_atributod_del', TejidosController.del_tejido_atributos);

@@ -28,6 +28,7 @@ const PAGE_TITLES: { [url: string]: PageTitle } = {
 
   '/routes/master/productos': T('Nuevo sistema', 'Productos'),
   '/routes/master/tejidos-maestro': T('Nuevo sistema', 'Maestro de Tejidos'),
+  '/routes/master/tejidos-imagenes': T('Nuevo sistema', 'Imágenes de Tejidos'),
   '/routes/herstellen/artikeln_fab_cd_v3': T('Nuevo sistema', 'Fabricación'),
 
   '/routes/cdeco/main': T('Cortinadecor', 'Tejidos'),

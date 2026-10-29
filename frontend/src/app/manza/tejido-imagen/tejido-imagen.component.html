@@ -1,0 +1,13 @@
+<div class="tejido-imagen" *ngIf="imagenes.length">
+  <figure *ngFor="let i of imagenes" [class.elegida]="caraElegida === i.cara" (click)="ampliada = i">
+    <img [src]="i.url" [alt]="i.nombre | translate" />
+    <figcaption>{{ i.nombre | translate }}</figcaption>
+  </figure>
+</div>
+
+<div class="tejido-imagen-ampliada" *ngIf="ampliada" (click)="ampliada = null">
+  <figure>
+    <img [src]="ampliada.url" [alt]="ampliada.nombre | translate" />
+    <figcaption>{{ ampliada.nombre | translate }}</figcaption>
+  </figure>
+</div>

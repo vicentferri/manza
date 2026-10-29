@@ -29,6 +29,7 @@ import { EnrollableNuevoComponent } from './enrollable-nuevo/enrollable-nuevo.co
 import { JaponesComponent } from './japones/japones.component';
 import { VerticalComponent } from './vertical/vertical.component';
 import { CompacComponent } from './compac/compac.component';
+import { TejidoImagenComponent } from './tejido-imagen/tejido-imagen.component';
 
 @NgModule({
   imports: [
@@ -61,6 +62,7 @@ import { CompacComponent } from './compac/compac.component';
     JaponesComponent,
     VerticalComponent,
     CompacComponent,
+    TejidoImagenComponent,
     SafeUrlPipe
   ]
 })
