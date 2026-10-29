@@ -1,12 +1,13 @@
 'use strict'
 
-/* Impresión en PDF (Puppeteer) de pedidos y presupuestos: enrollable y HoneyComb en un único documento.
-   - Hojas del enrollable (cadena y después motor; solo clientes de impresion_enrollable.js) y después las de la HoneyComb.
-   - Al final, el resumen de precios: enrollable, HoneyComb y su suma.
+/* Impresión en PDF (Puppeteer) de pedidos y presupuestos: todos los productos en un único documento.
+   - Los bloques de cada producto, en el orden de PRODUCTOS (hoy enrollable y HoneyComb).
+   - Al final, el resumen de precios: cada producto y su suma.
    El visor lo muestra en la pestaña "Nuevo"; en "Antiguo" sale el informe de Crystal de siempre (haru_server/preview.aspx).
-   Sustituye a impresion_honeycomb.js cuando el visor tiene activada la impresión del enrollable (IMPRESION_ENROLLABLE).
+   Sustituye a ../impresion_honeycomb.js cuando el visor tiene activada la impresión del enrollable (IMPRESION_ENROLLABLE).
 
-   GET /api/sm/impresion/info/:doc/:id  -> { enrollable, honeycomb }
+   GET /api/sm/impresion/info/:doc/:id  -> { productos: ['enrollable', ...], enrollable: true, honeycomb: false }
+       (productos: las claves de los que se imprimen aquí; los campos sueltos se mantienen para el visor actual)
    GET /api/sm/impresion/pdf/:doc/:id   -> application/pdf
    GET /api/sm/impresion/pdf/:doc/:id?modo=produccion -> el mismo PDF para producción (pestaña "Producción"):
        sin las columnas 48, Código, C1 y PVP, sin filas de total y sin resumen
@@ -16,12 +17,22 @@ const sql = require('mssql');
 const fs = require('fs');
 const path = require('path');
 const Handlebars = require('handlebars');
-const pdf = require('../../services/pdf');
-const c = require('./impresion_comun');
-const enrollable = require('./impresion_enrollable');
-const honeycomb = require('./impresion_honeycomb');
+const pdf = require('../../../services/pdf');
+const c = require('./comun');
 
-const PLANTILLA = path.join(__dirname, '../../templates/documento/documento.hbs');
+/* Productos que se imprimen en este documento, en el orden en que salen. Cada módulo exporta:
+     clave       nombre en la respuesta de info ('enrollable')
+     nombre      en el resumen y en el nombre del fichero ('Enrollable')
+     tipo        TIPO de sus líneas en el pedido o presupuesto (1)
+     aplica(cliente)                  si el cliente lo imprime aquí (si no, sale con Crystal en "Antiguo")
+     leer(pool, doc, id, cliente)     { secciones, precio, c1 } (totales en céntimos, c1 null si falta), o null
+   Para añadir un producto: crear su módulo con ese contrato y añadirlo aquí. */
+const PRODUCTOS = [
+  require('./enrollable'),
+  require('./honeycomb')
+];
+
+const PLANTILLA = path.join(__dirname, '../../../templates/impresion/documento.hbs');
 
 /* Cabecera y pie de cada hoja. La cabecera lleva además la referencia del documento (GUID), el cliente y el centro.
    Chrome los pinta fuera del documento: no heredan sus estilos (todo en línea, con el tamaño de letra explícito)
@@ -38,22 +49,26 @@ const CABECERA = Handlebars.compile(
 const PIE = '<div style="width:100%; margin:0 10mm; font-family:Arial, Helvetica, sans-serif; font-size:8pt; text-align:right;">' +
   'Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>';
 
+/* null si no existe el documento; si existe, { productos: [claves], clave: true/false }: los productos que tienen
+   líneas suyas que se imprimen aquí */
 async function leerResumen(pool, doc, id) {
+  const cab = await pool.request()
+    .input('id', sql.Int, id)
+    .query('select CLIENTE from ' + doc.cabecera + ' where IDROW = @id');
+  if (!cab.recordset.length) return null;
+  const cliente = cab.recordset[0].CLIENTE;
+
   const r = await pool.request()
     .input('id', sql.Int, id)
-    .query(
-      'select (select max(CLIENTE) from ' + doc.cabecera + ' where IDROW = @id) as cliente, ' +
-      '  (select count(*) from ' + doc.cabecera + ' where IDROW = @id) as existe, ' +
-      '  sum(case when TIPO = 1 then 1 else 0 end) as enrollable, ' +
-      '  sum(case when TIPO = 7 then 1 else 0 end) as honeycomb ' +
-      'from ' + doc.lineas + ' where IDROW = @id'
-    );
-  const f = r.recordset[0];
-  return {
-    existe: f.existe > 0,
-    enrollable: enrollable.aplica(f.cliente) && f.enrollable > 0,
-    honeycomb: f.honeycomb > 0
-  };
+    .query('select distinct TIPO from ' + doc.lineas + ' where IDROW = @id');
+  const tipos = r.recordset.map(function (f) { return f.TIPO; });
+
+  const resumen = { productos: [] };
+  PRODUCTOS.forEach(function (producto) {
+    resumen[producto.clave] = producto.aplica(cliente) && tipos.indexOf(producto.tipo) >= 0;
+    if (resumen[producto.clave]) resumen.productos.push(producto.clave);
+  });
+  return resumen;
 }
 
 async function impresion_documento_info(req, res) {
@@ -62,60 +77,14 @@ async function impresion_documento_info(req, res) {
   try {
     const pool = await sql.connect();
     const resumen = await leerResumen(pool, p.doc, p.id);
-    if (!resumen.existe) {
+    if (!resumen) {
       return res.status(404).json({ error: 'No existe el ' + req.params.doc + ' ' + p.id });
     }
-    res.json({ enrollable: resumen.enrollable, honeycomb: resumen.honeycomb });
+    res.json(resumen);
   } catch (err) {
     console.error('impresion_documento_info:', err);
     res.status(500).json({ error: 'Error consultando el ' + req.params.doc });
   }
-}
-
-/* Bloque de la HoneyComb con las filas y el total que monta impresion_honeycomb.js */
-async function leerHoneycomb(pool, nombreDoc, id) {
-  const datos = await honeycomb.leerDatos(pool, honeycomb.DOCUMENTOS[nombreDoc], id);
-  if (!datos || !datos.lineas.length) return null;
-
-  const modelo = honeycomb.montarModelo(honeycomb.DOCUMENTOS[nombreDoc], datos, '');
-  const columnas = ['Producto', 'Color tejido', 'Código', 'Color mecanismo', 'Accionamiento', 'Ancho cm', 'Alto cm',
-    'Cantidad', 'C1', 'PVP'].map(function (titulo) { return { titulo: titulo }; });
-  // montarModelo reparte las filas en hojas de 10 (las de su PDF propio); aquí van todas seguidas
-  const filas = [];
-  modelo.hojas.forEach(function (hoja) {
-    hoja.filas.forEach(function (f) {
-      filas.push([
-        { valor: f.producto, clase: 'producto' },
-        { valor: f.colorTejido },
-        { valor: honeycomb.CODIGO_TEJIDO },
-        { valor: f.colorMecanismo },
-        { valor: f.accionamiento },
-        { valor: f.ancho },
-        { valor: f.alto },
-        { valor: f.cantidad },
-        { valor: f.c1, clase: 'c1' },
-        { valor: f.precio, clase: 'importe' }
-      ]);
-    });
-  });
-
-  let precio = 0;
-  let c1 = 0;
-  datos.lineas.forEach(function (l) {
-    precio += c.centimos(l.T7_PVP);
-    const c1Linea = c.centimosC1(l.T7_PVP_C1);
-    c1 = c1 === null || c1Linea === null ? null : c1 + c1Linea;
-  });
-
-  return {
-    secciones: [c.seccion('HoneyComb', columnas, filas, {
-      etiqueta: 'Total HoneyComb',
-      c1: c1 === null ? '' : c.formatC1(c1),
-      precio: c.formatImporte(precio)
-    })],
-    precio: precio,
-    c1: c1
-  };
 }
 
 function sumar(partes, campo) {
@@ -136,16 +105,16 @@ function filaResumen(etiqueta, parte, clase) {
   };
 }
 
-function montarResumen(enr, hc) {
+// partes: [{ nombre, precio, c1 }] de los productos que tiene el documento
+function montarResumen(partes) {
   // Con un solo producto basta la fila del total
   const filas = [];
-  if (enr && hc) {
-    filas.push(filaResumen('Enrollable', enr));
-    filas.push(filaResumen('HoneyComb', hc));
+  if (partes.length > 1) {
+    partes.forEach(function (parte) { filas.push(filaResumen(parte.nombre, parte)); });
   }
-  const partes = [enr, hc].filter(Boolean);
   const suma = { precio: sumar(partes, 'precio'), c1: sumar(partes, 'c1') };
-  filas.push(filaResumen('Total ' + [enr ? 'Enrollable' : '', hc ? 'HoneyComb' : ''].filter(Boolean).join(' + '), suma, 'total'));
+  const nombres = partes.map(function (parte) { return parte.nombre; });
+  filas.push(filaResumen('Total ' + nombres.join(' + '), suma, 'total'));
   return filas;
 }
 
@@ -196,17 +165,22 @@ async function impresion_documento_pdf(req, res) {
     }
     const cabecera = cab.recordset[0];
 
-    const enr = await enrollable.leer(pool, p.doc, p.id, cabecera.CLIENTE);
-    const hc = await leerHoneycomb(pool, req.params.doc, p.id);
-    if (!enr && !hc) {
-      return res.status(404).json({ error: 'El ' + req.params.doc + ' ' + p.id + ' no tiene enrollable ni HoneyComb para imprimir aquí' });
+    // Los productos del documento, cada uno con sus bloques y totales
+    const partes = [];
+    for (const producto of PRODUCTOS) {
+      if (!producto.aplica(cabecera.CLIENTE)) continue;
+      const parte = await producto.leer(pool, p.doc, p.id, cabecera.CLIENTE);
+      if (parte) partes.push(Object.assign({ nombre: producto.nombre }, parte));
+    }
+    if (!partes.length) {
+      return res.status(404).json({ error: 'El ' + req.params.doc + ' ' + p.id + ' no tiene productos que se impriman aquí' });
     }
     // ?modo=produccion: el mismo documento sin códigos de tejido, precios, totales ni resumen
     const produccion = req.query && req.query.modo === 'produccion';
-    const secciones = (enr ? enr.secciones : []).concat(hc ? hc.secciones : []);
+    const secciones = [].concat.apply([], partes.map(function (parte) { return parte.secciones; }));
 
     // El título del documento es el nombre con el que el visor del navegador propone guardarlo
-    const nombreFichero = (produccion ? 'Produccion' : [enr ? 'Enrollable' : '', hc ? 'HoneyComb' : ''].filter(Boolean).join('_')) +
+    const nombreFichero = (produccion ? 'Produccion' : partes.map(function (parte) { return parte.nombre; }).join('_')) +
       '_' + req.params.doc + '_' + p.id;
     const hoy = new Date();
     // Los presupuestos no llevan C1: solo el PVP en las tablas, los totales y el resumen
@@ -215,7 +189,7 @@ async function impresion_documento_pdf(req, res) {
       nombreFichero: nombreFichero,
       secciones: produccion ? quitarColumnas(secciones, COLUMNAS_SIN_PRODUCCION, false)
         : conC1 ? secciones : quitarColumnas(secciones, ['C1'], true),
-      resumen: produccion ? null : montarResumen(enr, hc),
+      resumen: produccion ? null : montarResumen(partes),
       conC1: conC1
     };
     const datosCabecera = {

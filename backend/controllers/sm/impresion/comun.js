@@ -1,22 +1,22 @@
 'use strict'
 
-/* Utilidades de la impresión en PDF (Puppeteer) compartidas por el enrollable y el documento conjunto. */
+/* Utilidades de la impresión en PDF (Puppeteer) compartidas por el documento (documento.js) y los módulos de producto. */
 
 const DOCUMENTOS = {
   pedido: {
+    nombre: 'pedido',
     cabecera: 'dbo.SOL_PEDIDOS_COLA',
     lineas: 'dbo.SOL_PEDIDOS_COLA_LINEAS',
     // Tabla de cada tipo de producto: prefijo + número de tipo
     tablaTipo: 'dbo.SOL_PEDIDOS_COLA_TIPO_',
-    lineasHoneycomb: 'dbo.vw_report_bestellung_lines_7',
     textoDocumento: 'Pedido',
     textoFecha: 'Fecha pedido'
   },
   presupuesto: {
+    nombre: 'presupuesto',
     cabecera: 'dbo.SOL_PRESUPUESTOS_COLA',
     lineas: 'dbo.SOL_PRESUPUESTOS_COLA_LINEAS',
     tablaTipo: 'dbo.SOL_PRESUPUESTOS_COLA_TIPO_',
-    lineasHoneycomb: 'dbo.vw_reports_budget_lines_7',
     textoDocumento: 'Presupuesto',
     textoFecha: 'Fecha presupuesto'
   }

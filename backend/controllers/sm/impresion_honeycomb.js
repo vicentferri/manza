@@ -1,6 +1,8 @@
 'use strict'
 
-/* Impresión de pedidos y presupuestos HoneyComb (tipo 7) en PDF con Puppeteer.
+/* PDF anterior, solo de la HoneyComb (tipo 7), con Puppeteer. Lo usa el visor cuando IMPRESION_ENROLLABLE es false;
+   el PDF actual está en impresion/documento.js.
+   Impresión de pedidos y presupuestos HoneyComb (tipo 7) en PDF con Puppeteer.
    Solo las líneas HoneyComb: el resto de productos se sigue imprimiendo con Crystal
    (haru_server/preview.aspx). Si un documento tiene las dos cosas, el frontend pide los dos.
 
@@ -229,10 +231,5 @@ async function impresion_honeycomb_pdf(req, res) {
 
 module.exports = {
   impresion_honeycomb_info,
-  impresion_honeycomb_pdf,
-  // Para el PDF conjunto con el enrollable (impresion_documento.js)
-  DOCUMENTOS,
-  CODIGO_TEJIDO,
-  leerDatos,
-  montarModelo
+  impresion_honeycomb_pdf
 };
