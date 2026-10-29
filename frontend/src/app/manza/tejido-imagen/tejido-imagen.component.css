@@ -1,0 +1,61 @@
+.tejido-imagen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tejido-imagen figure {
+  margin: 0;
+  text-align: center;
+  cursor: zoom-in;
+}
+
+.tejido-imagen img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.tejido-imagen figure.elegida img {
+  border: 2px solid #28a745;
+}
+
+.tejido-imagen figcaption {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+/* Imagen ampliada: ocupa la pantalla, un clic la cierra */
+.tejido-imagen-ampliada {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  cursor: zoom-out;
+}
+
+.tejido-imagen-ampliada figure {
+  margin: 0;
+  text-align: center;
+}
+
+.tejido-imagen-ampliada img {
+  max-width: 90vw;
+  max-height: 80vh;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.tejido-imagen-ampliada figcaption {
+  color: #fff;
+  margin-top: 6px;
+}

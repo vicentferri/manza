@@ -26,6 +26,7 @@ import { IncrementosGenericosComponent } from './incrementos-genericos/increment
 import { TejidosColoresComponent } from './tejidos-colores/tejidos-colores.component';
 import { TejidosComponent } from './tejidos/tejidos.component';
 import { TejidosMaestroComponent } from './tejidos-maestro/tejidos-maestro.component';
+import { TejidosImagenesComponent } from './tejidos-imagenes/tejidos-imagenes.component';
 import { ImpresionDigitalComponent } from './impresion-digital/impresion-digital.component';
 import { ClientesGestionComponent } from './clientes-gestion/clientes-gestion.component';
 import { PermisosGuard } from '../../services/PermisosGuard';
@@ -59,6 +60,7 @@ const routes: Routes = [
     { path: 'tejidos-colores',  component: TejidosColoresComponent },
     { path: 'tejidos',          component: TejidosComponent },
     { path: 'tejidos-maestro',  component: TejidosMaestroComponent, canActivate: [PermisosGuard], data: { nuevoSistema: true } },
+    { path: 'tejidos-imagenes', component: TejidosImagenesComponent, canActivate: [PermisosGuard], data: { nuevoSistema: true } },
     { path: 'impresion-digital', component: ImpresionDigitalComponent },
     { path: 'productos', component: AccionamientosNuevoComponent, canActivate: [PermisosGuard], data: { nuevoSistema: true } }
 ];
@@ -82,7 +84,7 @@ const routes: Routes = [
         PromocionesClientesComponent, MandosCargadoresComponent, UsuariosComponent,
         AccionamientosRadioTipoComponent, AccionamientosRadioTipoClienteComponent,
         PromocionesMonitorComponent, IncrementosGenericosComponent,
-        TejidosColoresComponent, TejidosComponent, TejidosMaestroComponent, ImpresionDigitalComponent,
+        TejidosColoresComponent, TejidosComponent, TejidosMaestroComponent, TejidosImagenesComponent, ImpresionDigitalComponent,
         AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent,
         AccSuplementosComponent, AccSuplementosResumenComponent, AccTejidosComponent
     ],

@@ -1,0 +1,117 @@
+<div class="container-fluid">
+    <div class="card card-block">
+
+        <!-- HEADER -->
+        <div class="mb-2">
+            <h6>
+                <i class="icon-picture mt-1"></i>&nbsp;{{ title }}
+                <small class="text-muted ml-2">Colores de Leroy Merlín (clientes 1 y 5), verso y reverso</small>
+                <div class="pull-right">
+                    <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
+                </div>
+            </h6>
+            <hr />
+        </div>
+
+        <!-- FILTROS -->
+        <div class="row mb-2 align-items-center">
+            <div class="col-auto">
+                <input type="text" class="form-control form-control-sm" style="min-width: 240px;"
+                    placeholder="Buscar tejido o color..."
+                    [(ngModel)]="busqueda" [ngModelOptions]="{ standalone: true }" (input)="aplicarFiltros()" />
+            </div>
+            <div class="col-auto">
+                <select class="form-control form-control-sm" [(ngModel)]="filtroTejido" [ngModelOptions]="{ standalone: true }" (change)="aplicarFiltros()">
+                    <option value="">Todos los tejidos</option>
+                    <option *ngFor="let t of tejidos" [value]="t">{{ t }}</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select class="form-control form-control-sm" [(ngModel)]="filtroImagen" [ngModelOptions]="{ standalone: true }" (change)="aplicarFiltros()">
+                    <option value="">Imagen: todos</option>
+                    <option value="con">Con imagen del verso</option>
+                    <option value="sin">Sin imagen del verso</option>
+                    <option value="sinB">Sin imagen del reverso</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()">
+                    <i class="fa fa-times"></i> Limpiar Filtros
+                </button>
+            </div>
+            <div class="col-auto ml-auto text-muted small">
+                {{ datosFiltrados.length }} colores — {{ conImagen }} de {{ datos.length }} con imagen
+            </div>
+        </div>
+
+        <!-- Un único selector de fichero para todas las filas -->
+        <input #fichero type="file" accept="image/*,.tif,.tiff" style="display: none" (change)="subir($event)" />
+
+        <!-- TABLA -->
+        <div class="table-responsive ti-table-container">
+            <table class="table table-bordered table-hover table-sm ti-table">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Tejido</th>
+                        <th>Color</th>
+                        <th class="text-center ti-th-cli">Clientes</th>
+                        <th class="text-center ti-th-cara" *ngFor="let c of caras">{{ c.nombre }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let d of datosFiltrados">
+                        <td>{{ d.desc_tejido }}</td>
+                        <td>{{ d.desc_color }}</td>
+                        <td class="text-center small">
+                            <span *ngIf="d.cliente_1" class="badge badge-secondary mr-1">1</span>
+                            <span *ngIf="d.cliente_5" class="badge badge-secondary">5</span>
+                        </td>
+                        <td class="text-center" *ngFor="let c of caras">
+                            <div class="ti-celda">
+                                <img *ngIf="tiene(d, c.cara)" [src]="url(d, c.cara)" class="ti-mini" (click)="ampliar(d, c.cara)"
+                                    [title]="d[c.cara.toLowerCase() + '_nombre'] || ''" />
+                                <div *ngIf="!tiene(d, c.cara)" class="ti-mini ti-vacia">Sin imagen</div>
+                                <div class="ti-acciones">
+                                    <i *ngIf="subiendo === d.tejido + '/' + d.color + '/' + c.cara" class="fa fa-spinner fa-spin"></i>
+                                    <button type="button" class="btn btn-outline-primary btn-xs mb-1" [disabled]="!!subiendo"
+                                        (click)="elegirFichero(d, c.cara, fichero)">
+                                        <i class="fa fa-upload"></i> {{ tiene(d, c.cara) ? 'Cambiar' : 'Subir' }}
+                                    </button>
+                                    <button *ngIf="tiene(d, c.cara)" type="button" class="btn btn-outline-danger btn-xs"
+                                        (click)="quitar(d, c.cara)">
+                                        <i class="fa fa-trash"></i> Quitar
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!datosFiltrados.length">
+                        <td colspan="5" class="text-center text-muted">No hay colores</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- IMAGEN AMPLIADA -->
+<div bsModal #modalImagen="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" *ngIf="ampliada">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {{ ampliada.fila.desc_tejido }} {{ ampliada.fila.desc_color }} — {{ ampliada.cara === 'A' ? 'Verso' : 'Reverso' }}
+                </h5>
+                <button type="button" class="close" (click)="modalImagen.hide()"><span>&times;</span></button>
+            </div>
+            <div class="modal-body text-center">
+                <img [src]="url(ampliada.fila, ampliada.cara)" class="ti-grande" />
+                <div class="small text-muted mt-2">
+                    {{ ampliada.fila[ampliada.cara.toLowerCase() + '_nombre'] }}
+                    — {{ ampliada.fila[ampliada.cara.toLowerCase() + '_usuario'] }}
+                    — {{ ampliada.fila[ampliada.cara.toLowerCase() + '_modified'] | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
