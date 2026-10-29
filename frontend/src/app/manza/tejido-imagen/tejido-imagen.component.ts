@@ -3,10 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 /*
- * Imágenes del color de tejido elegido (por delante y por detrás), debajo del desplegable de color
+ * Imágenes del color de tejido elegido (verso y reverso), debajo del desplegable de color
  * de cada producto. Solo para Leroy Merlín (clientes 1 y 5); se mantienen en Nuevo sistema >
  * Imágenes de Tejidos (SOL_TEJIDOS_COLORES_IMAGENES). Si el color no tiene imagen no se ve nada.
- * Los colores "... R" y "... V" son el mismo tejido por delante y por detrás: se marca la cara elegida.
+ * Los colores "... R" y "... V" son el mismo tejido por el verso y por el reverso: se marca la cara elegida.
  */
 @Component({
    selector: 'app-tejido-imagen',
@@ -73,7 +73,7 @@ export class TejidoImagenComponent implements OnChanges {
          .filter(cara => versiones && versiones[cara])
          .map(cara => ({
             cara,
-            nombre: cara === 'A' ? 'DELANTE' : 'DETRAS',
+            nombre: cara === 'A' ? 'VERSO' : 'REVERSO',
             url: this.url + 'imagen/' + clave + '/' + cara + '?v=' + versiones[cara]
          }));
    }

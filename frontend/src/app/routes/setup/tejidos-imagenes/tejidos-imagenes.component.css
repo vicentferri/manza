@@ -26,8 +26,8 @@
 }
 
 .ti-mini {
-    width: 64px;
-    height: 64px;
+    width: 80px;
+    height: 80px;
     object-fit: cover;
     border: 1px solid #ccc;
     border-radius: 4px;

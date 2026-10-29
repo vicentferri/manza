@@ -9,7 +9,7 @@ const sharp = require('sharp');
  * Configurador: manza/tejido-imagen, junto al color de cada producto.
  * Scripts: sqlTejidos/05 (tabla) y 06 (carga inicial, generado por herramientas/generar_06_carga_imagenes.js).
  *
- * Una imagen por tejido + color + cara: 'A' por delante, 'B' por detrás. Los clientes 1 y 5
+ * Una imagen por tejido + color + cara: 'A' verso, 'B' reverso. Los clientes 1 y 5
  * comparten imagen (tejido y color son los de SOL_ARTICULOS_TEJIDOS_ATRIBUTOS).
  * Al subirla se reduce a JPG de 800 px como máximo.
  */

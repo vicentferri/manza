@@ -5,7 +5,7 @@
         <div class="mb-2">
             <h6>
                 <i class="icon-picture mt-1"></i>&nbsp;{{ title }}
-                <small class="text-muted ml-2">Colores de Leroy Merlín (clientes 1 y 5), por delante y por detrás</small>
+                <small class="text-muted ml-2">Colores de Leroy Merlín (clientes 1 y 5), verso y reverso</small>
                 <div class="pull-right">
                     <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
                 </div>
@@ -29,9 +29,9 @@
             <div class="col-auto">
                 <select class="form-control form-control-sm" [(ngModel)]="filtroImagen" [ngModelOptions]="{ standalone: true }" (change)="aplicarFiltros()">
                     <option value="">Imagen: todos</option>
-                    <option value="con">Con imagen de delante</option>
-                    <option value="sin">Sin imagen de delante</option>
-                    <option value="sinB">Sin imagen de detrás</option>
+                    <option value="con">Con imagen del verso</option>
+                    <option value="sin">Sin imagen del verso</option>
+                    <option value="sinB">Sin imagen del reverso</option>
                 </select>
             </div>
             <div class="col-auto">
@@ -100,7 +100,7 @@
         <div class="modal-content" *ngIf="ampliada">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    {{ ampliada.fila.desc_tejido }} {{ ampliada.fila.desc_color }} — {{ ampliada.cara === 'A' ? 'Delante' : 'Detrás' }}
+                    {{ ampliada.fila.desc_tejido }} {{ ampliada.fila.desc_color }} — {{ ampliada.cara === 'A' ? 'Verso' : 'Reverso' }}
                 </h5>
                 <button type="button" class="close" (click)="modalImagen.hide()"><span>&times;</span></button>
             </div>

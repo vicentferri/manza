@@ -7,7 +7,7 @@ import { environment } from '../../../../environments/environment';
 /*
  * Imágenes de los colores de tejido de Leroy Merlín (SOL_TEJIDOS_COLORES_IMAGENES, sqlTejidos/05).
  * Una fila por tejido + color de los clientes 1 y 5 (comparten imagen), con dos caras:
- * A = por delante y B = por detrás. Se ven en el configurador junto al color (manza/tejido-imagen).
+ * A = verso y B = reverso. Se ven en el configurador junto al color (manza/tejido-imagen).
  * El backend reduce la imagen al subirla (JPG de 800 px como máximo); admite también TIF.
  */
 @Component({
@@ -21,7 +21,7 @@ export class TejidosImagenesComponent implements OnInit {
     @ViewChild('modalImagen', { static: false }) modalImagen!: ModalDirective;
 
     title = 'Imágenes de Tejidos';
-    caras = [{ cara: 'A', nombre: 'Delante' }, { cara: 'B', nombre: 'Detrás' }];
+    caras = [{ cara: 'A', nombre: 'Verso' }, { cara: 'B', nombre: 'Reverso' }];
 
     datos: any[] = [];
     datosFiltrados: any[] = [];
@@ -128,7 +128,7 @@ export class TejidosImagenesComponent implements OnInit {
     }
 
     quitar(fila: any, cara: string) {
-        const nombre = cara === 'A' ? 'de delante' : 'de detrás';
+        const nombre = cara === 'A' ? 'del verso' : 'del reverso';
         if (!confirm('¿Quitar la imagen ' + nombre + ' de ' + fila.desc_tejido + ' ' + fila.desc_color + '?')) { return; }
         this.service.HTTP_Delete('/sm/tejidos_imagenes/imagen/' + fila.tejido + '/' + fila.color + '/' + cara).subscribe(
             () => { this.loadData(); },
