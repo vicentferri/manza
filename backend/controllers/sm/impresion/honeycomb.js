@@ -69,6 +69,15 @@ async function leer(pool, doc, id) {
   };
 }
 
+// Todos los clientes la imprimen aquí
+function aplica() {
+  return true;
+}
+
 module.exports = {
+  clave: 'honeycomb',
+  nombre: 'HoneyComb',
+  tipo: 7,
+  aplica,
   leer
 };

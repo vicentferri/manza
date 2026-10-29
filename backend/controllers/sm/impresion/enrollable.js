@@ -239,6 +239,9 @@ async function leer(pool, doc, id, cliente) {
 }
 
 module.exports = {
+  clave: 'enrollable',
+  nombre: 'Enrollable',
+  tipo: 1,
   aplica,
   leer
 };
