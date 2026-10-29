@@ -1,6 +1,7 @@
 .tejido-imagen {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 4px;
 }
 
@@ -11,8 +12,8 @@
 }
 
 .tejido-imagen img {
-  width: 72px;
-  height: 72px;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -23,7 +24,7 @@
 }
 
 .tejido-imagen figcaption {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: #6c757d;
 }
 

@@ -17,7 +17,7 @@
 }
 
 .ti-th-cli { width: 90px; }
-.ti-th-cara { width: 210px; }
+.ti-th-cara { width: 240px; }
 
 .ti-celda {
     display: flex;
@@ -26,8 +26,8 @@
 }
 
 .ti-mini {
-    width: 80px;
-    height: 80px;
+    width: 110px;
+    height: 110px;
     object-fit: cover;
     border: 1px solid #ccc;
     border-radius: 4px;
