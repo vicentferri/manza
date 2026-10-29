@@ -50,38 +50,13 @@ if (!fs.existsSync(BANNER_DIR)) {
     fileFilter: fileFilter,
     limits: { fileSize: 5 * 1024 * 1024 }  // 5 MB máximo
   });
-
-  // Directorio donde se guardan las imágenes de Impresión Digital
-  const { v4: uuidv4 } = require('uuid');
-  const IMPRESION_DIGITAL_DIR = path.join(__dirname, '../uploads_impresion_digital');
-  const IMPRESION_DIGITAL_ORIGINALES_DIR = path.join(IMPRESION_DIGITAL_DIR, 'originales');
-
-  if (!fs.existsSync(IMPRESION_DIGITAL_ORIGINALES_DIR)) {
-    fs.mkdirSync(IMPRESION_DIGITAL_ORIGINALES_DIR, { recursive: true });
-  }
-
-  const impresionDigitalStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, IMPRESION_DIGITAL_ORIGINALES_DIR);
-    },
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname).toLowerCase();
-      cb(null, uuidv4() + ext);
-    }
-  });
-
-  const uploadImpresionDigital = multer({
-    storage: impresionDigitalStorage,
-    fileFilter: fileFilter,
-    limits: { fileSize: 50 * 1024 * 1024 }  // 50 MB máximo, las imágenes de origen pueden ser grandes
-  });
+  
 
 
 
 var smapi = express.Router();
 
 smapi.use('/uploads_banners', express.static(UPLOADS_DIR));
-smapi.use('/uploads_impresion_digital', express.static(IMPRESION_DIGITAL_DIR));
 
 /* BULK und DBRawController */
 var DBRawController = require('../controllers/haru/dbraw');
@@ -248,16 +223,6 @@ smapi.get('/tejidos_atributos', TejidosController.tejidos_atributos);
 smapi.post('/tejidos_atributos_put', TejidosController.put_tejidos_atributos);
 smapi.post('/tejidos_atributod_del', TejidosController.del_tejido_atributos);
 
-var ImpresionDigitalController = require('../controllers/sm/impresion-digital');
-smapi.get('/impresion_digital_colecciones', ImpresionDigitalController.colecciones);
-smapi.post('/impresion_digital_coleccion', ImpresionDigitalController.coleccion_put);
-smapi.post('/impresion_digital_coleccion_del', ImpresionDigitalController.coleccion_del);
-smapi.get('/impresion_digital_imagenes', ImpresionDigitalController.imagenes);
-smapi.post('/impresion_digital_imagen', uploadImpresionDigital.single('image'), ImpresionDigitalController.imagen_upload);
-smapi.post('/impresion_digital_imagen_update', ImpresionDigitalController.imagen_update);
-smapi.post('/impresion_digital_imagen_del', ImpresionDigitalController.imagen_del);
-smapi.post('/impresion_digital_imagen_preview', ImpresionDigitalController.imagen_preview);
-
 var ColoresController = require('../controllers/sm/colores');
 smapi.get('/colores_tejidos_atributos', ColoresController.colores_tejidos_atributos);
 smapi.get('/colores_tejidos_atributos_clientes/:cli/:tej', ColoresController.colores_tejidos_atributos_clientes);
@@ -372,6 +337,7 @@ smapi.post('/grupos_del', GruposTejidosController.grupostejidos_del);
 smapi.post('/tejidosgrupos', GruposTejidosController.grupostejidos_tejidos);
 smapi.post('/tejidosgrupos_del', GruposTejidosController.grupostejidos_tejidos_del);
 smapi.get('/tejidosgrupos/:idrow', GruposTejidosController.tejidosgrupo);
+//nuevos endpoints
 smapi.get('/tejidos_grupos_all', GruposTejidosController.tejidos_grupos_all);
 smapi.post('/tejidosgrupos_asignar', GruposTejidosController.tejidosgrupos_asignar);
 smapi.post('/tejidosgrupos_quitar', GruposTejidosController.tejidosgrupos_quitar);
@@ -454,7 +420,7 @@ var BackupController = require('../controllers/sm/backup');
 smapi.get('/backup_list', BackupController.search);
 smapi.post('/backup_create', BackupController.backup_create);
 smapi.post('/backup_delete', BackupController.backup_delete);
-smapi.post('/backup_recover', BackupController.backup_restore);
+smapi.post('/backup_recover', BackupController.search);
 
 
 var ImportController = require('../controllers/sm/import');
