@@ -1,11 +1,11 @@
 'use strict'
 
-/* Hojas del enrollable (tipo 1) para la impresión en PDF del pedido o presupuesto (impresion_documento.js).
+/* Hojas del enrollable (tipo 1) para la impresión en PDF del pedido o presupuesto (documento.js).
    Solo para los clientes de CLIENTES (Leroy, Leroy Web y Solarmanes); el resto imprime el enrollable con Crystal.
    Dos plantillas, según el accionamiento de cada línea: primero el bloque de cadena y después el de motor. */
 
 const sql = require('mssql');
-const c = require('./impresion_comun');
+const c = require('./comun');
 
 const CLIENTES = [1, 4, 5];
 

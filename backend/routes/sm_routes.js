@@ -595,7 +595,7 @@ smapi.get('/honeycomb/impresion/info/:doc/:id', Auth.ensureAuth, ImpresionHoneyC
 smapi.get('/honeycomb/impresion/pdf/:doc/:id', Auth.ensureAuth, ImpresionHoneyCombController.impresion_honeycomb_pdf);
 
 // Impresión PDF de enrollable + HoneyComb en un único documento (Puppeteer)
-var ImpresionDocumentoController = require('../controllers/sm/impresion_documento');
+var ImpresionDocumentoController = require('../controllers/sm/impresion/documento');
 smapi.get('/impresion/info/:doc/:id', Auth.ensureAuth, ImpresionDocumentoController.impresion_documento_info);
 smapi.get('/impresion/pdf/:doc/:id', Auth.ensureAuth, ImpresionDocumentoController.impresion_documento_pdf);
 

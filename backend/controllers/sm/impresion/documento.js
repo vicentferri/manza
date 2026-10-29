@@ -1,10 +1,10 @@
 'use strict'
 
 /* Impresión en PDF (Puppeteer) de pedidos y presupuestos: enrollable y HoneyComb en un único documento.
-   - Hojas del enrollable (cadena y después motor; solo clientes de impresion_enrollable.js) y después las de la HoneyComb.
+   - Hojas del enrollable (cadena y después motor; solo clientes de enrollable.js) y después las de la HoneyComb (honeycomb.js).
    - Al final, el resumen de precios: enrollable, HoneyComb y su suma.
    El visor lo muestra en la pestaña "Nuevo"; en "Antiguo" sale el informe de Crystal de siempre (haru_server/preview.aspx).
-   Sustituye a impresion_honeycomb.js cuando el visor tiene activada la impresión del enrollable (IMPRESION_ENROLLABLE).
+   Sustituye a ../impresion_honeycomb.js cuando el visor tiene activada la impresión del enrollable (IMPRESION_ENROLLABLE).
 
    GET /api/sm/impresion/info/:doc/:id  -> { enrollable, honeycomb }
    GET /api/sm/impresion/pdf/:doc/:id   -> application/pdf
@@ -16,12 +16,12 @@ const sql = require('mssql');
 const fs = require('fs');
 const path = require('path');
 const Handlebars = require('handlebars');
-const pdf = require('../../services/pdf');
-const c = require('./impresion_comun');
-const enrollable = require('./impresion_enrollable');
-const honeycomb = require('./impresion_honeycomb');
+const pdf = require('../../../services/pdf');
+const c = require('./comun');
+const enrollable = require('./enrollable');
+const honeycomb = require('./honeycomb');
 
-const PLANTILLA = path.join(__dirname, '../../templates/documento/documento.hbs');
+const PLANTILLA = path.join(__dirname, '../../../templates/impresion/documento.hbs');
 
 /* Cabecera y pie de cada hoja. La cabecera lleva además la referencia del documento (GUID), el cliente y el centro.
    Chrome los pinta fuera del documento: no heredan sus estilos (todo en línea, con el tamaño de letra explícito)
@@ -70,52 +70,6 @@ async function impresion_documento_info(req, res) {
     console.error('impresion_documento_info:', err);
     res.status(500).json({ error: 'Error consultando el ' + req.params.doc });
   }
-}
-
-/* Bloque de la HoneyComb con las filas y el total que monta impresion_honeycomb.js */
-async function leerHoneycomb(pool, nombreDoc, id) {
-  const datos = await honeycomb.leerDatos(pool, honeycomb.DOCUMENTOS[nombreDoc], id);
-  if (!datos || !datos.lineas.length) return null;
-
-  const modelo = honeycomb.montarModelo(honeycomb.DOCUMENTOS[nombreDoc], datos, '');
-  const columnas = ['Producto', 'Color tejido', 'Código', 'Color mecanismo', 'Accionamiento', 'Ancho cm', 'Alto cm',
-    'Cantidad', 'C1', 'PVP'].map(function (titulo) { return { titulo: titulo }; });
-  // montarModelo reparte las filas en hojas de 10 (las de su PDF propio); aquí van todas seguidas
-  const filas = [];
-  modelo.hojas.forEach(function (hoja) {
-    hoja.filas.forEach(function (f) {
-      filas.push([
-        { valor: f.producto, clase: 'producto' },
-        { valor: f.colorTejido },
-        { valor: honeycomb.CODIGO_TEJIDO },
-        { valor: f.colorMecanismo },
-        { valor: f.accionamiento },
-        { valor: f.ancho },
-        { valor: f.alto },
-        { valor: f.cantidad },
-        { valor: f.c1, clase: 'c1' },
-        { valor: f.precio, clase: 'importe' }
-      ]);
-    });
-  });
-
-  let precio = 0;
-  let c1 = 0;
-  datos.lineas.forEach(function (l) {
-    precio += c.centimos(l.T7_PVP);
-    const c1Linea = c.centimosC1(l.T7_PVP_C1);
-    c1 = c1 === null || c1Linea === null ? null : c1 + c1Linea;
-  });
-
-  return {
-    secciones: [c.seccion('HoneyComb', columnas, filas, {
-      etiqueta: 'Total HoneyComb',
-      c1: c1 === null ? '' : c.formatC1(c1),
-      precio: c.formatImporte(precio)
-    })],
-    precio: precio,
-    c1: c1
-  };
 }
 
 function sumar(partes, campo) {
@@ -197,7 +151,7 @@ async function impresion_documento_pdf(req, res) {
     const cabecera = cab.recordset[0];
 
     const enr = await enrollable.leer(pool, p.doc, p.id, cabecera.CLIENTE);
-    const hc = await leerHoneycomb(pool, req.params.doc, p.id);
+    const hc = await honeycomb.leer(pool, p.doc, p.id);
     if (!enr && !hc) {
       return res.status(404).json({ error: 'El ' + req.params.doc + ' ' + p.id + ' no tiene enrollable ni HoneyComb para imprimir aquí' });
     }
