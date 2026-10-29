@@ -52,6 +52,12 @@ export class ConfigComponent implements OnInit {
 
   Cliente = "-1";
   SubCliente = "2";
+
+  // Tarifa en PDF de la barra superior: solo para Leroy Merlín (clientes 1 y 5)
+  get esLeroy(): boolean {
+    return this.Cliente == "1" || this.Cliente == "5";
+  }
+
   UserName = "";
   loading = false;
   height = 700;

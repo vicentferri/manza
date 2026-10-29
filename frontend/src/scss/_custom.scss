@@ -166,3 +166,13 @@ label {
   background-position: center center !important;
   background-size: auto !important;
 }
+
+// Enlaces a las fichas en PDF (cotas, instrucciones) en la cabecera del configurador
+.docs-cabecera a {
+  font-size: 0.9rem;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

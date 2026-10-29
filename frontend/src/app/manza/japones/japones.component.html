@@ -1,8 +1,13 @@
 <div class="card shadow-sm mt-4">
   
 
-<div class="card-header bg-dark text-white">
+  <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap">
     <h5 class="mb-0">{{ "PANEL JAPONES" | translate }}</h5>
+    <div class="docs-cabecera" *ngIf="esLeroy">
+      <a class="text-white" href="assets/pdf/japones_cotas.pdf" target="_blank" rel="noopener">
+        <i class="fa-solid fa-file-pdf mr-1"></i>{{ "COTAS" | translate }}
+      </a>
+    </div>
   </div>
 
   <div class="card-body">

@@ -57,3 +57,10 @@ input[type="number"]::-webkit-inner-spin-button {
   height: 38px;
 }
  
+
+/* Enlace a un PDF en la barra superior: mismo color que las pestañas sin href */
+.nav-link-pdf,
+.nav-link-pdf:hover {
+    color: inherit;
+    text-decoration: none;
+}

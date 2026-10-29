@@ -26,6 +26,14 @@
       >{{ "AGREGAR" | translate }}</a
     >
     <a
+      class="nav-link nav-link-pdf"
+      *ngIf="esLeroy"
+      href="assets/pdf/tarifa_leroy_2025_es.pdf"
+      target="_blank"
+      rel="noopener"
+      >{{ "TARIFA" | translate }}</a
+    >
+    <a
       class="nav-link active"
       (click)="ShowBtns(); staticModal2.show()"
       [hidden]="Cesta.length == 0"

@@ -3,7 +3,7 @@
   <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap">
     <h5 class="mb-0">{{ "HONEYCOMB" | translate }}</h5>
     <div class="hc-docs">
-      <a class="text-white" [href]="urlPdf" target="_blank" download>
+      <a class="text-white" [href]="urlPdf" target="_blank" rel="noopener">
         <i class="fa-solid fa-file-pdf mr-1"></i>{{ "INSTRUCCIONES DE MONTAJE" | translate }}
       </a>
       <a class="text-white ml-3" href="javascript:void(0)" (click)="VerVideo()">

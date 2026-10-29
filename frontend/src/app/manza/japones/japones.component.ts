@@ -22,6 +22,11 @@ export class JaponesComponent implements OnInit, OnChanges {
 
    @Input() ReferenciaTienda: string = '';
 
+   // Fichas en PDF (cotas, instrucciones de montaje): solo para Leroy Merlín (clientes 1 y 5)
+   get esLeroy(): boolean {
+      return this.Cliente == '1' || this.Cliente == '5';
+   }
+
    @Output() onAdd = new EventEmitter<CortinaTipo>();
 
    public CestaPrecios: Array<CortinaTipo> = [];

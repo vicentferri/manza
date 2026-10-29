@@ -1,6 +1,24 @@
 <div class="card shadow-sm mt-4">
-  <div class="card-header bg-dark text-white">
+  <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap">
     <h5 class="mb-0">{{ "ENROLLABLE" | translate }}</h5>
+    <div class="docs-cabecera" *ngIf="esLeroy">
+      <ng-container *ngIf="SubTipoCortina != 2">
+        <a class="text-white" href="assets/pdf/enrollable_cotas_deva.pdf" target="_blank" rel="noopener">
+          <i class="fa-solid fa-file-pdf mr-1"></i>{{ "COTAS DEVA" | translate }}
+        </a>
+        <a class="text-white ml-3" href="assets/pdf/enrollable_cotas_magic.pdf" target="_blank" rel="noopener">
+          <i class="fa-solid fa-file-pdf mr-1"></i>{{ "COTAS MAGIC" | translate }}
+        </a>
+      </ng-container>
+      <ng-container *ngIf="SubTipoCortina == 2">
+        <a class="text-white" href="assets/pdf/cajon_zip_cotas.pdf" target="_blank" rel="noopener">
+          <i class="fa-solid fa-file-pdf mr-1"></i>{{ "COTAS" | translate }}
+        </a>
+        <a class="text-white ml-3" href="assets/pdf/cajon_zip_instrucciones_montaje.pdf" target="_blank" rel="noopener">
+          <i class="fa-solid fa-file-pdf mr-1"></i>{{ "INSTRUCCIONES DE MONTAJE" | translate }}
+        </a>
+      </ng-container>
+    </div>
   </div>
 
   <div class="card-body">
