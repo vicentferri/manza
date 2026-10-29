@@ -6,7 +6,8 @@
    El visor lo muestra en la pestaña "Nuevo"; en "Antiguo" sale el informe de Crystal de siempre (haru_server/preview.aspx).
    Sustituye a ../impresion_honeycomb.js cuando el visor tiene activada la impresión del enrollable (IMPRESION_ENROLLABLE).
 
-   GET /api/sm/impresion/info/:doc/:id  -> { enrollable, honeycomb }
+   GET /api/sm/impresion/info/:doc/:id  -> { productos: ['enrollable', ...], enrollable: true, honeycomb: false }
+       (productos: las claves de los que se imprimen aquí; los campos sueltos se mantienen para el visor actual)
    GET /api/sm/impresion/pdf/:doc/:id   -> application/pdf
    GET /api/sm/impresion/pdf/:doc/:id?modo=produccion -> el mismo PDF para producción (pestaña "Producción"):
        sin las columnas 48, Código, C1 y PVP, sin filas de total y sin resumen
@@ -48,8 +49,8 @@ const CABECERA = Handlebars.compile(
 const PIE = '<div style="width:100%; margin:0 10mm; font-family:Arial, Helvetica, sans-serif; font-size:8pt; text-align:right;">' +
   'Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>';
 
-/* null si no existe el documento; si existe, { clave: true/false } por producto: si tiene líneas suyas que se
-   impriman aquí */
+/* null si no existe el documento; si existe, { productos: [claves], clave: true/false }: los productos que tienen
+   líneas suyas que se imprimen aquí */
 async function leerResumen(pool, doc, id) {
   const cab = await pool.request()
     .input('id', sql.Int, id)
@@ -62,9 +63,10 @@ async function leerResumen(pool, doc, id) {
     .query('select distinct TIPO from ' + doc.lineas + ' where IDROW = @id');
   const tipos = r.recordset.map(function (f) { return f.TIPO; });
 
-  const resumen = {};
+  const resumen = { productos: [] };
   PRODUCTOS.forEach(function (producto) {
     resumen[producto.clave] = producto.aplica(cliente) && tipos.indexOf(producto.tipo) >= 0;
+    if (resumen[producto.clave]) resumen.productos.push(producto.clave);
   });
   return resumen;
 }
