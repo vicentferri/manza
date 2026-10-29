@@ -246,6 +246,7 @@
             [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_2">
             <option *ngFor="let pow of pj_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
           </select>
+          <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_2" [colores]="pj_tejidosC_2"></app-tejido-imagen>
         </div>
         <div class="col col-3" *ngIf="PJ_NumeroLamas >= 3">
           <label>{{ "COLORLAMA3" | translate }}</label>
@@ -253,6 +254,7 @@
             [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_3">
             <option *ngFor="let pow of pj_tejidosC_3" [value]="pow.id">{{ pow.text }}</option>
           </select>
+          <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_3" [colores]="pj_tejidosC_3"></app-tejido-imagen>
         </div>
         <div class="col col-3" *ngIf="PJ_NumeroLamas >= 4">
           <label>{{ "COLORLAMA4" | translate }}</label>
@@ -260,6 +262,7 @@
             [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_4">
             <option *ngFor="let pow of pj_tejidosC_4" [value]="pow.id">{{ pow.text }}</option>
           </select>
+          <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_4" [colores]="pj_tejidosC_4"></app-tejido-imagen>
         </div>
         <div class="col col-3" *ngIf="PJ_NumeroLamas >= 5">
           <label>{{ "COLORLAMA5" | translate }}</label>
@@ -267,6 +270,7 @@
             [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_5">
             <option *ngFor="let pow of pj_tejidosC_5" [value]="pow.id">{{ pow.text }}</option>
           </select>
+          <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_5" [colores]="pj_tejidosC_5"></app-tejido-imagen>
         </div>
       </div>
 
