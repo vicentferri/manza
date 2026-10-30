@@ -48,17 +48,6 @@
     />
   </div>
   <div class="cfg-field">
-    <label>{{ "NUMERO PRESUPUESTO" | translate }}</label>
-    <input
-      class="form-control"
-      id="NumeroPresupuesto"
-      required
-      [(ngModel)]="model.NumeroPedido"
-      name="NumeroPresupuesto"
-      (keyup.enter)="GoFilter()"
-    />
-  </div>
-  <div class="cfg-field">
     <label>{{ "REFERENCIA" | translate }}</label>
     <input
       class="form-control"
@@ -84,7 +73,6 @@
     <thead>
       <tr>
         <th>{{ "FEC.REGISTRO" | translate }}</th>
-        <th>{{ "NUMERO DEL PRESUPUESTO" | translate }}</th>
         <th>{{ "REFERENCIA DEL PRESUPUESTO" | translate }}</th>
         <th>{{ "REFERENCIA TIENDA/CLIENTE" | translate }}</th>
         <th>{{ "VALIDEZ DEL PRESUPUESTO" | translate }}</th>
@@ -94,7 +82,6 @@
     <tbody>
       <tr *ngFor="let item of pagedItems; let first = first">
         <td class="cfg-mono">{{ item.fecha | date : "dd/MM/yyyy" }}</td>
-        <td class="cfg-mono">{{ item.numero }}</td>
         <td class="cfg-ref">{{ item.referencia }}</td>
         <td><strong>{{ item.refcliente }}</strong></td>
         <td><span class="cfg-chip cfg-chip-azul cfg-mono">{{ item.fec_validez | date : "dd/MM/yyyy" }}</span></td>
