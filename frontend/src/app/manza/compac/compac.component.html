@@ -11,7 +11,7 @@
     <div class="cfg-panel-cuerpo">
 
       <!-- 01 PERFILERÍA -->
-      <div class="cfg-paso">
+      <div class="cfg-paso" [class.cfg-error]="compac.PC_ColorPerfileria == '-1'">
         <span class="cfg-paso-num">01</span>
         <div>
           <h3 class="cfg-paso-titulo">{{ "Perfilería" | translate }}</h3>
@@ -23,7 +23,7 @@
                 <option value="JR">{{ "REDONDEADO" | translate }}</option>
               </select>
             </div>
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && compac.PC_ColorPerfileria == '-1'">
+            <div class="cfg-field" [class.cfg-error]="compac.PC_ColorPerfileria == '-1'">
               <label>{{ "COLORPERFILERIA" | translate }}</label>
               <select name="ColorPerfileria" class="form-control form-control-sm"
                 [(ngModel)]="compac.PC_ColorPerfileria" (change)="Change_ColorPerfileria()">
@@ -46,12 +46,13 @@
       </div>
 
       <!-- 02 MEDIDAS -->
-      <div class="cfg-paso">
+      <div class="cfg-paso"
+        [class.cfg-error]="!Ancho || Ancho <= 0 || (compac.PC_TipoJunquillo == 'JR' && (!compac.PC_AnchoB || compac.PC_AnchoB <= 0)) || !Alto || Alto <= 0">
         <span class="cfg-paso-num">02</span>
         <div>
           <h3 class="cfg-paso-titulo">{{ "Medidas" | translate }}</h3>
           <div class="cfg-grid cfg-cols-4">
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (Ancho == '' || Ancho == '0')">
+            <div class="cfg-field" [class.cfg-error]="!Ancho || Ancho <= 0">
               <label>{{ "ANCHO INTERIOR" | translate }}</label>
               <div class="cfg-unidad">
                 <input class="form-control form-control-sm" type="number" [min]="minancho" [max]="maxancho" step=".5"
@@ -62,7 +63,7 @@
               </div>
               <small class="cfg-ayuda">{{ minancho }} - {{ maxancho }}</small>
             </div>
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && compac.PC_TipoJunquillo == 'JR' && (compac.PC_AnchoB == '' || compac.PC_AnchoB == '0')">
+            <div class="cfg-field" [class.cfg-error]="compac.PC_TipoJunquillo == 'JR' && (!compac.PC_AnchoB || compac.PC_AnchoB <= 0)">
               <label>{{ "ANCHOEXTERIOR" | translate }}</label>
               <div class="cfg-unidad">
                 <input #kanchoB class="form-control form-control-sm" type="number" [min]="minancho" [max]="maxancho" step=".5"
@@ -74,7 +75,7 @@
               </div>
               <small class="cfg-ayuda">{{ minancho }} - {{ maxancho }}</small>
             </div>
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (Alto == '' || Alto == '0')">
+            <div class="cfg-field" [class.cfg-error]="!Alto || Alto <= 0">
               <label>{{ "ALTO" | translate }}</label>
               <div class="cfg-unidad">
                 <input #alto4 class="form-control form-control-sm" type="number" [min]="minalto" [max]="maxalto" step=".5"
@@ -95,12 +96,13 @@
       </div>
 
       <!-- 03 ACCIONAMIENTO -->
-      <div class="cfg-paso">
+      <div class="cfg-paso"
+        [class.cfg-error]="compac.Compac_Acc_Color == '-1' || compac.Compac_Acc_Posicion == '-1' || compac.Compac_Tap_Color == '-1'">
         <span class="cfg-paso-num">03</span>
         <div>
           <h3 class="cfg-paso-titulo">{{ "ACCIONAMIENTO" | translate }}</h3>
           <div class="cfg-grid cfg-cols-4">
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && compac.Compac_Acc_Color == '-1'">
+            <div class="cfg-field" [class.cfg-error]="compac.Compac_Acc_Color == '-1'">
               <label>{{ "COLORCADENA" | translate }}</label>
               <select name="Compac_Acc_Color" class="form-control form-control-sm"
                 [(ngModel)]="compac.Compac_Acc_Color" (change)="ChangeColorCompac()">
@@ -118,7 +120,7 @@
                 <span>cm</span>
               </div>
             </div>
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && compac.Compac_Acc_Posicion == '-1'">
+            <div class="cfg-field" [class.cfg-error]="compac.Compac_Acc_Posicion == '-1'">
               <label>{{ "POSICIONMANDO" | translate }}</label>
               <select name="Compac_Acc_Posicion" class="form-control form-control-sm" [(ngModel)]="compac.Compac_Acc_Posicion">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -126,7 +128,7 @@
                 <option value="IZQ">{{ "IZQUIERDA" | translate }}</option>
               </select>
             </div>
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && compac.Compac_Tap_Color == '-1'">
+            <div class="cfg-field" [class.cfg-error]="compac.Compac_Tap_Color == '-1'">
               <label>{{ "COLORTAPAS" | translate }}</label>
               <select name="Compac_Tap_Color" class="form-control form-control-sm" [(ngModel)]="compac.Compac_Tap_Color">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -140,7 +142,8 @@
       </div>
 
       <!-- 04 TEJIDO -->
-      <div class="cfg-paso">
+      <div class="cfg-paso"
+        [class.cfg-error]="Tipo4_Tejido == '-1' || Tipo4_TejidoColor == '-1'">
         <span class="cfg-paso-num">04</span>
         <div>
           <h3 class="cfg-paso-titulo">{{ "TEJIDO" | translate }}</h3>
@@ -152,7 +155,7 @@
                 <option *ngFor="let pow of TiposTejido_compac" [value]="pow">{{ pow }}</option>
               </select>
             </div>
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo4_Tejido == '-1'">
+            <div class="cfg-field" [class.cfg-error]="Tipo4_Tejido == '-1'">
               <label>{{ "SERIE" | translate }}</label>
               <select name="Tipo4_Tejido" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_Tejido" (change)="ChangeTipo4Tejido()">
@@ -160,7 +163,7 @@
               </select>
               <small class="cfg-ayuda" *ngIf="CodigoProv4">Ref. {{ CodigoProv4 }}</small>
             </div>
-            <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo4_TejidoColor == '-1'">
+            <div class="cfg-field" [class.cfg-error]="Tipo4_TejidoColor == '-1'">
               <label>{{ "COLOR" | translate }}</label>
               <select name="Tipo4_TejidoColor" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_TejidoColor" (change)="ChangeTipo4Color()">

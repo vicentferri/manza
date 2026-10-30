@@ -3,7 +3,8 @@
   <section class="cfg-panel">
     <div class="cfg-panel-cabecera">
       <h2>{{ "VERTICAL" | translate }}</h2>
-      <a *ngIf="esLeroy" class="cfg-btn cfg-btn-azul" href="assets/pdf/vertical_cotas.pdf" target="_blank" rel="noopener">
+      <a *ngIf="esLeroy" class="cfg-btn cfg-btn-azul" href="assets/pdf/vertical_cotas.pdf" target="_blank"
+        rel="noopener">
         <i class="fa-solid fa-ruler-horizontal"></i>{{ "Ver cotas" | translate }}
       </a>
     </div>
@@ -41,12 +42,14 @@
       <ng-container *ngIf="VerticalInclinada == '0'">
 
         <!-- 02 MEDIDAS -->
-        <div class="cfg-paso" [hidden]="!PV_SEL_1">
+        <div class="cfg-paso" [hidden]="!PV_SEL_1"
+          [class.cfg-error]="(TipoVertical != '2' && (!PV_Ancho_1 || PV_Ancho_1 <= 0)) || (TipoVertical != '3' && (!PV_Alto_1 || PV_Alto_1 <= 0))">
           <span class="cfg-paso-num">02</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "Medidas" | translate }}</h3>
             <div class="cfg-grid cfg-cols-3">
-              <div class="cfg-field" [hidden]="TipoVertical == '2'" [class.cfg-error]="intentoCalculo && (PV_Ancho_1 == '' || PV_Ancho_1 == '0')">
+              <div class="cfg-field" [hidden]="TipoVertical == '2'"
+                [class.cfg-error]="!PV_Ancho_1 || PV_Ancho_1 <= 0">
                 <label>{{ "ANCHO" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_ancho_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -56,12 +59,13 @@
                 </div>
                 <small class="cfg-ayuda">0 - 600</small>
               </div>
-              <div class="cfg-field" [hidden]="TipoVertical == '3'" [class.cfg-error]="intentoCalculo && (PV_Alto_1 == '' || PV_Alto_1 == '0')">
+              <div class="cfg-field" [hidden]="TipoVertical == '3'"
+                [class.cfg-error]="!PV_Alto_1 || PV_Alto_1 <= 0">
                 <label>{{ "ALTO" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_alto_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
-                    [(ngModel)]="PV_Alto_1" id="PV_Alto_1" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }" required
-                    (keyup.enter)="Next($event, pv_cantidad_1)" />
+                    [(ngModel)]="PV_Alto_1" id="PV_Alto_1" [appMaxdigits]="5" [ngModelOptions]="{ standalone: true }"
+                    required (keyup.enter)="Next($event, pv_cantidad_1)" />
                   <span>cm</span>
                 </div>
                 <small class="cfg-ayuda">0 - 600</small>
@@ -69,20 +73,21 @@
               <div class="cfg-field">
                 <label>{{ "CANTIDAD" | translate }}</label>
                 <input #pv_cantidad_1 class="form-control form-control-sm" type="number" min="0"
-                  [(ngModel)]="PV_Cantidad_1" id="PV_Cantidad_1" [appMaxdigits]="3" [ngModelOptions]="{ standalone: true }"
-                  required />
+                  [(ngModel)]="PV_Cantidad_1" id="PV_Cantidad_1" [appMaxdigits]="3"
+                  [ngModelOptions]="{ standalone: true }" required />
               </div>
             </div>
           </div>
         </div>
 
         <!-- 03 MECANISMO Y SOPORTE -->
-        <div class="cfg-paso" [hidden]="!PV_SEL_1">
+        <div class="cfg-paso" [hidden]="!PV_SEL_1"
+          [class.cfg-error]="PV_AnchoLama_1 == '-1' || (TipoVertical != '2' && (PV_PosicionMecanismo_1 == '-1' || PV_ColorRiel_1 == '-1' || PV_Accionamiento_1 == '-1' || PV_TipoSoporte_1 == '-1' || PV_TipoRecogida_1 == '-1'))">
           <span class="cfg-paso-num">03</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "Mecanismo y soporte" | translate }}</h3>
             <div class="cfg-grid cfg-cols-4">
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && PV_AnchoLama_1 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="PV_AnchoLama_1 == '-1'">
                 <label>{{ "ANCHOLAMA" | translate }}</label>
                 <select name="PV_AnchoLama_1" class="form-control form-control-sm" [(ngModel)]="PV_AnchoLama_1">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -90,7 +95,8 @@
                   <option value="127">127 mm</option>
                 </select>
               </div>
-              <div class="cfg-field" [hidden]="TipoVertical == '2'" [class.cfg-error]="intentoCalculo && PV_PosicionMecanismo_1 == '-1'">
+              <div class="cfg-field" [hidden]="TipoVertical == '2'"
+                [class.cfg-error]="PV_PosicionMecanismo_1 == '-1'">
                 <label>{{ "POSICIONMECANISMO" | translate }}</label>
                 <select name="PV_PosicionMecanismo_1" class="form-control form-control-sm"
                   [(ngModel)]="PV_PosicionMecanismo_1">
@@ -99,7 +105,8 @@
                   <option value="DE">{{ "DERECHA" | translate }}</option>
                 </select>
               </div>
-              <div class="cfg-field" [hidden]="TipoVertical == '2'" [class.cfg-error]="intentoCalculo && PV_ColorRiel_1 == '-1'">
+              <div class="cfg-field" [hidden]="TipoVertical == '2'"
+                [class.cfg-error]="PV_ColorRiel_1 == '-1'">
                 <label>{{ "COLORRIEL" | translate }}</label>
                 <select name="PV_ColorRiel_1" class="form-control form-control-sm" [(ngModel)]="PV_ColorRiel_1">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -108,7 +115,8 @@
                   <option value="GRI">{{ "GRIS" | translate }}</option>
                 </select>
               </div>
-              <div class="cfg-field" [hidden]="TipoVertical == '2'" [class.cfg-error]="intentoCalculo && PV_Accionamiento_1 == '-1'">
+              <div class="cfg-field" [hidden]="TipoVertical == '2'"
+                [class.cfg-error]="PV_Accionamiento_1 == '-1'">
                 <label>{{ Tipo4_Accionamiento_Label }}</label>
                 <select name="PV_Accionamiento_1" class="form-control form-control-sm" [(ngModel)]="PV_Accionamiento_1"
                   (change)="Change_Compac_Accionamiento()">
@@ -118,7 +126,8 @@
                   <option value="VAR">{{ "VARILLA" | translate }}</option>
                 </select>
               </div>
-              <div class="cfg-field" [hidden]="TipoVertical == '2'" [class.cfg-error]="intentoCalculo && PV_TipoSoporte_1 == '-1'">
+              <div class="cfg-field" [hidden]="TipoVertical == '2'"
+                [class.cfg-error]="PV_TipoSoporte_1 == '-1'">
                 <label>{{ Tipo3_TipoSoporte_Label }}</label>
                 <select name="PV_TipoSoporte_1" class="form-control form-control-sm" [(ngModel)]="PV_TipoSoporte_1"
                   (change)="Recalcular_Tipo3()">
@@ -134,7 +143,8 @@
                   <option value="P23">P23</option>
                 </select>
               </div>
-              <div class="cfg-field" [hidden]="TipoVertical == '2'" [class.cfg-error]="intentoCalculo && PV_TipoRecogida_1 == '-1'">
+              <div class="cfg-field" [hidden]="TipoVertical == '2'"
+                [class.cfg-error]="PV_TipoRecogida_1 == '-1'">
                 <label>{{ "TIPORECOGIDA" | translate }}</label>
                 <select name="PV_TipoRecogida_1" class="form-control form-control-sm" [(ngModel)]="PV_TipoRecogida_1">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -149,12 +159,13 @@
         </div>
 
         <!-- 04 TEJIDO -->
-        <div class="cfg-paso" [hidden]="!PV_SEL_1 || TipoVertical == '3'">
+        <div class="cfg-paso" [hidden]="!PV_SEL_1 || TipoVertical == '3'"
+          [class.cfg-error]="Tipo3_Tejido == '-1' || Tipo3_TejidoColor1 == '-1'">
           <span class="cfg-paso-num">04</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "TEJIDO" | translate }}</h3>
             <div class="cfg-grid cfg-cols-3">
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo3_Tejido == '-1'">
+              <div class="cfg-field" [class.cfg-error]="Tipo3_Tejido == '-1'">
                 <label>{{ "TEJIDO" | translate }}</label>
                 <select name="Tipo3_Tejido" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="Tipo3_Tejido" (change)="ChangeTipo3Tejido()" (blur)="ChangeTipo3Tejido()">
@@ -162,14 +173,15 @@
                 </select>
                 <small class="cfg-ayuda" *ngIf="CodigoProv31">Ref. {{ CodigoProv31 }}</small>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo3_TejidoColor1 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="Tipo3_TejidoColor1 == '-1'">
                 <label>{{ "COLOR1" | translate }}</label>
                 <select name="Tipo3_TejidoColor1" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_TejidoColor1"
                   (change)="Vertical_TejidosCombinados()" (blur)="Vertical_TejidosCombinados()">
                   <option *ngFor="let pow of pv_tejidosC_1" [value]="pow.id">{{ pow.text }}</option>
                 </select>
-                <app-tejido-imagen *ngIf="TipoVertical != '3'" [cliente]="Cliente" [tejido]="Tipo3_Tejido" [color]="Tipo3_TejidoColor1" [colores]="pv_tejidosC_1"></app-tejido-imagen>
+                <app-tejido-imagen *ngIf="TipoVertical != '3'" [cliente]="Cliente" [tejido]="Tipo3_Tejido"
+                  [color]="Tipo3_TejidoColor1" [colores]="pv_tejidosC_1"></app-tejido-imagen>
               </div>
               <div class="cfg-field" [hidden]="TipoVertical != '1'">
                 <label>{{ "COLOR2" | translate }}</label>
@@ -178,26 +190,31 @@
                   (change)="Vertical_TejidosCombinados()">
                   <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
                 </select>
-                <app-tejido-imagen *ngIf="TipoVertical == '1'" [cliente]="Cliente" [tejido]="Tipo3_Tejido" [color]="Tipo3_TejidoColor2" [colores]="pv_tejidosC_2"></app-tejido-imagen>
+                <app-tejido-imagen *ngIf="TipoVertical == '1'" [cliente]="Cliente" [tejido]="Tipo3_Tejido"
+                  [color]="Tipo3_TejidoColor2" [colores]="pv_tejidosC_2"></app-tejido-imagen>
               </div>
-              <div class="cfg-field cfg-span-all cfg-aviso" *ngIf="Tipo3_Incremento_Tejidos">{{ Tipo3_Incremento_Tejidos }}</div>
+              <div class="cfg-field cfg-span-all cfg-aviso" *ngIf="Tipo3_Incremento_Tejidos">{{ Tipo3_Incremento_Tejidos
+                }}</div>
 
               <div class="cfg-field cfg-span-all" [hidden]="TipoVertical != '1'">
                 <div class="cfg-check">
                   <label>
-                    <input type="checkbox" name="ImpresionDigital_1"
-                      [(ngModel)]="PV_ID_Quiero_1" (change)="selImpresionDigital_Tipo3_1()" />
+                    <input type="checkbox" name="ImpresionDigital_1" [(ngModel)]="PV_ID_Quiero_1"
+                      (change)="selImpresionDigital_Tipo3_1()" />
                     {{ "IMPRESIONDIGITAL" | translate }}
                   </label>
-                  <input class="form-control form-control-sm" type="text" [placeholder]="'Referencia de la imagen' | translate"
-                    [(ngModel)]="PV_ID_Imagen_1" id="PV_ImpresionDigital_1" [ngModelOptions]="{ standalone: true }" />
-                  <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!PV_ID_Quiero_1" [hidden]="true"
-                    (click)="idSelector1.abrir()">
+                  <input class="form-control form-control-sm" type="text"
+                    [placeholder]="'Referencia de la imagen' | translate" [(ngModel)]="PV_ID_Imagen_1"
+                    id="PV_ImpresionDigital_1" [ngModelOptions]="{ standalone: true }" />
+                  <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!PV_ID_Quiero_1"
+                    [hidden]="true" (click)="idSelector1.abrir()">
                     <i class="fa fa-picture-o"></i> Seleccionar Imagen
                   </button>
                 </div>
-                <div class="mt-2" *ngIf="PV_ID_Quiero_1 && idSeleccion1" style="display: flex; align-items: center; gap: 0.5em;">
-                  <img [src]="idSeleccion1.previewUrl" style="height: 40px; border: 1px solid #ccc; border-radius: 4px;" />
+                <div class="mt-2" *ngIf="PV_ID_Quiero_1 && idSeleccion1"
+                  style="display: flex; align-items: center; gap: 0.5em;">
+                  <img [src]="idSeleccion1.previewUrl"
+                    style="height: 40px; border: 1px solid #ccc; border-radius: 4px;" />
                   <small class="text-muted">{{ PV_ID_Imagen_1 }}</small>
                   <button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="quitarImpresionDigital1()">
                     <i class="fa fa-times"></i>
@@ -216,8 +233,8 @@
             <div class="cfg-grid cfg-cols-1-2">
               <div class="cfg-field">
                 <label>{{ "ESTANCIA" | translate }}</label>
-                <select name="Tipo3_Estancia" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="Tipo3_Estancia">
+                <select name="Tipo3_Estancia" class="form-control form-control-sm"
+                  [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_Estancia">
                   <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
                 </select>
               </div>
@@ -236,12 +253,13 @@
       <ng-container *ngIf="VerticalInclinada == '1'">
 
         <!-- 02 MEDIDAS -->
-        <div class="cfg-paso" [hidden]="!PV_SEL_2">
+        <div class="cfg-paso" [hidden]="!PV_SEL_2"
+          [class.cfg-error]="!PV_Ancho_2 || PV_Ancho_2 <= 0 || !PV_AlturaMin_2 || PV_AlturaMin_2 <= 0 || !PV_AlturaMax_2 || PV_AlturaMax_2 <= 0">
           <span class="cfg-paso-num">02</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "Medidas" | translate }}</h3>
             <div class="cfg-grid cfg-cols-4">
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && (PV_Ancho_2 == '' || PV_Ancho_2 == '0')">
+              <div class="cfg-field" [class.cfg-error]="!PV_Ancho_2 || PV_Ancho_2 <= 0">
                 <label>{{ "ANCHO" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_ancho_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -250,7 +268,8 @@
                   <span>cm</span>
                 </div>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && (PV_AlturaMin_2 == '' || PV_AlturaMin_2 == '0')">
+              <div class="cfg-field"
+                [class.cfg-error]="!PV_AlturaMin_2 || PV_AlturaMin_2 <= 0">
                 <label>{{ "ALTURAMINIMA" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_alturamin_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -260,7 +279,8 @@
                   <span>cm</span>
                 </div>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && (PV_AlturaMax_2 == '' || PV_AlturaMax_2 == '0')">
+              <div class="cfg-field"
+                [class.cfg-error]="!PV_AlturaMax_2 || PV_AlturaMax_2 <= 0">
                 <label>{{ "ALTURAMAXIMA" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_alturamax_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -279,12 +299,13 @@
         </div>
 
         <!-- 03 MECANISMO Y SOPORTE -->
-        <div class="cfg-paso" [hidden]="!PV_SEL_2">
+        <div class="cfg-paso" [hidden]="!PV_SEL_2"
+          [class.cfg-error]="PV_AnchoLama_2 == '-1' || PV_PosicionMecanismo_2 == '-1' || PV_ColorRiel_2 == '-1' || PV_TipoSoporte_2 == '-1' || PV_TipoRecogida_2 == '-1'">
           <span class="cfg-paso-num">03</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "Mecanismo y soporte" | translate }}</h3>
             <div class="cfg-grid cfg-cols-4">
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && PV_AnchoLama_2 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="PV_AnchoLama_2 == '-1'">
                 <label>{{ "ANCHOLAMA" | translate }}</label>
                 <select name="PV_AnchoLama_2" class="form-control form-control-sm" [(ngModel)]="PV_AnchoLama_2">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -292,7 +313,7 @@
                   <option value="127">127 mm</option>
                 </select>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && PV_PosicionMecanismo_2 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="PV_PosicionMecanismo_2 == '-1'">
                 <label>{{ "POSICIONMECANISMO" | translate }}</label>
                 <select name="PV_PosicionMecanismo_2" class="form-control form-control-sm"
                   [(ngModel)]="PV_PosicionMecanismo_2">
@@ -301,7 +322,7 @@
                   <option value="DE">{{ "DE" | translate }}</option>
                 </select>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && PV_ColorRiel_2 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="PV_ColorRiel_2 == '-1'">
                 <label>{{ "COLORRIEL" | translate }}</label>
                 <select name="PV_ColorRiel_2" class="form-control form-control-sm" [(ngModel)]="PV_ColorRiel_2">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -317,7 +338,7 @@
                   <option value="COR">{{ "CORDON" | translate }}</option>
                 </select>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && PV_TipoSoporte_2 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="PV_TipoSoporte_2 == '-1'">
                 <label>{{ Tipo32_TipoSoporte_Label }}</label>
                 <select name="PV_TipoSoporte_2" class="form-control form-control-sm" [(ngModel)]="PV_TipoSoporte_2"
                   (change)="Tarifa_VerticalInclinada_Soporte()">
@@ -333,7 +354,7 @@
                   <option value="P23">P23</option>
                 </select>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && PV_TipoRecogida_2 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="PV_TipoRecogida_2 == '-1'">
                 <label>{{ "TIPORECOGIDA" | translate }}</label>
                 <select name="PV_TipoRecogida_2" class="form-control form-control-sm" [(ngModel)]="PV_TipoRecogida_2">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -346,27 +367,30 @@
         </div>
 
         <!-- 04 TEJIDO -->
-        <div class="cfg-paso" [hidden]="!PV_SEL_2">
+        <div class="cfg-paso" [hidden]="!PV_SEL_2"
+          [class.cfg-error]="Tipo3_Tejido_2 == '-1' || Tipo3_TejidoColor1_2 == '-1'">
           <span class="cfg-paso-num">04</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "TEJIDO" | translate }}</h3>
             <div class="cfg-grid cfg-cols-3">
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo3_Tejido_2 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="Tipo3_Tejido_2 == '-1'">
                 <label>{{ "TEJIDO" | translate }}</label>
-                <select name="Tipo3_Tejido_2" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="Tipo3_Tejido_2" (change)="ChangeTipo3Tejido_2()" (blur)="ChangeTipo3Tejido_2()">
+                <select name="Tipo3_Tejido_2" class="form-control form-control-sm"
+                  [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_Tejido_2" (change)="ChangeTipo3Tejido_2()"
+                  (blur)="ChangeTipo3Tejido_2()">
                   <option *ngFor="let pow of pv_tejidos_1" [value]="pow.id">{{ pow.text }}</option>
                 </select>
                 <small class="cfg-ayuda" *ngIf="CodigoProv32">Ref. {{ CodigoProv32 }}</small>
               </div>
-              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo3_TejidoColor1_2 == '-1'">
+              <div class="cfg-field" [class.cfg-error]="Tipo3_TejidoColor1_2 == '-1'">
                 <label>{{ "COLOR1" | translate }}</label>
                 <select name="Tipo3_TejidoColor1_2" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_TejidoColor1_2"
                   (change)="Vertical_TejidosCombinados()" (blur)="Vertical_TejidosCombinados()">
                   <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
                 </select>
-                <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo3_Tejido_2" [color]="Tipo3_TejidoColor1_2" [colores]="pv_tejidosC_2"></app-tejido-imagen>
+                <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo3_Tejido_2" [color]="Tipo3_TejidoColor1_2"
+                  [colores]="pv_tejidosC_2"></app-tejido-imagen>
               </div>
               <div class="cfg-field">
                 <label>{{ "COLOR2" | translate }}</label>
@@ -375,26 +399,31 @@
                   (change)="Vertical_TejidosCombinados()">
                   <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
                 </select>
-                <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo3_Tejido_2" [color]="Tipo3_TejidoColor2_2" [colores]="pv_tejidosC_2"></app-tejido-imagen>
+                <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo3_Tejido_2" [color]="Tipo3_TejidoColor2_2"
+                  [colores]="pv_tejidosC_2"></app-tejido-imagen>
               </div>
-              <div class="cfg-field cfg-span-all cfg-aviso" *ngIf="Tipo32_Incremento_Tejidos">{{ Tipo32_Incremento_Tejidos }}</div>
+              <div class="cfg-field cfg-span-all cfg-aviso" *ngIf="Tipo32_Incremento_Tejidos">{{
+                Tipo32_Incremento_Tejidos }}</div>
 
               <div class="cfg-field cfg-span-all" [hidden]="TipoVertical == '3'">
                 <div class="cfg-check">
                   <label>
-                    <input type="checkbox" name="ImpresionDigital_2"
-                      [(ngModel)]="PV_ID_Quiero_2" (change)="selImpresionDigital_Tipo3_2()" />
+                    <input type="checkbox" name="ImpresionDigital_2" [(ngModel)]="PV_ID_Quiero_2"
+                      (change)="selImpresionDigital_Tipo3_2()" />
                     {{ "IMPRESIONDIGITAL" | translate }}
                   </label>
-                  <input class="form-control form-control-sm" type="text" [placeholder]="'Referencia de la imagen' | translate"
-                    [(ngModel)]="PV_ID_Imagen_2" id="PV_ImpresionDigital_2" [ngModelOptions]="{ standalone: true }" />
-                  <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!PV_ID_Quiero_2" [hidden]="true"
-                    (click)="idSelector2.abrir()">
+                  <input class="form-control form-control-sm" type="text"
+                    [placeholder]="'Referencia de la imagen' | translate" [(ngModel)]="PV_ID_Imagen_2"
+                    id="PV_ImpresionDigital_2" [ngModelOptions]="{ standalone: true }" />
+                  <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="!PV_ID_Quiero_2"
+                    [hidden]="true" (click)="idSelector2.abrir()">
                     <i class="fa fa-picture-o"></i> Seleccionar Imagen
                   </button>
                 </div>
-                <div class="mt-2" *ngIf="PV_ID_Quiero_2 && idSeleccion2" style="display: flex; align-items: center; gap: 0.5em;">
-                  <img [src]="idSeleccion2.previewUrl" style="height: 40px; border: 1px solid #ccc; border-radius: 4px;" />
+                <div class="mt-2" *ngIf="PV_ID_Quiero_2 && idSeleccion2"
+                  style="display: flex; align-items: center; gap: 0.5em;">
+                  <img [src]="idSeleccion2.previewUrl"
+                    style="height: 40px; border: 1px solid #ccc; border-radius: 4px;" />
                   <small class="text-muted">{{ PV_ID_Imagen_2 }}</small>
                   <button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="quitarImpresionDigital2()">
                     <i class="fa fa-times"></i>
@@ -413,8 +442,8 @@
             <div class="cfg-grid cfg-cols-1-2">
               <div class="cfg-field">
                 <label>{{ "ESTANCIA" | translate }}</label>
-                <select name="Tipo31_Estancia" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="Tipo31_Estancia">
+                <select name="Tipo31_Estancia" class="form-control form-control-sm"
+                  [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo31_Estancia">
                   <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
                 </select>
               </div>
@@ -431,75 +460,69 @@
 
       <!-- Desglose precios -->
       <div class="cfg-desglose" [hidden]="!Tipo3_Desglose">
-          <div *ngIf="Global_Visualizar_C1_Parciales">
-            <table class="table table-bordered table-striped table-condensed">
-              <thead>
-                <th style="text-align:center">Cod.48 Mecanismo</th>
-                <th colspan="2" style="text-align:center">Tejido</th>
-                <th colspan="2" style="text-align:center">Tejido Combinado</th>
-                <th colspan="2" style="text-align:center">Soporte</th>
-                <td style="text-align:center" class="bg-primary"><b>Total</b></td>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="text-align:center"><button class="btn btn-default" type="button">{{ Accesorios_Verticales
-                      }}</button></td>
-                  <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_Tejido | number }}&nbsp;€</td>
-                  <td style="text-align:center">{{ precios.T3_Tejido_C1 }}</td>
-                  <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_TejidosCombinados | number }}&nbsp;€
-                  </td>
-                  <td style="text-align:center">{{ precios.T3_TejidosCombinados_C1 }}</td>
-                  <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_NumSoportes * precios.T3_TipoSoporte
-                    | number }}&nbsp;€</td>
-                  <td style="text-align:center">{{ precios.T3_TipoSoporte_C1 }}</td>
-                  <td style="text-align:center" class="bg-primary"><b>{{ precios.T3_PVP | number }}&nbsp;€</b></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div *ngIf="!Global_Visualizar_C1_Parciales">
-            <table class="table table-bordered table-striped table-condensed">
-              <thead>
-                <th style="text-align:center">Cod.48 Mecanismo</th>
-                <th style="text-align:center">Tejido</th>
-                <th style="text-align:center">Tejido Combinado</th>
-                <th style="text-align:center">Soporte</th>
-                <td style="text-align:center" class="bg-primary"><b>Total</b></td>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="text-align:center"><button class="btn btn-default" type="button">{{ Accesorios_Verticales
-                      }}</button></td>
-                  <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_Tejido | number }}&nbsp;€</td>
-                  <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_TejidosCombinados | number }}&nbsp;€
-                  </td>
-                  <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_TipoSoporte * precios.T3_NumSoportes
-                    | number }}&nbsp;€</td>
-                  <td style="text-align:center" class="bg-primary"><b>{{ precios.T3_PVP | number }}&nbsp;€</b></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div *ngIf="Global_Visualizar_C1_Parciales">
+          <table class="table table-bordered table-striped table-condensed">
+            <thead>
+              <th style="text-align:center">Cod.48 Mecanismo</th>
+              <th colspan="2" style="text-align:center">Tejido</th>
+              <th colspan="2" style="text-align:center">Tejido Combinado</th>
+              <th colspan="2" style="text-align:center">Soporte</th>
+              <td style="text-align:center" class="bg-primary"><b>Total</b></td>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="text-align:center"><button class="btn btn-default" type="button">{{ Accesorios_Verticales
+                    }}</button></td>
+                <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_Tejido | number }}&nbsp;€</td>
+                <td style="text-align:center">{{ precios.T3_Tejido_C1 }}</td>
+                <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_TejidosCombinados | number }}&nbsp;€
+                </td>
+                <td style="text-align:center">{{ precios.T3_TejidosCombinados_C1 }}</td>
+                <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_NumSoportes * precios.T3_TipoSoporte
+                  | number }}&nbsp;€</td>
+                <td style="text-align:center">{{ precios.T3_TipoSoporte_C1 }}</td>
+                <td style="text-align:center" class="bg-primary"><b>{{ precios.T3_PVP | number }}&nbsp;€</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div *ngIf="!Global_Visualizar_C1_Parciales">
+          <table class="table table-bordered table-striped table-condensed">
+            <thead>
+              <th style="text-align:center">Cod.48 Mecanismo</th>
+              <th style="text-align:center">Tejido</th>
+              <th style="text-align:center">Tejido Combinado</th>
+              <th style="text-align:center">Soporte</th>
+              <td style="text-align:center" class="bg-primary"><b>Total</b></td>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="text-align:center"><button class="btn btn-default" type="button">{{ Accesorios_Verticales
+                    }}</button></td>
+                <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_Tejido | number }}&nbsp;€</td>
+                <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_TejidosCombinados | number }}&nbsp;€
+                </td>
+                <td style="text-align:center">{{ precios.T3_Cantidad * precios.T3_TipoSoporte * precios.T3_NumSoportes
+                  | number }}&nbsp;€</td>
+                <td style="text-align:center" class="bg-primary"><b>{{ precios.T3_PVP | number }}&nbsp;€</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
   </section>
 
   <!-- Resumen, precio y acciones -->
-  <cfg-resumen
-    [filas]="resumenFilas"
-    [total]="precios?.T3_PVP"
-    [totalC1]="precios?.T3_PVP_C1"
-    [calculando]="calculando"
-    [numCortinas]="NumeroCortinas"
-    [totalCesta]="TotalCesta"
-    (calcular)="CheckPrice()"
-    (agregar)="Agregar()"
-    (finalizar)="onFinalizar.emit()"
-    (verCesta)="onVerCesta.emit()">
+  <cfg-resumen [filas]="resumenFilas" [total]="precios?.T3_PVP" [totalC1]="precios?.T3_PVP_C1" [calculando]="calculando"
+    [numCortinas]="NumeroCortinas" [totalCesta]="TotalCesta" (calcular)="CheckPrice()" (agregar)="Agregar()"
+    (finalizar)="onFinalizar.emit()" (verCesta)="onVerCesta.emit()">
   </cfg-resumen>
 
 </div>
 
-<app-impresion-digital-selector #idSelector1 (seleccionado)="onImpresionDigitalSeleccionada1($event)"></app-impresion-digital-selector>
-<app-impresion-digital-selector #idSelector2 (seleccionado)="onImpresionDigitalSeleccionada2($event)"></app-impresion-digital-selector>
+<app-impresion-digital-selector #idSelector1
+  (seleccionado)="onImpresionDigitalSeleccionada1($event)"></app-impresion-digital-selector>
+<app-impresion-digital-selector #idSelector2
+  (seleccionado)="onImpresionDigitalSeleccionada2($event)"></app-impresion-digital-selector>

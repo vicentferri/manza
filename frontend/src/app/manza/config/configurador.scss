@@ -358,6 +358,16 @@ section.cfg-panel {
   border: 1px solid $cfg-borde;
   border-radius: $cfg-radio;
   box-shadow: $cfg-sombra;
+  transition: border-color 0.15s;
+
+  &.cfg-error {
+    border-color: $cfg-rojo;
+
+    .cfg-paso-num {
+      background: #fdecea;
+      color: $cfg-rojo;
+    }
+  }
 }
 
 .cfg-paso-num {
@@ -434,11 +444,11 @@ section.cfg-panel {
 
     .form-control,
     select.form-control:not([size]):not([multiple]) {
-      border-color: $cfg-rojo;
-      background-color: #fffafa;
+      border: 1.5px solid $cfg-rojo !important;
+      background-color: #fff5f5 !important;
 
       &:focus {
-        border-color: $cfg-rojo;
+        border-color: $cfg-rojo !important;
         box-shadow: 0 0 0 3px rgba($cfg-rojo, 0.18);
       }
     }
