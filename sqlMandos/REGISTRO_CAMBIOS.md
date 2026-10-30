@@ -18,6 +18,8 @@ Scripts idempotentes; se aplican primero en local. Producción (`SOLARMANES_DEV`
   - Al cambiar el mando o el cargador con la línea ya valorada, se recalculan el PVP y el C1.
   - Al cambiar a un motor sin ese cargador, la línea queda sin cargador.
   - Al editar una línea de la cesta se conserva el cargador.
+  - `reset()` (tras agregar una línea) también limpia el cargador, su lista y su etiqueta. Antes la línea siguiente
+    podía guardarse con el cargador de la anterior y con incremento 0.
 
 ## Pendiente
 

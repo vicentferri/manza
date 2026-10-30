@@ -217,6 +217,9 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Marca = '-1';
       this.Tipo1_Color = '-1';
       this.Tipo1_Mando = '-1';
+      this.Tipo1_Cargador = '-1';
+      this.cargadores = [];
+      this.Label_Cargador = 'Cargador:';
       this.Tipo1_Posicion = '1';
       this.Tipo1_Tubo = '-1';
       this.Tipo1_AlturaCadena = '-1';
