@@ -47,7 +47,7 @@
         <div>
           <h3 class="cfg-paso-titulo">{{ "Medidas" | translate }}</h3>
           <div class="cfg-grid cfg-cols-3">
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (Ancho == '' || Ancho == '0')">
               <label>{{ "ANCHO" | translate }}</label>
               <div class="cfg-unidad">
                 <input
@@ -66,7 +66,7 @@
               </div>
               <small class="cfg-ayuda">100 - 600</small>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (Alto == '' || Alto == '0')">
               <label>{{ "ALTO" | translate }}</label>
               <div class="cfg-unidad">
                 <input
@@ -122,7 +122,7 @@
                   </option>
                 </select>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_Tejido == '-1'">
                 <label>{{ "SERIE" | translate }}</label>
                 <select
                   name="Tipo1_Tejido"
@@ -137,7 +137,7 @@
                 </select>
                 <small class="cfg-ayuda" *ngIf="CodigoProv">Ref. {{ CodigoProv }}</small>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_TejidoColor == '-1'">
                 <label>{{ "COLOR" | translate }}</label>
                 <select
                   name="Tipo1_TejidoColor"
@@ -152,7 +152,7 @@
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo1_Tejido" [color]="Tipo1_TejidoColor" [colores]="tejidosC"></app-tejido-imagen>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_TejidoSalida == '-1'">
                 <label>{{ "SALIDA" | translate }}</label>
                 <select
                   name="Tipo1_TejidoSalida"
@@ -166,7 +166,7 @@
                 </select>
               </div>
 
-              <div class="cfg-field cfg-span-all" [hidden]="SubTipoCortina == 2">
+              <div class="cfg-field cfg-span-all" [hidden]="SubTipoCortina == 2" [class.cfg-error]="intentoCalculo && ID_Quiero && ID_Imagen == ''">
                 <div class="cfg-check">
                   <label>
                     <input
@@ -213,7 +213,7 @@
           <div>
             <h3 class="cfg-paso-titulo">{{ "ACCIONAMIENTO" | translate }}</h3>
             <div class="cfg-grid cfg-cols-2">
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_Tipo == '-1'">
                 <label>{{ "ACCIONAMIENTO" | translate }}</label>
                 <select
                   name="Tipo1_Tipo"
@@ -227,7 +227,7 @@
                   </option>
                 </select>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_Marca == '-1'">
                 <label>{{ "TIPO" | translate }}</label>
                 <select
                   name="Tipo1_Marca"
@@ -250,7 +250,7 @@
                 </div>
               </div>
 
-              <div class="cfg-field cfg-span-all">
+              <div class="cfg-field cfg-span-all" [class.cfg-error]="intentoCalculo && Tipo1_Color == '-1'">
                 <label>{{ Modelo_Label }}</label>
                 <select
                   name="Tipo1_Color"
@@ -264,7 +264,7 @@
                   </option>
                 </select>
               </div>
-              <div class="cfg-field cfg-span-all" [hidden]="!verMando">
+              <div class="cfg-field cfg-span-all" [hidden]="!verMando" [class.cfg-error]="intentoCalculo && verMando && Tipo1_Mando == '-1'">
                 <label>{{ Tipo1_RadioMando_Label }}</label>
                 <select
                   name="Tipo1_Mando"
@@ -293,7 +293,7 @@
                   </option>
                 </select>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_Posicion == '-1'">
                 <label>{{ "POSICION" | translate }}</label>
                 <select
                   name="Tipo1_Posicion"
@@ -309,7 +309,7 @@
             </div>
 
             <!-- Cadena -->
-            <div class="cfg-cadenas" [hidden]="!esCadena">
+            <div class="cfg-cadenas" [hidden]="!esCadena" [class.cfg-error]="intentoCalculo && esCadena == 1 && esCadenaExt == -1">
               <!-- Cadena simple -->
               <div class="cfg-cadena">
                 <label class="cfg-cadena-opcion">
@@ -317,7 +317,7 @@
                   {{ "CADENA" | translate }}
                 </label>
                 <div class="cfg-grid cfg-cols-2" [hidden]="esCadenaExt != 0">
-                  <div class="cfg-field">
+                  <div class="cfg-field" [class.cfg-error]="intentoCalculo && !AlturaCadena">
                     <label>{{ Tipo1_Cadena_Label }}</label>
                     <input
                       type="number"
@@ -327,7 +327,7 @@
                       [(ngModel)]="AlturaCadena"
                     />
                   </div>
-                  <div class="cfg-field">
+                  <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_ColorCadena == '-1'">
                     <label>{{ "COLOR" | translate }}</label>
                     <select
                       name="Tipo1_ColorCadena"
@@ -349,7 +349,7 @@
                   {{ "CADENACONTINUA" | translate }}
                 </label>
                 <div class="cfg-grid cfg-cols-2" [hidden]="esCadenaExt != 1">
-                  <div class="cfg-field">
+                  <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_ColorCadena == '-1'">
                     <label>{{ "COLOR" | translate }}</label>
                     <select
                       name="Tipo1_ColorCadena"
@@ -363,7 +363,7 @@
                       </option>
                     </select>
                   </div>
-                  <div class="cfg-field">
+                  <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_AlturaCadena == '-1'">
                     <label>{{ Tipo1_Cadena_Label }}</label>
                     <select
                       name="Tipo1_AlturaCadena"
@@ -385,7 +385,7 @@
                   {{ "CADENAMETALICA" | translate }}
                 </label>
                 <div class="cfg-grid cfg-cols-2" [hidden]="esCadenaExt != 2">
-                  <div class="cfg-field">
+                  <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_AlturaCadenaM == '-1'">
                     <label>{{ "ALTURA CADENA" | translate }}</label>
                     <select
                       name="Tipo1_AlturaCadenaM"
@@ -399,7 +399,7 @@
                       </option>
                     </select>
                   </div>
-                  <div class="cfg-field" [hidden]="Tipo1_AlturaCadenaM != '9999'">
+                  <div class="cfg-field" [hidden]="Tipo1_AlturaCadenaM != '9999'" [class.cfg-error]="intentoCalculo && Tipo1_AlturaCadenaM == '9999' && alturaMetalicaEscrita() === null">
                     <label>{{ "ALTURA_CADENA" | translate }}</label>
                     <input
                       type="text"
@@ -423,7 +423,7 @@
 
             <h4 class="cfg-subtitulo">{{ "SOPORTES" | translate }}</h4>
             <div class="cfg-grid cfg-cols-2">
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_Soporte == '-1'">
                 <label>{{ "TIPO" | translate }}</label>
                 <select
                   name="Tipo1_Soporte"
@@ -437,7 +437,7 @@
                   </option>
                 </select>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_SoporteC == '-1'">
                 <label>{{ "COLOR" | translate }}</label>
                 <select
                   name="Tipo1_SoporteC"
@@ -455,7 +455,7 @@
 
             <h4 class="cfg-subtitulo">{{ "SELECCION DE TAPAS" | translate }}</h4>
             <div class="cfg-grid cfg-cols-2">
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_Tapa == '-1'">
                 <label>{{ "TIPO" | translate }}</label>
                 <select
                   name="Tipo1_Tapa"
@@ -469,7 +469,7 @@
                   </option>
                 </select>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_TapaC == '-1'">
                 <label>{{ "COLOR" | translate }}</label>
                 <select
                   name="Tipo1_TapaC"
@@ -486,7 +486,7 @@
 
             <h4 class="cfg-subtitulo">{{ "SELECCION DE CONTRAPESOS" | translate }}</h4>
             <div class="cfg-grid cfg-cols-2">
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_Contrapeso == '-1'">
                 <label>{{ Tipo1_Contrapeso_Label }}</label>
                 <select
                   name="Tipo1_Contrapeso"
@@ -501,7 +501,7 @@
                   </option>
                 </select>
               </div>
-              <div class="cfg-field">
+              <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo1_ContrapesoC == '-1'">
                 <label>{{ "COLOR" | translate }}</label>
                 <select
                   name="Tipo1_ContrapesoC"

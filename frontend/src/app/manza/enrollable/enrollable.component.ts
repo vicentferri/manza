@@ -45,6 +45,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    public CestaPrecios: Array<CortinaTipo> = [];
 
    calculando: boolean = false;
+   intentoCalculo: boolean = false;
 
    // Dimensiones
    Ancho: string = '';
@@ -215,6 +216,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    // ─── RESET ───────────────────────────────────────────────────────────────────
 
    reset(): void {
+      this.intentoCalculo = false;
       this.CodigoProv = '';
       this.Ancho = '';
       this.Alto = '';
@@ -890,6 +892,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    }
 
    SubTipo(value: number): void {
+      this.intentoCalculo = false;
       this.SubTipoCortina = value;
       this.load_Tejidos();
       this.load_Accionamientos();
@@ -1081,6 +1084,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    }
 
    NewPage() {
+      this.intentoCalculo = false;
 
       this.CodigoProv = "";
       this.Tipo1_AnchoMaximo = -1;
@@ -1187,6 +1191,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    // ─── CONSTRUCCIÓN Y EMISIÓN ───────────────────────────────────────────────────
 
    Agregar(): void {
+      this.intentoCalculo = true;
       const retValue = this.T1Check();
       if (retValue.Proceed !== 1) {
          this.toaster.error(retValue.Message, 'ERROR');
@@ -1652,6 +1657,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    }
 
    CheckPrice() {
+      this.intentoCalculo = true;
 
 
       let retValue = { Proceed: 0, Message: "" };

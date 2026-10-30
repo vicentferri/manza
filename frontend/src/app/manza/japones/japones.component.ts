@@ -41,6 +41,7 @@ export class JaponesComponent implements OnInit, OnChanges {
 
 
    calculando: boolean = false;
+   intentoCalculo: boolean = false;
 
    idLinea: string = "0";
 
@@ -209,6 +210,7 @@ export class JaponesComponent implements OnInit, OnChanges {
    // ─── RESET ───────────────────────────────────────────────────────────────────
 
    reset(): void {
+      this.intentoCalculo = false;
       this.TipoJapones = '1';
       this.PJ_Cantidad_1 = '1';
       this.PJ_Ancho_2 = '';
@@ -306,6 +308,7 @@ export class JaponesComponent implements OnInit, OnChanges {
    // ─── CHANGE HANDLERS ─────────────────────────────────────────────────────────
 
    NewPage(): void {
+      this.intentoCalculo = false;
       this.PJ_Ancho_1 = "";
       this.PJ_Alto_1 = "150";
       this.PJ_Cantidad_1 = "1";
@@ -627,6 +630,7 @@ export class JaponesComponent implements OnInit, OnChanges {
    // ─── AGREGAR ─────────────────────────────────────────────────────────────────
 
    Agregar(): void {
+      this.intentoCalculo = true;
       const retValue = this.T2Check();
       if (retValue.Proceed !== 1) {
          this.toaster.error(retValue.Message, 'ERROR');
@@ -1082,6 +1086,7 @@ export class JaponesComponent implements OnInit, OnChanges {
    }
 
    CheckPrice() {
+      this.intentoCalculo = true;
       let retValue = { Proceed: 0, Message: "" };
       retValue = this.T2Check();
 

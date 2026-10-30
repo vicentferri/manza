@@ -34,6 +34,7 @@ export class CompacComponent implements OnInit, OnChanges {
    @Output() onVerCesta = new EventEmitter<void>();
 
    calculando: boolean = false;
+   intentoCalculo: boolean = false;
    idLinea = "";
 
    public CestaPrecios: Array<CortinaTipo> = [];
@@ -176,6 +177,7 @@ export class CompacComponent implements OnInit, OnChanges {
    }
 
    NewPage() {
+      this.intentoCalculo = false;
       this.compac.PC_TipoJunquillo = "JC";
       this.compac.PC_AnchoB = "0";
       this.TIPO4_ID_Quiero = false;
@@ -201,6 +203,7 @@ export class CompacComponent implements OnInit, OnChanges {
    // ─── RESET ───────────────────────────────────────────────────────────────────
 
    reset(): void {
+      this.intentoCalculo = false;
       this.Ancho = '';
       this.Alto = '';
       this.Cantidad = '1';
@@ -489,6 +492,7 @@ export class CompacComponent implements OnInit, OnChanges {
    // ─── AGREGAR ─────────────────────────────────────────────────────────────────
 
    Agregar(): void {
+      this.intentoCalculo = true;
       const retValue = this.T4Check();
       if (retValue.Proceed !== 1) {
          this.toaster.error(retValue.Message, 'ERROR');
@@ -730,6 +734,7 @@ export class CompacComponent implements OnInit, OnChanges {
    }
 
    CheckPrice() {
+      this.intentoCalculo = true;
       let retValue = { Proceed: 0, Message: "" };
       retValue = this.T4Check();
 

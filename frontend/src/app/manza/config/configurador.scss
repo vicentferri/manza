@@ -417,6 +417,31 @@ section.cfg-panel {
       border-color: $cfg-azul;
       box-shadow: 0 0 0 3px rgba($cfg-azul, 0.2);
     }
+
+    &.is-invalid {
+      border-color: $cfg-rojo;
+      background-color: #fffafa;
+
+      &:focus {
+        border-color: $cfg-rojo;
+        box-shadow: 0 0 0 3px rgba($cfg-rojo, 0.18);
+      }
+    }
+  }
+
+  &.cfg-error {
+    > label { color: $cfg-rojo; }
+
+    .form-control,
+    select.form-control:not([size]):not([multiple]) {
+      border-color: $cfg-rojo;
+      background-color: #fffafa;
+
+      &:focus {
+        border-color: $cfg-rojo;
+        box-shadow: 0 0 0 3px rgba($cfg-rojo, 0.18);
+      }
+    }
   }
 
   textarea.form-control {
@@ -494,6 +519,11 @@ section.cfg-panel {
   display: grid;
   gap: 10px;
   margin-top: 16px;
+
+  &.cfg-error .cfg-cadena {
+    border-color: $cfg-rojo;
+    background-color: #fffafa;
+  }
 }
 
 .cfg-cadena {

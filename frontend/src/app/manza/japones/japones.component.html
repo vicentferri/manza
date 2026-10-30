@@ -36,7 +36,7 @@
         <div>
           <h3 class="cfg-paso-titulo">{{ "Medidas" | translate }}</h3>
           <div class="cfg-grid cfg-cols-3">
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (PJ_Ancho_2 == '' || PJ_Ancho_2 == '0')">
               <label>{{ "ANCHOMECANISMO" | translate }}</label>
               <div class="cfg-unidad">
                 <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -47,7 +47,7 @@
               </div>
               <small class="cfg-ayuda">0 - 600</small>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (PJ_Alto_1 == '' || PJ_Alto_1 == '0')">
               <label *ngIf="TipoJapones == '1'">{{ "ALTURATOTAL" | translate }}</label>
               <label *ngIf="TipoJapones == '3'">{{ "ALTURAMANDO" | translate }}</label>
               <div class="cfg-unidad">
@@ -75,7 +75,7 @@
         <div>
           <h3 class="cfg-paso-titulo">{{ "Mecanismo y soporte" | translate }}</h3>
           <div class="cfg-grid cfg-cols-4">
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && PJ_NumeroVias_2 == '-1'">
               <label>{{ "NUMEROVIAS" | translate }}</label>
               <select name="PJ_NumeroVias_2" [(ngModel)]="PJ_NumeroVias_2"
                 class="form-control form-control-sm"
@@ -103,14 +103,14 @@
                 <span>cm</span>
               </div>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && PJ_ColorRiel_2 == '-1'">
               <label>{{ "COLORMECANISMO" | translate }}</label>
               <select name="PJ_ColorRiel_2" [(ngModel)]="PJ_ColorRiel_2" class="form-control form-control-sm">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
                 <option value="BLANCO">{{ "BLANCO" | translate }}</option>
               </select>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && PJ_PosicionMando_2 == '-1'">
               <label>{{ "POSICIONMANDO" | translate }}</label>
               <select name="PJ_PosicionMando_2" [(ngModel)]="PJ_PosicionMando_2" class="form-control form-control-sm">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -119,7 +119,7 @@
                 <option value="SM">{{ "SM" | translate }}</option>
               </select>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && PJ_TipoRecogida_2 == '-1'">
               <label>{{ "RECOGIDA" | translate }}</label>
               <select name="PJ_TipoRecogida_2" [(ngModel)]="PJ_TipoRecogida_2" class="form-control form-control-sm">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -128,7 +128,7 @@
                 <option value="RC">{{ "RC" | translate }}</option>
               </select>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && PJ_TipoSoporte_2 == '-1'">
               <label>{{ Tipo2_TipoSoporte_Label }}</label>
               <select name="PJ_TipoSoporte_2" [(ngModel)]="PJ_TipoSoporte_2"
                 class="form-control form-control-sm" (change)="Tarifa_Japones_Soporte()">
@@ -144,7 +144,7 @@
                 <option value="P23">P23</option>
               </select>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && PJ_Contrapeso_1 == '-1'">
               <label>{{ "CONTRAPESO" | translate }}</label>
               <select name="PJ_Contrapeso_1" [(ngModel)]="PJ_Contrapeso_1" class="form-control form-control-sm">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -169,7 +169,7 @@
                 [appMaxdigits]="3" [disabled]="!(TipoJapones == '2')"
                 [ngModelOptions]="{ standalone: true }" required />
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (PJ_AnchoLama == '' || PJ_AnchoLama == '0')">
               <label>{{ "ANCHOLAMA" | translate }}</label>
               <div class="cfg-unidad">
                 <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -178,7 +178,7 @@
                 <span>cm</span>
               </div>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && (PJ_AltoLamaTerminada == '' || PJ_AltoLamaTerminada == '0')">
               <label>{{ "ALTOLAMATERM" | translate }}</label>
               <div class="cfg-unidad">
                 <input class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -188,7 +188,7 @@
               </div>
             </div>
 
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo2_Tejido == '-1'">
               <label>{{ "TEJIDO" | translate }}</label>
               <select name="Tipo2_Tejido" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_Tejido"
@@ -197,7 +197,7 @@
               </select>
               <small class="cfg-ayuda" *ngIf="CodigoProv2">Ref. {{ CodigoProv2 }}</small>
             </div>
-            <div class="cfg-field">
+            <div class="cfg-field" [class.cfg-error]="intentoCalculo && Tipo2_TejidoColor == '-1'">
               <label>{{ "COLOR" | translate }}</label>
               <select name="Tipo2_TejidoColor" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor"

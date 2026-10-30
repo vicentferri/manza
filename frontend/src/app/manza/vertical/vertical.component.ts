@@ -37,6 +37,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    public CestaPrecios: Array<CortinaTipo> = [];
 
    calculando: boolean = false;
+   intentoCalculo: boolean = false;
 
    // Selección: Vertical / Vertical Inclinada
    PV_SEL_1: boolean = true;
@@ -181,6 +182,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    CambiaTipoVertical() {
+      this.intentoCalculo = false;
       if (this.VerticalInclinada == '0') {
          this.PV_SEL_1 = true;
          this.PV_SEL_2 = false;
@@ -206,6 +208,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    // ─── RESET ───────────────────────────────────────────────────────────────────
 
    NewPage() {
+      this.intentoCalculo = false;
       this.Tipo3_Tejido = "-1";
       this.Tipo3_TejidoColor1 = "-1";
       this.Tipo3_TejidoColor2 = "-1";
@@ -252,6 +255,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    reset(): void {
+      this.intentoCalculo = false;
       this.PV_SEL_1 = true;
       this.PV_SEL_2 = false;
       this.TipoVertical = '1';
@@ -906,6 +910,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    // ─── AGREGAR ─────────────────────────────────────────────────────────────────
 
    Agregar(): void {
+      this.intentoCalculo = true;
       const retValue = this.T3Check();
       if (retValue.Proceed !== 1) {
          this.toaster.error(retValue.Message, 'ERROR');
@@ -1260,6 +1265,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    CheckPrice() {
+      this.intentoCalculo = true;
       let retValue = { Proceed: 0, Message: "" };
       retValue = this.T3Check();
 
