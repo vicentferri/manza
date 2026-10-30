@@ -38,22 +38,22 @@
     />
   </div>
   <div class="cfg-field">
-    <label>{{ "REF.CLIENTE" | translate }}</label>
-    <input
-      class="form-control"
-      id="RefCliente"
-      required
-      [(ngModel)]="model.RefCliente"
-      (keyup.enter)="GoFilter()"
-    />
-  </div>
-  <div class="cfg-field">
     <label>{{ "REFERENCIA" | translate }}</label>
     <input
       class="form-control"
       id="Referencia"
       required
       [(ngModel)]="model.Referencia"
+      (keyup.enter)="GoFilter()"
+    />
+  </div>
+  <div class="cfg-field">
+    <label>{{ "REF.CLIENTE" | translate }}</label>
+    <input
+      class="form-control"
+      id="RefCliente"
+      required
+      [(ngModel)]="model.RefCliente"
       (keyup.enter)="GoFilter()"
     />
   </div>
