@@ -294,7 +294,7 @@
                       class="form-control form-control-sm"
                       [ngModelOptions]="{ standalone: true }"
                       [(ngModel)]="Tipo1_Mando"
-                      (change)="ChangeRadioMando()"
+                      (change)="cambiaMando()"
                       [disabled]="Tipo1_RadioMando_Disabled"
                     >
                       <option *ngFor="let pow of radiomando" [value]="pow.id">
