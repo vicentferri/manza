@@ -9,8 +9,8 @@
     <nav class="cfg-nav">
       <a [class.activo]="bConfigurador == 2" (click)="VerPresupuestos()">{{ "PRESUPUESTOS" | translate }}</a>
       <a [class.activo]="bConfigurador == 3" (click)="VerPedidos()">{{ "PEDIDOS" | translate }}</a>
-      <a [class.activo]="bConfigurador == 0" (click)="VerConfigurador()">{{ "CONFIGURADOR" | translate }}</a>
-      <a [class.activo]="bConfigurador == 1" (click)="VerPedido()">{{ "Ver cesta" | translate }}</a>
+      <a [class.activo]="bConfigurador == 0 && !cestaAbierta" (click)="VerConfigurador()">{{ "CONFIGURADOR" | translate }}</a>
+      <a [class.activo]="cestaAbierta" (click)="VerPedido()">{{ "Ver cesta" | translate }}</a>
       <a *ngIf="esLeroy" href="assets/pdf/tarifa_leroy_2025_es.pdf" target="_blank" rel="noopener">{{
         "TARIFA" | translate }}</a>
     </nav>
@@ -86,7 +86,8 @@
       [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()">
+      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onVerCesta)="VerPedido()">
     </manza-enrollable>
 
     <!-- Configurador nuevo de accionamientos: solo clientes con el interruptor (SOL_ACC_CLIENTE) -->
@@ -106,7 +107,8 @@
       [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()">
+      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onVerCesta)="VerPedido()">
     </manza-japones>
 
     <!-- PANEL VERTICAL -->
@@ -116,7 +118,8 @@
       [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()">
+      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onVerCesta)="VerPedido()">
     </manza-vertical>
 
     <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4"
@@ -124,7 +127,8 @@
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()">
+      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onVerCesta)="VerPedido()">
     </manza-compac>
 
     <!-- HONEYCOMB -->
@@ -133,7 +137,8 @@
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()">
+      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onVerCesta)="VerPedido()">
     </manza-honeycomb>
 
   </div>
@@ -142,35 +147,34 @@
 
 <!-- PROMOCION-->
 
-<!-- CONTENIDO DEL PEDIDO: solo en "Ver cesta" (antes salía también encima de presupuestos y pedidos) -->
-<div class="cfg-page" [hidden]="bConfigurador != 1">
-  <div class="cfg-wrap">
+<!-- CESTA: panel lateral sobre el configurador -->
+<div class="cfg-cajon-fondo" *ngIf="cestaAbierta" (click)="CerrarCesta()"></div>
+<aside class="cfg-cajon" [class.abierto]="cestaAbierta">
+  <div class="cfg-cajon-cabecera">
+    <h3>
+      {{ "Cesta" | translate }}
+      <span class="cfg-contador">{{ NumeroCortinas }}</span>
+    </h3>
+    <button type="button" class="cfg-cajon-cerrar" (click)="CerrarCesta()" aria-label="Cerrar">&times;</button>
+  </div>
 
-    <div class="cfg-cabecera">
-      <div>
-        <div class="cfg-eyebrow">{{ "Presupuesto en curso" | translate }}</div>
-        <h1>{{ "CONTENIDO DEL PEDIDO" | translate }}</h1>
-      </div>
-      <div class="cfg-cesta-acciones">
-        <span class="cfg-borrador-ok" *ngIf="hayBorrador">
-          <i class="fas fa-circle"></i>{{ "BORRADOR GUARDADO" | translate }}
-        </span>
-        <button type="button" class="cfg-btn" (click)="GuardarBorrador()">
-          <i class="fas fa-save"></i>{{ "GUARDAR BORRADOR" | translate }}
-        </button>
-        <button type="button" class="cfg-btn" (click)="RecuperarBorrador()" [disabled]="!hayBorrador">
-          <i class="fas fa-folder-open"></i>{{ "RECUPERAR BORRADOR" | translate }}
-        </button>
-      </div>
-    </div>
+  <div class="cfg-cajon-borradores">
+    <button type="button" class="cfg-btn" (click)="GuardarBorrador()">
+      <i class="fas fa-save"></i>{{ "GUARDAR BORRADOR" | translate }}
+    </button>
+    <button type="button" class="cfg-btn" (click)="RecuperarBorrador()" [disabled]="!hayBorrador">
+      <i class="fas fa-folder-open"></i>{{ "RECUPERAR BORRADOR" | translate }}
+    </button>
+    <span class="cfg-borrador-ok" *ngIf="hayBorrador">
+      <i class="fas fa-circle"></i>{{ "BORRADOR GUARDADO" | translate }}
+    </span>
+  </div>
 
+  <div class="cfg-cajon-cuerpo">
     <!-- Cesta vacía -->
-    <div *ngIf="Cesta.length === 0" class="cfg-panel cfg-vacio">
+    <div *ngIf="Cesta.length === 0" class="cfg-vacio">
       <i class="fas fa-shopping-cart"></i>
       <p>{{ "CESTA VACÍA" | translate }}</p>
-      <button type="button" class="cfg-btn cfg-btn-primario" (click)="VerConfigurador()">
-        {{ "Configurar una cortina" | translate }}
-      </button>
     </div>
 
     <!-- Líneas -->
@@ -195,31 +199,28 @@
         </ng-container>
       </ng-container>
     </div>
+  </div>
 
-    <!-- Total y finalizar -->
-    <div class="cfg-cesta-pie" *ngIf="Cesta.length > 0">
-      <div class="cfg-cesta-info">
-        <strong>{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate | lowercase }} ·
-        {{ "Fabricación" | translate }} <strong>{{ FechaEntregaPedido | date: "dd/MM/yyyy" }}</strong>
-      </div>
-      <div class="cfg-cesta-total">
-        <div>
-          Total
-          <strong>{{ TotalCesta | number : "1.2-2" }} €</strong>
-          <small *ngIf="TotalCestaC1">{{ TotalCestaC1 }}</small>
-        </div>
-        <button type="button" class="cfg-btn" (click)="VerConfigurador()">
-          {{ "Seguir configurando" | translate }}
-        </button>
-        <button type="button" class="cfg-btn cfg-btn-primario" (click)="ShowBtns(); staticModal2.show()">
-          {{ "FINALIZAR" | translate }}
-        </button>
+  <!-- Total y finalizar -->
+  <div class="cfg-cajon-pie" *ngIf="Cesta.length > 0">
+    <div class="cfg-cajon-fila">
+      <span>{{ "Fabricación" | translate }}</span>
+      <strong class="cfg-mono">{{ FechaEntregaPedido | date: "dd/MM/yyyy" }}</strong>
+    </div>
+    <div class="cfg-cajon-fila cfg-cajon-total">
+      <span>Total</span>
+      <div>
+        <strong>{{ TotalCesta | number : "1.2-2" }} €</strong>
+        <small *ngIf="TotalCestaC1">{{ TotalCestaC1 }}</small>
       </div>
     </div>
-
+    <button type="button" class="cfg-btn cfg-btn-primario cfg-btn-bloque"
+      (click)="CerrarCesta(); ShowBtns(); staticModal2.show()">
+      {{ "FINALIZAR" | translate }}
+    </button>
   </div>
-</div>
-<!-- CONTENIDO DEL PEDIDO-->
+</aside>
+<!-- CESTA -->
 
 <!-- PRESUPUESTOS -->
 <div class="cfg-page" [hidden]="bConfigurador != 2">

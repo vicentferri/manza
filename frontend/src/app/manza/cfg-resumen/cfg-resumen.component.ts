@@ -36,6 +36,8 @@ export class CfgResumenComponent {
    @Output() calcular = new EventEmitter<void>();
    @Output() agregar = new EventEmitter<void>();
    @Output() finalizar = new EventEmitter<void>();
+   /** Abre el panel lateral de la cesta */
+   @Output() verCesta = new EventEmitter<void>();
 
    get puedeAgregar(): boolean {
       return this.total > 0;

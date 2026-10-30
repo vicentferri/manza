@@ -31,6 +31,7 @@ export class CompacComponent implements OnInit, OnChanges {
 
    @Output() onAdd = new EventEmitter<CortinaTipo>();
    @Output() onFinalizar = new EventEmitter<void>();
+   @Output() onVerCesta = new EventEmitter<void>();
 
    calculando: boolean = false;
    idLinea = "";

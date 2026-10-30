@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, ViewContainerRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, ViewContainerRef, ViewChild, HostListener } from '@angular/core';
 import { SMAPIService } from './smapi.service';
 import { CortinaTipo } from './CortinaTipo';
 import { ToastrService } from 'ngx-toastr';
@@ -101,6 +101,8 @@ export class ConfigComponent implements OnInit {
   TransmitOK = 0;
   isCopied1 = false;
   bConfigurador = 0;
+  // Panel lateral de la cesta, que se abre sobre el configurador
+  cestaAbierta = false;
   bEjecucion = 0;
   NumeroCortinas = 0;
   esCadena = 0;
@@ -537,22 +539,36 @@ export class ConfigComponent implements OnInit {
     }
   }
 
+  // La cesta ya no es una pantalla aparte: se abre el panel lateral sobre el configurador
   VerPedido() {
-    this.bConfigurador = 1;
+    this.bConfigurador = 0;
+    this.cestaAbierta = true;
     this.editingItem = null;
     this.CalculaTotalCesta();
   }
 
+  CerrarCesta() {
+    this.cestaAbierta = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  CerrarCestaConEscape() {
+    this.cestaAbierta = false;
+  }
+
   VerConfigurador() {
     this.bConfigurador = 0;
+    this.cestaAbierta = false;
   }
 
   VerPedidos() {
     this.bConfigurador = 3;
+    this.cestaAbierta = false;
   }
 
   VerPresupuestos() {
     this.bConfigurador = 2;
+    this.cestaAbierta = false;
   }
 
   Exit() {
@@ -953,6 +969,7 @@ export class ConfigComponent implements OnInit {
   }
 
   EditLine(item: any): void {
+    this.cestaAbierta = false;
     this.editingItem = item;
     this.TipoCortina = item.TipoCortina;
     if (item.TipoCortina === 1) {

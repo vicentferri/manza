@@ -832,42 +832,146 @@ cfg-resumen {
   p { margin-bottom: 16px; }
 }
 
-// Barra inferior fija con el total y finalizar
-.cfg-cesta-pie {
-  position: sticky;
+// ---------- Cesta: panel lateral ----------
+.cfg-cajon-fondo {
+  position: fixed;
+  top: 0;
+  right: 0;
   bottom: 0;
-  z-index: 5;
+  left: 0;
+  z-index: 1039;
+  background: rgba(16, 24, 40, 0.35);
+}
+
+.cfg-cajon {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1040;
+  display: flex;
+  flex-direction: column;
+  width: 460px;
+  max-width: 100vw;
+  background: $cfg-fondo;
+  box-shadow: -8px 0 24px rgba(16, 24, 40, 0.18);
+  font-family: $cfg-fuente;
+  transform: translateX(105%);
+  transition: transform 0.25s ease;
+
+  &.abierto { transform: translateX(0); }
+
+  // Las líneas, en versión compacta
+  .cfg-cesta-lista {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .cfg-linea-fila {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "icono info importe"
+      ". uds botones";
+    gap: 10px 12px;
+    padding: 16px 18px;
+  }
+
+  .cfg-linea-icono { grid-area: icono; width: 36px; height: 36px; font-size: 0.95rem; }
+  .cfg-linea-info { grid-area: info; }
+  .cfg-linea-importe { grid-area: importe; align-self: start; }
+  .cfg-linea-uds { grid-area: uds; justify-self: start; }
+  .cfg-linea-botones { grid-area: botones; justify-self: end; }
+
+  .cfg-linea-cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+    margin: 0 18px 16px;
+  }
+
+  .cfg-linea-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cfg-linea-precio { border-left: 0; border-top: 1px solid $cfg-borde; }
+}
+
+.cfg-cajon-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  background: $cfg-oscuro;
+  color: #fff;
+
+  h3 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+}
+
+.cfg-cajon-cerrar {
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+  opacity: 0.8;
+  cursor: pointer;
+
+  &:hover { opacity: 1; }
+}
+
+.cfg-cajon-borradores {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 20px 0 32px;
-  padding: 16px 22px;
+  gap: 8px;
+  padding: 12px 20px;
   background: #fff;
-  border: 1px solid $cfg-borde;
-  border-radius: $cfg-radio;
-  box-shadow: 0 -4px 16px rgba(16, 24, 40, 0.08);
+  border-bottom: 1px solid $cfg-borde;
+
+  .cfg-btn { height: 32px; font-size: 0.8rem; }
 }
 
-.cfg-cesta-info {
+.cfg-cajon-cuerpo {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.cfg-cajon-pie {
+  padding: 16px 20px 20px;
+  background: #fff;
+  border-top: 1px solid $cfg-borde;
+  box-shadow: 0 -4px 12px rgba(16, 24, 40, 0.06);
+}
+
+.cfg-cajon-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
   color: $cfg-texto-suave;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
 
-  strong { color: $cfg-texto; font-family: $cfg-mono; }
+  strong { color: $cfg-texto; }
 }
 
-.cfg-cesta-total {
+.cfg-cajon-total {
+  margin-bottom: 14px;
+
+  > div { text-align: right; }
+  strong { display: block; font-family: $cfg-mono; font-size: 1.6rem; font-weight: 600; line-height: 1.1; }
+  small { font-family: $cfg-mono; font-size: 0.7rem; }
+}
+
+// Botón de la cesta en la cabecera del resumen
+.cfg-resumen-cabecera {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-left: auto;
+  justify-content: space-between;
+}
 
-  > div { text-align: right; color: $cfg-texto-suave; font-size: 0.8rem; }
-  strong { display: block; color: $cfg-texto; font-family: $cfg-mono; font-size: 1.6rem; font-weight: 600; line-height: 1.1; }
-  small { font-family: $cfg-mono; font-size: 0.7rem; }
+.cfg-btn-cesta {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 0.8rem;
 
-  .cfg-btn { height: 44px; }
+  .cfg-contador { margin-left: 2px; padding: 0 7px; font-size: 0.75rem; }
 }
 
 // ---------- Modal de finalizar ----------
@@ -949,7 +1053,6 @@ cfg-resumen {
   .cfg-linea-botones { grid-column: 2 / -1; }
   .cfg-linea-cuerpo { grid-template-columns: minmax(0, 1fr); margin-left: 22px; }
   .cfg-linea-precio { border-left: 0; border-top: 1px solid $cfg-borde; }
-  .cfg-cesta-total { margin-left: 0; flex-wrap: wrap; }
   .cfg-modal-totales { grid-template-columns: minmax(0, 1fr); }
 }
 

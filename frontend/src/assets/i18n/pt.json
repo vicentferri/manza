@@ -356,5 +356,6 @@
     "REFERENCIACLIENTE": "Ref. cliente",
     "NUMERO PEDIDO": "Nº pedido",
     "No hay pedidos con estos filtros.": "Não há pedidos com estes filtros.",
-    "FEC.ENTRADA": "Data"
+    "FEC.ENTRADA": "Data",
+    "Cesta": "Cesto"
 }

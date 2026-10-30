@@ -1,6 +1,10 @@
 <aside class="cfg-panel cfg-resumen">
   <div class="cfg-resumen-cabecera">
     <h3>{{ "Resumen" | translate }}</h3>
+    <button type="button" class="cfg-btn cfg-btn-azul cfg-btn-cesta" (click)="verCesta.emit()">
+      <i class="fas fa-shopping-cart"></i>{{ "Cesta" | translate }}
+      <span class="cfg-contador">{{ numCortinas }}</span>
+    </button>
   </div>
 
   <div class="cfg-resumen-cuerpo">
