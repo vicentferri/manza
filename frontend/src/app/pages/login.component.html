@@ -1,70 +1,72 @@
-<div class="app flex-row align-items-center">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-11 col-sm-8 col-md-6 col-lg-5" style="max-width: 440px;">
-        <div class="card-group mb-0">
-          <div class="card p-4">
-            <div class="text-center py-2 mb-2">
-              <img
-                alt="ManzaSM"
-                src="/assets/img/logologin.png"
-                style="max-width: 250px; width: 100%; height: auto;"
-              />
-            </div>
+<div class="login">
 
-            <div class="card-block">
-              <div class="text-center mb-3">
-                <h3>Iniciar sesión</h3>
-                <p class="text-muted">
-                  Acceda a su cuenta indicando las credenciales
-                </p>
-              </div>
+  <!-- Panel de marca -->
+  <section class="login-marca">
+    <span class="forma forma-gris"></span>
+    <span class="forma forma-azul"></span>
 
-              <div class="mx-auto" style="max-width: 320px;">
-                <div class="input-group mb-3">
-                  <span class="input-group-addon"><i class="icon-user"></i></span>
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="e-mail del Usuario"
-                    [(ngModel)]="model.username"
-                    #username="ngModel"
-                    (keyup.enter)="Login()"
-                    required
-                  />
-                </div>
-                <div class="input-group mb-4">
-                  <span class="input-group-addon"><i class="icon-lock"></i></span>
-                  <input
-                    type="password"
-                    class="form-control"
-                    placeholder="Password"
-                    [(ngModel)]="model.password"
-                    #password="ngModel"
-                    (keyup.enter)="Login()"
-                    required
-                  />
-                </div>
-                <div class="row">
-                  <div class="col-12 text-right">
-                    <button
-                      type="button"
-                      class="btn btn-secondary px-4"
-                      (click)="Login()"
-                    >
-                      Acceder
-                    </button>
-                  </div>
-                </div>
-
-                <div class="alert alert-danger mt-3 text-center" *ngIf="success == 0">
-                  No Tiene Autorización para acceder
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="logo-manza">
+      <svg viewBox="0 0 26 36" aria-hidden="true">
+        <polygon points="0,0 26,0 26,13 0,20" fill="#ffffff" />
+        <polygon points="0,20 26,13 26,30 0,36" fill="#a8d4f0" />
+      </svg>
+      <span>Manza<b>SM</b></span>
     </div>
-  </div>
+
+    <div class="brand-claim">
+      <h2 class="brand-title"><span class="sm">SM</span><span class="tecnica">TÉCNICA</span></h2>
+      <p class="brand-tagline">Pasión por la cortina</p>
+    </div>
+
+    <small class="copyright">© {{ anio }} ManzaSM</small>
+  </section>
+
+  <!-- Formulario -->
+  <section class="login-form">
+    <form class="caja" (ngSubmit)="Login()" autocomplete="on">
+      <h1>Bienvenido de nuevo</h1>
+      <p class="subtitulo">Inicie sesión con su correo y contraseña</p>
+
+      <label for="usuario">Correo electrónico</label>
+      <input
+        id="usuario"
+        name="username"
+        type="text"
+        autocomplete="username"
+        placeholder="nombre@empresa.com"
+        [(ngModel)]="model.username"
+        #username="ngModel"
+        required
+      />
+
+      <label for="clave">Contraseña</label>
+      <div class="clave">
+        <input
+          id="clave"
+          name="password"
+          [type]="verClave ? 'text' : 'password'"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          [(ngModel)]="model.password"
+          #password="ngModel"
+          required
+        />
+        <button type="button" class="ojo" (click)="verClave = !verClave"
+          [attr.aria-label]="verClave ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+          <i class="fa-regular" [class.fa-eye]="!verClave" [class.fa-eye-slash]="verClave"></i>
+        </button>
+      </div>
+
+      <button type="submit" class="acceder" [disabled]="loading">
+        <ng-container *ngIf="!loading">Acceder <i class="fa-solid fa-arrow-right"></i></ng-container>
+        <ng-container *ngIf="loading">Accediendo…</ng-container>
+      </button>
+
+      <div class="error" *ngIf="success == 0">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        No tiene autorización para acceder. Revise el correo y la contraseña.
+      </div>
+    </form>
+  </section>
+
 </div>

@@ -4,7 +4,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { HaruService } from '../services/haru.service';
 
 @Component({
-    templateUrl: 'login.component.html'
+    templateUrl: 'login.component.html',
+    styleUrls: ['login.component.scss']
 })
 export class LoginComponent implements OnInit {
 
@@ -12,6 +13,9 @@ export class LoginComponent implements OnInit {
     loading = false;
     returnUrl: string;
     success: number = -1;
+    // Mostrar la contraseña escrita (el ojo del campo)
+    verClave = false;
+    anio = new Date().getFullYear();
 
     constructor(private route: ActivatedRoute,
         private router: Router,
@@ -30,6 +34,7 @@ export class LoginComponent implements OnInit {
 
     Login() {
         this.loading = true;
+        this.success = -1;
         var url = '/authenticate';
         var values = JSON.stringify({
             username: this.model.username,
@@ -42,6 +47,7 @@ export class LoginComponent implements OnInit {
             data => {
                 if (data.status == 401) {
                     this.success = 0;
+                    this.loading = false;
                 }
                 else
                     if (data && data.token) {
@@ -61,6 +67,9 @@ export class LoginComponent implements OnInit {
                         localStorage.setItem('isAdmin',     JSON.stringify(data.isAdmin || false));
                         localStorage.setItem('permisos',    JSON.stringify(data.permisos || []));
                         this.router.navigate([data.url]);
+                    } else {
+                        this.success = 0;
+                        this.loading = false;
                     }
             },
             error => {
