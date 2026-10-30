@@ -841,10 +841,13 @@ function radiomandos_gen(req,res)
   } 
   else 
   {
+      // El precio del mando va por modelo de motor: primero la fila del modelo elegido y, si no hay, cualquiera
+      var fila = " from sol_articulos_accionamientos_radio_tipo_cliente where id=dbo.SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO.idrow and cliente="+cliente+" and producto="+tipo;
+      fila += " order by case when modelo="+modelo+" then 0 else 1 end";
       var query = "SELECT idrow as id, descripcion as text,";
-      query += "isnull((select top 1 precio from sol_articulos_accionamientos_radio_tipo_cliente where id=dbo.SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO.idrow and cliente="+cliente+" and producto="+tipo+"),0) as precio,";
-      query += "isnull((select top 1 c1 from sol_articulos_accionamientos_radio_tipo_cliente where id=dbo.SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO.idrow and cliente="+cliente+" and producto="+tipo+"),'0') as c1,";
-      query += "isnull((select top 1 codigo_48 from sol_articulos_accionamientos_radio_tipo_cliente where id=dbo.SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO.idrow and cliente="+cliente+" and producto="+tipo+"),'0') as codigo_48 ";
+      query += "isnull((select top 1 precio"+fila+"),0) as precio,";
+      query += "isnull((select top 1 c1"+fila+"),'0') as c1,";
+      query += "isnull((select top 1 codigo_48"+fila+"),'0') as codigo_48 ";
       query += " FROM SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO WHERE "+modelo+" IN (select data from dbo.string_to_table(modelos,','))  and dbo.AT_mando_cliente(dbo.SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO.idrow," + cliente + "," + tipo + ") > 0 ";
       ExecuteSQL(query,res);
   }

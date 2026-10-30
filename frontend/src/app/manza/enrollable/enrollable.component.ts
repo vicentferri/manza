@@ -11,7 +11,8 @@ import { Tipo4 } from '../config/Tipo4';
 import { TipoMando } from '../config/TipoMando';
 import { SMAPIService } from '../config/smapi.service';
 import { errorPasoMedidas } from '../config/medidas';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, Observable } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
 
@@ -336,17 +337,48 @@ export class EnrollableComponent implements OnInit, OnChanges {
       }
    }
 
+   // Cargador elegido en la pantalla: si la línea ya está valorada se recalcula su total
    changeCargador(): void {
+      this.asignaCargador().subscribe(() => this.recalculaLinea());
+   }
+
+   // Incremento del cargador por la cantidad de cortinas, como el mando. Si el cargador elegido no está en la
+   // lista del modelo (se ha cambiado de motor), la línea queda sin cargador
+   private asignaCargador(): Observable<any> {
       const pos = this.getPos(this.cargadores, this.Tipo1_Cargador);
-      if (pos >= 0) {
-         const precio = (this.cargadores[pos] as any).precio;
-         const c1 = (this.cargadores[pos] as any).c1;
-         const c2 = (this.cargadores[pos] as any).codigo_48;
-         this.Label_Cargador = 'Cargador:(' + precio + '€ ' + c1 + ' ' + c2 + ')';
-         this.precios.T1_Inc_Cargador = precio;
-         this.precios.T1_Inc_Cargador_C1 = c1;
-         this.precios.T1_Inc_Cargador_48 = c2;
+      if (pos < 0 || Number(this.Tipo1_Cargador) < 0) {
+         this.Tipo1_Cargador = '-1';
+         this.Label_Cargador = 'Cargador:';
+         this.precios.T1_Inc_Cargador = 0;
+         this.precios.T1_Inc_Cargador_C1 = '';
+         this.precios.T1_Inc_Cargador_48 = 0;
+         return of(null);
       }
+      const cargador = this.cargadores[pos] as any;
+      const cantidad = Number(this.Cantidad);
+      this.Label_Cargador = 'Cargador:(' + cargador.precio + '€ ' + cargador.c1 + ' ' + cargador.codigo_48 + ')';
+      this.precios.T1_Inc_Cargador = cantidad * cargador.precio;
+      this.precios.T1_Inc_Cargador_C1 = cargador.c1;
+      this.precios.T1_Inc_Cargador_48 = cargador.codigo_48;
+      return this.c1PorCantidad(cargador.c1, cantidad).pipe(
+         tap(c1 => { this.precios.T1_Inc_Cargador_C1 = c1; })
+      );
+   }
+
+   // C1 de un incremento multiplicado por la cantidad de cortinas
+   private c1PorCantidad(c1: string, cantidad: number): Observable<string> {
+      if (!c1 || cantidad <= 1) return of(c1);
+      return this.service.getMultiply(c1, cantidad).pipe(
+         map((data: any) => data[0].res),
+         catchError(() => of(''))
+      );
+   }
+
+   // Cambio de mando o de cargador con la línea ya valorada: se vuelven a calcular el PVP y el C1
+   private recalculaLinea(): void {
+      if (!this.precios.T1_Tejido) return;
+      this.CalculateC1_Tipo1();
+      this.asignaPrecios();
    }
 
    load_Cargadores(id: number) {
@@ -362,6 +394,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                   codigo_48: ''
                });
             }
+            this.asignaCargador().subscribe();
          },
          error => {
             this.toaster.error(error.message);
@@ -705,7 +738,17 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.load_Cargadores(parseInt(this.Tipo1_Color));
    }
 
+   // Mando elegido en la pantalla: si la línea ya está valorada se recalcula su total
+   cambiaMando(): void {
+      this.asignaMando().subscribe(() => this.recalculaLinea());
+   }
+
    ChangeRadioMando(): void {
+      this.asignaMando().subscribe();
+   }
+
+   // Incremento del mando por la cantidad de cortinas; termina cuando el C1 ya está multiplicado
+   private asignaMando(): Observable<any> {
       const radio = this.Tipo1_Mando;
       const cantidad = Number(this.Cantidad);
       const pos = this.getPos(this.radiomando, radio);
@@ -718,12 +761,9 @@ export class EnrollableComponent implements OnInit, OnChanges {
             this.Tipo1_RadioMando_Label = 'Mando:(' + precio + '€ ' + c1 + ' ' + codigo_48 + ')';
             this.precios.T1_Inc_Mando = cantidad * precio;
             this.precios.T1_Inc_Mando_C1 = c1;
-            if (cantidad > 1) {
-               this.service.getMultiply(c1, cantidad).subscribe(
-                  data => { this.precios.T1_Inc_Mando_C1 = data[0].res; },
-                  error => { this.precios.T1_Inc_Mando_C1 = ''; }
-               );
-            }
+            return this.c1PorCantidad(c1, cantidad).pipe(
+               tap(c1Total => { this.precios.T1_Inc_Mando_C1 = c1Total; })
+            );
          } else if (precio < 0) {
             this.Tipo1_RadioMando_Label = 'Mando:(' + precio + '€ ' + c1 + ')';
             this.precios.T1_Inc_Mando = cantidad * precio;
@@ -733,6 +773,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
             this.precios.T1_Inc_Mando_C1 = '';
          }
       }
+      return of(null);
    }
 
    ChangeTipo1Soporte(): void {
@@ -1248,6 +1289,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Tubo = item.acc_tubo_id != null ? item.acc_tubo_id.toString() : this.Tipo1_Tubo;
       this.Tipo1_Estancia = item.estancia_id;
       this.Tipo1_Estancia_Obs = item.estancia_obs;
+      // Se aplica al cargar los cargadores del modelo (load_Cargadores)
+      this.Tipo1_Cargador = item.Tipo1_Cargador != null ? String(item.Tipo1_Cargador) : '-1';
       this.esCadena = (item.acc_tipo_text || '').toUpperCase() === 'CADENA' ? 1 : 0;
 
       const cliente = parseInt(this.Cliente);
@@ -1533,7 +1576,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.precios.T1_Inc_Contrapeso_C1,
          this.precios.T1_Inc_Mando_C1,
          this.precios.T1_Inc_CadenaMetalica_C1,
-         "", "", "", "").subscribe(
+         this.precios.T1_Inc_Cargador_C1, "", "", "").subscribe(
             data => {
                this.precios.T1_PVP_C1 = data[0].res;
             },
@@ -1579,9 +1622,11 @@ export class EnrollableComponent implements OnInit, OnChanges {
                this.precios.T1_Inc_Contrapeso_C1 = contrapeso.v2;
             }
          }
-         this.ChangeRadioMando();
-         this.CalculateC1_Tipo1();
-         this.asignaPrecios();
+         // El C1 se suma cuando el del mando y el del cargador ya están multiplicados por la cantidad
+         forkJoin([this.asignaMando(), this.asignaCargador()]).subscribe(() => {
+            this.CalculateC1_Tipo1();
+            this.asignaPrecios();
+         });
       });
    }
 
