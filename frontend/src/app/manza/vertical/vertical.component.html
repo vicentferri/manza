@@ -43,13 +43,13 @@
 
         <!-- 02 MEDIDAS -->
         <div class="cfg-paso" [hidden]="!PV_SEL_1"
-          [class.cfg-error]="(TipoVertical != '2' && (!PV_Ancho_1 || PV_Ancho_1 <= 0)) || (TipoVertical != '3' && (!PV_Alto_1 || PV_Alto_1 <= 0))">
+          [class.cfg-error]="(TipoVertical != '2' && (!PV_Ancho_1 || PV_Ancho_1 == '0')) || (TipoVertical != '3' && (!PV_Alto_1 || PV_Alto_1 == '0'))">
           <span class="cfg-paso-num">02</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "Medidas" | translate }}</h3>
             <div class="cfg-grid cfg-cols-3">
               <div class="cfg-field" [hidden]="TipoVertical == '2'"
-                [class.cfg-error]="!PV_Ancho_1 || PV_Ancho_1 <= 0">
+                [class.cfg-error]="!PV_Ancho_1 || PV_Ancho_1 == '0'">
                 <label>{{ "ANCHO" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_ancho_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -60,7 +60,7 @@
                 <small class="cfg-ayuda">0 - 600</small>
               </div>
               <div class="cfg-field" [hidden]="TipoVertical == '3'"
-                [class.cfg-error]="!PV_Alto_1 || PV_Alto_1 <= 0">
+                [class.cfg-error]="!PV_Alto_1 || PV_Alto_1 == '0'">
                 <label>{{ "ALTO" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_alto_1 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -254,12 +254,12 @@
 
         <!-- 02 MEDIDAS -->
         <div class="cfg-paso" [hidden]="!PV_SEL_2"
-          [class.cfg-error]="!PV_Ancho_2 || PV_Ancho_2 <= 0 || !PV_AlturaMin_2 || PV_AlturaMin_2 <= 0 || !PV_AlturaMax_2 || PV_AlturaMax_2 <= 0">
+          [class.cfg-error]="!PV_Ancho_2 || PV_Ancho_2 == '0' || !PV_AlturaMin_2 || PV_AlturaMin_2 == '0' || !PV_AlturaMax_2 || PV_AlturaMax_2 == '0'">
           <span class="cfg-paso-num">02</span>
           <div>
             <h3 class="cfg-paso-titulo">{{ "Medidas" | translate }}</h3>
             <div class="cfg-grid cfg-cols-4">
-              <div class="cfg-field" [class.cfg-error]="!PV_Ancho_2 || PV_Ancho_2 <= 0">
+              <div class="cfg-field" [class.cfg-error]="!PV_Ancho_2 || PV_Ancho_2 == '0'">
                 <label>{{ "ANCHO" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_ancho_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -269,7 +269,7 @@
                 </div>
               </div>
               <div class="cfg-field"
-                [class.cfg-error]="!PV_AlturaMin_2 || PV_AlturaMin_2 <= 0">
+                [class.cfg-error]="!PV_AlturaMin_2 || PV_AlturaMin_2 == '0'">
                 <label>{{ "ALTURAMINIMA" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_alturamin_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
@@ -280,7 +280,7 @@
                 </div>
               </div>
               <div class="cfg-field"
-                [class.cfg-error]="!PV_AlturaMax_2 || PV_AlturaMax_2 <= 0">
+                [class.cfg-error]="!PV_AlturaMax_2 || PV_AlturaMax_2 == '0'">
                 <label>{{ "ALTURAMAXIMA" | translate }}</label>
                 <div class="cfg-unidad">
                   <input #pv_alturamax_2 class="form-control form-control-sm" type="number" min="0" max="600" step=".5"
