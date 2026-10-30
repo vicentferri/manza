@@ -11,6 +11,8 @@ export class Preview7Component {
    @Input() item!: CortinaTipo;
    @Output() onDelete = new EventEmitter<CortinaTipo>();
    @Output() onEdit = new EventEmitter<CortinaTipo>();
+   // Detalle técnico y desglose de precio, plegados por defecto
+   verDetalle = false;
 
    DeleteLine(item: CortinaTipo) { this.onDelete.emit(item); }
    EditLine(item: CortinaTipo) { this.onEdit.emit(item); }

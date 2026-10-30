@@ -175,5 +175,11 @@
     "COLORTAPAS": "Color tapas",
     "TIPO DE ACCIONAMIENTO": "Tipo de accionamiento",
     "ALTURA_CADENA": "Altura cadena",
-    "RAL": "RAL"
+    "RAL": "RAL",
+    "AL": "Ambos lados",
+    "REFERENCIA TIENDA/CLIENTE": "Referencia tienda/cliente",
+    "NÚMERO DE DOCUMENTO/REFERENCIA": "Número de documento/referencia",
+    "CADENAMETÁLICA": "Cadena metálica",
+    "IMPRESION_DIGITAL": "Impresión digital",
+    "TAPAS": "Tapas"
 }

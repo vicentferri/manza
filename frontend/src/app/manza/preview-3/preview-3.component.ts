@@ -11,6 +11,8 @@ export class Preview3Component implements OnInit {
   @Input() item!: CortinaTipo;
   @Output() onDelete = new EventEmitter();
   @Output() onEdit = new EventEmitter();
+  // Detalle técnico y desglose de precio, plegados por defecto
+  verDetalle = false;
   isCopied1 = false;
 
 

@@ -30,9 +30,9 @@
     <span class="cfg-subbar-titulo">{{ "Presupuesto en curso" | translate }}</span>
     <button type="button" class="cfg-btn" (click)="Nueva()">{{ "NUEVA" | translate }}</button>
     <button type="button" class="cfg-btn cfg-btn-peligro" (click)="BorrarPedido()">{{ "BORRAR" | translate }}</button>
-    <!-- En el configurador se finaliza desde el resumen lateral; aquí, fuera de él y en el enrollable nuevo -->
+    <!-- Se finaliza desde el resumen lateral del producto o desde la cesta; aquí solo en el enrollable nuevo -->
     <button type="button" class="cfg-btn cfg-btn-azul" (click)="ShowBtns(); staticModal2.show()"
-      *ngIf="Cesta.length > 0 && (bConfigurador != 0 || (TipoCortina == 1 && accNuevo))">{{ "FINALIZAR" | translate }}</button>
+      *ngIf="Cesta.length > 0 && bConfigurador == 0 && TipoCortina == 1 && accNuevo">{{ "FINALIZAR" | translate }}</button>
 
     <div class="cfg-subbar-info">
       <strong class="cfg-mono">{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate }} ·
@@ -148,56 +148,39 @@
 <!-- PROMOCION-->
 
 <!-- CONTENIDO DEL PEDIDO-->
-<div class="container" [hidden]="bConfigurador == 0">
+<div class="cfg-page" [hidden]="bConfigurador == 0">
+  <div class="cfg-wrap">
 
-  <!-- Header sticky -->
-  <div class="row g-0 bg-dark text-white align-items-center py-2 px-3 sticky-top">
-    <div class="col">
-      <h6 class="mb-0 fw-bold">{{ "CONTENIDO DEL PEDIDO" | translate }}</h6>
+    <div class="cfg-cabecera">
+      <div>
+        <div class="cfg-eyebrow">{{ "Presupuesto en curso" | translate }}</div>
+        <h1>{{ "CONTENIDO DEL PEDIDO" | translate }}</h1>
+      </div>
+      <div class="cfg-cesta-acciones">
+        <span class="cfg-borrador-ok" *ngIf="hayBorrador">
+          <i class="fas fa-circle"></i>{{ "BORRADOR GUARDADO" | translate }}
+        </span>
+        <button type="button" class="cfg-btn" (click)="GuardarBorrador()">
+          <i class="fas fa-save"></i>{{ "GUARDAR BORRADOR" | translate }}
+        </button>
+        <button type="button" class="cfg-btn" (click)="RecuperarBorrador()" [disabled]="!hayBorrador">
+          <i class="fas fa-folder-open"></i>{{ "RECUPERAR BORRADOR" | translate }}
+        </button>
+      </div>
     </div>
-    <div class="col-auto text-end">
-      <span class="badge bg-secondary me-2">
-        {{ NumeroCortinas }} {{ "CORTINAS" | translate }}
-      </span>
-      <span class="fw-bold me-2">{{ TotalCesta | number }}€</span>
-      <span class="text-muted small me-2">({{ TotalCestaC1 }})</span>
-      <span class="text-muted small">
-        F.Fab. {{ FechaEntregaPedido | date: "dd/MM/yyyy" }}
-      </span>
+
+    <!-- Cesta vacía -->
+    <div *ngIf="Cesta.length === 0" class="cfg-panel cfg-vacio">
+      <i class="fas fa-shopping-cart"></i>
+      <p>{{ "CESTA VACÍA" | translate }}</p>
+      <button type="button" class="cfg-btn cfg-btn-primario" (click)="VerConfigurador()">
+        {{ "Configurar una cortina" | translate }}
+      </button>
     </div>
-  </div>
 
-
-<!-- Barra guardar/recuperar -->
-<div class="row g-0 bg-secondary px-3 py-1 align-items-center">
-  <div class="col-auto">
-    <button class="btn btn-sm btn-light me-2" (click)="GuardarBorrador()">
-      <i class="fas fa-save me-1"></i>&nbsp;{{ "GUARDAR BORRADOR" | translate }}
-    </button>&nbsp;
-    <button class="btn btn-sm btn-outline-light" (click)="RecuperarBorrador()"
-      [disabled]="!hayBorrador">
-      <i class="fas fa-folder-open me-1"></i>&nbsp;{{ "RECUPERAR BORRADOR" | translate }}
-    </button>
-  </div>
-  <div class="col text-end">
-    <small class="text-white-50" *ngIf="hayBorrador">
-      <i class="fas fa-circle text-success me-1" style="font-size: 8px"></i>
-      {{ "BORRADOR GUARDADO" | translate }}
-    </small>
-  </div>
-</div>
-
-  <!-- Cesta vacía -->
-  <div *ngIf="Cesta.length === 0" class="text-center text-muted py-5">
-    <i class="fas fa-shopping-cart fa-2x mb-2"></i>
-    <p>{{ "CESTA VACÍA" | translate }}</p>
-  </div>
-
-  <!-- Items -->
-  <div class="overflow-auto mt-2" style="max-height: calc(100vh - 120px)">
-    <ng-container *ngFor="let item of Cesta; let i = index">
-      <div class="container-fluid px-2 py-1">
-
+    <!-- Líneas -->
+    <div class="cfg-cesta-lista" *ngIf="Cesta.length > 0">
+      <ng-container *ngFor="let item of Cesta; let i = index">
         <ng-container [ngSwitch]="item.TipoCortina">
           <app-preview-1 *ngSwitchCase="1" [item]="item"
             (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
@@ -215,11 +198,31 @@
             (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
           </app-preview-7>
         </ng-container>
+      </ng-container>
+    </div>
 
+    <!-- Total y finalizar -->
+    <div class="cfg-cesta-pie" *ngIf="Cesta.length > 0">
+      <div class="cfg-cesta-info">
+        <strong>{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate | lowercase }} ·
+        {{ "Fabricación" | translate }} <strong>{{ FechaEntregaPedido | date: "dd/MM/yyyy" }}</strong>
       </div>
-    </ng-container>
-  </div>
+      <div class="cfg-cesta-total">
+        <div>
+          Total
+          <strong>{{ TotalCesta | number : "1.2-2" }} €</strong>
+          <small *ngIf="TotalCestaC1">{{ TotalCestaC1 }}</small>
+        </div>
+        <button type="button" class="cfg-btn" (click)="VerConfigurador()">
+          {{ "Seguir configurando" | translate }}
+        </button>
+        <button type="button" class="cfg-btn cfg-btn-primario" (click)="ShowBtns(); staticModal2.show()">
+          {{ "FINALIZAR" | translate }}
+        </button>
+      </div>
+    </div>
 
+  </div>
 </div>
 <!-- CONTENIDO DEL PEDIDO-->
 
@@ -246,8 +249,9 @@
   ></app-bestellungen>
 </div>
 
+<!-- FINALIZAR: guardar presupuesto o enviar pedido -->
 <div
-  class="modal fade"
+  class="modal fade cfg-modal"
   bsModal
   #staticModal2="bs-modal"
   tabindex="-1"
@@ -257,10 +261,8 @@
 >
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
-      <div class="modal-header bg-primary">
-        <h4 class="modal-title pull-left">
-          {{ "ENVIOPEDIDOPRES" | translate }}
-        </h4>
+      <div class="modal-header">
+        <h4 class="modal-title pull-left">{{ "ENVIOPEDIDOPRES" | translate }}</h4>
         <button
           type="button"
           class="close pull-right"
@@ -272,139 +274,94 @@
       </div>
       <div class="modal-body">
         <div *ngIf="Cesta.length > 0">
-          <div class="row">
-            <div class="col col-lg-12" style="height: 600px">
-              <div style="height: 550px; overflow: auto">
-                <div class="row mt-2">
-                  <div class="col col-2"></div>
-                  <div class="col col-8" style="padding: 5px">
-                    <div class="list-group">
-                      <a class="list-group-item list-group-item-action">
-                        <h5 class="list-group-item-heading">
-                          {{ "ENVIOPEDIDOPRES" | translate }}
-                        </h5>
-                        <p class="list-group-item-text">
-                          {{ "INDICACIONESENVIO" | translate }}
-                        </p>
-                      </a>
-                    </div>
-                  </div>
-                  <div class="col col-2"></div>
-                </div>
+          <p class="cfg-modal-intro" [innerHTML]="'INDICACIONESENVIO' | translate"></p>
 
-                <div class="row mt-2">
-                  <div class="col col-2"></div>
-                  <div class="col col-8" style="padding: 5px">
-                    <label>{{ "REFERENCIA TIENDA/CLIENTE" | translate }}</label>
-                    <input
-                      type="text"
-                      class="form-control form-control-sm"
-                      [(ngModel)]="ReferenciaTienda"
-                    />
-                  </div>
-                  <div class="col col-2"></div>
-                </div>
+          <div class="cfg-modal-totales">
+            <div>
+              {{ "CORTINAS" | translate }}
+              <strong>{{ NumeroCortinas }}</strong>
+            </div>
+            <div>
+              Total
+              <strong>{{ TotalCesta | number : "1.2-2" }} €</strong>
+            </div>
+            <div>
+              {{ "F. fabricación" | translate }}
+              <strong>{{ FechaEntregaPedido | date: "dd/MM/yyyy" }}</strong>
+            </div>
+          </div>
 
-                <div class="row mt-2" *ngIf="TransmitOK == 1">
-                  <div class="col col-2"></div>
-                  <div class="col col-8 bg-primary" style="padding: 5px">
-                    <div class="list-group">
-                      <a class="list-group-item list-group-item-action">
-                        <h3 class="list-group-item-heading">
-                          {{ "DOCUMENTO ENVIADO" | translate }}
-                        </h3>
-                        <p class="list-group-item-text">
-                          {{
-                            "SE HA ENVIADO CORRECTAMENTE EL DOCUMENTO"
-                              | translate
-                          }}
-                        </p>
-                        <label class="font-weight-bold">{{
-                          "NÚMERO DE DOCUMENTO/REFERENCIA" | translate
-                        }}</label>
-                        <div class="input-group">
-                          <input
-                            type="text"
-                            class="form-control form-control-sm"
-                            [ngModel]="NumeroPedido"
-                            readonly="true"
-                          />
-                          <span class="input-group-btn">
-                            <button
-                              class="btn btn-default"
-                              [class.btn-success]="isCopied1"
-                              type="button"
-                            >
-                              copia
-                            </button>
-                          </span>
-                        </div>
-                      </a>
-                    </div>
-                  </div>
-                  <div class="col col-2"></div>
-                </div>
+          <div class="cfg-field">
+            <label>{{ "REFERENCIA TIENDA/CLIENTE" | translate }}</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              [(ngModel)]="ReferenciaTienda"
+            />
+          </div>
 
-                <div class="row mt-2" *ngIf="TransmitOK == -1">
-                  <div class="col col-2"></div>
-                  <div class="col col-8 bg-danger" style="padding: 5px">
-                    <div class="list-group">
-                      <a class="list-group-item list-group-item-action">
-                        <h3 class="list-group-item-heading">
-                          {{ "DOCUMENTO NO REGISTRADO" | translate }}
-                        </h3>
-                        <p class="list-group-item-text">
-                          {{
-                            "NO SE HA PODIDO REGISTRAR EL DOCUMENTO.INFORME A LOS SERVICIOS ADMINISTRATIVOS"
-                              | translate
-                          }}
-                        </p>
-                      </a>
-                    </div>
-                  </div>
-                  <div class="col col-2"></div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col col-4">
+          <div class="cfg-aviso-ok" *ngIf="TransmitOK == 1">
+            <h5>{{ "DOCUMENTO ENVIADO" | translate }}</h5>
+            <p>{{ "SE HA ENVIADO CORRECTAMENTE EL DOCUMENTO" | translate }}</p>
+            <div class="cfg-field">
+              <label>{{ "NÚMERO DE DOCUMENTO/REFERENCIA" | translate }}</label>
+              <div class="input-group">
+                <input
+                  type="text"
+                  class="form-control form-control-sm cfg-mono"
+                  [ngModel]="NumeroPedido"
+                  readonly="true"
+                />
+                <span class="input-group-btn">
                   <button
-                    class="btn btn-warning text-white btn-block btn-sm"
-                    (click)="BorrarPedido(); NewPage(); staticModal2.hide()"
-                  >
-                    {{ "BORRAR DOCUMENTO" | translate }}
-                  </button>
-                </div>
-                <div class="col col-4">
-                  <button
+                    class="btn btn-default"
+                    [class.btn-success]="isCopied1"
                     type="button"
-                    (click)="ProcesarPresupuesto()"
-                    class="btn btn-primary btn-block btn-sm"
-                    title="Transmitir Presupuesto"
-                    data-toggle="tooltip"
-                    [hidden]="btnPresupuesto"
-                    data-placement="top"
                   >
-                    {{ "GUARDAR PRESUPUESTO" | translate }}
+                    copia
                   </button>
-                </div>
-                <div class="col col-4">
-                  <button
-                    type="button"
-                    (click)="ProcesarPedido()"
-                    class="btn btn-primary btn-block btn-sm"
-                    title="Transmitir Pedido"
-                    data-toggle="tooltip"
-                    [hidden]="btnPedido"
-                    data-placement="top"
-                  >
-                    {{ "ENVIAR PEDIDO" | translate }}
-                  </button>
-                </div>
+                </span>
               </div>
             </div>
           </div>
+
+          <div class="cfg-aviso-error" *ngIf="TransmitOK == -1">
+            <h5>{{ "DOCUMENTO NO REGISTRADO" | translate }}</h5>
+            <p>{{ "NO SE HA PODIDO REGISTRAR EL DOCUMENTO.INFORME A LOS SERVICIOS ADMINISTRATIVOS" | translate }}</p>
+          </div>
+
+          <div class="cfg-modal-botones">
+            <button
+              type="button"
+              class="cfg-btn cfg-btn-peligro"
+              (click)="BorrarPedido(); NewPage(); staticModal2.hide()"
+            >
+              {{ "BORRAR DOCUMENTO" | translate }}
+            </button>
+            <div>
+              <button
+                type="button"
+                (click)="ProcesarPresupuesto()"
+                class="cfg-btn"
+                title="Transmitir Presupuesto"
+                [hidden]="btnPresupuesto"
+              >
+                {{ "GUARDAR PRESUPUESTO" | translate }}
+              </button>
+              <button
+                type="button"
+                (click)="ProcesarPedido()"
+                class="cfg-btn cfg-btn-primario"
+                title="Transmitir Pedido"
+                [hidden]="btnPedido"
+              >
+                {{ "ENVIAR PEDIDO" | translate }}
+              </button>
+            </div>
+          </div>
         </div>
-        <div *ngIf="Cesta.length == 0">
+        <div *ngIf="Cesta.length == 0" class="cfg-vacio">
+          <i class="fas fa-shopping-cart"></i>
           <p>{{ "SU CESTA NO CONTIENE ARTÍCULOS" | translate }}</p>
         </div>
       </div>
