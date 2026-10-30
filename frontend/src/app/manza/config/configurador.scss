@@ -936,3 +936,111 @@ cfg-resumen {
   .cfg-cesta-total { margin-left: 0; flex-wrap: wrap; }
   .cfg-modal-totales { grid-template-columns: minmax(0, 1fr); }
 }
+
+// ---------- Listas: presupuestos y pedidos ----------
+.cfg-contador {
+  margin-left: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: $cfg-azul-suave;
+  color: $cfg-azul-oscuro;
+  font-family: $cfg-mono;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.cfg-consulta {
+  color: $cfg-texto-suave;
+  font-size: 0.8rem;
+
+  strong { font-family: $cfg-mono; font-weight: 500; color: $cfg-texto; }
+}
+
+.cfg-filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  align-items: end;
+  gap: 14px 16px;
+  margin-bottom: 16px;
+  padding: 18px 22px;
+
+  .cfg-btn { height: 44px; }
+}
+
+.cfg-tabla-panel { overflow-x: auto; }
+
+.cfg-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+
+  th {
+    padding: 12px 16px;
+    background: #f7f8fa;
+    border-bottom: 1px solid $cfg-borde;
+    color: $cfg-texto-suave;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid $cfg-borde;
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: #fafbfd; }
+
+  .cfg-acciones {
+    text-align: right;
+    white-space: nowrap;
+
+    .cfg-btn { height: 32px; margin-left: 6px; font-size: 0.82rem; }
+  }
+}
+
+.cfg-ref {
+  font-family: $cfg-mono;
+  font-size: 0.78rem;
+  color: $cfg-texto-suave;
+}
+
+.cfg-paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid $cfg-borde;
+  color: $cfg-texto-suave;
+  font-size: 0.8rem;
+
+  ul {
+    display: flex;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  button {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid $cfg-borde-campo;
+    border-radius: $cfg-radio-campo;
+    background: #fff;
+    color: $cfg-texto;
+    font-size: 0.82rem;
+    cursor: pointer;
+
+    &.activo { border-color: $cfg-azul-oscuro; background: $cfg-azul-oscuro; color: #fff; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+}

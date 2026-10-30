@@ -226,27 +226,25 @@
 </div>
 <!-- CONTENIDO DEL PEDIDO-->
 
-<div
-  class="container-fluid"
-  style="margin-left: 10px; margin-right: 10px"
-  [hidden]="bConfigurador == 0 || bConfigurador == 1 || bConfigurador == 3"
->
-  <app-budget *ngIf="Cliente != '-1'"
-    [cliente]="Cliente"
-    [codeCentro]="codeCentro"
-    (onLoaded)="BudgetLoaded($event)"
-  ></app-budget>
+<!-- PRESUPUESTOS -->
+<div class="cfg-page" [hidden]="bConfigurador != 2">
+  <div class="cfg-wrap">
+    <app-budget *ngIf="Cliente != '-1'"
+      [cliente]="Cliente"
+      [codeCentro]="codeCentro"
+      (onLoaded)="BudgetLoaded($event)"
+    ></app-budget>
+  </div>
 </div>
 
-<div
-  class="container-fluid"
-  style="margin-left: 10px; margin-right: 10px"
-  [hidden]="bConfigurador == 0 || bConfigurador == 1 || bConfigurador == 2"
->
-  <app-bestellungen *ngIf="Cliente != '-1'"
-    [cliente]="Cliente"
-    [codeCentro]="codeCentro"
-  ></app-bestellungen>
+<!-- PEDIDOS -->
+<div class="cfg-page" [hidden]="bConfigurador != 3">
+  <div class="cfg-wrap">
+    <app-bestellungen *ngIf="Cliente != '-1'"
+      [cliente]="Cliente"
+      [codeCentro]="codeCentro"
+    ></app-bestellungen>
+  </div>
 </div>
 
 <!-- FINALIZAR: guardar presupuesto o enviar pedido -->

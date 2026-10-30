@@ -340,5 +340,21 @@
     "Ver detalle": "Ver detalhe",
     "Ocultar detalle": "Ocultar detalhe",
     "ud.": "un.",
-    "uds.": "un."
+    "uds.": "un.",
+    "Historial": "Histórico",
+    "Consultado": "Consultado",
+    "REF.CLIENTE": "Ref. cliente",
+    "NUMERO PRESUPUESTO": "Nº orçamento",
+    "FILTRAR": "Filtrar",
+    "No hay presupuestos con estos filtros.": "Não há orçamentos com estes filtros.",
+    "FEC.REGISTRO": "Data",
+    "VALIDEZ DEL PRESUPUESTO": "Válido até",
+    "Cargar": "Carregar",
+    "Página": "Página",
+    "Primera": "Primeira",
+    "Última": "Última",
+    "REFERENCIACLIENTE": "Ref. cliente",
+    "NUMERO PEDIDO": "Nº pedido",
+    "No hay pedidos con estos filtros.": "Não há pedidos com estes filtros.",
+    "FEC.ENTRADA": "Data"
 }
