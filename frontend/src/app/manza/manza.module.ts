@@ -30,6 +30,7 @@ import { JaponesComponent } from './japones/japones.component';
 import { VerticalComponent } from './vertical/vertical.component';
 import { CompacComponent } from './compac/compac.component';
 import { TejidoImagenComponent } from './tejido-imagen/tejido-imagen.component';
+import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
 
 @NgModule({
   imports: [
@@ -63,6 +64,7 @@ import { TejidoImagenComponent } from './tejido-imagen/tejido-imagen.component';
     VerticalComponent,
     CompacComponent,
     TejidoImagenComponent,
+    CfgResumenComponent,
     SafeUrlPipe
   ]
 })

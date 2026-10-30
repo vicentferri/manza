@@ -21,7 +21,7 @@ declare var $: any;
 @Component({
   selector: 'app-config',
   templateUrl: './config.component.html',
-  styleUrls: ['./config.component.css'],
+  styleUrls: ['./config.component.css', './configurador.scss'],
   providers: [SMAPIService],
   encapsulation: ViewEncapsulation.None
 })
@@ -1030,7 +1030,7 @@ export class ConfigComponent implements OnInit {
   }
 
   GetIdioma() {
-    this.Idioma = localStorage.getItem('currentLanguage');
+    this.Idioma = TranslationService.normalizar(localStorage.getItem('currentLanguage'));
   }
 
   AgregarHoneycomb(event: any) {

@@ -1,0 +1,561 @@
+// Estilos del configurador (prefijo cfg-). ConfigComponent usa ViewEncapsulation.None,
+// así que llegan a los componentes hijos (vertical, japonés, compac, resumen...).
+$cfg-azul: #36a9e1;
+$cfg-azul-oscuro: #1a6fa3;
+$cfg-azul-suave: #e8f4fb;
+$cfg-oscuro: #16181d;
+$cfg-texto: #1f2329;
+$cfg-texto-suave: #6b7280;
+$cfg-fondo: #f3f4f8;
+$cfg-borde: #e3e6ec;
+$cfg-borde-campo: #d4d8e0;
+$cfg-rojo: #c0392b;
+$cfg-radio: 10px;
+$cfg-radio-campo: 6px;
+$cfg-sombra: 0 1px 2px rgba(16, 24, 40, 0.05);
+$cfg-fuente: Inter, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+.cfg-page {
+  min-height: 100vh;
+  background: $cfg-fondo;
+  color: $cfg-texto;
+  font-family: $cfg-fuente;
+}
+
+.cfg-wrap {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.cfg-mono {
+  font-family: $cfg-mono;
+  font-variant-numeric: tabular-nums;
+}
+
+// ---------- Barra superior ----------
+.cfg-topbar {
+  background: $cfg-oscuro;
+  color: #fff;
+
+  .cfg-wrap {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 64px;
+  }
+}
+
+.cfg-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cfg-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: $cfg-azul;
+  color: $cfg-oscuro;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.cfg-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+
+  a {
+    padding: 7px 12px;
+    border-radius: 7px;
+    color: #c9ced6;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover { color: #fff; }
+
+    &.activo {
+      background: #2a2e36;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+}
+
+.cfg-topbar-dcha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  // Los estilos globales de select pisan el fondo: hace falta !important
+  select {
+    height: 34px;
+    padding: 0 8px;
+    border: 1px solid #3a3f48 !important;
+    border-radius: 7px;
+    background-color: #22262d !important;
+    color: #fff !important;
+    font-size: 0.85rem;
+  }
+
+  a {
+    color: #c9ced6;
+    font-size: 0.88rem;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover { color: #fff; text-decoration: none; }
+  }
+}
+
+// ---------- Subbarra del presupuesto ----------
+.cfg-subbar {
+  background: #fff;
+  border-bottom: 1px solid $cfg-borde;
+
+  .cfg-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 60px;
+  }
+}
+
+.cfg-subbar-titulo,
+.cfg-eyebrow {
+  margin-right: 6px;
+  color: $cfg-texto-suave;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cfg-subbar-info {
+  margin-left: auto;
+  color: $cfg-texto-suave;
+  font-size: 0.85rem;
+
+  strong { color: $cfg-texto; }
+}
+
+// ---------- Botones ----------
+.cfg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid $cfg-borde-campo;
+  border-radius: $cfg-radio-campo;
+  background: #fff;
+  color: $cfg-texto;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover { background: #f7f8fa; text-decoration: none; color: $cfg-texto; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  &.cfg-btn-peligro { color: $cfg-rojo; }
+
+  &.cfg-btn-primario {
+    border-color: $cfg-azul-oscuro;
+    background: $cfg-azul-oscuro;
+    color: #fff;
+    font-weight: 600;
+
+    &:hover:not(:disabled) { background: darken($cfg-azul-oscuro, 6%); color: #fff; }
+  }
+
+  &.cfg-btn-azul {
+    border-color: $cfg-azul;
+    color: $cfg-azul-oscuro;
+  }
+
+  &.cfg-btn-bloque {
+    width: 100%;
+    height: 48px;
+    font-size: 0.95rem;
+  }
+}
+
+// ---------- Cabecera de página y selector de producto ----------
+.cfg-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 32px 0 24px;
+
+  h1 {
+    margin: 4px 0 0;
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .cfg-eyebrow { color: $cfg-azul-oscuro; }
+}
+
+.cfg-productos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #e6e8ee;
+
+  button {
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #3d434c;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+
+    &.activo {
+      background: #fff;
+      color: $cfg-azul-oscuro;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
+    }
+  }
+}
+
+.cfg-promo {
+  margin-bottom: 24px;
+
+  .cfg-promo-texto {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    border-radius: $cfg-radio;
+  }
+}
+
+// ---------- Layout del producto: formulario + resumen ----------
+.cfg-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 322px;
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 40px;
+}
+
+.cfg-panel {
+  background: #fff;
+  border: 1px solid $cfg-borde;
+  border-radius: $cfg-radio;
+  box-shadow: $cfg-sombra;
+}
+
+.cfg-panel-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 28px;
+  border-bottom: 1px solid $cfg-borde;
+
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+}
+
+.cfg-panel-cuerpo {
+  padding: 28px;
+}
+
+// Paso numerado (01, 02...)
+.cfg-paso {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 0 24px;
+
+  & + .cfg-paso { margin-top: 32px; }
+}
+
+.cfg-paso-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: $cfg-azul-suave;
+  color: $cfg-azul-oscuro;
+  font-family: $cfg-mono;
+  font-size: 0.75rem;
+}
+
+.cfg-paso-titulo {
+  margin: 4px 0 14px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.cfg-grid {
+  display: grid;
+  gap: 14px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+
+  &.cfg-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  &.cfg-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  &.cfg-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  &.cfg-cols-1-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+}
+
+.cfg-field {
+  min-width: 0;
+
+  &.cfg-span-all { grid-column: 1 / -1; }
+
+  > label {
+    display: block;
+    margin-bottom: 6px;
+    color: #374151;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+
+  .form-control,
+  select.form-control:not([size]):not([multiple]) {
+    height: 44px;
+    padding: 0 14px;
+    border: 1px solid $cfg-borde-campo;
+    border-radius: $cfg-radio-campo;
+    background-color: #fff;
+    color: $cfg-texto;
+    font-size: 0.92rem;
+
+    &:focus {
+      border-color: $cfg-azul;
+      box-shadow: 0 0 0 3px rgba($cfg-azul, 0.2);
+    }
+  }
+
+  textarea.form-control {
+    height: auto;
+    min-height: 88px;
+    padding: 10px 14px;
+  }
+
+  .cfg-ayuda {
+    display: block;
+    margin-top: 6px;
+    color: $cfg-texto-suave;
+    font-family: $cfg-mono;
+    font-size: 0.72rem;
+  }
+}
+
+// Campo con unidad dentro (cm)
+.cfg-unidad {
+  position: relative;
+
+  .form-control { padding-right: 44px; }
+
+  > span {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    color: $cfg-texto-suave;
+    font-family: $cfg-mono;
+    font-size: 0.78rem;
+    pointer-events: none;
+  }
+}
+
+// Casilla + referencia (impresión digital)
+.cfg-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  .form-control { max-width: 320px; }
+}
+
+.cfg-aviso {
+  color: $cfg-texto-suave;
+  font-size: 0.85rem;
+}
+
+.cfg-desglose {
+  margin-top: 24px;
+
+  table { margin: 0; font-size: 0.85rem; }
+}
+
+// ---------- Resumen lateral ----------
+// El sticky va en el elemento del componente, que es el que está en la rejilla
+cfg-resumen {
+  display: block;
+  position: sticky;
+  top: 16px;
+}
+
+.cfg-resumen-cabecera {
+  padding: 18px 24px;
+  border-bottom: 1px solid $cfg-borde;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+}
+
+.cfg-resumen-cuerpo { padding: 20px 24px 22px; }
+
+.cfg-resumen-filas {
+  margin: 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 0.88rem;
+  }
+
+  dt { color: $cfg-texto-suave; font-weight: 400; }
+  dd { margin: 0; font-weight: 500; text-align: right; }
+}
+
+.cfg-resumen-fechas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 16px 0 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #f4f5f8;
+  font-size: 0.75rem;
+  color: $cfg-texto-suave;
+
+  strong {
+    display: block;
+    margin-top: 4px;
+    color: $cfg-texto;
+    font-family: $cfg-mono;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+}
+
+.cfg-resumen-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  color: $cfg-texto-suave;
+  font-size: 0.88rem;
+
+  strong {
+    color: $cfg-texto;
+    font-family: $cfg-mono;
+    font-size: 1.9rem;
+    font-weight: 600;
+  }
+
+  small {
+    display: block;
+    text-align: right;
+    font-family: $cfg-mono;
+    font-size: 0.72rem;
+  }
+}
+
+.cfg-resumen-botones {
+  display: grid;
+  gap: 10px;
+}
+
+.cfg-resumen-nota {
+  margin: 10px 0 0;
+  color: $cfg-texto-suave;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.cfg-resumen-cesta {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid $cfg-borde;
+
+  p {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+    color: $cfg-texto-suave;
+
+    strong { color: $cfg-texto; font-family: $cfg-mono; }
+  }
+}
+
+// ---------- Responsive ----------
+@media (max-width: 991px) {
+  .cfg-layout { grid-template-columns: minmax(0, 1fr); }
+  cfg-resumen { position: static; }
+  .cfg-topbar .cfg-wrap { height: auto; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
+  .cfg-nav { order: 3; flex-basis: 100%; overflow-x: auto; }
+  .cfg-grid.cfg-cols-3,
+  .cfg-grid.cfg-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 575px) {
+  .cfg-wrap { padding: 0 12px; }
+  .cfg-panel-cuerpo { padding: 20px 16px; }
+  .cfg-paso { grid-template-columns: minmax(0, 1fr); }
+  .cfg-paso-num { margin-bottom: 8px; }
+  .cfg-grid.cfg-cols-2,
+  .cfg-grid.cfg-cols-3,
+  .cfg-grid.cfg-cols-4,
+  .cfg-grid.cfg-cols-1-2 { grid-template-columns: minmax(0, 1fr); }
+}

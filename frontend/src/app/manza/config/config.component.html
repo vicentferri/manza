@@ -1,211 +1,141 @@
 <!-- CABECERA-->
-<div class="container-fluid">
-  <div
-    style="width: 100%; background-color: black; color: white; padding: 10px"
-  >
-    <h5>
-      {{ nombreCentro }}
-    </h5>
-  </div>
-  <div class="flex-row d-flex bg-primary">
-    <a class="navbar-brand"></a>
-    <a class="nav-link" (click)="VerPresupuestos()">{{
-      "PRESUPUESTOS" | translate
-    }}</a>
-    <a class="nav-link" (click)="VerPedidos()">{{ "PEDIDOS" | translate }}</a>
-    <a class="nav-link" (click)="VerConfigurador()">{{
-      "CONFIGURADOR" | translate
-    }}</a>
-    <a class="nav-link" (click)="BorrarPedido()">{{ "BORRAR" | translate }}</a>
-    <a class="nav-link" (click)="VerPedido()">{{ "VER" | translate }}</a>
-    <a class="nav-link" (click)="Nueva()">{{ "NUEVA" | translate }}</a>
-    <a
-      class="nav-link"
-      (click)="VerEjecucion(2)"
-      [hidden]="this.bConfigurador == 1"
-      >{{ "AGREGAR" | translate }}</a
-    >
-    <a
-      class="nav-link nav-link-pdf"
-      *ngIf="esLeroy"
-      href="assets/pdf/tarifa_leroy_2025_es.pdf"
-      target="_blank"
-      rel="noopener"
-      >{{ "TARIFA" | translate }}</a
-    >
-    <a
-      class="nav-link active"
-      (click)="ShowBtns(); staticModal2.show()"
-      [hidden]="Cesta.length == 0"
-      >{{ "FINALIZAR" | translate }}</a
-    >
-    <a class="nav-link active" (click)="Exit()">&nbsp;Cerrar Sesión&nbsp;</a>
+<header class="cfg-topbar">
+  <div class="cfg-wrap">
+    <div class="cfg-marca">
+      <span class="cfg-logo">{{ esLeroy ? 'LM' : 'SM' }}</span>
+      <span>{{ nombreCentro }}</span>
+    </div>
 
-    <a class="navbar-toggler navbar-toggler-right">
-      <select
-        name="idioma"
-        id="idioma"
-        class="form-control form-control-sm"
-        style="width: 125px"
-        [(ngModel)]="Idioma"
-        (change)="ChangeIdioma()"
-      >
+    <nav class="cfg-nav">
+      <a [class.activo]="bConfigurador == 2" (click)="VerPresupuestos()">{{ "PRESUPUESTOS" | translate }}</a>
+      <a [class.activo]="bConfigurador == 3" (click)="VerPedidos()">{{ "PEDIDOS" | translate }}</a>
+      <a [class.activo]="bConfigurador == 0" (click)="VerConfigurador()">{{ "CONFIGURADOR" | translate }}</a>
+      <a [class.activo]="bConfigurador == 1" (click)="VerPedido()">{{ "Ver cesta" | translate }}</a>
+      <a *ngIf="esLeroy" href="assets/pdf/tarifa_leroy_2025_es.pdf" target="_blank" rel="noopener">{{
+        "TARIFA" | translate }}</a>
+    </nav>
+
+    <div class="cfg-topbar-dcha">
+      <select name="idioma" id="idioma" [(ngModel)]="Idioma" (change)="ChangeIdioma()">
         <option value="es">Español</option>
-        <option value="pt">Portugués</option>
-        <option value="en">English</option>
-        <option value="cat">Catalán</option>
-        <option value="ru">Ruso</option>
-        <option value="zh">Chino</option>
+        <option value="pt">Português</option>
       </select>
-    </a>
+      <a (click)="Exit()">{{ "Cerrar sesión" | translate }}</a>
+    </div>
   </div>
+</header>
 
-  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px 0;">
+<div class="cfg-subbar">
+  <div class="cfg-wrap">
+    <span class="cfg-subbar-titulo">{{ "Presupuesto en curso" | translate }}</span>
+    <button type="button" class="cfg-btn" (click)="Nueva()">{{ "NUEVA" | translate }}</button>
+    <button type="button" class="cfg-btn cfg-btn-peligro" (click)="BorrarPedido()">{{ "BORRAR" | translate }}</button>
+    <!-- Mientras no tengan resumen lateral, el resto de productos finaliza desde aquí -->
+    <button type="button" class="cfg-btn cfg-btn-azul" (click)="ShowBtns(); staticModal2.show()"
+      *ngIf="Cesta.length > 0 && (TipoCortina != 3 || bConfigurador != 0)">{{ "FINALIZAR" | translate }}</button>
 
-  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
-    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">{{ "CORTINAS" | translate }}</div>
-    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ NumeroCortinas }}</div>
+    <div class="cfg-subbar-info">
+      <strong class="cfg-mono">{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate }} ·
+      <strong class="cfg-mono">{{ TotalCesta | number:'1.2-2' }} €</strong>
+      <span *ngIf="TotalCestaC1">({{ TotalCestaC1 }})</span> ·
+      {{ "F. fabricación" | translate }} <strong class="cfg-mono">{{ FechaEntregaPedido | date:'dd/MM/yyyy' }}</strong>
+    </div>
   </div>
-
-  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
-    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Total</div>
-    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ TotalCesta | number:'1.2-2' }} €</div>
-    <div style="font-size: 11px; color: #6c757d; margin-top: 2px;">{{ TotalCestaC1 }}</div>
-  </div>
-
-  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
-    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">F. fabricación</div>
-    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ FechaEntregaPedido | date:'dd/MM/yyyy' }}</div>
-  </div>
-
-  <div style="background: #f8f9fa; border-radius: 6px; padding: 10px 14px; text-align: center; border: 1px solid #dee2e6;">
-    <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Entrega estimada</div>
-    <div style="font-size: 22px; font-weight: 500; color: #212529;">{{ FechaEntregaPedido | date:'dd/MM/yyyy' }}</div>
-    <div style="font-size: 11px; color: #6c757d; margin-top: 2px;">+ 5d transporte</div>
-  </div>
-
 </div>
-</div>
-
 <!-- CABECERA-->
 
-<!-- PROMOCION-->
-<div class="container">
-  <div
-    class="container-fluid"
-    [hidden]="bConfigurador == 1 || bConfigurador == 2 || bConfigurador == 3"
-  >
-    <div class="row" [hidden]="!Promocion">
-      <div class="col-9 py-2" style="padding-left: 5px">
-        <h4>{{ Promocion_Mensaje }}</h4>
+<!-- CONFIGURADOR -->
+<div class="cfg-page" [hidden]="bConfigurador == 1 || bConfigurador == 2 || bConfigurador == 3">
+  <div class="cfg-wrap">
+
+    <div class="cfg-cabecera">
+      <div>
+        <div class="cfg-eyebrow">{{ "CONFIGURADOR" | translate }}</div>
+        <h1>{{ "Nueva cortina" | translate }}</h1>
       </div>
-      <div class="col-3 py-2" style="text-align: right; padding-right: 5px">
-        <h4>
-          <app-ticker [maxDate]="Promocion_Hasta"></app-ticker>
-        </h4>
+      <div class="cfg-productos">
+        <button type="button" [class.activo]="TipoCortina == 1" (click)="Tipo(1)" *ngIf="productos.prod_1">
+          {{ "ENROLLABLES" | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 2" (click)="Tipo(2)" *ngIf="productos.prod_2">
+          {{ "PANEL JAPONES" | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 3" (click)="Tipo(3)" *ngIf="productos.prod_3">
+          {{ "VERTICAL" | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 4" (click)="Tipo(4)" *ngIf="productos.prod_4">
+          {{ (!isInterno && (Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 7" (click)="Tipo(7)" *ngIf="productos.prod_7">
+          {{ "HONEYCOMB" | translate }}
+        </button>
       </div>
     </div>
-    <div class="row" [hidden]="!Promocion || !Promocion_Banner">
-      <div class="col-12" style="padding: 0 5px 8px 5px">
-        <img [src]="Promocion_Banner" alt="Banner promoción"
-          style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 6px; display: block;" />
+
+    <!-- PROMOCION-->
+    <div class="cfg-promo" [hidden]="!Promocion">
+      <div class="cfg-promo-texto">
+        <span>{{ Promocion_Mensaje }}</span>
+        <app-ticker [maxDate]="Promocion_Hasta"></app-ticker>
       </div>
+      <img *ngIf="Promocion_Banner" [src]="Promocion_Banner" alt="Banner promoción" />
     </div>
+    <!-- PROMOCION-->
 
- 
-      
-      <div class="row mt-2">
-        <div class="col col-12" style="padding-left: 15px">
-          <div style="float: left">
-            <button [ngClass]="classTipo(1)" (click)="Tipo(1)" *ngIf="productos.prod_1">
-              {{ "ENROLLABLES" | translate }}
-            </button>
-            <button [ngClass]="classTipo(2)" (click)="Tipo(2)" *ngIf="productos.prod_2">
-              {{ "PANEL JAPONES" | translate }}
-            </button>
-            <button [ngClass]="classTipo(3)" (click)="Tipo(3)" *ngIf="productos.prod_3">
-              {{ "VERTICAL" | translate }}
-            </button>
-            <button
-              [ngClass]="classTipo(4)"
-              (click)="Tipo(4)"
-              *ngIf="productos.prod_4"
-            >
-              {{ (!isInterno && (Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}
-            </button>
-            <button
-              [ngClass]="classTipo(7)"
-              (click)="Tipo(7)"
-              *ngIf="productos.prod_7"
-            >
-              {{ "HONEYCOMB" | translate }}
-            </button>
-          </div>
-        </div>
-      </div>
+    <!-- PANEL ENROLLABLE -->
+    <manza-enrollable
+      *ngIf="TipoCortina == 1 && productos.prod_1 && !accNuevo"
+      [Cliente]="Cliente"
+      [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente"
+      [ReferenciaTienda]="ReferenciaTienda"
+      (onAdd)="AgregarDesdeHijo($event)">
+    </manza-enrollable>
 
-        <!-- PANEL ENROLLABLE -->
+    <!-- Configurador nuevo de accionamientos: solo clientes con el interruptor (SOL_ACC_CLIENTE) -->
+    <manza-enrollable-nuevo
+      *ngIf="TipoCortina == 1 && productos.prod_1 && accNuevo"
+      [Cliente]="Cliente"
+      [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente"
+      [ReferenciaTienda]="ReferenciaTienda"
+      (onAdd)="AgregarDesdeHijo($event)">
+    </manza-enrollable-nuevo>
 
-          <manza-enrollable
-    *ngIf="TipoCortina == 1 && productos.prod_1 && !accNuevo"
-    [Cliente]="Cliente"
-    [codeCentro]="codeCentro"
-    [SubCliente]="SubCliente"
-    [ReferenciaTienda]="ReferenciaTienda"
-    (onAdd)="AgregarDesdeHijo($event)">
-  </manza-enrollable>
+    <!-- PANEL JAPONES -->
+    <manza-japones *ngIf="TipoCortina == 2 && productos.prod_2"
+      [Cliente]="Cliente" [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+      [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
+      (onAdd)="AgregarDesdeHijo($event)">
+    </manza-japones>
 
-  <!-- Configurador nuevo de accionamientos: solo clientes con el interruptor (SOL_ACC_CLIENTE) -->
-  <manza-enrollable-nuevo
-    *ngIf="TipoCortina == 1 && productos.prod_1 && accNuevo"
-    [Cliente]="Cliente"
-    [codeCentro]="codeCentro"
-    [SubCliente]="SubCliente"
-    [ReferenciaTienda]="ReferenciaTienda"
-    (onAdd)="AgregarDesdeHijo($event)">
-  </manza-enrollable-nuevo>
+    <!-- PANEL VERTICAL -->
+    <manza-vertical *ngIf="TipoCortina == 3 && productos.prod_3"
+      [Cliente]="Cliente" [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+      [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
+      [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
+      (onAdd)="AgregarDesdeHijo($event)"
+      (onFinalizar)="ShowBtns(); staticModal2.show()">
+    </manza-vertical>
 
-        <!-- PANEL ENROLLABLE -->
-     
+    <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4"
+      [Cliente]="Cliente" [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+      (onAdd)="AgregarDesdeHijo($event)">
+    </manza-compac>
 
-        <!-- PANEL JAPONES -->
-        <manza-japones *ngIf="TipoCortina == 2 && productos.prod_2"
-  [Cliente]="Cliente" [codeCentro]="codeCentro"
-  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
-  [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
-  (onAdd)="AgregarDesdeHijo($event)">
-</manza-japones>
+    <!-- HONEYCOMB -->
+    <manza-honeycomb *ngIf="TipoCortina == 7 && productos.prod_7"
+      [Cliente]="Cliente" [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+      (onAdd)="AgregarDesdeHijo($event)">
+    </manza-honeycomb>
 
-        <!-- PANEL JAPONES -->
-   
-
-      <!-- PANEL VERTICAL -->
-       
-      <manza-vertical *ngIf="TipoCortina == 3 && productos.prod_3"
-  [Cliente]="Cliente" [codeCentro]="codeCentro"
-  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
-  [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
-  (onAdd)="AgregarDesdeHijo($event)">
-</manza-vertical>
-
-      <!-- PANEL VERTICAL -->
-
-      <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4"
-  [Cliente]="Cliente" [codeCentro]="codeCentro"
-  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
-  (onAdd)="AgregarDesdeHijo($event)">
-</manza-compac>
-
-      <!-- HONEYCOMB -->
-      
-        <manza-honeycomb *ngIf="TipoCortina == 7 && productos.prod_7" 
-        [Cliente]="Cliente" [codeCentro]="codeCentro"
-  [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
-        (onAdd)="AgregarDesdeHijo($event)"></manza-honeycomb>
-      
-      <!-- HONEYCOMB -->
-    </div>
   </div>
+</div>
+<!-- CONFIGURADOR -->
 
 <!-- PROMOCION-->
 

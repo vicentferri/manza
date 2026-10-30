@@ -25,7 +25,12 @@ export class VerticalComponent implements OnInit, OnChanges {
       return this.Cliente == '1' || this.Cliente == '5';
    }
 
+   // Cesta del presupuesto, para el resumen lateral
+   @Input() NumeroCortinas: number = 0;
+   @Input() TotalCesta: number = 0;
+
    @Output() onAdd = new EventEmitter<CortinaTipo>();
+   @Output() onFinalizar = new EventEmitter<void>();
 
    public CestaPrecios: Array<CortinaTipo> = [];
 
@@ -131,6 +136,34 @@ export class VerticalComponent implements OnInit, OnChanges {
    public pv_tejidosC2_2: Array<Tipo> = [];
 
    public Estancias: any = [];
+
+   // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
+   get resumenFilas(): { etiqueta: string, valor: string }[] {
+      const texto = (lista: any[], id: string) => {
+         const fila = (lista || []).find(x => x && String(x.id) === String(id));
+         return fila && String(id) !== '-1' ? fila.text : '—';
+      };
+      const componentes = { '1': 'TEJIDOMASRIEL', '2': 'SOLOTEJIDO', '3': 'SOLORIEL' };
+
+      if (this.VerticalInclinada == '1') {
+         return [
+            { etiqueta: 'Producto', valor: this.translation.get('VERTICALINCLINADA') },
+            { etiqueta: 'Medidas', valor: (this.PV_Ancho_2 || '—') + ' × ' + (this.PV_AlturaMin_2 || '—') + '/' + (this.PV_AlturaMax_2 || '—') + ' cm' },
+            { etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido_2) + ' · ' + texto(this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2) },
+            { etiqueta: 'Cantidad', valor: this.PV_Cantidad_2 || '—' }
+         ];
+      }
+      const filas = [
+         { etiqueta: 'Producto', valor: this.translation.get('VERTICAL') },
+         { etiqueta: 'Componente', valor: this.translation.get(componentes[this.TipoVertical]) },
+         { etiqueta: 'Medidas', valor: (this.PV_Ancho_1 || '—') + ' × ' + (this.PV_Alto_1 || '—') + ' cm' }
+      ];
+      if (this.TipoVertical != '3') {
+         filas.push({ etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido) + ' · ' + texto(this.pv_tejidosC_1, this.Tipo3_TejidoColor1) });
+      }
+      filas.push({ etiqueta: 'Cantidad', valor: this.PV_Cantidad_1 || '—' });
+      return filas;
+   }
 
    constructor(
       private service: SMAPIService,

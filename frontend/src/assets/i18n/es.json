@@ -119,5 +119,14 @@
     "NO SE HA PODIDO GENERAR EL PDF DE PRODUCCIÓN": "No se ha podido generar el PDF de producción",
     "DESCARGAR": "Descargar",
     "COLOR_TEJIDO": "COLOR TEJIDO",
-    "COLOR_PERFIL": "COLOR PERFIL"
+    "COLOR_PERFIL": "COLOR PERFIL",
+    "TEJIDOMASRIEL": "Tejido + riel",
+    "SOLORIEL": "Sólo riel",
+    "POSICIONMECANISMO": "Pos. mecanismo",
+    "COLORRIEL": "Color riel",
+    "TIPORECOGIDA": "Tipo recogida",
+    "COLOR1": "Color 1",
+    "COLOR2": "Color 2",
+    "IMPRESIONDIGITAL": "Impresión digital",
+    "VERTICALINCLINADA": "Vertical inclinada"
 }
