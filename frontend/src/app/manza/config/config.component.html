@@ -147,8 +147,8 @@
 
 <!-- PROMOCION-->
 
-<!-- CONTENIDO DEL PEDIDO-->
-<div class="cfg-page" [hidden]="bConfigurador == 0">
+<!-- CONTENIDO DEL PEDIDO: solo en "Ver cesta" (antes salía también encima de presupuestos y pedidos) -->
+<div class="cfg-page" [hidden]="bConfigurador != 1">
   <div class="cfg-wrap">
 
     <div class="cfg-cabecera">
