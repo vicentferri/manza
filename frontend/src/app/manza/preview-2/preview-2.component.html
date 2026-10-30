@@ -13,9 +13,6 @@
         <span *ngIf="item.PJ_TipoJapones == 2">{{ "SOLOTEJIDO" | translate }}</span>
         <span *ngIf="item.PJ_TipoJapones == 3">{{ "SOLOMECANISMO" | translate }}</span>
         <span *ngIf="item.PJ_TipoJapones != 3">· {{ item.PJ_NumeroLamas }} {{ "Lamas" | translate | lowercase }}</span>
-        <span class="cfg-chip cfg-chip-azul" *ngIf="item.precios.T2_Fecha_Entrega != ''">
-          {{ "F. fabricación" | translate }} {{ item.precios.T2_Fecha_Entrega }} + {{ item.precios.T2_Transporte }} d {{ "transporte" | translate }}
-        </span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>

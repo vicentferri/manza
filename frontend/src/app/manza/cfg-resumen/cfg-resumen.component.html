@@ -15,18 +15,6 @@
       </div>
     </dl>
 
-    <div class="cfg-resumen-fechas">
-      <div>
-        {{ "Fabricación" | translate }}
-        <strong>{{ fechaFab || '—' }}</strong>
-      </div>
-      <div>
-        {{ "Entrega estimada" | translate }}
-        <strong>{{ fechaFab || '—' }}</strong>
-        <span *ngIf="fechaFab && transporte">+ {{ transporte }} d {{ "transporte" | translate }}</span>
-      </div>
-    </div>
-
     <div class="cfg-resumen-total">
       <span>Total</span>
       <div>

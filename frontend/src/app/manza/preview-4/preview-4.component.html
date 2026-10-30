@@ -10,9 +10,6 @@
       </div>
       <div class="cfg-linea-sub">
         <span>{{ item.com_acc_tipo_text }} {{ item.com_acc_marca_text }} · {{ item.com_acc_posicion_text }}</span>
-        <span class="cfg-chip cfg-chip-azul" *ngIf="item.precios.T4_Fecha_Entrega != ''">
-          {{ "F. fabricación" | translate }} {{ item.precios.T4_Fecha_Entrega }} + {{ item.precios.T4_Transporte }} d {{ "transporte" | translate }}
-        </span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>

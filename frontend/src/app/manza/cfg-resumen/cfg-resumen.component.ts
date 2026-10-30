@@ -26,8 +26,6 @@ export class CfgResumenComponent {
    @Input() filas: { etiqueta: string, valor: string }[] = [];
    @Input() total: number = 0;
    @Input() totalC1: string = '';
-   @Input() fechaFab: string = '';
-   @Input() transporte: string = '';
    @Input() calculando: boolean = false;
    /** Cortinas que ya hay en la cesta del presupuesto */
    @Input() numCortinas: number = 0;

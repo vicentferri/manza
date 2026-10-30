@@ -16,10 +16,11 @@
     </nav>
 
     <div class="cfg-topbar-dcha">
-      <select name="idioma" id="idioma" [(ngModel)]="Idioma" (change)="ChangeIdioma()">
-        <option value="es">Español</option>
-        <option value="pt">Português</option>
-      </select>
+      <div class="cfg-idioma" role="group" aria-label="Idioma">
+        <i class="fas fa-globe"></i>
+        <button type="button" [class.activo]="Idioma == 'es'" (click)="Idioma = 'es'; ChangeIdioma()" title="Español">ES</button>
+        <button type="button" [class.activo]="Idioma == 'pt'" (click)="Idioma = 'pt'; ChangeIdioma()" title="Português">PT</button>
+      </div>
       <a (click)="Exit()">{{ "Cerrar sesión" | translate }}</a>
     </div>
   </div>
@@ -37,8 +38,7 @@
     <div class="cfg-subbar-info">
       <strong class="cfg-mono">{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate }} ·
       <strong class="cfg-mono">{{ TotalCesta | number:'1.2-2' }} €</strong>
-      <span *ngIf="TotalCestaC1">({{ TotalCestaC1 }})</span> ·
-      {{ "F. fabricación" | translate }} <strong class="cfg-mono">{{ FechaEntregaPedido | date:'dd/MM/yyyy' }}</strong>
+      <span *ngIf="TotalCestaC1">({{ TotalCestaC1 }})</span>
     </div>
   </div>
 </div>
@@ -203,10 +203,6 @@
 
   <!-- Total y finalizar -->
   <div class="cfg-cajon-pie" *ngIf="Cesta.length > 0">
-    <div class="cfg-cajon-fila">
-      <span>{{ "Fabricación" | translate }}</span>
-      <strong class="cfg-mono">{{ FechaEntregaPedido | date: "dd/MM/yyyy" }}</strong>
-    </div>
     <div class="cfg-cajon-fila cfg-cajon-total">
       <span>Total</span>
       <div>
@@ -278,10 +274,6 @@
             <div>
               Total
               <strong>{{ TotalCesta | number : "1.2-2" }} €</strong>
-            </div>
-            <div>
-              {{ "F. fabricación" | translate }}
-              <strong>{{ FechaEntregaPedido | date: "dd/MM/yyyy" }}</strong>
             </div>
           </div>
 

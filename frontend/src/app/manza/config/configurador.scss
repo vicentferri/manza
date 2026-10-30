@@ -97,15 +97,38 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   align-items: center;
   gap: 12px;
 
-  // Los estilos globales de select pisan el fondo: hace falta !important
-  select {
-    height: 34px;
-    padding: 0 8px;
-    border: 1px solid #3a3f48 !important;
-    border-radius: 7px;
-    background-color: #22262d !important;
-    color: #fff !important;
-    font-size: 0.85rem;
+  // Selector de idioma ES / PT
+  .cfg-idioma {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid #3a3f48;
+    border-radius: 999px;
+    background: #22262d;
+
+    i { margin: 0 6px 0 8px; color: #9aa3ad; font-size: 0.85rem; }
+
+    button {
+      min-width: 38px;
+      height: 28px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: #c9ced6;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+
+      &:hover { color: #fff; }
+
+      &.activo {
+        background: $cfg-azul;
+        color: $cfg-oscuro;
+      }
+    }
   }
 
   a {
@@ -544,29 +567,12 @@ cfg-resumen {
   dd { margin: 0; font-weight: 500; text-align: right; }
 }
 
-.cfg-resumen-fechas {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 16px 0 20px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  background: #f4f5f8;
-  font-size: 0.75rem;
-  color: $cfg-texto-suave;
-
-  strong {
-    display: block;
-    margin-top: 4px;
-    color: $cfg-texto;
-    font-family: $cfg-mono;
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
-}
 
 .cfg-resumen-total {
   display: flex;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid $cfg-borde;
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: 16px;
@@ -1003,7 +1009,7 @@ cfg-resumen {
 
 .cfg-modal-totales {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 

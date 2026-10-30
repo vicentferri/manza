@@ -13,9 +13,6 @@
         <span *ngIf="item.TipoVertical == 1">{{ "TEJIDOMASRIEL" | translate }}</span>
         <span *ngIf="item.TipoVertical == 2">{{ "SOLOTEJIDO" | translate }}</span>
         <span *ngIf="item.TipoVertical == 3">{{ "SOLORIEL" | translate }}</span>
-        <span class="cfg-chip cfg-chip-azul" *ngIf="item.precios.T3_Fecha_Entrega != ''">
-          {{ "F. fabricación" | translate }} {{ item.precios.T3_Fecha_Entrega }} + {{ item.precios.T3_Transporte }} d {{ "transporte" | translate }}
-        </span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
