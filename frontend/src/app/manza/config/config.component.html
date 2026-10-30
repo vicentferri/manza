@@ -48,29 +48,24 @@
 <div class="cfg-page" [hidden]="bConfigurador == 1 || bConfigurador == 2 || bConfigurador == 3">
   <div class="cfg-wrap">
 
-    <div class="cfg-cabecera">
-      <div>
-        <div class="cfg-eyebrow">{{ "CONFIGURADOR" | translate }}</div>
-        <h1>{{ "Nueva cortina" | translate }}</h1>
-      </div>
-      <div class="cfg-productos">
-        <button type="button" [class.activo]="TipoCortina == 1" (click)="Tipo(1)" *ngIf="productos.prod_1">
-          {{ "ENROLLABLES" | translate }}
-        </button>
-        <button type="button" [class.activo]="TipoCortina == 2" (click)="Tipo(2)" *ngIf="productos.prod_2">
-          {{ "PANEL JAPONES" | translate }}
-        </button>
-        <button type="button" [class.activo]="TipoCortina == 3" (click)="Tipo(3)" *ngIf="productos.prod_3">
-          {{ "VERTICAL" | translate }}
-        </button>
-        <button type="button" [class.activo]="TipoCortina == 4" (click)="Tipo(4)" *ngIf="productos.prod_4">
-          {{ (!isInterno && (Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}
-        </button>
-        <button type="button" [class.activo]="TipoCortina == 7" (click)="Tipo(7)" *ngIf="productos.prod_7">
-          {{ "HONEYCOMB" | translate }}
-        </button>
-      </div>
-    </div>
+    <!-- Tipo de producto -->
+    <nav class="cfg-productos cfg-productos-grande">
+      <button type="button" [class.activo]="TipoCortina == 1" (click)="Tipo(1)" *ngIf="productos.prod_1">
+        {{ "ENROLLABLES" | translate }}
+      </button>
+      <button type="button" [class.activo]="TipoCortina == 2" (click)="Tipo(2)" *ngIf="productos.prod_2">
+        {{ "PANEL JAPONES" | translate }}
+      </button>
+      <button type="button" [class.activo]="TipoCortina == 3" (click)="Tipo(3)" *ngIf="productos.prod_3">
+        {{ "VERTICAL" | translate }}
+      </button>
+      <button type="button" [class.activo]="TipoCortina == 4" (click)="Tipo(4)" *ngIf="productos.prod_4">
+        {{ (!isInterno && (Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}
+      </button>
+      <button type="button" [class.activo]="TipoCortina == 7" (click)="Tipo(7)" *ngIf="productos.prod_7">
+        {{ "HONEYCOMB" | translate }}
+      </button>
+    </nav>
 
     <!-- PROMOCION-->
     <div class="cfg-promo" [hidden]="!Promocion">
