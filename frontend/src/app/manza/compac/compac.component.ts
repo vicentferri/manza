@@ -5,6 +5,7 @@ import { errorPasoMedidas } from '../config/medidas';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { Tipo } from '../config/Tipo';
+import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
 @Component({
@@ -24,7 +25,12 @@ export class CompacComponent implements OnInit, OnChanges {
       return this.Cliente == '1' || this.Cliente == '5';
    }
 
+   // Cesta del presupuesto, para el resumen lateral
+   @Input() NumeroCortinas: number = 0;
+   @Input() TotalCesta: number = 0;
+
    @Output() onAdd = new EventEmitter<CortinaTipo>();
+   @Output() onFinalizar = new EventEmitter<void>();
 
    calculando: boolean = false;
    idLinea = "";
@@ -115,6 +121,20 @@ export class CompacComponent implements OnInit, OnChanges {
    public tejidos_impresion_tipo1: Array<Tipo> = [];
 
    public Estancias: any = [];
+
+   // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
+   get resumenFilas(): { etiqueta: string, valor: string }[] {
+      const perfileria = this.compac.PC_ColorPerfileria == 'RAL'
+         ? 'RAL ' + texto(this.items90, this.compac.Ral)
+         : (this.compac.PC_ColorPerfileria == '-1' ? '—' : this.translation.get(this.compac.PC_ColorPerfileria));
+      return [
+         { etiqueta: 'Producto', valor: this.translation.get(this.esLeroy ? 'COMPAC' : 'SOLAR MINI') },
+         { etiqueta: 'Medidas', valor: medida(this.Ancho) + ' × ' + medida(this.Alto) + ' cm' },
+         { etiqueta: 'Perfilería', valor: perfileria },
+         { etiqueta: 'Tejido', valor: texto(this.tejidos_compac, this.Tipo4_Tejido) + ' · ' + texto(this.tejidos_compac_colores, this.Tipo4_TejidoColor) },
+         { etiqueta: 'Cantidad', valor: medida(this.Cantidad) }
+      ];
+   }
 
    constructor(
       private service: SMAPIService,

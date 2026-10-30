@@ -11,6 +11,7 @@ import { Tipo4 } from '../config/Tipo4';
 import { TipoMando } from '../config/TipoMando';
 import { SMAPIService } from '../config/smapi.service';
 import { errorPasoMedidas } from '../config/medidas';
+import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { forkJoin, of, Observable } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
@@ -33,7 +34,12 @@ export class EnrollableComponent implements OnInit, OnChanges {
       return this.Cliente == '1' || this.Cliente == '5';
    }
 
+   // Cesta del presupuesto, para el resumen lateral
+   @Input() NumeroCortinas: number = 0;
+   @Input() TotalCesta: number = 0;
+
    @Output() onAdd = new EventEmitter<CortinaTipo>();
+   @Output() onFinalizar = new EventEmitter<void>();
 
    public CestaPrecios: Array<CortinaTipo> = [];
 
@@ -144,6 +150,17 @@ export class EnrollableComponent implements OnInit, OnChanges {
    Tipo1_Estancia: string = '-1';
    Tipo1_Estancia_Obs: string = '';
    public Tipo1_Estancias: any = [];
+
+   // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
+   get resumenFilas(): { etiqueta: string, valor: string }[] {
+      return [
+         { etiqueta: 'Producto', valor: this.translation.get(this.SubTipoCortina == 2 ? 'CAJON ZIP' : 'ENROLLABLE') },
+         { etiqueta: 'Medidas', valor: medida(this.Ancho) + ' × ' + medida(this.Alto) + ' cm' },
+         { etiqueta: 'Tejido', valor: texto(this.tejidos, this.Tipo1_Tejido) + ' · ' + texto(this.tejidosC, this.Tipo1_TejidoColor) },
+         { etiqueta: 'Accionamiento', valor: texto(this.items1, this.Tipo1_Tipo) + ' · ' + texto(this.items2, this.Tipo1_Marca) },
+         { etiqueta: 'Cantidad', valor: medida(this.Cantidad) }
+      ];
+   }
 
    // Precios
    precios = {

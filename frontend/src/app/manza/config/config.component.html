@@ -30,9 +30,9 @@
     <span class="cfg-subbar-titulo">{{ "Presupuesto en curso" | translate }}</span>
     <button type="button" class="cfg-btn" (click)="Nueva()">{{ "NUEVA" | translate }}</button>
     <button type="button" class="cfg-btn cfg-btn-peligro" (click)="BorrarPedido()">{{ "BORRAR" | translate }}</button>
-    <!-- Mientras no tengan resumen lateral, el resto de productos finaliza desde aquí -->
+    <!-- En el configurador se finaliza desde el resumen lateral; aquí, fuera de él y en el enrollable nuevo -->
     <button type="button" class="cfg-btn cfg-btn-azul" (click)="ShowBtns(); staticModal2.show()"
-      *ngIf="Cesta.length > 0 && (TipoCortina != 3 || bConfigurador != 0)">{{ "FINALIZAR" | translate }}</button>
+      *ngIf="Cesta.length > 0 && (bConfigurador != 0 || (TipoCortina == 1 && accNuevo))">{{ "FINALIZAR" | translate }}</button>
 
     <div class="cfg-subbar-info">
       <strong class="cfg-mono">{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate }} ·
@@ -89,7 +89,9 @@
       [codeCentro]="codeCentro"
       [SubCliente]="SubCliente"
       [ReferenciaTienda]="ReferenciaTienda"
-      (onAdd)="AgregarDesdeHijo($event)">
+      [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
+      (onAdd)="AgregarDesdeHijo($event)"
+      (onFinalizar)="ShowBtns(); staticModal2.show()">
     </manza-enrollable>
 
     <!-- Configurador nuevo de accionamientos: solo clientes con el interruptor (SOL_ACC_CLIENTE) -->
@@ -107,7 +109,9 @@
       [Cliente]="Cliente" [codeCentro]="codeCentro"
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
-      (onAdd)="AgregarDesdeHijo($event)">
+      [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
+      (onAdd)="AgregarDesdeHijo($event)"
+      (onFinalizar)="ShowBtns(); staticModal2.show()">
     </manza-japones>
 
     <!-- PANEL VERTICAL -->
@@ -123,14 +127,18 @@
     <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4"
       [Cliente]="Cliente" [codeCentro]="codeCentro"
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
-      (onAdd)="AgregarDesdeHijo($event)">
+      [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
+      (onAdd)="AgregarDesdeHijo($event)"
+      (onFinalizar)="ShowBtns(); staticModal2.show()">
     </manza-compac>
 
     <!-- HONEYCOMB -->
     <manza-honeycomb *ngIf="TipoCortina == 7 && productos.prod_7"
       [Cliente]="Cliente" [codeCentro]="codeCentro"
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
-      (onAdd)="AgregarDesdeHijo($event)">
+      [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
+      (onAdd)="AgregarDesdeHijo($event)"
+      (onFinalizar)="ShowBtns(); staticModal2.show()">
     </manza-honeycomb>
 
   </div>

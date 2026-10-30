@@ -6,6 +6,7 @@ import { TranslationService } from 'src/app/services/translation.service';
 import { SMAPIService } from '../config/smapi.service';
 import { errorPasoMedidas } from '../config/medidas';
 import { Tipo } from '../config/Tipo';
+import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
 @Component({
@@ -27,7 +28,12 @@ export class JaponesComponent implements OnInit, OnChanges {
       return this.Cliente == '1' || this.Cliente == '5';
    }
 
+   // Cesta del presupuesto, para el resumen lateral
+   @Input() NumeroCortinas: number = 0;
+   @Input() TotalCesta: number = 0;
+
    @Output() onAdd = new EventEmitter<CortinaTipo>();
+   @Output() onFinalizar = new EventEmitter<void>();
 
    public CestaPrecios: Array<CortinaTipo> = [];
 
@@ -83,6 +89,26 @@ export class JaponesComponent implements OnInit, OnChanges {
    Tipo2_Estancia: string = '-1';
    Tipo2_Estancia_Obs: string = '';
    public Estancias: any = [];
+
+   // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
+   get resumenFilas(): { etiqueta: string, valor: string }[] {
+      const composiciones = { '1': 'MECANISMOTEJIDO', '2': 'SOLOTEJIDO', '3': 'SOLOMECANISMO' };
+      const filas = [
+         { etiqueta: 'Producto', valor: this.translation.get('PANEL JAPONES') },
+         { etiqueta: 'Componente', valor: this.translation.get(composiciones[this.TipoJapones]) }
+      ];
+      if (this.TipoJapones != '2') {
+         filas.push({ etiqueta: 'Medidas', valor: medida(this.PJ_Ancho_2) + ' × ' + medida(this.PJ_Alto_1) + ' cm' });
+      }
+      if (this.TipoJapones != '3') {
+         filas.push({ etiqueta: 'Tejido', valor: texto(this.pj_tejidos, this.Tipo2_Tejido) + ' · ' + texto(this.pj_tejidosC, this.Tipo2_TejidoColor) });
+         filas.push({ etiqueta: 'Lamas', valor: medida(this.PJ_NumeroLamas) });
+      }
+      if (this.TipoJapones != '2') {
+         filas.push({ etiqueta: 'Cantidad', valor: medida(this.PJ_Cantidad_1) });
+      }
+      return filas;
+   }
 
    // Precios
    Tipo2_TipoSoporte_Label: string = 'Soporte:';

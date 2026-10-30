@@ -9,6 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { CortinaTipo } from '../config/CortinaTipo';
 import { errorPasoMedidas, PASO_MEDIDA_HONEYCOMB } from '../config/medidas';
+import { medida } from '../cfg-resumen/cfg-resumen.component';
 
 
 @Component({
@@ -61,7 +62,12 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   @Input() SubCliente: string = '-1';
   @Input() ReferenciaTienda: string = '-1';
 
+  // Cesta del presupuesto, para el resumen lateral
+  @Input() NumeroCortinas: number = 0;
+  @Input() TotalCesta: number = 0;
+
   @Output() onAdd = new EventEmitter<any>();
+  @Output() onFinalizar = new EventEmitter<void>();
 
   @ViewChild('modalVideo', { static: false }) modalVideo!: ModalDirective;
 
@@ -90,6 +96,22 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
 
+
+  // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
+  get resumenFilas(): { etiqueta: string, valor: string }[] {
+    const buscar = (lista: any[], campo: string, id: any, texto: string) => {
+      const fila = (lista || []).find(x => x && String(x[campo]) === String(id));
+      return fila ? fila[texto] : '—';
+    };
+    return [
+      { etiqueta: 'Producto', valor: this.translation.get('HONEYCOMB') },
+      { etiqueta: 'Medidas', valor: medida(this.model.Ancho) + ' × ' + medida(this.model.Alto) + ' cm' },
+      { etiqueta: 'Accionamiento', valor: buscar(this.TiposAccionamiento, 'idTipoAccionamiento', this.model.TipoAccionamiento, 'TipoAccionamiento') },
+      { etiqueta: 'Tejido', valor: buscar(this.TiposTejido, 'idTipoTejido', this.model.TipoTejido, 'TipoTejido') + ' · ' + buscar(this.ColoresTejidoFiltrados, 'idColorTejido', this.model.ColorTejido, 'ColorTejido') },
+      { etiqueta: 'Perfil', valor: buscar(this.ColoresPerfil, 'idColorPerfil', this.model.ColorPerfil, 'ColorPerfil') },
+      { etiqueta: 'Cantidad', valor: medida(this.model.Cantidad) }
+    ];
+  }
 
   constructor(
     private service: HoneycombService,

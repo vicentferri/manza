@@ -294,13 +294,31 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   padding: 28px;
 }
 
-// Paso numerado (01, 02...)
+// El panel del formulario no es tarjeta: la tarjeta es cada paso
+section.cfg-panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+
+  > .cfg-panel-cabecera {
+    padding: 0 0 16px;
+    border-bottom: 0;
+  }
+
+  > .cfg-panel-cuerpo { padding: 0; }
+}
+
+// Paso numerado (01, 02...), cada uno en su tarjeta
 .cfg-paso {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr);
   gap: 0 24px;
-
-  & + .cfg-paso { margin-top: 32px; }
+  margin-bottom: 16px;
+  padding: 24px 28px;
+  background: #fff;
+  border: 1px solid $cfg-borde;
+  border-radius: $cfg-radio;
+  box-shadow: $cfg-sombra;
 }
 
 .cfg-paso-num {
@@ -420,13 +438,56 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   .form-control { max-width: 320px; }
 }
 
+// Subgrupo dentro de un paso (soportes, tapas, contrapesos...)
+.cfg-subtitulo {
+  margin: 18px 0 10px;
+  color: $cfg-texto-suave;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  &:first-of-type { margin-top: 0; }
+}
+
+// Tipos de cadena del enrollable: una opción por fila con sus campos
+.cfg-cadenas {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.cfg-cadena {
+  padding: 12px 14px;
+  border: 1px solid $cfg-borde;
+  border-radius: 8px;
+
+  .cfg-grid { margin-top: 10px; }
+}
+
+.cfg-cadena-opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  input { width: 18px; height: 18px; }
+}
+
 .cfg-aviso {
   color: $cfg-texto-suave;
   font-size: 0.85rem;
 }
 
 .cfg-desglose {
-  margin-top: 24px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid $cfg-borde;
+  border-radius: $cfg-radio;
+  box-shadow: $cfg-sombra;
 
   table { margin: 0; font-size: 0.85rem; }
 }
@@ -551,8 +612,7 @@ cfg-resumen {
 
 @media (max-width: 575px) {
   .cfg-wrap { padding: 0 12px; }
-  .cfg-panel-cuerpo { padding: 20px 16px; }
-  .cfg-paso { grid-template-columns: minmax(0, 1fr); }
+  .cfg-paso { grid-template-columns: minmax(0, 1fr); padding: 20px 16px; }
   .cfg-paso-num { margin-bottom: 8px; }
   .cfg-grid.cfg-cols-2,
   .cfg-grid.cfg-cols-3,
