@@ -116,7 +116,7 @@ async function opciones(req, res) {
            tiposMotor, modelos, mandos, cargadores, baterias,
            accSis, cadCol, altCol, motSis, modMan, modCar, modBat,
            soportes, tapas, contrapesos, coloresSoporte, coloresTapa, coloresContrapeso,
-           sopSis, tapSis, sopCol, tapCol, conCol] = await Promise.all([
+           sopSis, tapSis, conSis, sopCol, tapCol, conCol] = await Promise.all([
       lista('SOL_ACC_ACCIONAMIENTO'),
       lista('SOL_ACC_SISTEMA'),
       q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_CADENA where activo = 1 order by orden, nombre`),
@@ -143,6 +143,8 @@ async function opciones(req, res) {
       lista('SOL_ACC_COLOR_CONTRAPESO'),
       q('select soporte_id, sistema_id from dbo.SOL_ACC_SOPORTE_SISTEMA'),
       q('select tapa_id, sistema_id from dbo.SOL_ACC_TAPA_SISTEMA'),
+      /* script 37: contrapesos de cada sistema */
+      q('select contrapeso_id, sistema_id from dbo.SOL_ACC_CONTRAPESO_SISTEMA'),
       q('select soporte_id, color_soporte_id from dbo.SOL_ACC_SOPORTE_COLOR'),
       q('select tapa_id, color_tapa_id from dbo.SOL_ACC_TAPA_COLOR'),
       q('select contrapeso_id, color_contrapeso_id from dbo.SOL_ACC_CONTRAPESO_COLOR')
@@ -181,6 +183,7 @@ async function opciones(req, res) {
     const batPorModelo = agrupar(modBat, 'modelo_motor_id', 'bateria_id');
     const sisPorSoporte = agrupar(sopSis, 'soporte_id', 'sistema_id');
     const sisPorTapa = agrupar(tapSis, 'tapa_id', 'sistema_id');
+    const sisPorContrapeso = agrupar(conSis, 'contrapeso_id', 'sistema_id');
     const colPorSoporte = agrupar(sopCol, 'soporte_id', 'color_soporte_id');
     const colPorTapa = agrupar(tapCol, 'tapa_id', 'color_tapa_id');
     const colPorContrapeso = agrupar(conCol, 'contrapeso_id', 'color_contrapeso_id');
@@ -209,10 +212,10 @@ async function opciones(req, res) {
       mandos,
       cargadores,
       baterias,
-      /* soportes y tapas: los del sistema elegido (sistemas); contrapesos: todos. Cada uno con sus colores */
+      /* soportes, tapas y contrapesos: los del sistema elegido (sistemas). Cada uno con sus colores */
       soportes: soportes.map(x => Object.assign(x, { sistemas: filtrar(sisPorSoporte[x.id], sisActivos), colores: filtrar(colPorSoporte[x.id], colSopActivos) })),
       tapas: tapas.map(x => Object.assign(x, { sistemas: filtrar(sisPorTapa[x.id], sisActivos), colores: filtrar(colPorTapa[x.id], colTapActivos) })),
-      contrapesos: contrapesos.map(x => Object.assign(x, { colores: filtrar(colPorContrapeso[x.id], colConActivos) })),
+      contrapesos: contrapesos.map(x => Object.assign(x, { sistemas: filtrar(sisPorContrapeso[x.id], sisActivos), colores: filtrar(colPorContrapeso[x.id], colConActivos) })),
       coloresSoporte,
       coloresTapa,
       coloresContrapeso,

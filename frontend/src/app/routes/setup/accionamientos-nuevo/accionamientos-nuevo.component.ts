@@ -27,7 +27,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'accionamientos', paso: '1', label: 'Accionamientos', ayuda: 'Qué sistemas tiene cada uno', icono: 'fa-hand-pointer-o' },
         { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, alturas y colores', icono: 'fa-link' },
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
-        { id: 'soportes', paso: '4', label: 'Soportes y tapas', ayuda: 'Qué soportes y tapas tiene cada sistema', icono: 'fa-th-large' },
+        { id: 'soportes', paso: '4', label: 'Soportes, tapas y contrapesos', ayuda: 'Qué soportes, tapas y contrapesos tiene cada sistema', icono: 'fa-th-large' },
         { id: 'tejidos', paso: '', label: 'Tejidos', ayuda: 'Los que ofrece cada sistema', icono: 'fa-th' },
         { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' },
         { id: 'suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
@@ -45,7 +45,7 @@ export class AccionamientosNuevoComponent implements OnInit {
           ayuda: 'Cada sistema marca las suyas en el paso 4.' },
         { id: 'contrapesos', label: 'Contrapesos', singular: 'contrapeso', colores: 'contrapeso_color', tituloColores: 'Colores del contrapeso',
           vacioColores: 'No hay colores de contrapeso. Añádalos en la pestaña Colores de contrapeso.',
-          ayuda: 'Valen para todos los sistemas.' },
+          ayuda: 'Cada sistema marca los suyos en el paso 4.' },
         { id: 'colores_cadena', label: 'Colores de cadena', singular: 'color', ayuda: 'Se asignan en el paso 2: a cada altura de Aro cadena y a los demás tipos de cadena.' },
         { id: 'colores_soporte', label: 'Colores de soporte', singular: 'color', ayuda: 'Se marcan en cada soporte (pestaña Soportes).' },
         { id: 'colores_tapa', label: 'Colores de tapa', singular: 'color', ayuda: 'Se marcan en cada tapa (pestaña Tapas).' },
