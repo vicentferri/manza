@@ -6,10 +6,10 @@
       <div class="cfg-linea-nombre">
         <strong>{{ "HONEYCOMB" | translate }}</strong>
         <span class="cfg-mono">{{ item.ancho }} × {{ item.alto }} cm</span>
-        <span>· {{ item.tej_tipo_text }} · {{ item.tej_color_text }}</span>
+        <span>· {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}</span>
       </div>
       <div class="cfg-linea-sub">
-        <span>{{ "COLOR_PERFIL" | translate }}: {{ item.color_perfil_text }}</span>
+        <span>{{ "COLOR_PERFIL" | translate }}: {{ item.color_perfil_text | frase }}</span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
@@ -44,11 +44,11 @@
       </div>
       <div class="cfg-dato cfg-dato-ancho">
         <span>{{ "TEJIDO" | translate }}</span>
-        <strong>{{ item.tej_tipo_text }} · {{ item.tej_color_text }}</strong>
+        <strong>{{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "COLOR_PERFIL" | translate }}</span>
-        <strong>{{ item.color_perfil_text }}</strong>
+        <strong>{{ item.color_perfil_text | frase }}</strong>
       </div>
     </div>
 

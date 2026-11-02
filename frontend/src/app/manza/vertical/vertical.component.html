@@ -169,7 +169,7 @@
                 <label>{{ "TEJIDO" | translate }}</label>
                 <select name="Tipo3_Tejido" class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="Tipo3_Tejido" (change)="ChangeTipo3Tejido()" (blur)="ChangeTipo3Tejido()">
-                  <option *ngFor="let pow of pv_tejidos_1" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pv_tejidos_1" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <small class="cfg-ayuda" *ngIf="CodigoProv31">Ref. {{ CodigoProv31 }}</small>
               </div>
@@ -178,7 +178,7 @@
                 <select name="Tipo3_TejidoColor1" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_TejidoColor1"
                   (change)="Vertical_TejidosCombinados()" (blur)="Vertical_TejidosCombinados()">
-                  <option *ngFor="let pow of pv_tejidosC_1" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pv_tejidosC_1" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen *ngIf="TipoVertical != '3'" [cliente]="Cliente" [tejido]="Tipo3_Tejido"
                   [color]="Tipo3_TejidoColor1" [colores]="pv_tejidosC_1"></app-tejido-imagen>
@@ -188,7 +188,7 @@
                 <select name="Tipo3_TejidoColor2" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_TejidoColor2"
                   (change)="Vertical_TejidosCombinados()">
-                  <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen *ngIf="TipoVertical == '1'" [cliente]="Cliente" [tejido]="Tipo3_Tejido"
                   [color]="Tipo3_TejidoColor2" [colores]="pv_tejidosC_2"></app-tejido-imagen>
@@ -235,7 +235,7 @@
                 <label>{{ "ESTANCIA" | translate }}</label>
                 <select name="Tipo3_Estancia" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_Estancia">
-                  <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
+                  <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion | frase }}</option>
                 </select>
               </div>
               <div class="cfg-field">
@@ -378,7 +378,7 @@
                 <select name="Tipo3_Tejido_2" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_Tejido_2" (change)="ChangeTipo3Tejido_2()"
                   (blur)="ChangeTipo3Tejido_2()">
-                  <option *ngFor="let pow of pv_tejidos_1" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pv_tejidos_1" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <small class="cfg-ayuda" *ngIf="CodigoProv32">Ref. {{ CodigoProv32 }}</small>
               </div>
@@ -387,7 +387,7 @@
                 <select name="Tipo3_TejidoColor1_2" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_TejidoColor1_2"
                   (change)="Vertical_TejidosCombinados()" (blur)="Vertical_TejidosCombinados()">
-                  <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo3_Tejido_2" [color]="Tipo3_TejidoColor1_2"
                   [colores]="pv_tejidosC_2"></app-tejido-imagen>
@@ -397,7 +397,7 @@
                 <select name="Tipo3_TejidoColor2_2" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo3_TejidoColor2_2"
                   (change)="Vertical_TejidosCombinados()">
-                  <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pv_tejidosC_2" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo3_Tejido_2" [color]="Tipo3_TejidoColor2_2"
                   [colores]="pv_tejidosC_2"></app-tejido-imagen>
@@ -444,7 +444,7 @@
                 <label>{{ "ESTANCIA" | translate }}</label>
                 <select name="Tipo31_Estancia" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo31_Estancia">
-                  <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
+                  <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion | frase }}</option>
                 </select>
               </div>
               <div class="cfg-field">

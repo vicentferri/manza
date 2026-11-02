@@ -6,7 +6,7 @@
       <div class="cfg-linea-nombre">
         <strong>{{ "PANEL JAPONES" | translate }}</strong>
         <span class="cfg-mono" *ngIf="item.PJ_TipoJapones != 2">{{ item.PJ_Ancho_2 }} × {{ item.PJ_Alto_1 }} cm</span>
-        <span *ngIf="item.PJ_TipoJapones != 3">· {{ item.PJ_tejidos_text }} · {{ item.PJ_tejidosC_text }}</span>
+        <span *ngIf="item.PJ_TipoJapones != 3">· {{ item.PJ_tejidos_text | frase }} · {{ item.PJ_tejidosC_text | frase }}</span>
       </div>
       <div class="cfg-linea-sub">
         <span *ngIf="item.PJ_TipoJapones == 1">{{ "MECANISMOTEJIDO" | translate }}</span>
@@ -102,11 +102,11 @@
       <div class="cfg-dato cfg-dato-ancho">
         <span>{{ "TEJIDO" | translate }}</span>
         <strong>
-          {{ item.PJ_tejidos_text }} · (1) {{ item.PJ_tejidosC_text }}
-          <ng-container *ngIf="item.Tipo2_TejidoColor_2 != '-1'"> · (2) {{ item.PJ_Text_2 }}</ng-container>
-          <ng-container *ngIf="item.Tipo2_TejidoColor_3 != '-1'"> · (3) {{ item.PJ_Text_3 }}</ng-container>
-          <ng-container *ngIf="item.Tipo2_TejidoColor_4 != '-1'"> · (4) {{ item.PJ_Text_4 }}</ng-container>
-          <ng-container *ngIf="item.Tipo2_TejidoColor_5 != '-1'"> · (5) {{ item.PJ_Text_5 }}</ng-container>
+          {{ item.PJ_tejidos_text | frase }} · (1) {{ item.PJ_tejidosC_text | frase }}
+          <ng-container *ngIf="item.Tipo2_TejidoColor_2 != '-1'"> · (2) {{ item.PJ_Text_2 | frase }}</ng-container>
+          <ng-container *ngIf="item.Tipo2_TejidoColor_3 != '-1'"> · (3) {{ item.PJ_Text_3 | frase }}</ng-container>
+          <ng-container *ngIf="item.Tipo2_TejidoColor_4 != '-1'"> · (4) {{ item.PJ_Text_4 | frase }}</ng-container>
+          <ng-container *ngIf="item.Tipo2_TejidoColor_5 != '-1'"> · (5) {{ item.PJ_Text_5 | frase }}</ng-container>
         </strong>
         <div *ngIf="item.impresion == true" class="cfg-aviso">
           {{ "IMPRESIONDIGITAL" | translate }}: {{ item.impresion_imagen }}

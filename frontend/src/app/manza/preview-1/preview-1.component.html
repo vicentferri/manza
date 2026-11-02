@@ -6,10 +6,10 @@
       <div class="cfg-linea-nombre">
         <strong>{{ "ENROLLABLE" | translate }}</strong>
         <span class="cfg-mono">{{ item.ancho }} × {{ item.alto }} cm</span>
-        <span>· {{ item.tej_tipo_text }} · {{ item.tej_color_text }}</span>
+        <span>· {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}</span>
       </div>
       <div class="cfg-linea-sub">
-        <span>{{ item.acc_tipo_text }} {{ item.acc_marca_text }} · {{ item.acc_posicion_text }}</span>
+        <span>{{ item.acc_tipo_text | frase }} {{ item.acc_marca_text | frase }} · {{ item.acc_posicion_text | frase }}</span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
@@ -33,20 +33,20 @@
       <div class="cfg-dato cfg-dato-ancho">
         <span>{{ "ACCIONAMIENTO" | translate }}</span>
         <strong>
-          {{ item.acc_tipo_text }} {{ item.acc_marca_text }}
-          {{ item.acc_tubo_text }} {{ item.acc_modelo_text }}
-          {{ item.acc_posicion_text }}
+          {{ item.acc_tipo_text | frase }} {{ item.acc_marca_text | frase }}
+          {{ item.acc_tubo_text | frase }} {{ item.acc_modelo_text | frase }}
+          {{ item.acc_posicion_text | frase }}
         </strong>
         <div *ngIf="item.acc_tipo_text == 'Cadena'" class="cfg-aviso">
-          <span *ngIf="item.cad_Tipo == 2">{{ "CADENAMETÁLICA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text }}</span>
-          <span *ngIf="item.cad_Tipo == 1">{{ "CADENACONTINUA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text }}</span>
-          <span *ngIf="item.cad_Tipo == 0">{{ "CADENA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text }}</span>
+          <span *ngIf="item.cad_Tipo == 2">{{ "CADENAMETÁLICA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text | frase }}</span>
+          <span *ngIf="item.cad_Tipo == 1">{{ "CADENACONTINUA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text | frase }}</span>
+          <span *ngIf="item.cad_Tipo == 0">{{ "CADENA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text | frase }}</span>
         </div>
       </div>
 
       <div class="cfg-dato cfg-dato-ancho">
         <span>{{ "TEJIDO" | translate }}</span>
-        <strong>{{ item.tej_tipo_text }} · {{ item.tej_color_text }} · {{ item.tej_salida_text }}</strong>
+        <strong>{{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }} · {{ item.tej_salida_text | frase }}</strong>
         <div *ngIf="item.impresion" class="cfg-aviso">
           {{ "IMPRESION_DIGITAL" | translate }}: {{ item.impresion_imagen }}
         </div>
@@ -54,15 +54,15 @@
 
       <div class="cfg-dato">
         <span>{{ "SOPORTES" | translate }}</span>
-        <strong>{{ item.sop_tipo_text }} · {{ item.sop_color_text }}</strong>
+        <strong>{{ item.sop_tipo_text | frase }} · {{ item.sop_color_text | frase }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "TAPAS" | translate }}</span>
-        <strong>{{ item.tap_tipo_text }} · {{ item.tap_color_text }}</strong>
+        <strong>{{ item.tap_tipo_text | frase }} · {{ item.tap_color_text | frase }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "CONTRAPESO" | translate }}</span>
-        <strong>{{ item.con_tipo_text }} · {{ item.con_color_text }}</strong>
+        <strong>{{ item.con_tipo_text | frase }} · {{ item.con_color_text | frase }}</strong>
       </div>
     </div>
 

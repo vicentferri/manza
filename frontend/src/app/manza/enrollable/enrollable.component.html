@@ -119,7 +119,7 @@
                   (change)="ChangeTipo1Opacidad()"
                 >
                   <option *ngFor="let pow of TiposTejido" [value]="pow">
-                    {{ pow }}
+                    {{ pow | frase }}
                   </option>
                 </select>
               </div>
@@ -133,7 +133,7 @@
                   (change)="ChangeTipo1Tejido()"
                 >
                   <option *ngFor="let pow of tejidos" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
                 <small class="cfg-ayuda" *ngIf="CodigoProv">Ref. {{ CodigoProv }}</small>
@@ -148,7 +148,7 @@
                   (change)="ChangeTejidoColor()"
                 >
                   <option *ngFor="let pow of tejidosC" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo1_Tejido" [color]="Tipo1_TejidoColor" [colores]="tejidosC"></app-tejido-imagen>
@@ -162,7 +162,7 @@
                   [(ngModel)]="Tipo1_TejidoSalida"
                 >
                   <option *ngFor="let pow of tejidosS" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -225,7 +225,7 @@
                   (change)="ChangeAccionamiento()"
                 >
                   <option *ngFor="let pow of items1" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -239,7 +239,7 @@
                   (change)="ChangeAccionamientoMarca()"
                 >
                   <option *ngFor="let pow of items2" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -262,7 +262,7 @@
                   (change)="ChangeTipo1Color()"
                 >
                   <option *ngFor="let pow of items3" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -277,7 +277,7 @@
                   [disabled]="Tipo1_RadioMando_Disabled"
                 >
                   <option *ngFor="let pow of radiomando" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -291,7 +291,7 @@
                   (change)="changeCargador();"
                 >
                   <option *ngFor="let pow of cargadores" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -304,7 +304,7 @@
                   [(ngModel)]="Tipo1_Posicion"
                 >
                   <option *ngFor="let pow of PosicionMando" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -338,7 +338,7 @@
                       [(ngModel)]="Tipo1_ColorCadena"
                     >
                       <option *ngFor="let pow of colorCadena" [value]="pow.id">
-                        {{ pow.text }}
+                        {{ pow.text | frase }}
                       </option>
                     </select>
                   </div>
@@ -361,7 +361,7 @@
                       (change)="Change_ColorCadenaContinua()"
                     >
                       <option *ngFor="let pow of colorCadena" [value]="pow.id">
-                        {{ pow.text }}
+                        {{ pow.text | frase }}
                       </option>
                     </select>
                   </div>
@@ -374,7 +374,7 @@
                       [(ngModel)]="Tipo1_AlturaCadena"
                     >
                       <option *ngFor="let pow of alturaCadena" [value]="pow.id">
-                        {{ pow.text }}
+                        {{ pow.text | frase }}
                       </option>
                     </select>
                   </div>
@@ -397,7 +397,7 @@
                       (change)="tarifaCadena()"
                     >
                       <option *ngFor="let pow of alturaCadenaM" [value]="pow.id">
-                        {{ pow.text }}
+                        {{ pow.text | frase }}
                       </option>
                     </select>
                   </div>
@@ -436,7 +436,7 @@
                   (change)="ChangeTipo1Soporte()"
                 >
                   <option *ngFor="let pow of soportes" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -450,7 +450,7 @@
                   (change)="ChangeTipo1SoporteColor()"
                 >
                   <option *ngFor="let pow of soportesC" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -468,7 +468,7 @@
                   (change)="ChangeTipo1Tapa()"
                 >
                   <option *ngFor="let pow of tapas" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -481,7 +481,7 @@
                   [(ngModel)]="Tipo1_TapaC"
                 >
                   <option *ngFor="let pow of tapasC" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -500,7 +500,7 @@
                   style="width: 100%"
                 >
                   <option *ngFor="let pow of contrapesos" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -513,7 +513,7 @@
                   [(ngModel)]="Tipo1_ContrapesoC"
                 >
                   <option *ngFor="let pow of contrapesosC" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -538,7 +538,7 @@
                   [(ngModel)]="Tipo1_Cajon"
                 >
                   <option *ngFor="let pow of Cajones" [value]="pow.idrow">
-                    {{ pow.descripcion }}
+                    {{ pow.descripcion | frase }}
                   </option>
                 </select>
               </div>
@@ -567,7 +567,7 @@
                   (change)="ChangeRal()"
                 >
                   <option *ngFor="let pow of items90" [value]="pow.id">
-                    {{ pow.text }}
+                    {{ pow.text | frase }}
                   </option>
                 </select>
               </div>
@@ -632,7 +632,7 @@
                     [(ngModel)]="Tipo1_Guia"
                   >
                     <option *ngFor="let pow of Guias" [value]="pow.idrow">
-                      {{ pow.descripcion }}
+                      {{ pow.descripcion | frase }}
                     </option>
                   </select>
                 </div>
@@ -675,7 +675,7 @@
                   [(ngModel)]="Tipo1_Estancia"
                 >
                   <option *ngFor="let pow of Tipo1_Estancias" [value]="pow.idrow">
-                    {{ pow.descripcion }}
+                    {{ pow.descripcion | frase }}
                   </option>
                 </select>
               </div>

@@ -7,7 +7,7 @@
         <strong>{{ (item.PV_SEL_2 ? "VERTICALINCLINADA" : "VERTICAL") | translate }}</strong>
         <span class="cfg-mono" *ngIf="item.PV_SEL_1">{{ item.PV_Ancho_1 }} × {{ item.PV_Alto_1 }} cm</span>
         <span class="cfg-mono" *ngIf="item.PV_SEL_2">{{ item.PV_Ancho_2 }} × {{ item.PV_AlturaMin_2 }}/{{ item.PV_AlturaMax_2 }} cm</span>
-        <span *ngIf="item.PV_SEL_1 && item.PV_Tejido_text">· {{ item.PV_Tejido_text }} · {{ item.PV_Tejido_c1_text }}</span>
+        <span *ngIf="item.PV_SEL_1 && item.PV_Tejido_text">· {{ item.PV_Tejido_text | frase }} · {{ item.PV_Tejido_c1_text | frase }}</span>
       </div>
       <div class="cfg-linea-sub">
         <span *ngIf="item.TipoVertical == 1">{{ "TEJIDOMASRIEL" | translate }}</span>
@@ -74,8 +74,8 @@
         <div class="cfg-dato cfg-dato-ancho">
           <span>{{ "TEJIDO" | translate }}</span>
           <strong>
-            {{ item.PV_Tejido_text }} · {{ item.PV_Tejido_c1_text }}
-            <ng-container *ngIf="item.PV_Tejido_c2_text"> / {{ item.PV_Tejido_c2_text }}</ng-container>
+            {{ item.PV_Tejido_text | frase }} · {{ item.PV_Tejido_c1_text | frase }}
+            <ng-container *ngIf="item.PV_Tejido_c2_text"> / {{ item.PV_Tejido_c2_text | frase }}</ng-container>
           </strong>
         </div>
       </ng-container>

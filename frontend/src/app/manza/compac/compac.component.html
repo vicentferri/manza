@@ -38,7 +38,7 @@
               <label>{{ RalC_Label | translate }}<span class="cfg-extra" *ngIf="RalC_Extra"> {{ RalC_Extra }}</span></label>
               <select name="compac_Ral" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="compac.Ral" (change)="ChangeRalC()">
-                <option *ngFor="let pow of items90" [value]="pow.id">{{ pow.text }}</option>
+                <option *ngFor="let pow of items90" [value]="pow.id">{{ pow.text | frase }}</option>
               </select>
             </div>
           </div>
@@ -152,14 +152,14 @@
               <label>{{ "TIPO DE TEJIDO" | translate }}</label>
               <select class="form-control form-control-sm" [ngModelOptions]="{ standalone: true }"
                 [(ngModel)]="Tipo4_Opacidad" (change)="ChangeTipo4Opacidad()">
-                <option *ngFor="let pow of TiposTejido_compac" [value]="pow">{{ pow }}</option>
+                <option *ngFor="let pow of TiposTejido_compac" [value]="pow">{{ pow | frase }}</option>
               </select>
             </div>
             <div class="cfg-field" [class.cfg-error]="Tipo4_Tejido == '-1'">
               <label>{{ "SERIE" | translate }}</label>
               <select name="Tipo4_Tejido" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_Tejido" (change)="ChangeTipo4Tejido()">
-                <option *ngFor="let pow of tejidos_compac" [value]="pow.id">{{ pow.text }}</option>
+                <option *ngFor="let pow of tejidos_compac" [value]="pow.id">{{ pow.text | frase }}</option>
               </select>
               <small class="cfg-ayuda" *ngIf="CodigoProv4">Ref. {{ CodigoProv4 }}</small>
             </div>
@@ -167,7 +167,7 @@
               <label>{{ "COLOR" | translate }}</label>
               <select name="Tipo4_TejidoColor" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_TejidoColor" (change)="ChangeTipo4Color()">
-                <option *ngFor="let pow of tejidos_compac_colores" [value]="pow.id">{{ pow.text }}</option>
+                <option *ngFor="let pow of tejidos_compac_colores" [value]="pow.id">{{ pow.text | frase }}</option>
               </select>
               <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo4_Tejido" [color]="Tipo4_TejidoColor" [colores]="tejidos_compac_colores"></app-tejido-imagen>
             </div>
@@ -208,7 +208,7 @@
               <label>{{ "ESTANCIA" | translate }}</label>
               <select name="Tipo4_Estancia" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo4_Estancia">
-                <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
+                <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion | frase }}</option>
               </select>
             </div>
             <div class="cfg-field">
