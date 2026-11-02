@@ -191,11 +191,11 @@
                     </ng-container>
                 </ng-container>
 
-                <!-- 4. SOPORTES Y TAPAS (por sistema) -->
+                <!-- 4. SOPORTES, TAPAS Y CONTRAPESOS (por sistema) -->
                 <ng-container *ngIf="seccion === 'soportes'">
                     <div class="acc-intro">
-                        Elija un sistema y marque qué soportes y qué tapas se ofrecen con él. Los soportes y las tapas se dan de alta en
-                        Listas de opciones. Los contrapesos valen para todos los sistemas y no se marcan aquí.
+                        Elija un sistema y marque qué soportes, qué tapas y qué contrapesos se ofrecen con él. Se dan de alta en
+                        Listas de opciones.
                     </div>
                     <div class="row">
                         <div class="col-lg-5">
@@ -208,6 +208,7 @@
                                 <ul class="nav nav-tabs acc-tabs">
                                     <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaSistema === 'soportes'" (click)="pestanaSistema = 'soportes'">Soportes</a></li>
                                     <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaSistema === 'tapas'" (click)="pestanaSistema = 'tapas'">Tapas</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaSistema === 'contrapesos'" (click)="pestanaSistema = 'contrapesos'">Contrapesos</a></li>
                                 </ul>
                                 <app-acc-relacion *ngIf="pestanaSistema === 'soportes'" relacion="sistema_soporte" [id]="sistemaSel.id"
                                     [titulo]="'Soportes de ' + sistemaSel.nombre"
@@ -217,9 +218,13 @@
                                     [titulo]="'Tapas de ' + sistemaSel.nombre"
                                     vacio="No hay tapas. Añádalas en Listas de opciones → Tapas."
                                     (cambio)="recargaSistemas = recargaSistemas + 1"></app-acc-relacion>
+                                <app-acc-relacion *ngIf="pestanaSistema === 'contrapesos'" relacion="sistema_contrapeso" [id]="sistemaSel.id"
+                                    [titulo]="'Contrapesos de ' + sistemaSel.nombre"
+                                    vacio="No hay contrapesos. Añádalos en Listas de opciones → Contrapesos."
+                                    (cambio)="recargaSistemas = recargaSistemas + 1"></app-acc-relacion>
                             </ng-container>
                             <ng-template #elijaSistema>
-                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un sistema para marcar sus soportes y sus tapas.</div>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un sistema para marcar sus soportes, sus tapas y sus contrapesos.</div>
                             </ng-template>
                         </div>
                     </div>

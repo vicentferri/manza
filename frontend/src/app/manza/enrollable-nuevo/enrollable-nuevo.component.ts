@@ -12,7 +12,7 @@ import { AccConfiguradorService } from './acc-configurador.service';
  * Pasos: medidas → accionamiento
  * (accionamiento → sistema → cadena: tipo, altura o longitud, color / motor: tipo, modelo,
  * mando, cargador, batería) → tejido (los del maestro que ofrece el sistema elegido, Productos → Tejidos;
- * el criterio lo elige el configurador según el ancho) → soporte y tapa (los del sistema) y contrapeso (todos), cada uno con
+ * el criterio lo elige el configurador según el ancho) → soporte, tapa y contrapeso (los del sistema), cada uno con
  * su color. Además: posición (Derecha/Izquierda), estancia y observaciones, impresión digital (sí/no
  * y un texto; con sí, solo tejidos aptos) y longitud tecleada en la cadena a medida.
  * Cajón y guía llegarán cuando estén en el modelo nuevo.
@@ -188,7 +188,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    /* Al cambiar un paso se vacían los que dependen de él */
    cambiar(paso: string): void {
       const orden = ['accionamiento', 'sistema', 'tipo_cadena', 'altura', 'tipo_motor', 'modelo_motor', 'soporte', 'tapa', 'contrapeso'];
-      const piezasSistema = ['soporte', 'soporte_color', 'tapa', 'tapa_color'];
+      const piezasSistema = ['soporte', 'soporte_color', 'tapa', 'tapa_color', 'contrapeso', 'contrapeso_color'];
       const dependientes: { [p: string]: string[] } = {
          accionamiento: ['sistema', 'tipo_cadena', 'altura', 'color_cadena', 'tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
          sistema: ['tipo_motor', 'modelo_motor', 'mando', 'cargador', 'bateria'].concat(piezasSistema),
@@ -270,7 +270,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    get cargadores(): any[] { return this.modeloSel ? this.opc.cargadores.filter(x => this.modeloSel.cargadores.indexOf(x.id) >= 0) : []; }
    get baterias(): any[] { return this.modeloSel ? this.opc.baterias.filter(x => this.modeloSel.baterias.indexOf(x.id) >= 0) : []; }
 
-   /* Soporte y tapa: los marcados para el sistema elegido; contrapeso: todos. Cada color, de los que admite su pieza */
+   /* Soporte, tapa y contrapeso: los marcados para el sistema elegido. Cada color, de los que admite su pieza */
    private deSistema(lista: any[]): any[] {
       const sistema = parseInt(this.sel.sistema, 10);
       return this.opc && sistema ? (lista || []).filter(x => x.sistemas.indexOf(sistema) >= 0) : [];
@@ -284,7 +284,7 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    get tapas(): any[] { return this.deSistema(this.opc ? this.opc.tapas : []); }
    get tapaSel(): any { return this.porId(this.tapas, this.sel.tapa); }
    get coloresTapa(): any[] { return this.coloresDe(this.tapaSel, this.opc ? this.opc.coloresTapa : []); }
-   get contrapesos(): any[] { return this.opc && this.sel.sistema ? this.opc.contrapesos : []; }
+   get contrapesos(): any[] { return this.deSistema(this.opc ? this.opc.contrapesos : []); }
    get contrapesoSel(): any { return this.porId(this.contrapesos, this.sel.contrapeso); }
    get coloresContrapeso(): any[] { return this.coloresDe(this.contrapesoSel, this.opc ? this.opc.coloresContrapeso : []); }
 
