@@ -1,4 +1,5 @@
-import { Component, OnInit, Input, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef, NgZone } from '@angular/core';
+import { destruirGrids } from '../grid-destruir';
 import { SearchArticleType } from '../../models/SearchArticleType';
 import { jqxGridComponent } from 'jqwidgets-framework/jqwidgets-ts/angular_jqxgrid';
 import { HaruService } from '../../services/haru.service';
@@ -15,7 +16,7 @@ import { ModalDirective } from 'ngx-bootstrap/modal';
   styleUrls: ['./search-artikel.component.css'],
   providers: [HaruService]
 })
-export class SearchArtikelComponent implements OnInit {
+export class SearchArtikelComponent implements OnInit, OnDestroy {
 
   @ViewChild('gridSReference', { static: false }) mySGrid!: jqxGridComponent;
   @ViewChild('staticModalAdd', { static: false }) modalAdd!: ModalDirective;
@@ -274,7 +275,8 @@ export class SearchArtikelComponent implements OnInit {
 
   constructor(private service: HaruService,
     private toaster: ToastrService,
-    vRef: ViewContainerRef) {
+    vRef: ViewContainerRef,
+    private zone: NgZone) {
 
     // this.toaster.setRootViewContainerRef(vRef);
     this.editable = 1;
@@ -293,8 +295,16 @@ export class SearchArtikelComponent implements OnInit {
     this.loadMaster();
   }
 
+  /* Al salir se destruye la rejilla: si no, sus desplegables se quedan en el <body> (ver shared/grid-destruir.ts) */
+  ngOnDestroy() {
+    destruirGrids(this.mySGrid);
+  }
+
   ngAfterViewInit() {
-    this.mySGrid.createComponent(this.settings);
+    /* Fuera de la zona de Angular: mientras la rejilla está oculta (ventana del buscador cerrada) jqx la
+       comprueba cada 100-300 ms, y dentro de la zona cada comprobación revisaba toda la pantalla que la contiene.
+       Los eventos que cambian datos (selección y edición de fila) vuelven a la zona */
+    this.zone.runOutsideAngular(() => this.mySGrid.createComponent(this.settings));
     if (this.mySGrid != null) {
       this.createButtons();
     }
@@ -551,6 +561,10 @@ export class SearchArtikelComponent implements OnInit {
   }
 
   GridOnRowSelect(event: any): void {
+    if (!NgZone.isInAngularZone()) {
+      this.zone.run(() => this.GridOnRowSelect(event));
+      return;
+    }
     console.log(event.args);
 
     let tipoCalculo = event.args.row.tipocalculo;
@@ -604,6 +618,10 @@ export class SearchArtikelComponent implements OnInit {
   };
 
   cellEndEditEvent(event) {
+    if (!NgZone.isInAngularZone()) {
+      this.zone.run(() => this.cellEndEditEvent(event));
+      return;
+    }
 
     if (event.args.value != event.args.oldvalue) {
 
@@ -699,6 +717,16 @@ export class SearchArtikelComponent implements OnInit {
   }
 
   createButtons(): void {
+
+    /* Los contenedores #exportButton / #deleteButton solo existen si la rejilla los pinta en su barra de estado
+       (createButtonsContainers), y esta rejilla no tiene barra de estado. Sin esta comprobación, los selectores
+       por id cogían los botones de OTRA pantalla que siguiera en la página (p. ej. el Borrar de
+       tarifas-simulate-search) y les enganchaban el Export y el Borrar de artículos de este buscador; o, si no
+       había ninguno, jqx lanzaba "Invalid Selector" */
+    const propio = (selector: string) => !!(this.mySGrid && this.mySGrid.host && this.mySGrid.host.find(selector).length > 0);
+    if (!propio('#exportButton') || !propio('#deleteButton')) {
+      return;
+    }
 
     let exportBtnOptions = {
       width: 100, height: 25, value: 'Export', textPosition: 'center'

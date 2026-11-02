@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, HostListener, NgZone } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ModalDirective } from 'ngx-bootstrap/modal';
 import { SearchArtikelComponent } from '../../../shared/search-artikel/search-artikel.component';
@@ -11,6 +11,8 @@ import {
   validarCondicion, validarConsumo, validarRegla
 } from './fabricacion-reglas.util';
 import * as XLSX from 'xlsx';
+import { recargarGrid } from '../../../shared/grid-recarga';
+import { destruirGrids } from '../../../shared/grid-destruir';
 
 /*
  * Configuración de la fabricación por reglas (motor v3). Hoy solo el sistema HONEYCOMB.
@@ -62,7 +64,7 @@ const ANCHO_MAXIMO = 420;
   styleUrls: ['./artikeln-fac-cd-v3.component.css'],
   providers: [HaruService]
 })
-export class ArtikelnFacCdV3Component implements OnInit {
+export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   @ViewChild('gridReference', { static: false }) myGrid!: jqxGridComponent;
   @ViewChild('gridReference2', { static: false }) myGrid2!: jqxGridComponent;
@@ -70,6 +72,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
   @ViewChild('gridReference4', { static: false }) myGrid4!: jqxGridComponent;
   @ViewChild('staticModalAdd', { static: false }) modalAdd!: ModalDirective;
   @ViewChild('modalRegla', { static: false }) modalRegla!: ModalDirective;
+  @ViewChild('modalCopiar', { static: false }) modalCopiar!: ModalDirective;
   @ViewChild('SearchArtikel', { static: false }) search!: SearchArtikelComponent;
 
   public getScreenWidth: any;
@@ -109,6 +112,20 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
   /* Valores posibles de los parámetros con catálogo: { '@COLOR_PERFIL_ID': [{valor, texto}] } */
   valoresParametro: { [nombre: string]: { valor: string, texto: string }[] } = {};
+
+  /* Reglas del juego elegido (las de la tabla) */
+  reglas: any[] = [];
+
+  /* Ventana "Copiar reglas": reglas elegidas (idrow -> true), destino (clave de un juego o 'nuevo:<id
+     de SOL_ACC_SISTEMA>') y cliente de las copias ('mismo', 'todos' o 'cliente' con copia.cliente) */
+  copia = {
+    seleccion: {} as { [idrow: number]: boolean },
+    filtroCliente: '',
+    destino: '',
+    clienteModo: 'mismo',
+    cliente: ''
+  };
+  copiando = false;
 
   /* Errores de validación por regla (idrow) */
   erroresReglas: { [idrow: number]: ErroresRegla } = {};
@@ -455,16 +472,45 @@ export class ArtikelnFacCdV3Component implements OnInit {
   };
 
   constructor(private service: HaruService,
-    private toaster: ToastrService) {
+    private toaster: ToastrService,
+    private zone: NgZone) {
+  }
+
+  /* ---------------- REJILLAS FUERA DE LA ZONA DE ANGULAR ----------------
+     jqxGrid programa temporizadores (cada 100-300 ms) mientras una rejilla está oculta (pestañas sin abrir) para
+     pintarla cuando se vea. Dentro de la zona de Angular cada uno provocaba una revisión completa de la pantalla
+     (~65 por segundo sin tocar nada), y las animaciones iban a saltos. Por eso todo lo que crea o repinta las
+     rejillas se hace fuera de la zona, y los eventos de la rejilla que cambian la pantalla vuelven a ella. */
+
+  private fueraDeZona<T>(fn: () => T): T {
+    return this.zone.runOutsideAngular(fn);
+  }
+
+  /* true si la llamada venía de fuera de la zona: el manejador se ha vuelto a lanzar dentro y no debe seguir */
+  private relanzarEnZona(fn: () => void): boolean {
+    if (NgZone.isInAngularZone()) {
+      return false;
+    }
+    this.zone.run(fn);
+    return true;
   }
 
   ngAfterViewInit() {
-    this.myGrid.createComponent(this.settings);
-    this.myGrid2.createComponent(this.settings2);
-    this.myGrid3.createComponent(this.settingsDet);
-    this.myGrid4.createComponent(this.settings4);
+    this.fueraDeZona(() => {
+      this.myGrid.createComponent(this.settings);
+      this.myGrid2.createComponent(this.settings2);
+      this.myGrid3.createComponent(this.settingsDet);
+      this.myGrid4.createComponent(this.settings4);
+    });
     this.performResize();
     this.loadProductos();
+  }
+
+  /* jqxGrid saca al <body> los desplegables de los filtros y los menús de columna y engancha listeners
+     en document; si no se destruye la rejilla al salir, todo eso se acumula con cada cambio de pantalla
+     y la página se va ralentizando */
+  ngOnDestroy() {
+    destruirGrids(this.myGrid, this.myGrid2, this.myGrid3, this.myGrid4);
   }
 
   ngOnInit() {
@@ -476,8 +522,10 @@ export class ArtikelnFacCdV3Component implements OnInit {
   performResize() {
     if (this.myGrid != null) {
       let height = 0.7 * this.getScreenHeight;
-      this.myGrid.height(height);
-      this.myGrid2.height(height);
+      this.fueraDeZona(() => {
+        this.myGrid.height(height);
+        this.myGrid2.height(height);
+      });
     }
   }
 
@@ -507,13 +555,15 @@ export class ArtikelnFacCdV3Component implements OnInit {
   /* Se aplica al cargar datos o al mostrar la pestaña (ajustarColumnas). Antes de que jqxGrid haya
      pintado la tabla, hidecolumn falla: no debe cortar el arranque de la pantalla */
   aplicarColumnasOcultas() {
-    try {
-      this.columnasOcultables.forEach(c => {
-        let oculta = this.estaOculta(c);
-        c.campos.forEach(campo => oculta ? this.myGrid.hidecolumn(campo) : this.myGrid.showcolumn(campo));
-      });
-    }
-    catch (e) { }
+    this.fueraDeZona(() => {
+      try {
+        this.columnasOcultables.forEach(c => {
+          let oculta = this.estaOculta(c);
+          c.campos.forEach(campo => oculta ? this.myGrid.hidecolumn(campo) : this.myGrid.showcolumn(campo));
+        });
+      }
+      catch (e) { }
+    });
   }
 
   /* Solo cambia la vista: los valores de las reglas no se tocan */
@@ -633,7 +683,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
     this.service.HTTP_Get('/sm/fabricacion/busquedas' + this.querySistema()).subscribe(
       data => {
         this.busquedas = data.Table;
-        this.myGrid2.refresh();
+        this.fueraDeZona(() => this.myGrid2.refresh());
       },
       error => {
         this.toaster.error(this.errorMessage(error));
@@ -665,6 +715,16 @@ export class ArtikelnFacCdV3Component implements OnInit {
       error => {
         this.toaster.error(this.errorMessage(error));
       });
+  }
+
+  /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
+     el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
+  parametrosCondicion(c: Condicion): string[] {
+    let actual = String(c.parametro || '').toUpperCase();
+    return this.nombresParametros.filter(p => {
+      let nombre = String(p).toUpperCase();
+      return !nombre.endsWith('_ID') || nombre == actual;
+    });
   }
 
   /* El valor de una condición se elige de una lista si el parámetro tiene catálogo y el operador es "igual a" */
@@ -740,7 +800,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
         this.nombresParametros = data.Table.map(p => p.name);
         this.source2.localdata = data.Table;
         this.dataAdapter2.dataBind();
-        this.myGrid2.updatebounddata();
+        this.fueraDeZona(() => this.myGrid2.updatebounddata());
         this.loadDetails();
       },
       error => {
@@ -827,6 +887,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
   }
 
   Cellclick2(event) {
+    if (this.relanzarEnZona(() => this.Cellclick2(event))) return;
     let args = event.args;
     let row = args.row.bounddata;
     if (args.datafield == 'idrow') {
@@ -860,7 +921,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
   /* ---------------- REGLAS: TABLA ---------------- */
 
-  loadDetails() {
+  /* Recarga las reglas. conservar: la rejilla se queda donde estaba (al crear, borrar o duplicar jqxGrid
+     la devolvería arriba del todo); seleccionar: idrow de la regla a la que salta y que deja marcada */
+  loadDetails(opciones: { conservar?: boolean, seleccionar?: any } = {}) {
     this.service.HTTP_Get('/sm/fabricacion/reglas' + this.querySistema()).subscribe(
       data => {
         this.erroresReglas = {};
@@ -873,9 +936,8 @@ export class ArtikelnFacCdV3Component implements OnInit {
           }
         });
 
-        this.source.localdata = data.Table;
-        this.dataAdapter.dataBind();
-        this.myGrid.updatebounddata("cells");
+        this.reglas = data.Table;
+        this.fueraDeZona(() => recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones));
       },
       error => {
         this.toaster.error(this.errorMessage(error));
@@ -883,6 +945,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
   }
 
   Cellclick(event) {
+    if (this.relanzarEnZona(() => this.Cellclick(event))) return;
     let args = event.args;
     if (args.datafield != 'acciones') {
       return;
@@ -897,6 +960,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
   }
 
   Rowdoubleclick(event) {
+    if (this.relanzarEnZona(() => this.Rowdoubleclick(event))) return;
     this.EditarRegla(event.args.row.bounddata);
   }
 
@@ -906,13 +970,179 @@ export class ArtikelnFacCdV3Component implements OnInit {
       this.service.HTTP_Post('/sm/fabricacion/reglas/delete', values).subscribe(
         data => {
           if (data.message == 'OK') {
-            this.loadDetails();
+            this.loadDetails({ conservar: true });
           }
         },
         error => {
           this.toaster.error(this.errorMessage(error));
         });
     }
+  }
+
+  /* ---------------- COPIAR REGLAS ----------------
+     Copia las reglas elegidas a otro juego del mismo producto (o al mismo, p. ej. para sacar las reglas
+     propias de un cliente de las generales), existente o nuevo. Se copian aunque usen parámetros que el
+     destino no tiene: salen con error en la tabla hasta que se creen */
+
+  AbrirCopiar() {
+    if (this.reglas.length == 0) {
+      this.toaster.warning('Esta fabricación no tiene reglas que copiar', 'Copiar reglas');
+      return;
+    }
+    this.copia = { seleccion: {}, filtroCliente: '', destino: '', clienteModo: 'mismo', cliente: '' };
+    this.modalCopiar.show();
+  }
+
+  /* Reglas de la lista, con el filtro de cliente ('' = todas, 'todos' = generales, o el id) */
+  reglasCopiables(): any[] {
+    let filtro = this.copia.filtroCliente;
+    if (filtro === '') return this.reglas;
+    if (filtro === 'todos') return this.reglas.filter(r => r.cliente === null || r.cliente === undefined);
+    return this.reglas.filter(r => String(r.cliente) == filtro);
+  }
+
+  /* Clientes que tienen reglas en este juego (para el filtro) */
+  clientesConReglas(): { idrow: any, descripcion: string }[] {
+    let vistos = {};
+    let lista = [];
+    this.reglas.filter(r => r.cliente !== null && r.cliente !== undefined).forEach(r => {
+      if (!vistos[r.cliente]) {
+        vistos[r.cliente] = true;
+        lista.push({ idrow: r.cliente, descripcion: r.cliente_nombre });
+      }
+    });
+    return lista;
+  }
+
+  textoCondicionesRegla(r: any): string {
+    let partes = [];
+    let campos = ['nombre_parametro1', 'nombre_parametro2', 'nombre_parametro3', 'nombre_parametro4'];
+    let operaciones = ['operacion', 'operacion2', 'operacion3'];
+    campos.forEach((campo, i) => {
+      let texto = String(r[campo] || '').trim();
+      if (texto == '') return;
+      if (partes.length > 0) partes.push(r[operaciones[i - 1]] == 'O' ? 'O' : 'Y');
+      partes.push(texto);
+    });
+    return partes.length == 0 ? 'Siempre' : partes.join(' ');
+  }
+
+  get seleccionadas(): number[] {
+    return this.reglas.filter(r => this.copia.seleccion[r.idrow]).map(r => r.idrow);
+  }
+
+  todasMarcadas(): boolean {
+    let lista = this.reglasCopiables();
+    return lista.length > 0 && lista.every(r => this.copia.seleccion[r.idrow]);
+  }
+
+  MarcarTodas(marcar: boolean) {
+    this.reglasCopiables().forEach(r => this.copia.seleccion[r.idrow] = marcar);
+  }
+
+  erroresCopia(): string[] {
+    let errores = [];
+    if (this.seleccionadas.length == 0) errores.push('Marque las reglas que quiere copiar');
+    if (!this.copia.destino) errores.push('Elija la fabricación de destino');
+    if (this.copia.clienteModo == 'cliente' && !this.copia.cliente) errores.push('Elija el cliente de las reglas copiadas');
+    return errores;
+  }
+
+  /* Clientes (null = Todos) que tendrán las reglas copiadas */
+  clientesDestinoCopia(): any[] {
+    if (this.copia.clienteModo == 'todos') return [null];
+    if (this.copia.clienteModo == 'cliente') return [Number(this.copia.cliente)];
+    let ids = this.seleccionadas;
+    let clientes = this.reglas.filter(r => ids.indexOf(r.idrow) >= 0)
+      .map(r => r.cliente === undefined ? null : r.cliente);
+    return clientes.filter((c, i) => clientes.indexOf(c) === i);
+  }
+
+  CopiarReglas() {
+    if (this.erroresCopia().length > 0 || this.copiando) {
+      return;
+    }
+    let destino = String(this.copia.destino);
+    this.copiando = true;
+
+    /* Destino nuevo: primero se crea el juego (como "Añadir sistema") y después se copia */
+    if (destino.indexOf('nuevo:') === 0) {
+      let values = JSON.stringify({ producto: this.producto, acc_sistema_id: destino.substring(6) });
+      this.service.HTTP_Post('/sm/fabricacion/sistemas', values).subscribe(
+        data => {
+          if (data.message == 'OK') {
+            this.enviarCopia(data.sistema, true);
+          } else {
+            this.copiando = false;
+          }
+        },
+        error => {
+          this.copiando = false;
+          this.toaster.error(this.errorMessage(error), 'Copiar reglas');
+        });
+      return;
+    }
+
+    /* Destino existente: se avisa si ya tiene reglas de esos clientes (quedarían repetidas) */
+    this.service.HTTP_Get('/sm/fabricacion/reglas?sistema=' + encodeURIComponent(destino)).subscribe(
+      data => {
+        let clientes = this.clientesDestinoCopia();
+        let coinciden = data.Table.filter(r => clientes.indexOf(r.cliente === undefined ? null : r.cliente) >= 0).length;
+        if (coinciden > 0 && !confirm('La fabricación de destino ya tiene ' + coinciden
+          + (coinciden == 1 ? ' regla' : ' reglas') + ' de ese cliente. Las copias se añaden a las que hay'
+          + ' (si ya estaban, quedarán repetidas). ¿Desea continuar?')) {
+          this.copiando = false;
+          return;
+        }
+        this.enviarCopia(destino, false);
+      },
+      error => {
+        this.copiando = false;
+        this.toaster.error(this.errorMessage(error), 'Copiar reglas');
+      });
+  }
+
+  enviarCopia(destino: string, nuevo: boolean) {
+    let body = {
+      origen: this.sistema,
+      destino: destino,
+      ids: this.seleccionadas,
+      cliente_modo: this.copia.clienteModo,
+      cliente: this.copia.clienteModo == 'cliente' ? this.copia.cliente : null
+    };
+    this.service.HTTP_Post('/sm/fabricacion/reglas/copiar', JSON.stringify(body)).subscribe(
+      data => {
+        this.copiando = false;
+        this.modalCopiar.hide();
+        this.toaster.success(data.copiadas + (data.copiadas == 1 ? ' regla copiada' : ' reglas copiadas')
+          + (nuevo ? ' a la fabricación nueva' : ''), 'Copiar reglas');
+        if (data.faltan && data.faltan.length > 0) {
+          this.toaster.warning('La fabricación de destino no tiene ' + (data.faltan.length == 1 ? 'el parámetro ' : 'los parámetros ')
+            + data.faltan.join(', ') + '. Las reglas que los usan salen con error hasta que se creen.',
+            'Copiar reglas', { timeOut: 15000 });
+        }
+        /* Se pasa a la fabricación de destino para revisar las copias */
+        if (nuevo) {
+          this.loadSistemas(destino);
+        } else if (destino != this.sistema) {
+          this.sistema = destino;
+          this.ChangeSistema();
+        } else {
+          this.loadDetails({ conservar: true });
+        }
+      },
+      error => {
+        this.copiando = false;
+        if (nuevo) {
+          /* El juego se creó pero sin reglas: se recarga para que aparezca */
+          this.modalCopiar.hide();
+          this.loadSistemas(destino);
+          this.toaster.error('Se ha creado la fabricación, pero no se han podido copiar las reglas: '
+            + this.errorMessage(error), 'Copiar reglas', { timeOut: 15000 });
+        } else {
+          this.toaster.error(this.errorMessage(error), 'Copiar reglas');
+        }
+      });
   }
 
   /* ---------------- AJUSTE DE COLUMNAS AL CONTENIDO ----------------
@@ -988,12 +1218,14 @@ export class ArtikelnFacCdV3Component implements OnInit {
   }
 
   ajustarColumnas(): boolean {
-    try {
-      return this.ajustarColumnasReglas();
-    }
-    catch (e) {
-      return false;
-    }
+    return this.fueraDeZona(() => {
+      try {
+        return this.ajustarColumnasReglas();
+      }
+      catch (e) {
+        return false;
+      }
+    });
   }
 
   ajustarColumnasReglas(): boolean {
@@ -1025,12 +1257,14 @@ export class ArtikelnFacCdV3Component implements OnInit {
   }
 
   ajustarColumnasSimulacion(): boolean {
-    try {
-      return this.ajustarColumnasSimulacionGrids();
-    }
-    catch (e) {
-      return false;
-    }
+    return this.fueraDeZona(() => {
+      try {
+        return this.ajustarColumnasSimulacionGrids();
+      }
+      catch (e) {
+        return false;
+      }
+    });
   }
 
   ajustarColumnasSimulacionGrids(): boolean {
@@ -1056,11 +1290,11 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
   /* jqxGrid termina de pintar una tabla que estaba oculta un poco después de mostrarse */
   reintentar(accion: () => boolean, intentos: number = 10) {
-    setTimeout(() => {
+    this.fueraDeZona(() => setTimeout(() => {
       if (!accion() && intentos > 1) {
         this.reintentar(accion, intentos - 1);
       }
-    }, 150);
+    }, 150));
   }
 
   /* ---------------- REGLAS: VENTANA DE EDICION ---------------- */
@@ -1385,7 +1619,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
         if (data.message == 'OK') {
           this.toaster.success(this.regla.idrow > 0 ? 'Regla guardada' : 'Regla creada', 'Reglas');
           this.modalRegla.hide();
-          this.loadDetails();
+          this.loadDetails({ conservar: true, seleccionar: data.idrow });
         }
       },
       error => {
@@ -1563,13 +1797,15 @@ export class ArtikelnFacCdV3Component implements OnInit {
   /* ---------------- SIMULACION ---------------- */
 
   mostrarResultado(fabricacion: any[], parametros: any[]) {
-    this.sourceDet.localdata = fabricacion;
-    this.dataAdapterDet.dataBind();
-    this.myGrid3.updatebounddata();
+    this.fueraDeZona(() => {
+      this.sourceDet.localdata = fabricacion;
+      this.dataAdapterDet.dataBind();
+      this.myGrid3.updatebounddata();
 
-    this.source4.localdata = parametros;
-    this.dataAdapter4.dataBind();
-    this.myGrid4.updatebounddata();
+      this.source4.localdata = parametros;
+      this.dataAdapter4.dataBind();
+      this.myGrid4.updatebounddata();
+    });
   }
 
   Simulate() {

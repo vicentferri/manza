@@ -222,6 +222,10 @@
               <button class="btn btn-primary btn-sm" (click)="NuevaRegla()">
                 <i class="fa fa-plus"></i>&nbsp;Nueva regla
               </button>
+              <button class="btn btn-outline-primary btn-sm" (click)="AbrirCopiar()"
+                title="Copiar las reglas que elija a otra fabricación del mismo producto (o a esta, con otro cliente)">
+                <i class="fa fa-copy"></i>&nbsp;Copiar reglas…
+              </button>
               <div class="fab-columnas">
                 <button class="btn btn-outline-secondary btn-sm" (click)="menuColumnas = !menuColumnas"
                   title="Ocultar o mostrar columnas (solo cambia la vista)">
@@ -403,10 +407,10 @@
 
 <!-- ======================= VENTANA DE REGLA ======================= -->
 <div
-  class="modal fade"
+  class="modal"
   bsModal
   #modalRegla="bs-modal"
-  [config]="{ backdrop: 'static' }"
+  [config]="{ backdrop: 'static', animated: false }"
   tabindex="-1"
   role="dialog"
   aria-hidden="true"
@@ -458,7 +462,7 @@
             <ng-container *ngIf="c.modo == 'guiado'">
               <select class="form-control form-control-sm fab-condicion-param" [(ngModel)]="c.parametro" (ngModelChange)="CambiarParametroCondicion(c)">
                 <option value="">— sin condición —</option>
-                <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+                <option *ngFor="let p of parametrosCondicion(c)" [value]="p">{{ p }}</option>
               </select>
               <ng-container *ngIf="c.parametro">
                 <select class="form-control form-control-sm fab-condicion-oper" [(ngModel)]="c.operador" (ngModelChange)="CambiarParametroCondicion(c)">
@@ -593,6 +597,122 @@
   </div>
 </div>
 
+<!-- ======================= VENTANA COPIAR REGLAS ======================= -->
+<div
+  class="modal"
+  bsModal
+  #modalCopiar="bs-modal"
+  [config]="{ backdrop: 'static', animated: false }"
+  tabindex="-1"
+  role="dialog"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Copiar reglas <small class="text-muted">· desde {{ nombreJuego }}</small></h5>
+        <button type="button" class="close" (click)="modalCopiar.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body fab-regla">
+
+        <!-- Destino y cliente -->
+        <div class="fab-seccion">
+          <div class="form-row">
+            <div class="col-md-6">
+              <label>Copiar a</label>
+              <select class="form-control form-control-sm" [(ngModel)]="copia.destino">
+                <option value="">— elija la fabricación de destino —</option>
+                <optgroup label="Fabricaciones existentes">
+                  <option *ngFor="let s of sistemas" [value]="s.sistema">
+                    {{ s.sistema_nombre || s.descripcion }}{{ s.sistema == sistema ? ' (esta misma)' : '' }}
+                  </option>
+                </optgroup>
+                <optgroup label="Nueva fabricación" *ngIf="productoConSistema && sistemasDisponibles.length > 0">
+                  <option *ngFor="let d of sistemasDisponibles" [value]="'nuevo:' + d.id">Nueva: {{ d.nombre }}</option>
+                </optgroup>
+              </select>
+              <small class="text-muted" *ngIf="copia.destino && copia.destino.indexOf('nuevo:') === 0">
+                Se crea la fabricación (con sus parámetros estándar) y se copian en ella las reglas.
+              </small>
+            </div>
+            <div class="col-md-6">
+              <label>Cliente de las reglas copiadas</label>
+              <div class="fab-copiar-cliente">
+                <select class="form-control form-control-sm" [(ngModel)]="copia.clienteModo">
+                  <option value="mismo">El mismo de cada regla</option>
+                  <option value="todos">Todos (reglas generales)</option>
+                  <option value="cliente">Un cliente concreto…</option>
+                </select>
+                <select *ngIf="copia.clienteModo == 'cliente'" class="form-control form-control-sm" [(ngModel)]="copia.cliente">
+                  <option value="">— cliente —</option>
+                  <option *ngFor="let c of clientes" [value]="c.idrow">{{ c.descripcion }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reglas -->
+        <div class="fab-seccion">
+          <div class="fab-copiar-cabecera">
+            <span class="fab-seccion-titulo mb-0">Reglas que se copian</span>
+            <select class="form-control form-control-sm fab-copiar-filtro" [(ngModel)]="copia.filtroCliente" title="Filtrar la lista por cliente">
+              <option value="">Todos los clientes</option>
+              <option value="todos">Solo las generales (Todos)</option>
+              <option *ngFor="let c of clientesConReglas()" [value]="c.idrow">Solo {{ c.descripcion }}</option>
+            </select>
+            <span class="text-muted ml-auto">{{ seleccionadas.length }} de {{ reglas.length }} marcadas</span>
+          </div>
+          <div class="fab-copiar-lista">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr>
+                  <th class="fab-copiar-check">
+                    <input type="checkbox" [checked]="todasMarcadas()" (change)="MarcarTodas($event.target.checked)"
+                      title="Marcar o desmarcar todas las de la lista" />
+                  </th>
+                  <th>Orden</th>
+                  <th>Cliente</th>
+                  <th>Elemento</th>
+                  <th>Condiciones</th>
+                  <th>Artículos</th>
+                  <th>Consumo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of reglasCopiables()" (click)="copia.seleccion[r.idrow] = !copia.seleccion[r.idrow]"
+                  [class.table-active]="copia.seleccion[r.idrow]" style="cursor: pointer">
+                  <td class="fab-copiar-check">
+                    <input type="checkbox" [checked]="copia.seleccion[r.idrow]" (click)="$event.stopPropagation()"
+                      (change)="copia.seleccion[r.idrow] = $event.target.checked" />
+                  </td>
+                  <td>{{ r.orden }}</td>
+                  <td>{{ r.cliente_nombre }}</td>
+                  <td>{{ r.atributo }}</td>
+                  <td class="fab-code">{{ textoCondicionesRegla(r) }}</td>
+                  <td>{{ r.detalle }}</td>
+                  <td class="fab-code">{{ r.consumo }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="text-muted p-2" *ngIf="reglasCopiables().length == 0">No hay reglas de ese cliente.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="fab-mensaje-error mr-auto" *ngIf="erroresCopia().length > 0">
+          <i class="fa fa-exclamation-circle"></i> {{ erroresCopia()[0] }}
+        </div>
+        <button class="btn btn-secondary btn-sm" (click)="modalCopiar.hide()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="CopiarReglas()" [disabled]="copiando || erroresCopia().length > 0">
+          <i class="fa fa-copy"></i>&nbsp;Copiar {{ seleccionadas.length > 0 ? seleccionadas.length : '' }}
+          {{ seleccionadas.length == 1 ? 'regla' : 'reglas' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Parámetros que se pueden usar como operando en las operaciones del consumo -->
 <datalist id="fab-operandos">
   <option *ngFor="let p of nombresParametros" [value]="p"></option>
@@ -641,10 +761,10 @@
 
 <!-- Buscador de artículos -->
 <div
-  class="modal fade"
+  class="modal"
   bsModal
   #staticModalAdd="bs-modal"
-  [config]="{ backdrop: 'static', keyboard: false }"
+  [config]="{ backdrop: 'static', keyboard: false, animated: false }"
   tabindex="-1"
   role="dialog"
   aria-labelledby="myModalLabel"

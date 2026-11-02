@@ -1,5 +1,6 @@
-import { Component, HostBinding, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, HostBinding, OnInit, NgZone } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
+import { barrerRestosJqx } from './shared/jqx-barrendero';
 declare var $: any;
 declare var require;
 
@@ -17,7 +18,9 @@ export class AppComponent implements OnInit {
 
     @HostBinding('class.aside-toggled') get asideToggled() { return false; };
 
-    constructor(private router: Router) {
+    private temporizadorBarrido: any = null;
+
+    constructor(private router: Router, private zone: NgZone) {
 
 
     }
@@ -25,6 +28,17 @@ export class AppComponent implements OnInit {
     ngOnInit() {
         document.querySelector('body').classList.toggle('aside-menu-hidden');
         //document.querySelector('body').classList.toggle('sidebar-hidden');
+
+        /* Tras cada cambio de pantalla se quitan los restos de los widgets jqx de la pantalla anterior
+           (shared/jqx-barrendero.ts). Fuera de la zona de Angular: no provoca detección de cambios */
+        this.router.events.subscribe(e => {
+            if (e instanceof NavigationEnd) {
+                this.zone.runOutsideAngular(() => {
+                    clearTimeout(this.temporizadorBarrido);
+                    this.temporizadorBarrido = setTimeout(() => barrerRestosJqx(), 1000);
+                });
+            }
+        });
     }
 
     ngDoCheck() {

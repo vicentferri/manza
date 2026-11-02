@@ -23,9 +23,14 @@ export class HeaderComponent implements OnInit, OnDestroy, DoCheck {
   pageTitle: PageTitle | null = null;
   private routerSub: Subscription;
 
+  /* Clases de la barra. Se calculan una vez: con [ngClass]="setHeader()" cada revisión de Angular creaba un
+     objeto nuevo y NgClass quitaba y volvía a poner las clases de la barra (cientos de veces por segundo) */
+  clasesCabecera: any = {};
+
   constructor(private router: Router, private service: HaruService) { }
 
   ngOnInit() {
+    this.clasesCabecera = this.setHeader();
     this.pageTitle = getPageTitle(this.router.url);
     this.routerSub = this.router.events.subscribe(e => {
       if (e instanceof NavigationEnd) {
