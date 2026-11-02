@@ -55,7 +55,7 @@ Located in `src/app/models/`. Key types: `KundeType` (customer), `BestellungType
 
 No `.env` files — configuration is in `src/environments/`:
 - `environment.ts` — dev (`firmaID: '004'`, `host_ip: 'https://www.manzasm.com'`)
-- `environment.prod.ts` — production (same host, adds `assetsBase: '/customers'`)
+- `environment.prod.ts` — production (same host, `assetsBase: ''`: translations are read from `/assets/i18n/`, deployed with each build. It used to be `/customers`, another app on the server with old translation files)
 
 Commented-out blocks in these files show alternate configs for beta/local testing.
 
