@@ -355,6 +355,17 @@ componentes. En CortinaDecor (`sp_fabricacion_mrp_cd`), en cambio, el tejido lle
 - Esos tres artículos se comparten con Menorca: tenían `seccion = 7`, ahora llevan su clasificación, como en CortinaDecor.
 - **A confirmar con quien lleve el ERP:** qué hace el ERP con `SECCION`. Cambia el valor en casi todos los componentes de la HoneyComb.
 
+## Operador de división en los consumos (2026-11-02)
+
+**Decisión del usuario:** los consumos y las fórmulas de las reglas pueden dividir, con el operador `//` (junto a `++`, `--`, `**`, `*R` y `*T`). Ejemplos: `@ALTURA_VALOR // 100`, `@ANCHO // 2 ** @CANTIDAD`. Se evalúa de izquierda a derecha como los demás.
+
+**Cambio** (LOCAL ✅ 2026-11-02 · PROD ⏳). Script `23_division_en_consumos.sql` (fuera del repo, en `C:devsqlHoney`), cambio quirúrgico y con guarda sobre objetos compartidos del motor:
+- `fn_fabricacion_pos_operador`: reconoce `//`.
+- `sp_fabricacion_evaluar`: divide. Dividir entre 0, entre un parámetro vacío o inexistente, o un resultado fuera de rango da -1 (como el resto de expresiones no evaluables). La división se hace en coma flotante para que un divisor muy pequeño no dé un desbordamiento de SQL.
+- Pantalla de reglas (`artikeln-fac-cd-v3`): operador "dividido entre" en el consumo, reconocimiento de `//` al abrir una regla, validación y texto de ayuda.
+
+**Pruebas:** 28 expresiones (nuevas y de siempre) en `pruebas/prueba_23_division.sql`, 28/28. Foto de la fabricación de 13 pedidos reales (HoneyComb y enrollable nuevo, 1325 componentes, con sus parámetros) antes y después: **idéntica** (`pruebas/foto_fabricacion_regresion.js`). Con las expresiones que ya existen no cambia nada.
+
 ## Pendiente / supuestos a confirmar
 
 - `[preexistente]` En el tipo 3 (vertical), si `TipoLama` es NULL, la línea que abre `<Detalles>` sale NULL y el XML queda roto.

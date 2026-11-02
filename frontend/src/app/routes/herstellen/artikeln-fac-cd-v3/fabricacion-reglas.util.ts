@@ -2,10 +2,10 @@
  * Sintaxis de condiciones y consumos del motor de fabricación por reglas.
  * Replica lo que aceptan fn_fabricacion_condicion y sp_fabricacion_evaluar (SQL):
  *   Condición: @P == valor | @P >> n | @P >= n | @P << n | @P <= n | a <= @P <= b
- *   Consumo:   n | @P | @P ++ n | @P -- n | @P ** n | @P *R n | @P *T n | a ** @P ** b | a *R @P *R b
+ *   Consumo:   n | @P | @P ++ n | @P -- n | @P ** n | @P // n | @P *R n | @P *T n | a ** @P ** b | a *R @P *R b
  *              y cadenas @P op x op x ... (se calculan de izquierda a derecha), donde x es
  *              un número o un parámetro (@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001)
- *   *T: multiplica y deja 4 decimales sin redondear.
+ *   *T: multiplica y deja 4 decimales sin redondear. //: divide (entre 0 o entre un parámetro vacío, el consumo no es válido).
  *   Artículos: ids o @PARAMETRO (artículo según el pedido, p. ej. @TEJIDO_ARTICULO).
  * Los espacios se ignoran; los decimales se escriben con punto (se acepta coma).
  */
@@ -24,7 +24,7 @@ export interface Condicion {
 
 export type TipoConsumo = 'numero' | 'parametro' | 'operacion' | 'texto';
 
-export type OperadorConsumo = '++' | '--' | '**' | '*R' | '*T';
+export type OperadorConsumo = '++' | '--' | '**' | '//' | '*R' | '*T';
 
 export interface Consumo {
   tipo: TipoConsumo;
@@ -48,6 +48,7 @@ export const OPERADORES_CONSUMO = [
   { valor: '--', texto: 'menos' },
   { valor: '++', texto: 'más' },
   { valor: '**', texto: 'por' },
+  { valor: '//', texto: 'dividido entre' },
   { valor: '*R', texto: 'por (redondeo arriba)' },
   { valor: '*T', texto: 'por (4 decimales, sin redondear)' },
 ];
@@ -62,7 +63,7 @@ const RE_NUMERO = new RegExp('^' + NUMERO + '$');
 const RE_PARAM = new RegExp('^' + PARAM + '$');
 const RE_OPERANDO = new RegExp('^' + OPERANDO + '$');
 /* *R y *T también en minúscula, como en SQL (se guardan en mayúscula) */
-const OPERADOR = '(\\+\\+|--|\\*\\*|\\*[RrTt])';
+const OPERADOR = '(\\+\\+|--|\\*\\*|//|\\*[RrTt])';
 const RE_OPERACION = new RegExp('^(' + PARAM + ')((?:' + OPERADOR + OPERANDO + ')+)$');
 const RE_PASO = new RegExp(OPERADOR + '(' + OPERANDO + ')', 'g');
 const RE_TRES_TERMINOS = new RegExp('^(' + NUMERO + ')(\\*\\*|\\*[Rr])(' + PARAM + ')\\2(' + NUMERO + ')$');
@@ -243,7 +244,7 @@ export function validarConsumo(texto: string, parametros: string[]): string[] {
       usados = [m3[3]];
     }
     else {
-      return ['Consumo mal escrito: use un número, @PARAMETRO o @PARAMETRO ++ / -- / ** / *R / *T número o @PARAMETRO'];
+      return ['Consumo mal escrito: use un número, @PARAMETRO o @PARAMETRO ++ / -- / ** / // / *R / *T número o @PARAMETRO'];
     }
   }
 
