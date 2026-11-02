@@ -1,0 +1,48 @@
+<aside class="cfg-panel cfg-resumen">
+  <div class="cfg-resumen-cabecera">
+    <h3>{{ "Resumen" | translate }}</h3>
+    <button type="button" class="cfg-btn cfg-btn-azul cfg-btn-cesta" (click)="verCesta.emit()">
+      <i class="fas fa-shopping-cart"></i>{{ "Cesta" | translate }}
+      <span class="cfg-contador">{{ numCortinas }}</span>
+    </button>
+  </div>
+
+  <div class="cfg-resumen-cuerpo">
+    <dl class="cfg-resumen-filas">
+      <div *ngFor="let f of filas; trackBy: porIndice">
+        <dt>{{ f.etiqueta | translate }}</dt>
+        <dd>{{ f.valor }}</dd>
+      </div>
+    </dl>
+
+    <div class="cfg-resumen-total">
+      <span>Total</span>
+      <div>
+        <strong>{{ (total || 0) | number : '1.2-2' }} €</strong>
+        <small *ngIf="totalC1">{{ totalC1 }}</small>
+      </div>
+    </div>
+
+    <div class="cfg-resumen-botones">
+      <button type="button" class="cfg-btn cfg-btn-primario cfg-btn-bloque" (click)="calcular.emit()"
+        [disabled]="calculando">
+        <span *ngIf="calculando" class="spinner-border spinner-border-sm"></span>
+        {{ calculando ? ('CALCULANDO' | translate) : ('Calcular precio' | translate) }}
+      </button>
+      <button type="button" class="cfg-btn cfg-btn-bloque" (click)="agregar.emit()" [disabled]="!puedeAgregar">
+        + {{ "Agregar al presupuesto" | translate }}
+      </button>
+    </div>
+    <p class="cfg-resumen-nota" *ngIf="!puedeAgregar">{{ "Calcula el precio para poder agregar." | translate }}</p>
+
+    <div class="cfg-resumen-cesta" *ngIf="numCortinas > 0">
+      <p>
+        {{ "En el presupuesto" | translate }}
+        <strong>{{ numCortinas }} · {{ totalCesta | number : '1.2-2' }} €</strong>
+      </p>
+      <button type="button" class="cfg-btn cfg-btn-azul cfg-btn-bloque" (click)="finalizar.emit()">
+        {{ "FINALIZAR" | translate }}
+      </button>
+    </div>
+  </div>
+</aside>

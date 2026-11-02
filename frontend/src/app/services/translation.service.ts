@@ -25,8 +25,14 @@ export class TranslationService {
         this.setLanguage(savedLang);
     }
 
+    // Solo hay español y portugués: cualquier otro idioma guardado pasa a español
+    static normalizar(lang: string): string {
+        return String(lang || '').toLowerCase().startsWith('pt') ? 'pt' : 'es';
+    }
+
     // Establecer idioma
     setLanguage(lang: string): void {
+        lang = TranslationService.normalizar(lang);
         this.currentLang = lang;
         this.loadTranslations(lang).subscribe(() => {
             this.langChange.next(lang);
@@ -81,7 +87,8 @@ export class TranslationService {
 
     // Obtener traducción
     get(key: string, params?: any): string {
-        let translation = this.getNestedValue(this.translations, key) || key;
+        // Primero la clave tal cual (hay textos con punto como clave) y luego la anidada
+        let translation = this.translations[key] || this.getNestedValue(this.translations, key) || key;
 
         // Reemplazar parámetros
         if (params) {
@@ -113,6 +120,6 @@ export class TranslationService {
 
     // Obtener idiomas disponibles
     getAvailableLanguages(): string[] {
-        return ['es', 'en', 'fr']; // Configurable
+        return ['es', 'pt'];
     }
 }

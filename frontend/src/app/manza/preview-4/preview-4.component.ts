@@ -12,6 +12,8 @@ export class Preview4Component implements OnInit {
   @Input() Cliente: string = '-1';
   @Output() onDelete = new EventEmitter();
   @Output() onEdit = new EventEmitter();
+  // Detalle técnico y desglose de precio, plegados por defecto
+  verDetalle = false;
   isCopied1 = false;
 
 

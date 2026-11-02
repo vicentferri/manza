@@ -1,0 +1,234 @@
+// Pantalla de login (maqueta login.pdf). Fuentes Open Sans y Kaushan Script, cargadas en index.html.
+$oscuro: #111418;
+$gris: #1c1f26;
+$azul-claro: #9cc3dd;
+$azul: #1a6fa3;
+$texto: #1f2329;
+$texto-suave: #6b7280;
+$borde: #d4d8e0;
+$fuente: 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+.login {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  font-family: $fuente;
+}
+
+// ---------- Panel de marca ----------
+.login-marca {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 56px 64px;
+  background: $oscuro;
+  color: #fff;
+}
+
+.logo-manza,
+.brand-claim,
+.copyright {
+  position: relative;
+  z-index: 1;
+}
+
+// Formas de fondo: rectángulo gris y franja azul inclinada
+.forma {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 51.5%;
+  z-index: 0;
+}
+
+.forma-gris {
+  top: 34.5%;
+  background: $gris;
+}
+
+.forma-azul {
+  height: 30%;
+  background: $azul-claro;
+  clip-path: polygon(0 14%, 100% 0, 100% 100%, 0 100%);
+}
+
+.logo-manza {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+
+  svg { width: 26px; height: 36px; }
+  b { font-weight: 800; }
+}
+
+.brand-claim {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 420px;
+  color: #ffffff;
+}
+
+.brand-title {
+  margin: 0;
+  font-family: 'Open Sans', system-ui, sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -1px;
+  white-space: nowrap;
+
+  .sm { font-weight: 800; }
+  .tecnica { font-weight: 300; letter-spacing: 0.5px; }
+}
+
+.brand-tagline {
+  margin: 0;
+  padding-left: 40px;
+  font-family: 'Kaushan Script', 'Brush Script MT', cursive;
+  font-size: 34px;
+  line-height: 1.2;
+  transform: rotate(-4deg);
+  transform-origin: left center;
+}
+
+.copyright {
+  color: #9aa3ad;
+  font-size: 12px;
+}
+
+// ---------- Formulario ----------
+.login-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  background: #fff;
+}
+
+.caja {
+  width: 100%;
+  max-width: 366px;
+
+  h1 {
+    margin: 0 0 8px;
+    color: $texto;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  label {
+    display: block;
+    margin: 0 0 6px;
+    color: $texto;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  input {
+    display: block;
+    width: 100%;
+    height: 46px;
+    margin-bottom: 20px;
+    padding: 0 14px;
+    border: 1px solid $borde;
+    border-radius: 6px;
+    background: #f7f8fa;
+    color: $texto;
+    font-family: $fuente;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+
+    &::placeholder { color: #9aa3ad; }
+
+    &:focus {
+      border-color: $azul;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(26, 111, 163, 0.18);
+    }
+  }
+}
+
+.subtitulo {
+  margin: 0 0 28px;
+  color: $texto-suave;
+  font-size: 15px;
+}
+
+// Contraseña con el botón para verla
+.clave {
+  position: relative;
+
+  input { padding-right: 46px; }
+
+  .ojo {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 46px;
+    height: 46px;
+    border: 0;
+    background: none;
+    color: $texto-suave;
+    cursor: pointer;
+
+    &:hover { color: $texto; }
+  }
+}
+
+.acceder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 48px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: $oscuro;
+  color: #fff;
+  font-family: $fuente;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: #2a2f38; }
+  &:disabled { opacity: 0.7; cursor: wait; }
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #f5c2bd;
+  border-radius: 6px;
+  background: #fdecea;
+  color: #a12a1e;
+  font-size: 13px;
+
+  i { margin-top: 2px; }
+}
+
+// ---------- Móvil y tablet ----------
+@media (max-width: 900px) {
+  .login { grid-template-columns: minmax(0, 1fr); }
+
+  .login-marca {
+    min-height: 0;
+    padding: 28px 24px;
+
+    .brand-claim, .copyright, .forma { display: none; }
+  }
+
+  .login-form { align-items: flex-start; padding: 40px 24px; }
+}

@@ -5,6 +5,7 @@ import { errorPasoMedidas } from '../config/medidas';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { Tipo } from '../config/Tipo';
+import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
 @Component({
@@ -25,11 +26,18 @@ export class VerticalComponent implements OnInit, OnChanges {
       return this.Cliente == '1' || this.Cliente == '5';
    }
 
+   // Cesta del presupuesto, para el resumen lateral
+   @Input() NumeroCortinas: number = 0;
+   @Input() TotalCesta: number = 0;
+
    @Output() onAdd = new EventEmitter<CortinaTipo>();
+   @Output() onFinalizar = new EventEmitter<void>();
+   @Output() onVerCesta = new EventEmitter<void>();
 
    public CestaPrecios: Array<CortinaTipo> = [];
 
    calculando: boolean = false;
+   intentoCalculo: boolean = false;
 
    // Selección: Vertical / Vertical Inclinada
    PV_SEL_1: boolean = true;
@@ -132,6 +140,30 @@ export class VerticalComponent implements OnInit, OnChanges {
 
    public Estancias: any = [];
 
+   // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
+   get resumenFilas(): { etiqueta: string, valor: string }[] {
+      const componentes = { '1': 'TEJIDOMASRIEL', '2': 'SOLOTEJIDO', '3': 'SOLORIEL' };
+
+      if (this.VerticalInclinada == '1') {
+         return [
+            { etiqueta: 'Producto', valor: this.translation.get('VERTICALINCLINADA') },
+            { etiqueta: 'Medidas', valor: medida(this.PV_Ancho_2) + ' × ' + medida(this.PV_AlturaMin_2) + '/' + medida(this.PV_AlturaMax_2) + ' cm' },
+            { etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido_2) + ' · ' + texto(this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2) },
+            { etiqueta: 'Cantidad', valor: medida(this.PV_Cantidad_2) }
+         ];
+      }
+      const filas = [
+         { etiqueta: 'Producto', valor: this.translation.get('VERTICAL') },
+         { etiqueta: 'Componente', valor: this.translation.get(componentes[this.TipoVertical]) },
+         { etiqueta: 'Medidas', valor: medida(this.PV_Ancho_1) + ' × ' + medida(this.PV_Alto_1) + ' cm' }
+      ];
+      if (this.TipoVertical != '3') {
+         filas.push({ etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido) + ' · ' + texto(this.pv_tejidosC_1, this.Tipo3_TejidoColor1) });
+      }
+      filas.push({ etiqueta: 'Cantidad', valor: medida(this.PV_Cantidad_1) });
+      return filas;
+   }
+
    constructor(
       private service: SMAPIService,
       private toaster: ToastrService,
@@ -150,6 +182,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    CambiaTipoVertical() {
+      this.intentoCalculo = false;
       if (this.VerticalInclinada == '0') {
          this.PV_SEL_1 = true;
          this.PV_SEL_2 = false;
@@ -175,6 +208,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    // ─── RESET ───────────────────────────────────────────────────────────────────
 
    NewPage() {
+      this.intentoCalculo = false;
       this.Tipo3_Tejido = "-1";
       this.Tipo3_TejidoColor1 = "-1";
       this.Tipo3_TejidoColor2 = "-1";
@@ -221,6 +255,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    reset(): void {
+      this.intentoCalculo = false;
       this.PV_SEL_1 = true;
       this.PV_SEL_2 = false;
       this.TipoVertical = '1';
@@ -875,6 +910,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    // ─── AGREGAR ─────────────────────────────────────────────────────────────────
 
    Agregar(): void {
+      this.intentoCalculo = true;
       const retValue = this.T3Check();
       if (retValue.Proceed !== 1) {
          this.toaster.error(retValue.Message, 'ERROR');
@@ -1229,6 +1265,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    CheckPrice() {
+      this.intentoCalculo = true;
       let retValue = { Proceed: 0, Message: "" };
       retValue = this.T3Check();
 

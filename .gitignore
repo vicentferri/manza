@@ -12,6 +12,8 @@ node_modules/
 /frontend/.angular/
 # backend/dist is the compiled frontend bundle served by server.js (regenerable)
 /backend/dist/
+# Perfil y temporales de Chromium para los PDF (services/pdf.js)
+/backend/tmp/
 
 # --- Logs ---
 *.log

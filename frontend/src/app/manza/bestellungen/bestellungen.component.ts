@@ -5,7 +5,6 @@ import * as _ from 'underscore';
 
 import { PagerService } from '../../shared/pager-service.service';
 import { SearchModel } from '../../models/SearchModel';
-import { ModalDirective } from 'ngx-bootstrap/modal';
 import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
 @Component({
@@ -16,7 +15,6 @@ import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/im
 })
 export class BestellungenComponent implements OnInit {
 
-  @ViewChild("staticFilter", { static: false }) filters!: ModalDirective;
   @ViewChild("impresion", { static: false }) impresion!: ImpresionDocumentoComponent;
   @Input() cliente!: string;
   @Input() codeCentro!: string;
@@ -77,9 +75,11 @@ export class BestellungenComponent implements OnInit {
     this.model.Cliente = this.cliente;
     this.model.Centro = this.codeCentro;
 
-    this.model.Hasta.setDate(this.model.Hasta.getDate() + 1);
+    // El servidor busca hasta el día siguiente a "Hasta"; el día extra va solo en la consulta, no en el filtro que se ve
+    const hasta = new Date(this.model.Hasta);
+    hasta.setDate(hasta.getDate() + 1);
 
-    let values = JSON.stringify(this.model);
+    let values = JSON.stringify({ ...this.model, Hasta: hasta });
 
 
     this.service.postBestellungennachschlagen(values).subscribe(
@@ -121,12 +121,7 @@ export class BestellungenComponent implements OnInit {
     alert("En proceso de Desarrollo");
   }
 
-  Filter() {
-    this.filters.show();
-  }
-
   GoFilter() {
-    this.filters.hide();
     this.BestellungenNachschlagen();
   }
 
