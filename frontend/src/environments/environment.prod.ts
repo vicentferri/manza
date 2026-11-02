@@ -13,7 +13,7 @@ export const environment = {
   firmaName: "HARU",
   header: "blue",
   isBeta: 0,
-  assetsBase: '/customers'
+  assetsBase: ''
 };
 
 
