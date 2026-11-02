@@ -1,4 +1,5 @@
-import { Component, OnInit, Input, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef } from '@angular/core';
+import { destruirGrids } from '../grid-destruir';
 import { SearchArticleType } from '../../models/SearchArticleType';
 import { jqxGridComponent } from 'jqwidgets-framework/jqwidgets-ts/angular_jqxgrid';
 import { HaruService } from '../../services/haru.service';
@@ -15,7 +16,7 @@ import { ModalDirective } from 'ngx-bootstrap/modal';
   styleUrls: ['./search-artikel.component.css'],
   providers: [HaruService]
 })
-export class SearchArtikelComponent implements OnInit {
+export class SearchArtikelComponent implements OnInit, OnDestroy {
 
   @ViewChild('gridSReference', { static: false }) mySGrid!: jqxGridComponent;
   @ViewChild('staticModalAdd', { static: false }) modalAdd!: ModalDirective;
@@ -291,6 +292,11 @@ export class SearchArtikelComponent implements OnInit {
 
   ngOnInit() {
     this.loadMaster();
+  }
+
+  /* Al salir se destruye la rejilla: si no, sus desplegables se quedan en el <body> (ver shared/grid-destruir.ts) */
+  ngOnDestroy() {
+    destruirGrids(this.mySGrid);
   }
 
   ngAfterViewInit() {

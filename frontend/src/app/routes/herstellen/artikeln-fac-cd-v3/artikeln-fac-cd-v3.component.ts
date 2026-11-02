@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, HostListener } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ModalDirective } from 'ngx-bootstrap/modal';
 import { SearchArtikelComponent } from '../../../shared/search-artikel/search-artikel.component';
@@ -12,6 +12,7 @@ import {
 } from './fabricacion-reglas.util';
 import * as XLSX from 'xlsx';
 import { recargarGrid } from '../../../shared/grid-recarga';
+import { destruirGrids } from '../../../shared/grid-destruir';
 
 /*
  * Configuración de la fabricación por reglas (motor v3). Hoy solo el sistema HONEYCOMB.
@@ -63,7 +64,7 @@ const ANCHO_MAXIMO = 420;
   styleUrls: ['./artikeln-fac-cd-v3.component.css'],
   providers: [HaruService]
 })
-export class ArtikelnFacCdV3Component implements OnInit {
+export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   @ViewChild('gridReference', { static: false }) myGrid!: jqxGridComponent;
   @ViewChild('gridReference2', { static: false }) myGrid2!: jqxGridComponent;
@@ -481,6 +482,13 @@ export class ArtikelnFacCdV3Component implements OnInit {
     this.myGrid4.createComponent(this.settings4);
     this.performResize();
     this.loadProductos();
+  }
+
+  /* jqxGrid saca al <body> los desplegables de los filtros y los menús de columna y engancha listeners
+     en document; si no se destruye la rejilla al salir, todo eso se acumula con cada cambio de pantalla
+     y la página se va ralentizando */
+  ngOnDestroy() {
+    destruirGrids(this.myGrid, this.myGrid2, this.myGrid3, this.myGrid4);
   }
 
   ngOnInit() {
