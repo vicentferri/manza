@@ -99,10 +99,14 @@ export class VerticalComponent implements OnInit, OnChanges {
    pv_tejidosC_2: any[] = [];
 
    // Labels dinámicos
-   Tipo3_TipoSoporte_Label: string = 'Soporte:';
-   Tipo32_TipoSoporte_Label: string = 'Soporte:';
-   Tipo4_Accionamiento_Label: string = 'Accionamiento:';
-   Tipo4_Accionamiento_Label_2: string = 'Accionamiento:';
+   Tipo3_TipoSoporte_Label: string = 'Tipo de soporte';
+   Tipo3_TipoSoporte_Extra: string = '';
+   Tipo32_TipoSoporte_Label: string = 'Tipo de soporte';
+   Tipo32_TipoSoporte_Extra: string = '';
+   Tipo4_Accionamiento_Label: string = 'Accionamiento';
+   Tipo4_Accionamiento_Extra: string = '';
+   Tipo4_Accionamiento_Label_2: string = 'Accionamiento';
+   Tipo4_Accionamiento_Extra_2: string = '';
    Tipo3_Incremento_Tejidos: string = '';
    Tipo32_Incremento_Tejidos: string = '';
    Accesorios_Verticales: string = '';
@@ -217,7 +221,7 @@ export class VerticalComponent implements OnInit, OnChanges {
       this.Tipo3_TejidoColor2_2 = "-1";
       this.Tipo3_Incremento_Tejidos = "";
       this.Tipo32_Incremento_Tejidos = "";
-      this.Tipo3_TipoSoporte_Label = "Tipo de Soporte";
+      this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
       this.Tipo3_Estancia = "-1";
       this.Tipo3_Estancia_Obs = "";
       this.Tipo31_Estancia = "-1";
@@ -517,14 +521,14 @@ export class VerticalComponent implements OnInit, OnChanges {
    }
 
    private setSoporte(sel1: boolean, num: number, precio: number, c1: string, ancho: string, cantidad: number): void {
-      const label = `Tipo de Soporte: (${num} x ${precio}€)`;
+      const extra = `(${num} x ${precio}€)`;
       if (sel1) {
-         this.Tipo3_TipoSoporte_Label = label;
+         this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = extra;
          this.precios.T3_NumSoportes = num;
          this.precios.T3_TipoSoporte = precio;
          this.precios.T3_TipoSoporte_C1 = c1;
       } else {
-         this.Tipo32_TipoSoporte_Label = label;
+         this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = extra;
          this.precios.T32_NumSoportes = num;
          this.precios.T32_TipoSoporte = precio;
          this.precios.T32_TipoSoporte_C1 = c1;
@@ -533,12 +537,12 @@ export class VerticalComponent implements OnInit, OnChanges {
 
    private resetSoporte(sel1: boolean): void {
       if (sel1) {
-         this.Tipo3_TipoSoporte_Label = 'Tipo de Soporte';
+         this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
          this.precios.T3_NumSoportes = 0;
          this.precios.T3_TipoSoporte = 0;
          this.precios.T3_TipoSoporte_C1 = '';
       } else {
-         this.Tipo32_TipoSoporte_Label = 'Tipo de Soporte';
+         this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
          this.precios.T32_NumSoportes = 0;
          this.precios.T32_TipoSoporte = 0;
          this.precios.T32_TipoSoporte_C1 = '';
@@ -549,7 +553,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    Tarifa_Vertical_Soporte() {
       this.precios.T3_TipoSoporte = 0;
       this.precios.T3_NumSoportes = 0;
-      this.Tipo3_TipoSoporte_Label = "Tipo de Soporte";
+      this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
 
       if (this.PV_TipoSoporte_1 != "-1") {
          var soporte = this.PV_TipoSoporte_1;
@@ -611,12 +615,12 @@ export class VerticalComponent implements OnInit, OnChanges {
 
 
                   if (data.message == "OK") {
-                     this.Tipo3_TipoSoporte_Label = "Tipo de Soporte: (" + soportes.toString() + " x " + data.v1 + "€)";
+                     this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = "(" + soportes.toString() + " x " + data.v1 + "€)";
                      this.precios.T3_NumSoportes = soportes;
                      this.precios.T3_TipoSoporte = data.v1;
                      this.precios.T3_TipoSoporte_C1 = data.v2;
                   } else {
-                     this.Tipo3_TipoSoporte_Label = "Tipo de Soporte";
+                     this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
                      this.precios.T3_TipoSoporte = 0;
                      this.precios.T3_NumSoportes = 0;
                      this.precios.T3_TipoSoporte_C1 = 'C1 0000000';
@@ -630,7 +634,7 @@ export class VerticalComponent implements OnInit, OnChanges {
             );
          }
          else {
-            this.Tipo3_TipoSoporte_Label = "Tipo de Soporte";
+            this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
             this.precios.T3_TipoSoporte = 0;
             this.precios.T3_NumSoportes = 0;
          }
@@ -640,7 +644,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    Tarifa_VerticalInclinada_Soporte() {
       this.precios.T32_TipoSoporte = 0;
       this.precios.T32_NumSoportes = 0;
-      this.Tipo32_TipoSoporte_Label = "Tipo de Soporte";
+      this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
 
       if (this.PV_TipoSoporte_2 != "-1") {
          var soporte = this.PV_TipoSoporte_2;
@@ -700,12 +704,12 @@ export class VerticalComponent implements OnInit, OnChanges {
             this.service.getTarifaAccesorio("1", sancho, soportes).subscribe(
                data => {
                   if (data.message == "OK") {
-                     this.Tipo32_TipoSoporte_Label = "Tipo de Soporte: (" + soportes.toString() + " x " + data.v1 + "€)";
+                     this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = "(" + soportes.toString() + " x " + data.v1 + "€)";
                      this.precios.T32_NumSoportes = soportes;
                      this.precios.T32_TipoSoporte = data.v1;
                      this.precios.T32_TipoSoporte_C1 = data.v2;
                   } else {
-                     this.Tipo32_TipoSoporte_Label = "Tipo de Soporte";
+                     this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
                      this.precios.T32_TipoSoporte = 0;
                      this.precios.T32_NumSoportes = 0;
                      this.precios.T32_TipoSoporte_C1 = '';
@@ -718,7 +722,7 @@ export class VerticalComponent implements OnInit, OnChanges {
             );
          }
          else {
-            this.Tipo32_TipoSoporte_Label = "Tipo de Soporte";
+            this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
             this.precios.T32_TipoSoporte = 0;
             this.precios.T32_NumSoportes = 0;
          }

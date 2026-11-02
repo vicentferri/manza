@@ -131,19 +131,19 @@
               </select>
             </div>
             <div class="cfg-field" [class.cfg-error]="PJ_TipoSoporte_2 == '-1'">
-              <label>{{ Tipo2_TipoSoporte_Label }}</label>
+              <label>{{ Tipo2_TipoSoporte_Label | translate }}<span class="cfg-extra" *ngIf="Tipo2_TipoSoporte_Extra"> {{ Tipo2_TipoSoporte_Extra }}</span></label>
               <select name="PJ_TipoSoporte_2" [(ngModel)]="PJ_TipoSoporte_2"
                 class="form-control form-control-sm" (change)="Tarifa_Japones_Soporte()">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
                 <option value="TEC">{{ "TECHO" | translate }}</option>
-                <option value="P08">P08</option>
-                <option value="P10">P10</option>
-                <option value="P12">P12</option>
-                <option value="P14">P14</option>
-                <option value="P15">P15</option>
-                <option value="P19">P19</option>
-                <option value="P21">P21</option>
-                <option value="P23">P23</option>
+                <option value="P08">{{ "Pared 8 cm" | translate }}</option>
+                <option value="P10">{{ "Pared 10 cm" | translate }}</option>
+                <option value="P12">{{ "Pared 12 cm" | translate }}</option>
+                <option value="P14">{{ "Pared 14 cm" | translate }}</option>
+                <option value="P15">{{ "Pared 15 cm" | translate }}</option>
+                <option value="P19">{{ "Pared 19 cm" | translate }}</option>
+                <option value="P21">{{ "Pared 21 cm" | translate }}</option>
+                <option value="P23">{{ "Pared 23 cm" | translate }}</option>
               </select>
             </div>
             <div class="cfg-field" [class.cfg-error]="PJ_Contrapeso_1 == '-1'">
@@ -196,7 +196,7 @@
               <select name="Tipo2_Tejido" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_Tejido"
                 (change)="ChangeTipo2Tejido()" (blur)="ChangeTipo2Tejido()">
-                <option *ngFor="let pow of pj_tejidos" [value]="pow.id">{{ pow.text }}</option>
+                <option *ngFor="let pow of pj_tejidos" [value]="pow.id">{{ pow.text | frase }}</option>
               </select>
               <small class="cfg-ayuda" *ngIf="CodigoProv2">Ref. {{ CodigoProv2 }}</small>
             </div>
@@ -205,7 +205,7 @@
               <select name="Tipo2_TejidoColor" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor"
                 (change)="ChangeTipo2Color()" (blur)="ChangeTipo2Color()">
-                <option *ngFor="let pow of pj_tejidosC" [value]="pow.id">{{ pow.text }}</option>
+                <option *ngFor="let pow of pj_tejidosC" [value]="pow.id">{{ pow.text | frase }}</option>
               </select>
               <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor" [colores]="pj_tejidosC"></app-tejido-imagen>
             </div>
@@ -225,7 +225,7 @@
                 <label>{{ "COLORLAMA2" | translate }}</label>
                 <select name="Tipo2_TejidoColor_2" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_2">
-                  <option *ngFor="let pow of pj_tejidosC_2" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pj_tejidosC_2" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_2" [colores]="pj_tejidosC_2"></app-tejido-imagen>
               </div>
@@ -233,7 +233,7 @@
                 <label>{{ "COLORLAMA3" | translate }}</label>
                 <select name="Tipo2_TejidoColor_3" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_3">
-                  <option *ngFor="let pow of pj_tejidosC_3" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pj_tejidosC_3" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_3" [colores]="pj_tejidosC_3"></app-tejido-imagen>
               </div>
@@ -241,7 +241,7 @@
                 <label>{{ "COLORLAMA4" | translate }}</label>
                 <select name="Tipo2_TejidoColor_4" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_4">
-                  <option *ngFor="let pow of pj_tejidosC_4" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pj_tejidosC_4" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_4" [colores]="pj_tejidosC_4"></app-tejido-imagen>
               </div>
@@ -249,7 +249,7 @@
                 <label>{{ "COLORLAMA5" | translate }}</label>
                 <select name="Tipo2_TejidoColor_5" class="form-control form-control-sm"
                   [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_TejidoColor_5">
-                  <option *ngFor="let pow of pj_tejidosC_5" [value]="pow.id">{{ pow.text }}</option>
+                  <option *ngFor="let pow of pj_tejidosC_5" [value]="pow.id">{{ pow.text | frase }}</option>
                 </select>
                 <app-tejido-imagen [cliente]="Cliente" [tejido]="Tipo2_Tejido" [color]="Tipo2_TejidoColor_5" [colores]="pj_tejidosC_5"></app-tejido-imagen>
               </div>
@@ -296,7 +296,7 @@
               <label>{{ "ESTANCIA" | translate }}</label>
               <select name="Tipo2_Estancia" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="Tipo2_Estancia">
-                <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion }}</option>
+                <option *ngFor="let pow of Estancias" [value]="pow.idrow">{{ pow.descripcion | frase }}</option>
               </select>
             </div>
             <div class="cfg-field">

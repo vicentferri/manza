@@ -93,7 +93,7 @@
             <label class="form-check-label w-100" [for]="'tipoAcc_' + tipo.idTipoAccionamiento">
               <div class="card h-100 option-card">
                 <div class="card-body text-center p-3 d-flex align-items-center justify-content-center" style="min-height: 60px;">
-                  <span class="fw-semibold">{{ tipo.TipoAccionamiento }}</span>
+                  <span class="fw-semibold">{{ tipo.TipoAccionamiento | frase }}</span>
                 </div>
               </div>
             </label>
@@ -164,7 +164,7 @@
                     </div>
                   </div>
                   <div class="card-body text-center p-2">
-                    <span class="d-block fw-semibold small">{{ tipo.TipoTejido }}</span>
+                    <span class="d-block fw-semibold small">{{ tipo.TipoTejido | frase }}</span>
                   </div>
                 </div>
               </label>
@@ -229,7 +229,7 @@
                     </div>
                   </div>
                   <div class="card-body text-center p-2">
-                    <span class="d-block fw-semibold small">{{ color.ColorTejido }}</span>
+                    <span class="d-block fw-semibold small">{{ color.ColorTejido | frase }}</span>
                     <small class="text-muted d-block" *ngIf="color.referencia" style="font-size: 0.7rem;">{{ color.referencia }}</small>
                   </div>
                 </div>
@@ -301,7 +301,7 @@
                   </div>
                 </div>
                 <div class="card-body text-center p-2">
-                  <span class="d-block fw-semibold">{{ color.ColorPerfil }}</span>
+                  <span class="d-block fw-semibold">{{ color.ColorPerfil | frase }}</span>
                   <small class="text-muted" *ngIf="color.referencia">{{ color.referencia }}</small>
                 </div>
               </div>

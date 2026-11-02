@@ -556,6 +556,14 @@ section.cfg-panel {
   input { width: 18px; height: 18px; }
 }
 
+// Importe que acompaña a una etiqueta: "Tipo de soporte (2 x 8€)"
+.cfg-extra {
+  color: $cfg-texto-suave;
+  font-family: $cfg-mono;
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
 .cfg-aviso {
   color: $cfg-texto-suave;
   font-size: 0.85rem;

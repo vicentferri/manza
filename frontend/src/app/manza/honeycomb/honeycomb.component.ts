@@ -10,6 +10,7 @@ import { TranslationService } from 'src/app/services/translation.service';
 import { CortinaTipo } from '../config/CortinaTipo';
 import { errorPasoMedidas, PASO_MEDIDA_HONEYCOMB } from '../config/medidas';
 import { medida } from '../cfg-resumen/cfg-resumen.component';
+import { FrasePipe } from '../config/frase.pipe';
 
 
 @Component({
@@ -102,7 +103,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   get resumenFilas(): { etiqueta: string, valor: string }[] {
     const buscar = (lista: any[], campo: string, id: any, texto: string) => {
       const fila = (lista || []).find(x => x && String(x[campo]) === String(id));
-      return fila ? fila[texto] : '—';
+      return fila ? new FrasePipe().transform(fila[texto]) : '—';
     };
     return [
       { etiqueta: 'Producto', valor: this.translation.get('HONEYCOMB') },

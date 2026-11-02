@@ -17,6 +17,7 @@ import { Preview7Component } from './preview-7/preview-7.component';
 import { BestellungenComponent } from './bestellungen/bestellungen.component';
 import { BudgetComponent } from './budget/budget.component';
 import { SMTransPipe } from './config/smtrans.pipe';
+import { FrasePipe } from './config/frase.pipe';
 import { TwoColumnPipe } from './config/twocolumn.pipe';
 import { DesgloseComponent } from './desglose/desglose.component';
 import { HoneycombComponent } from './honeycomb/honeycomb.component';
@@ -52,6 +53,7 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
     BudgetComponent,
     TickerComponent,
     SMTransPipe,
+    FrasePipe,
     TwoColumnPipe,
     DesgloseComponent,
     HoneycombComponent,
