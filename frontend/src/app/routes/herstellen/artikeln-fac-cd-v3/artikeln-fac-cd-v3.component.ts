@@ -717,6 +717,16 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       });
   }
 
+  /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
+     el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
+  parametrosCondicion(c: Condicion): string[] {
+    let actual = String(c.parametro || '').toUpperCase();
+    return this.nombresParametros.filter(p => {
+      let nombre = String(p).toUpperCase();
+      return !nombre.endsWith('_ID') || nombre == actual;
+    });
+  }
+
   /* El valor de una condición se elige de una lista si el parámetro tiene catálogo y el operador es "igual a" */
   tieneValores(c: Condicion): boolean {
     return c.operador == '==' && !!this.valoresParametro[String(c.parametro).toUpperCase()];

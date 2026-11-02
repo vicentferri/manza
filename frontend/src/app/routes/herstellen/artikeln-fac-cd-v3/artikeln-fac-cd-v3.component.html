@@ -462,7 +462,7 @@
             <ng-container *ngIf="c.modo == 'guiado'">
               <select class="form-control form-control-sm fab-condicion-param" [(ngModel)]="c.parametro" (ngModelChange)="CambiarParametroCondicion(c)">
                 <option value="">— sin condición —</option>
-                <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+                <option *ngFor="let p of parametrosCondicion(c)" [value]="p">{{ p }}</option>
               </select>
               <ng-container *ngIf="c.parametro">
                 <select class="form-control form-control-sm fab-condicion-oper" [(ngModel)]="c.operador" (ngModelChange)="CambiarParametroCondicion(c)">
