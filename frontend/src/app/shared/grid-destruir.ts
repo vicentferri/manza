@@ -49,7 +49,8 @@ function soltarManejadoresDeDocument(id: string): void {
     (eventos[tipo] || []).forEach(h => {
       const espacio = String(h.namespace || '');
       if (espacio.indexOf(id) >= 0) {
-        sueltos.push(tipo + '.' + espacio);
+        /* jQuery guarda mouseenter/mouseleave bajo mouseover/mouseout: off() necesita el tipo original */
+        sueltos.push((h.origType || tipo) + '.' + espacio);
       }
     });
   });

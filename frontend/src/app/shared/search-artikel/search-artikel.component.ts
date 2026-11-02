@@ -706,6 +706,16 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
 
   createButtons(): void {
 
+    /* Los contenedores #exportButton / #deleteButton solo existen si la rejilla los pinta en su barra de estado
+       (createButtonsContainers), y esta rejilla no tiene barra de estado. Sin esta comprobación, los selectores
+       por id cogían los botones de OTRA pantalla que siguiera en la página (p. ej. el Borrar de
+       tarifas-simulate-search) y les enganchaban el Export y el Borrar de artículos de este buscador; o, si no
+       había ninguno, jqx lanzaba "Invalid Selector" */
+    const propio = (selector: string) => !!(this.mySGrid && this.mySGrid.host && this.mySGrid.host.find(selector).length > 0);
+    if (!propio('#exportButton') || !propio('#deleteButton')) {
+      return;
+    }
+
     let exportBtnOptions = {
       width: 100, height: 25, value: 'Export', textPosition: 'center'
     }
