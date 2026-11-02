@@ -579,9 +579,9 @@
                   [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="Tipo1_Cajon_VistaCajon"
                 >
-                  <option value="-1">Elegir</option>
-                  <option value="EXTERIOR">Visto desde el Exterior</option>
-                  <option value="INTERIOR">Visto desde el Interior</option>
+                  <option value="-1">{{ "ELEGIR" | translate }}</option>
+                  <option value="EXTERIOR">{{ "Visto desde el exterior" | translate }}</option>
+                  <option value="INTERIOR">{{ "Visto desde el interior" | translate }}</option>
                 </select>
               </div>
               <div class="cfg-field">
