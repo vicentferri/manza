@@ -117,7 +117,7 @@
               </div>
               <div class="cfg-field" [hidden]="TipoVertical == '2'"
                 [class.cfg-error]="PV_Accionamiento_1 == '-1'">
-                <label>{{ Tipo4_Accionamiento_Label }}</label>
+                <label>{{ Tipo4_Accionamiento_Label | translate }}<span class="cfg-extra" *ngIf="Tipo4_Accionamiento_Extra"> {{ Tipo4_Accionamiento_Extra }}</span></label>
                 <select name="PV_Accionamiento_1" class="form-control form-control-sm" [(ngModel)]="PV_Accionamiento_1"
                   (change)="Change_Compac_Accionamiento()">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -128,7 +128,7 @@
               </div>
               <div class="cfg-field" [hidden]="TipoVertical == '2'"
                 [class.cfg-error]="PV_TipoSoporte_1 == '-1'">
-                <label>{{ Tipo3_TipoSoporte_Label }}</label>
+                <label>{{ Tipo3_TipoSoporte_Label | translate }}<span class="cfg-extra" *ngIf="Tipo3_TipoSoporte_Extra"> {{ Tipo3_TipoSoporte_Extra }}</span></label>
                 <select name="PV_TipoSoporte_1" class="form-control form-control-sm" [(ngModel)]="PV_TipoSoporte_1"
                   (change)="Recalcular_Tipo3()">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>
@@ -332,14 +332,14 @@
                 </select>
               </div>
               <div class="cfg-field">
-                <label>{{ Tipo4_Accionamiento_Label_2 }}</label>
+                <label>{{ Tipo4_Accionamiento_Label_2 | translate }}<span class="cfg-extra" *ngIf="Tipo4_Accionamiento_Extra_2"> {{ Tipo4_Accionamiento_Extra_2 }}</span></label>
                 <select name="PV_Accionamiento_2" class="form-control form-control-sm" [(ngModel)]="PV_Accionamiento_2"
                   (change)="Change_Compac_Accionamiento_2()">
                   <option value="COR">{{ "CORDON" | translate }}</option>
                 </select>
               </div>
               <div class="cfg-field" [class.cfg-error]="PV_TipoSoporte_2 == '-1'">
-                <label>{{ Tipo32_TipoSoporte_Label }}</label>
+                <label>{{ Tipo32_TipoSoporte_Label | translate }}<span class="cfg-extra" *ngIf="Tipo32_TipoSoporte_Extra"> {{ Tipo32_TipoSoporte_Extra }}</span></label>
                 <select name="PV_TipoSoporte_2" class="form-control form-control-sm" [(ngModel)]="PV_TipoSoporte_2"
                   (change)="Tarifa_VerticalInclinada_Soporte()">
                   <option value="-1">{{ "ELEGIR" | translate }}</option>

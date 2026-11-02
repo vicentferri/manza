@@ -87,7 +87,8 @@ export class CompacComponent implements OnInit, OnChanges {
    esCadenaExt = -1;
    // RAL
    items90: any[] = [];
-   RalC_Label: string = 'RAL:';
+   RalC_Label: string = 'RAL';
+   RalC_Extra: string = '';
 
    // Estancia
    Tipo4_Estancia: string = '-1';
@@ -109,8 +110,10 @@ export class CompacComponent implements OnInit, OnChanges {
       T4_Fecha_Entrega: '', T4_Transporte: ''
    };
 
-   Tipo4_Accionamiento_Label = "Accionamiento";
-   Tipo4_Accionamiento_Label_2 = "Accionamiento";
+   Tipo4_Accionamiento_Label = 'Accionamiento';
+   Tipo4_Accionamiento_Extra = '';
+   Tipo4_Accionamiento_Label_2 = 'Accionamiento';
+   Tipo4_Accionamiento_Extra_2 = '';
 
 
    public value: any = {};
@@ -225,7 +228,7 @@ export class CompacComponent implements OnInit, OnChanges {
       this.Tipo4_Estancia = '-1';
       this.Tipo4_Estancia_Obs = '';
       this.buildItems = [];
-      this.RalC_Label = 'RAL:';
+      this.RalC_Label = 'RAL'; this.RalC_Extra = '';
       this.resetPrecios();
       this.load_Compac_Tejidos();
    }
@@ -357,7 +360,7 @@ export class CompacComponent implements OnInit, OnChanges {
       this.compac.ShowRal = this.compac.PC_ColorPerfileria === 'RAL' ? 1 : 0;
       if (this.compac.ShowRal === 0) {
          this.compac.Ral = '-1';
-         this.RalC_Label = 'RAL:';
+         this.RalC_Label = 'RAL'; this.RalC_Extra = '';
       } else if (this.items90.length > 0) {
          this.compac.Ral = this.items90[0].id.toString();
          this.ChangeRalC();
@@ -369,7 +372,7 @@ export class CompacComponent implements OnInit, OnChanges {
       if (pos >= 0) {
          const precio = this.items90[pos].precio;
          const c1 = this.items90[pos].c1;
-         this.RalC_Label = precio > 0 ? `RAL:(${precio}€ ${c1})` : 'RAL:';
+         this.RalC_Label = 'RAL'; this.RalC_Extra = precio > 0 ? `(${precio}€ ${c1})` : '';
       }
    }
 
@@ -656,7 +659,7 @@ export class CompacComponent implements OnInit, OnChanges {
    }
    /*
        Change_Compac_Accionamiento() {
-         this.Tipo4_Accionamiento_Label = "Accionamiento";
+         this.Tipo4_Accionamiento_Label = 'Accionamiento'; this.Tipo4_Accionamiento_Extra = '';
      
          if (this.PV_Accionamiento_1 == "MSM") {
            this.Tipo4_Accionamiento_Label += "(+387.00€)";
@@ -672,7 +675,7 @@ export class CompacComponent implements OnInit, OnChanges {
        }
      
        Change_Compac_Accionamiento_2() {
-         this.Tipo4_Accionamiento_Label_2 = "Accionamiento";
+         this.Tipo4_Accionamiento_Label_2 = 'Accionamiento'; this.Tipo4_Accionamiento_Extra_2 = '';
      
          if (this.PV_Accionamiento_2 == "MSM") {
            this.Tipo4_Accionamiento_Label_2 += "(+387.00€)";

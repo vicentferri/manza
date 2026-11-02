@@ -35,7 +35,7 @@
               </select>
             </div>
             <div class="cfg-field cfg-span-all" [hidden]="compac.ShowRal === 0">
-              <label>{{ RalC_Label }}</label>
+              <label>{{ RalC_Label | translate }}<span class="cfg-extra" *ngIf="RalC_Extra"> {{ RalC_Extra }}</span></label>
               <select name="compac_Ral" class="form-control form-control-sm"
                 [ngModelOptions]="{ standalone: true }" [(ngModel)]="compac.Ral" (change)="ChangeRalC()">
                 <option *ngFor="let pow of items90" [value]="pow.id">{{ pow.text }}</option>

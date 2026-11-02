@@ -367,5 +367,15 @@
     "Pared 21 cm": "Parede 21 cm",
     "Pared 23 cm": "Parede 23 cm",
     "Visto desde el exterior": "Visto do exterior",
-    "Visto desde el interior": "Visto do interior"
+    "Visto desde el interior": "Visto do interior",
+    "Tipo de soporte": "Tipo de suporte",
+    "Número de vías": "Número de vias",
+    "Mando": "Comando",
+    "Color/modelo": "Cor/modelo",
+    "Color/mando": "Cor/comando",
+    "Modelo": "Modelo",
+    "Modelo de cajón": "Modelo de caixa",
+    "Altura": "Altura",
+    "Cargador": "Carregador",
+    "Tipo": "Tipo"
 }

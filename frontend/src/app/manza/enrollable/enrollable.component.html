@@ -253,7 +253,7 @@
               </div>
 
               <div class="cfg-field cfg-span-all" [class.cfg-error]="Tipo1_Color == '-1'">
-                <label>{{ Modelo_Label }}</label>
+                <label>{{ Modelo_Label | translate }}<span class="cfg-extra" *ngIf="Modelo_Extra"> {{ Modelo_Extra }}</span></label>
                 <select
                   name="Tipo1_Color"
                   class="form-control form-control-sm"
@@ -267,7 +267,7 @@
                 </select>
               </div>
               <div class="cfg-field cfg-span-all" [hidden]="!verMando" [class.cfg-error]="verMando && Tipo1_Mando == '-1'">
-                <label>{{ Tipo1_RadioMando_Label }}</label>
+                <label>{{ Tipo1_RadioMando_Label | translate }}<span class="cfg-extra" *ngIf="Tipo1_RadioMando_Extra"> {{ Tipo1_RadioMando_Extra }}</span></label>
                 <select
                   name="Tipo1_Mando"
                   class="form-control form-control-sm"
@@ -282,7 +282,7 @@
                 </select>
               </div>
               <div class="cfg-field" [hidden]="cargadores.length == 0">
-                <label>{{ Label_Cargador }}</label>
+                <label>{{ Label_Cargador | translate }}<span class="cfg-extra" *ngIf="Cargador_Extra"> {{ Cargador_Extra }}</span></label>
                 <select
                   name="Tipo1_Cargador"
                   class="form-control form-control-sm"
@@ -320,7 +320,7 @@
                 </label>
                 <div class="cfg-grid cfg-cols-2" [hidden]="esCadenaExt != 0">
                   <div class="cfg-field" [class.cfg-error]="!AlturaCadena">
-                    <label>{{ Tipo1_Cadena_Label }}</label>
+                    <label>{{ Tipo1_Cadena_Label | translate }}<span class="cfg-extra" *ngIf="Tipo1_Cadena_Extra"> {{ Tipo1_Cadena_Extra }}</span></label>
                     <input
                       type="number"
                       class="form-control form-control-sm"
@@ -366,7 +366,7 @@
                     </select>
                   </div>
                   <div class="cfg-field" [class.cfg-error]="Tipo1_AlturaCadena == '-1'">
-                    <label>{{ Tipo1_Cadena_Label }}</label>
+                    <label>{{ Tipo1_Cadena_Label | translate }}<span class="cfg-extra" *ngIf="Tipo1_Cadena_Extra"> {{ Tipo1_Cadena_Extra }}</span></label>
                     <select
                       name="Tipo1_AlturaCadena"
                       class="form-control form-control-sm"
@@ -490,7 +490,7 @@
             <h4 class="cfg-subtitulo">{{ "SELECCION DE CONTRAPESOS" | translate }}</h4>
             <div class="cfg-grid cfg-cols-2">
               <div class="cfg-field" [class.cfg-error]="Tipo1_Contrapeso == '-1'">
-                <label>{{ Tipo1_Contrapeso_Label }}</label>
+                <label>{{ Tipo1_Contrapeso_Label | translate }}<span class="cfg-extra" *ngIf="Tipo1_Contrapeso_Extra"> {{ Tipo1_Contrapeso_Extra }}</span></label>
                 <select
                   name="Tipo1_Contrapeso"
                   class="form-control form-control-sm"
@@ -530,7 +530,7 @@
             <h4 class="cfg-subtitulo">{{ "SELECCION DE CAJON" | translate }}</h4>
             <div class="cfg-grid cfg-cols-2">
               <div class="cfg-field cfg-span-all">
-                <label>{{ Modelo_Cajon_Label }}</label>
+                <label>{{ Modelo_Cajon_Label | translate }}<span class="cfg-extra" *ngIf="Modelo_Cajon_Extra"> {{ Modelo_Cajon_Extra }}</span></label>
                 <select
                   name="Tipo1_Cajon"
                   class="form-control form-control-sm"
@@ -558,7 +558,7 @@
                 </select>
               </div>
               <div class="cfg-field" [hidden]="Tipo1_CajonC != 'RAL'">
-                <label>{{ Ral_Label }}</label>
+                <label>{{ Ral_Label | translate }}<span class="cfg-extra" *ngIf="Ral_Extra"> {{ Ral_Extra }}</span></label>
                 <select
                   name="Tipo1_CajonRAL"
                   class="form-control form-control-sm"
@@ -624,7 +624,7 @@
               <h4 class="cfg-subtitulo">{{ "SELECCIONGUIAS" | translate }}</h4>
               <div class="cfg-grid cfg-cols-2">
                 <div class="cfg-field">
-                  <label>{{ Modelo_Guia_Label }}</label>
+                  <label>{{ Modelo_Guia_Label | translate }}<span class="cfg-extra" *ngIf="Modelo_Guia_Extra"> {{ Modelo_Guia_Extra }}</span></label>
                   <select
                     name="Tipo1_Guia"
                     class="form-control form-control-sm"

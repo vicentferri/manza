@@ -93,10 +93,13 @@ export class EnrollableComponent implements OnInit, OnChanges {
    Tipo1_AlturaCadenaM: string = '-1';
    Tipo1_AlturaCadenaM2: string = '';
    Tipo1_ColorCadena: string = '-1';
-   Tipo1_RadioMando_Label: string = 'Mando:';
+   Tipo1_RadioMando_Label: string = 'Mando';
+   Tipo1_RadioMando_Extra: string = '';
    Tipo1_RadioMando_Disabled: boolean = false;
-   Tipo1_Cadena_Label: string = 'Altura:';
-   Modelo_Label: string = 'Color/Modelo:';
+   Tipo1_Cadena_Label: string = 'Altura';
+   Tipo1_Cadena_Extra: string = '';
+   Modelo_Label: string = 'Color/modelo';
+   Modelo_Extra: string = '';
    verMando: boolean = false;
    esCadena: number = 0;
    esCadenaExt: number = -1;
@@ -129,7 +132,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
    contrapesosC: Tipo[] = [];
    Tipo1_Contrapeso: string = '-1';
    Tipo1_ContrapesoC: string = '-1';
-   Tipo1_Contrapeso_Label: string = 'Tipo:';
+   Tipo1_Contrapeso_Label: string = 'Tipo';
+   Tipo1_Contrapeso_Extra: string = '';
 
    // Cajón / Guías (SubTipo 2)
    Cajones: any[] = [];
@@ -143,10 +147,14 @@ export class EnrollableComponent implements OnInit, OnChanges {
    Tipo1_Guia: string = '-1';
    Tipo1_GuiaC: string = 'BLA';
    Tipo1_GuiaRAL: string = '';
-   Modelo_Cajon_Label: string = 'Modelo de Cajón';
+   Modelo_Cajon_Label: string = 'Modelo de cajón';
+   Modelo_Cajon_Extra: string = '';
    Modelo_Guia_Label: string = 'Tipo';
-   Ral_Label: string = 'RAL:';
-   Label_Cargador: string = 'Cargador:';
+   Modelo_Guia_Extra: string = '';
+   Ral_Label: string = 'RAL';
+   Ral_Extra: string = '';
+   Label_Cargador: string = 'Cargador';
+   Cargador_Extra: string = '';
 
    // Estancia
    Tipo1_Estancia: string = '-1';
@@ -239,7 +247,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Mando = '-1';
       this.Tipo1_Cargador = '-1';
       this.cargadores = [];
-      this.Label_Cargador = 'Cargador:';
+      this.Label_Cargador = 'Cargador'; this.Cargador_Extra = '';
       this.Tipo1_Posicion = '1';
       this.Tipo1_Tubo = '-1';
       this.Tipo1_AlturaCadena = '-1';
@@ -249,12 +257,12 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.esCadena = 0;
       this.esCadenaExt = -1;
       this.Tipo1_AnchoMaximo = -1;
-      this.Tipo1_Contrapeso_Label = 'Tipo:';
-      this.Tipo1_RadioMando_Label = 'Mando:';
-      this.Modelo_Label = 'Color/Modelo:';
-      this.Modelo_Cajon_Label = 'Modelo de Cajón';
-      this.Modelo_Guia_Label = 'Tipo';
-      this.Ral_Label = 'RAL:';
+      this.Tipo1_Contrapeso_Label = 'Tipo'; this.Tipo1_Contrapeso_Extra = '';
+      this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
+      this.Modelo_Label = 'Color/modelo'; this.Modelo_Extra = '';
+      this.Modelo_Cajon_Label = 'Modelo de cajón'; this.Modelo_Cajon_Extra = '';
+      this.Modelo_Guia_Label = 'Tipo'; this.Modelo_Guia_Extra = '';
+      this.Ral_Label = 'RAL'; this.Ral_Extra = '';
       this.Tipo1_RadioMando_Disabled = false;
       this.Tipo1_Estancia = '-1';
       this.Tipo1_Estancia_Obs = '';
@@ -371,7 +379,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       const pos = this.getPos(this.cargadores, this.Tipo1_Cargador);
       if (pos < 0 || Number(this.Tipo1_Cargador) < 0) {
          this.Tipo1_Cargador = '-1';
-         this.Label_Cargador = 'Cargador:';
+         this.Label_Cargador = 'Cargador'; this.Cargador_Extra = '';
          this.precios.T1_Inc_Cargador = 0;
          this.precios.T1_Inc_Cargador_C1 = '';
          this.precios.T1_Inc_Cargador_48 = 0;
@@ -379,7 +387,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       }
       const cargador = this.cargadores[pos] as any;
       const cantidad = Number(this.Cantidad);
-      this.Label_Cargador = 'Cargador:(' + cargador.precio + '€ ' + cargador.c1 + ' ' + cargador.codigo_48 + ')';
+      this.Label_Cargador = 'Cargador'; this.Cargador_Extra = '(' + cargador.precio + '€ ' + cargador.c1 + ' ' + cargador.codigo_48 + ')';
       this.precios.T1_Inc_Cargador = cantidad * cargador.precio;
       this.precios.T1_Inc_Cargador_C1 = cargador.c1;
       this.precios.T1_Inc_Cargador_48 = cargador.codigo_48;
@@ -445,7 +453,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                });
             }
             if (this.verMando) {
-               this.Tipo1_RadioMando_Label = 'Mando:';
+               this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
                this.load_RadioMando();
             }
          },
@@ -751,10 +759,10 @@ export class EnrollableComponent implements OnInit, OnChanges {
          const precio = (this.items3[pos] as any).precio;
          const c1 = (this.items3[pos] as any).c1;
          const codigo_48 = (this.items3[pos] as any).codigo_48;
-         this.Modelo_Label = 'Color/Mando';
-         this.Tipo1_RadioMando_Label = 'Mando:';
+         this.Modelo_Label = 'Color/mando'; this.Modelo_Extra = '';
+         this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
          if (precio > 0) {
-            this.Modelo_Label = 'Modelo:(' + precio + '€ ' + c1 + ' ' + codigo_48 + ')';
+            this.Modelo_Label = 'Modelo'; this.Modelo_Extra = '(' + precio + '€ ' + c1 + ' ' + codigo_48 + ')';
          }
       }
       if (this.verMando) this.load_RadioMando();
@@ -779,19 +787,19 @@ export class EnrollableComponent implements OnInit, OnChanges {
          const precio = this.radiomando[pos].precio;
          const c1 = this.radiomando[pos].c1;
          const codigo_48 = this.radiomando[pos].codigo_48;
-         this.Tipo1_RadioMando_Label = 'Mando:';
+         this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
          if (precio > 0) {
-            this.Tipo1_RadioMando_Label = 'Mando:(' + precio + '€ ' + c1 + ' ' + codigo_48 + ')';
+            this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '(' + precio + '€ ' + c1 + ' ' + codigo_48 + ')';
             this.precios.T1_Inc_Mando = cantidad * precio;
             this.precios.T1_Inc_Mando_C1 = c1;
             return this.c1PorCantidad(c1, cantidad).pipe(
                tap(c1Total => { this.precios.T1_Inc_Mando_C1 = c1Total; })
             );
          } else if (precio < 0) {
-            this.Tipo1_RadioMando_Label = 'Mando:(' + precio + '€ ' + c1 + ')';
+            this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '(' + precio + '€ ' + c1 + ')';
             this.precios.T1_Inc_Mando = cantidad * precio;
          } else {
-            this.Tipo1_RadioMando_Label = 'Mando:';
+            this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
             this.precios.T1_Inc_Mando = 0;
             this.precios.T1_Inc_Mando_C1 = '';
          }
@@ -830,7 +838,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       if (pos >= 0) {
          const precio = this.items90[pos].precio;
          const c1 = this.items90[pos].c1;
-         this.Ral_Label = precio > 0 ? 'RAL:(' + precio + '€ ' + c1 + ')' : 'RAL';
+         this.Ral_Label = 'RAL'; this.Ral_Extra = precio > 0 ? '(' + precio + '€ ' + c1 + ')' : '';
       }
    }
 
@@ -882,7 +890,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    }
 
    Cadena(value: number): void {
-      this.Tipo1_Cadena_Label = 'Altura:';
+      this.Tipo1_Cadena_Label = 'Altura'; this.Tipo1_Cadena_Extra = '';
       this.precios.T1_Inc_CadenaMetalica = 0;
       this.precios.T1_Inc_CadenaMetalica_C1 = '';
       this.esCadenaExt = value;
@@ -915,7 +923,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                   const precio = data.v1;
                   const c1 = data.v2;
                   if (precio > 0) {
-                     this.Tipo1_Contrapeso_Label = 'Tipo:(' + precio + '€ ' + c1 + ')';
+                     this.Tipo1_Contrapeso_Label = 'Tipo'; this.Tipo1_Contrapeso_Extra = '(' + precio + '€ ' + c1 + ')';
                      this.precios.T1_Inc_Contrapeso = cantidad * precio;
                      this.precios.T1_Inc_Contrapeso_C1 = c1;
                      if (cantidad > 1) {
@@ -925,7 +933,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                         );
                      }
                   } else {
-                     this.Tipo1_Contrapeso_Label = 'Tipo:';
+                     this.Tipo1_Contrapeso_Label = 'Tipo'; this.Tipo1_Contrapeso_Extra = '';
                      this.precios.T1_Inc_Contrapeso = 0;
                      this.precios.T1_Inc_Contrapeso_C1 = '';
                   }
@@ -954,7 +962,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          }
          const altura = this.alturaTarifaCadenaM();
          if (altura === null) {
-            this.Tipo1_Cadena_Label = 'Altura:';
+            this.Tipo1_Cadena_Label = 'Altura'; this.Tipo1_Cadena_Extra = '';
             this.precios.T1_Inc_CadenaMetalica = 0;
             this.precios.T1_Inc_CadenaMetalica_C1 = '';
             return;
@@ -966,7 +974,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                   const precio = data.v1;
                   const c1 = data.v2;
                   if (precio > 0) {
-                     this.Tipo1_Cadena_Label = 'Altura:(' + precio + '€ ' + c1 + ')';
+                     this.Tipo1_Cadena_Label = 'Altura'; this.Tipo1_Cadena_Extra = '(' + precio + '€ ' + c1 + ')';
                      this.precios.T1_Inc_CadenaMetalica = cantidad * precio;
                      this.precios.T1_Inc_CadenaMetalica_C1 = c1;
                      if (cantidad > 1) {
@@ -976,7 +984,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                         );
                      }
                   } else {
-                     this.Tipo1_Cadena_Label = 'Altura:';
+                     this.Tipo1_Cadena_Label = 'Altura'; this.Tipo1_Cadena_Extra = '';
                      this.precios.T1_Inc_CadenaMetalica = 0;
                      this.precios.T1_Inc_CadenaMetalica_C1 = '';
                   }
@@ -1089,12 +1097,12 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.CodigoProv = "";
       this.Tipo1_AnchoMaximo = -1;
       this.esCadenaExt = -1;
-      this.Tipo1_Contrapeso_Label = "Tipo:";
-      this.Tipo1_RadioMando_Label = "Mando:";
-      this.Modelo_Label = "Color/Modelo:";
-      this.Modelo_Cajon_Label = "Modelo de Cajón";
-      this.Modelo_Guia_Label = "Tipo";
-      this.Ral_Label = "RAL:";
+      this.Tipo1_Contrapeso_Label = 'Tipo'; this.Tipo1_Contrapeso_Extra = '';
+      this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
+      this.Modelo_Label = 'Color/modelo'; this.Modelo_Extra = '';
+      this.Modelo_Cajon_Label = 'Modelo de cajón'; this.Modelo_Cajon_Extra = '';
+      this.Modelo_Guia_Label = 'Tipo'; this.Modelo_Guia_Extra = '';
+      this.Ral_Label = 'RAL'; this.Ral_Extra = '';
       //this.RalC_Label = "RAL:";
       this.Tipo1_RadioMando_Disabled = false;
 
@@ -1385,7 +1393,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
                      });
                   }
                   if (this.verMando) {
-                     this.Tipo1_RadioMando_Label = 'Mando:';
+                     this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
                      this.service.getRadioMandos_gen(parseInt(this.Tipo1_Color), cliente, produc).subscribe(
                         dataM => {
                            this.radiomando = dataM;

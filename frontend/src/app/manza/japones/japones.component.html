@@ -131,7 +131,7 @@
               </select>
             </div>
             <div class="cfg-field" [class.cfg-error]="PJ_TipoSoporte_2 == '-1'">
-              <label>{{ Tipo2_TipoSoporte_Label }}</label>
+              <label>{{ Tipo2_TipoSoporte_Label | translate }}<span class="cfg-extra" *ngIf="Tipo2_TipoSoporte_Extra"> {{ Tipo2_TipoSoporte_Extra }}</span></label>
               <select name="PJ_TipoSoporte_2" [(ngModel)]="PJ_TipoSoporte_2"
                 class="form-control form-control-sm" (change)="Tarifa_Japones_Soporte()">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>

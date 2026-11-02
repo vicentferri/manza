@@ -113,14 +113,18 @@ export class JaponesComponent implements OnInit, OnChanges {
    }
 
    // Precios
-   Tipo2_TipoSoporte_Label: string = 'Soporte:';
+   Tipo2_TipoSoporte_Label: string = 'Tipo de soporte';
+   Tipo2_TipoSoporte_Extra: string = '';
    PJ_SoporteTotal: number = 0;
    Accesorios_Japones: string = '';
    Tipo2_Desglose: boolean = false;
 
-   Tipo2_NumeroVias_Label = "Número Vias:";
-   Tipo3_TipoSoporte_Label = "Tipo de Soporte";
-   Tipo32_TipoSoporte_Label = "Tipo de Soporte";
+   Tipo2_NumeroVias_Label = 'Número de vías';
+   Tipo2_NumeroVias_Extra = '';
+   Tipo3_TipoSoporte_Label = 'Tipo de soporte';
+   Tipo3_TipoSoporte_Extra = '';
+   Tipo32_TipoSoporte_Label = 'Tipo de soporte';
+   Tipo32_TipoSoporte_Extra = '';
 
    public Tipo21_Estancia: string = "-1";
    public Tipo21_Estancia_Obs: string = "";
@@ -327,7 +331,7 @@ export class JaponesComponent implements OnInit, OnChanges {
       this.PJ_AnchoLama = "0";
       this.PJ_NumeroPortatelas = 2;
       this.PJ_NumeroLamas = 0;
-      this.Tipo2_NumeroVias_Label = "Número Vias:";
+      this.Tipo2_NumeroVias_Label = 'Número de vías'; this.Tipo2_NumeroVias_Extra = '';
       this.Tipo2_Tejido = "-1";
       this.Tipo2_TejidoColor = "-1";
       this.Tipo2_Estancia = "-1";
@@ -358,8 +362,8 @@ export class JaponesComponent implements OnInit, OnChanges {
       this.PJ_NumeroVias_2 = "-1";
       this.PJ_TipoSoporte_2 = "-1";
 
-      this.Tipo2_NumeroVias_Label = "Número Vias:";
-      this.Tipo2_TipoSoporte_Label = "Tipo de Soporte";
+      this.Tipo2_NumeroVias_Label = 'Número de vías'; this.Tipo2_NumeroVias_Extra = '';
+      this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = '';
    }
 
    ChangeNumeroPortatelas() {
@@ -474,14 +478,14 @@ export class JaponesComponent implements OnInit, OnChanges {
 
          var cantidad = Number(this.PJ_Cantidad_1);
 
-         this.Tipo2_NumeroVias_Label = "Número Vias:";
+         this.Tipo2_NumeroVias_Label = 'Número de vías'; this.Tipo2_NumeroVias_Extra = '';
 
          if (vias != "-1" && ancho != "") {
             this.service.getTarifaPanelJapones(vias, this.Cliente, ancho, cantidad).subscribe(
                data => {
 
                   if (data.message == "OK") {
-                     this.Tipo2_NumeroVias_Label = "Número Vias: (" + data.v1 + "€ " + data.v2 + ")";
+                     this.Tipo2_NumeroVias_Label = 'Número de vías'; this.Tipo2_NumeroVias_Extra = "(" + data.v1 + "€ " + data.v2 + ")";
                      this.precios.T2_NumeroVias = Number(this.PJ_Cantidad_1) * data.v1;
                      this.precios.T2_NumeroVias_C1 = data.v2;
                      if (this.precios.T2_NumeroVias == 0) {
@@ -504,7 +508,7 @@ export class JaponesComponent implements OnInit, OnChanges {
    Tarifa_Japones_Soporte() {
       this.precios.T2_TipoSoporte = 0;
       this.precios.T2_NumSoportes = 0;
-      this.Tipo2_TipoSoporte_Label = "Tipo de Soporte";
+      this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = '';
 
       if (this.PJ_TipoSoporte_2 != "-1") {
          var cantidad = this.PJ_Cantidad_1;
@@ -554,13 +558,13 @@ export class JaponesComponent implements OnInit, OnChanges {
                data => {
 
                   if (data.message == "OK") {
-                     this.Tipo2_TipoSoporte_Label = "Tipo de Soporte: (" + soportes.toString() + " x " + data.v1 + "€ " + data.v2 + ")";
+                     this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = "(" + soportes.toString() + " x " + data.v1 + "€ " + data.v2 + ")";
                      this.precios.T2_NumSoportes = soportes;
                      this.precios.T2_TipoSoporte = Number(cantidad) * data.v1;
                      this.precios.T2_TipoSoporte_C1 = data.v2;
                   }
                   else {
-                     this.Tipo2_TipoSoporte_Label = "Tipo de Soporte";
+                     this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = '';
                      this.precios.T2_TipoSoporte = 0;
                      this.precios.T2_NumSoportes = 0;
                      this.precios.T2_TipoSoporte_C1 = '';
@@ -572,7 +576,7 @@ export class JaponesComponent implements OnInit, OnChanges {
             );
          }
          else {
-            this.Tipo2_TipoSoporte_Label = "Tipo de Soporte";
+            this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = '';
             this.precios.T2_TipoSoporte = 0;
             this.precios.T2_NumSoportes = 0;
             this.precios.T2_TipoSoporte_C1 = ''
