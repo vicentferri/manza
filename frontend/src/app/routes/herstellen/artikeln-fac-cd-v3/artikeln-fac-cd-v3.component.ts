@@ -93,6 +93,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   columnas: any = [];
   parametros: any = [];
   nombresParametros: string[] = [];
+  private ordenadosOrigen: string[] = null;
+  private parametrosOrdenados: string[] = [];
 
   /* Columnas de la tabla de reglas que se pueden ocultar (solo visualmente) */
   columnasOcultables: ColumnaOcultable[] = [
@@ -720,8 +722,15 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
      el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
   parametrosCondicion(c: Condicion): string[] {
+    /* Ordenados alfabéticamente (sin distinguir mayúsculas, criterio del español). La lista ordenada se guarda
+       y solo se recalcula cuando se recargan los parámetros: este método se llama en cada revisión de Angular */
+    if (this.ordenadosOrigen !== this.nombresParametros) {
+      this.ordenadosOrigen = this.nombresParametros;
+      this.parametrosOrdenados = this.nombresParametros.slice()
+        .sort((a, b) => String(a).localeCompare(String(b), 'es', { sensitivity: 'base' }));
+    }
     let actual = String(c.parametro || '').toUpperCase();
-    return this.nombresParametros.filter(p => {
+    return this.parametrosOrdenados.filter(p => {
       let nombre = String(p).toUpperCase();
       return !nombre.endsWith('_ID') || nombre == actual;
     });
