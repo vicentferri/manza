@@ -93,6 +93,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   columnas: any = [];
   parametros: any = [];
   nombresParametros: string[] = [];
+  private ordenadosOrigen: string[] = null;
+  private parametrosOrdenados: string[] = [];
 
   /* Columnas de la tabla de reglas que se pueden ocultar (solo visualmente) */
   columnasOcultables: ColumnaOcultable[] = [
@@ -638,8 +640,13 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   /* Juegos del producto; con `elegir`, se queda en ese juego (p. ej. el que se acaba de crear) */
   loadSistemas(elegir?: string) {
-    this.service.HTTP_Get('/sm/fabricacion/sistemas?producto=' + encodeURIComponent(this.producto)).subscribe(
+    const producto = this.producto;
+    this.service.HTTP_Get('/sm/fabricacion/sistemas?producto=' + encodeURIComponent(producto)).subscribe(
       data => {
+        /* Si se ha cambiado de producto mientras llegaba la respuesta, esta ya no vale */
+        if (producto != this.producto) {
+          return;
+        }
         this.sistemas = data.Table;
         this.sistemasDisponibles = data.Disponibles || [];
         this.sistemaNuevo = '';
@@ -680,48 +687,60 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   loadBusquedas() {
-    this.service.HTTP_Get('/sm/fabricacion/busquedas' + this.querySistema()).subscribe(
-      data => {
-        this.busquedas = data.Table;
-        this.fueraDeZona(() => this.myGrid2.refresh());
-      },
-      error => {
-        this.toaster.error(this.errorMessage(error));
-      });
+    this.leerDelSistema('/sm/fabricacion/busquedas', data => {
+      this.busquedas = data.Table;
+      this.refrescarGrid(this.myGrid2, 'refresh');
+    });
   }
 
   loadTablas(seleccionar: string = null) {
-    this.service.HTTP_Get('/sm/fabricacion/tablas' + this.querySistema()).subscribe(
-      data => {
-        this.tablas = data.Table;
-        let tabla = seleccionar || (this.tablas.some(t => t.tabla == this.tablaSel) ? this.tablaSel : (this.tablas.length > 0 ? this.tablas[0].tabla : ''));
-        this.SeleccionarTabla(tabla);
-      },
-      error => {
-        this.toaster.error(this.errorMessage(error));
-      });
+    this.leerDelSistema('/sm/fabricacion/tablas', data => {
+      this.tablas = data.Table;
+      let tabla = seleccionar || (this.tablas.some(t => t.tabla == this.tablaSel) ? this.tablaSel : (this.tablas.length > 0 ? this.tablas[0].tabla : ''));
+      this.SeleccionarTabla(tabla);
+    });
   }
 
   loadValoresParametros() {
-    this.service.HTTP_Get('/sm/fabricacion/parametros/valores' + this.querySistema()).subscribe(
-      data => {
-        let valores = {};
-        data.Table.forEach(v => {
-          let nombre = String(v.name).toUpperCase();
-          (valores[nombre] = valores[nombre] || []).push({ valor: String(v.valor), texto: String(v.texto) });
-        });
-        this.valoresParametro = valores;
-      },
-      error => {
-        this.toaster.error(this.errorMessage(error));
+    this.leerDelSistema('/sm/fabricacion/parametros/valores', data => {
+      let valores = {};
+      data.Table.forEach(v => {
+        let nombre = String(v.name).toUpperCase();
+        (valores[nombre] = valores[nombre] || []).push({ valor: String(v.valor), texto: String(v.texto) });
       });
+      this.valoresParametro = valores;
+    });
+  }
+
+  /* Repinta una rejilla sin que un fallo de jqxGrid corte lo que viene después. jqxGrid lanza una excepción al
+     repintar una rejilla que está en una pestaña oculta (p. ej. los parámetros mientras se ve Reglas), y como
+     las reglas se recargaban a continuación, se quedaban las del sistema anterior */
+  private refrescarGrid(grid: any, modo: 'refresh' | 'cells') {
+    this.fueraDeZona(() => {
+      try {
+        if (modo === 'refresh') {
+          grid.refresh();
+        } else {
+          grid.updatebounddata('cells');
+        }
+      } catch (e) {
+        /* se repinta al mostrar la pestaña */
+      }
+    });
   }
 
   /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
      el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
   parametrosCondicion(c: Condicion): string[] {
+    /* Ordenados alfabéticamente (sin distinguir mayúsculas, criterio del español). La lista ordenada se guarda
+       y solo se recalcula cuando se recargan los parámetros: este método se llama en cada revisión de Angular */
+    if (this.ordenadosOrigen !== this.nombresParametros) {
+      this.ordenadosOrigen = this.nombresParametros;
+      this.parametrosOrdenados = this.nombresParametros.slice()
+        .sort((a, b) => String(a).localeCompare(String(b), 'es', { sensitivity: 'base' }));
+    }
     let actual = String(c.parametro || '').toUpperCase();
-    return this.nombresParametros.filter(p => {
+    return this.parametrosOrdenados.filter(p => {
       let nombre = String(p).toUpperCase();
       return !nombre.endsWith('_ID') || nombre == actual;
     });
@@ -780,32 +799,43 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     return '?sistema=' + encodeURIComponent(this.sistema);
   }
 
+  /* Lee datos del sistema elegido. Si el usuario cambia de producto o de sistema antes de que llegue la
+     respuesta, se ignora: si no, una respuesta lenta del sistema anterior pisaba los datos del nuevo.
+     `extra` es el resto de la consulta (p. ej. '&tabla=X') */
+  private leerDelSistema(ruta: string, alRecibir: (data: any) => void, extra: string = '') {
+    const sistema = this.sistema;
+    this.service.HTTP_Get(ruta + '?sistema=' + encodeURIComponent(sistema) + extra).subscribe(
+      data => {
+        if (sistema === this.sistema) {
+          alRecibir(data);
+        }
+      },
+      error => {
+        if (sistema === this.sistema) {
+          this.toaster.error(this.errorMessage(error));
+        }
+      });
+  }
+
   /* ---------------- PARAMETROS ---------------- */
 
   loadColumnas() {
-    this.service.HTTP_Get('/sm/fabricacion/columnas' + this.querySistema()).subscribe(
-      data => {
-        this.columnas = data.Table;
-      },
-      error => {
-        this.toaster.error(this.errorMessage(error));
-      });
+    this.leerDelSistema('/sm/fabricacion/columnas', data => {
+      this.columnas = data.Table;
+    });
   }
 
   /* Al cargar los parámetros se recargan las reglas: la validación depende de ellos */
   loadParameters() {
-    this.service.HTTP_Get('/sm/fabricacion/parametros' + this.querySistema()).subscribe(
-      data => {
-        this.parametros = data.Table;
-        this.nombresParametros = data.Table.map(p => p.name);
-        this.source2.localdata = data.Table;
-        this.dataAdapter2.dataBind();
-        this.fueraDeZona(() => this.myGrid2.updatebounddata());
-        this.loadDetails();
-      },
-      error => {
-        this.toaster.error(this.errorMessage(error));
-      });
+    this.leerDelSistema('/sm/fabricacion/parametros', data => {
+      this.parametros = data.Table;
+      this.nombresParametros = data.Table.map(p => p.name);
+      this.source2.localdata = data.Table;
+      this.dataAdapter2.dataBind();
+      /* Las reglas se cargan siempre, aunque falle el repintado de la tabla de parámetros (pestaña oculta) */
+      this.refrescarGrid(this.myGrid2, 'cells');
+      this.loadDetails();
+    });
   }
 
   /* Parámetros calculados antes que el que se está editando (menor orden): los únicos que puede usar */
@@ -924,24 +954,20 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   /* Recarga las reglas. conservar: la rejilla se queda donde estaba (al crear, borrar o duplicar jqxGrid
      la devolvería arriba del todo); seleccionar: idrow de la regla a la que salta y que deja marcada */
   loadDetails(opciones: { conservar?: boolean, seleccionar?: any } = {}) {
-    this.service.HTTP_Get('/sm/fabricacion/reglas' + this.querySistema()).subscribe(
-      data => {
-        this.erroresReglas = {};
-        this.reglasConErrores = 0;
-        data.Table.forEach(r => {
-          let errores = validarRegla(r, this.nombresParametros, this.parametrosArticulo());
-          this.erroresReglas[r.idrow] = errores;
-          if (errores.total > 0) {
-            this.reglasConErrores++;
-          }
-        });
-
-        this.reglas = data.Table;
-        this.fueraDeZona(() => recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones));
-      },
-      error => {
-        this.toaster.error(this.errorMessage(error));
+    this.leerDelSistema('/sm/fabricacion/reglas', data => {
+      this.erroresReglas = {};
+      this.reglasConErrores = 0;
+      data.Table.forEach(r => {
+        let errores = validarRegla(r, this.nombresParametros, this.parametrosArticulo());
+        this.erroresReglas[r.idrow] = errores;
+        if (errores.total > 0) {
+          this.reglasConErrores++;
+        }
       });
+
+      this.reglas = data.Table;
+      this.fueraDeZona(() => recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones));
+    });
   }
 
   Cellclick(event) {
@@ -1658,16 +1684,11 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       valor_texto: cabecera.valor_texto || '',
       valores: [],
     };
-    let url = '/sm/fabricacion/tablas/valores' + this.querySistema() + '&tabla=' + encodeURIComponent(tabla);
-    this.service.HTTP_Get(url).subscribe(
-      data => {
-        if (this.tablaSel == tabla) {
-          this.tablaEdit.valores = data.Table.map(v => ({ clave: v.clave, valor: v.valor }));
-        }
-      },
-      error => {
-        this.toaster.error(this.errorMessage(error));
-      });
+    this.leerDelSistema('/sm/fabricacion/tablas/valores', data => {
+      if (this.tablaSel == tabla) {
+        this.tablaEdit.valores = data.Table.map(v => ({ clave: v.clave, valor: v.valor }));
+      }
+    }, '&tabla=' + encodeURIComponent(tabla));
   }
 
   NuevaTabla() {
