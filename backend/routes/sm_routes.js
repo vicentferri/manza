@@ -511,6 +511,7 @@ smapi.post('/fabricacion/reglas', NuevoSistema, FabricacionReglasController.regl
 smapi.post('/fabricacion/reglas/update', NuevoSistema, FabricacionReglasController.regla_update);
 smapi.post('/fabricacion/reglas/save', NuevoSistema, FabricacionReglasController.regla_save);
 smapi.post('/fabricacion/reglas/delete', NuevoSistema, FabricacionReglasController.regla_delete);
+smapi.post('/fabricacion/reglas/copiar', NuevoSistema, FabricacionReglasController.regla_copiar);
 smapi.get('/fabricacion/parametros', NuevoSistema, FabricacionReglasController.parametros);
 smapi.get('/fabricacion/parametros/valores', NuevoSistema, FabricacionReglasController.parametros_valores);
 smapi.get('/fabricacion/columnas', NuevoSistema, FabricacionReglasController.columnas);

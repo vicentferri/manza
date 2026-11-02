@@ -11,6 +11,7 @@ import {
   validarCondicion, validarConsumo, validarRegla
 } from './fabricacion-reglas.util';
 import * as XLSX from 'xlsx';
+import { recargarGrid } from '../../../shared/grid-recarga';
 
 /*
  * Configuración de la fabricación por reglas (motor v3). Hoy solo el sistema HONEYCOMB.
@@ -70,6 +71,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
   @ViewChild('gridReference4', { static: false }) myGrid4!: jqxGridComponent;
   @ViewChild('staticModalAdd', { static: false }) modalAdd!: ModalDirective;
   @ViewChild('modalRegla', { static: false }) modalRegla!: ModalDirective;
+  @ViewChild('modalCopiar', { static: false }) modalCopiar!: ModalDirective;
   @ViewChild('SearchArtikel', { static: false }) search!: SearchArtikelComponent;
 
   public getScreenWidth: any;
@@ -109,6 +111,20 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
   /* Valores posibles de los parámetros con catálogo: { '@COLOR_PERFIL_ID': [{valor, texto}] } */
   valoresParametro: { [nombre: string]: { valor: string, texto: string }[] } = {};
+
+  /* Reglas del juego elegido (las de la tabla) */
+  reglas: any[] = [];
+
+  /* Ventana "Copiar reglas": reglas elegidas (idrow -> true), destino (clave de un juego o 'nuevo:<id
+     de SOL_ACC_SISTEMA>') y cliente de las copias ('mismo', 'todos' o 'cliente' con copia.cliente) */
+  copia = {
+    seleccion: {} as { [idrow: number]: boolean },
+    filtroCliente: '',
+    destino: '',
+    clienteModo: 'mismo',
+    cliente: ''
+  };
+  copiando = false;
 
   /* Errores de validación por regla (idrow) */
   erroresReglas: { [idrow: number]: ErroresRegla } = {};
@@ -860,7 +876,9 @@ export class ArtikelnFacCdV3Component implements OnInit {
 
   /* ---------------- REGLAS: TABLA ---------------- */
 
-  loadDetails() {
+  /* Recarga las reglas. conservar: la rejilla se queda donde estaba (al crear, borrar o duplicar jqxGrid
+     la devolvería arriba del todo); seleccionar: idrow de la regla a la que salta y que deja marcada */
+  loadDetails(opciones: { conservar?: boolean, seleccionar?: any } = {}) {
     this.service.HTTP_Get('/sm/fabricacion/reglas' + this.querySistema()).subscribe(
       data => {
         this.erroresReglas = {};
@@ -873,9 +891,8 @@ export class ArtikelnFacCdV3Component implements OnInit {
           }
         });
 
-        this.source.localdata = data.Table;
-        this.dataAdapter.dataBind();
-        this.myGrid.updatebounddata("cells");
+        this.reglas = data.Table;
+        recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones);
       },
       error => {
         this.toaster.error(this.errorMessage(error));
@@ -906,13 +923,179 @@ export class ArtikelnFacCdV3Component implements OnInit {
       this.service.HTTP_Post('/sm/fabricacion/reglas/delete', values).subscribe(
         data => {
           if (data.message == 'OK') {
-            this.loadDetails();
+            this.loadDetails({ conservar: true });
           }
         },
         error => {
           this.toaster.error(this.errorMessage(error));
         });
     }
+  }
+
+  /* ---------------- COPIAR REGLAS ----------------
+     Copia las reglas elegidas a otro juego del mismo producto (o al mismo, p. ej. para sacar las reglas
+     propias de un cliente de las generales), existente o nuevo. Se copian aunque usen parámetros que el
+     destino no tiene: salen con error en la tabla hasta que se creen */
+
+  AbrirCopiar() {
+    if (this.reglas.length == 0) {
+      this.toaster.warning('Esta fabricación no tiene reglas que copiar', 'Copiar reglas');
+      return;
+    }
+    this.copia = { seleccion: {}, filtroCliente: '', destino: '', clienteModo: 'mismo', cliente: '' };
+    this.modalCopiar.show();
+  }
+
+  /* Reglas de la lista, con el filtro de cliente ('' = todas, 'todos' = generales, o el id) */
+  reglasCopiables(): any[] {
+    let filtro = this.copia.filtroCliente;
+    if (filtro === '') return this.reglas;
+    if (filtro === 'todos') return this.reglas.filter(r => r.cliente === null || r.cliente === undefined);
+    return this.reglas.filter(r => String(r.cliente) == filtro);
+  }
+
+  /* Clientes que tienen reglas en este juego (para el filtro) */
+  clientesConReglas(): { idrow: any, descripcion: string }[] {
+    let vistos = {};
+    let lista = [];
+    this.reglas.filter(r => r.cliente !== null && r.cliente !== undefined).forEach(r => {
+      if (!vistos[r.cliente]) {
+        vistos[r.cliente] = true;
+        lista.push({ idrow: r.cliente, descripcion: r.cliente_nombre });
+      }
+    });
+    return lista;
+  }
+
+  textoCondicionesRegla(r: any): string {
+    let partes = [];
+    let campos = ['nombre_parametro1', 'nombre_parametro2', 'nombre_parametro3', 'nombre_parametro4'];
+    let operaciones = ['operacion', 'operacion2', 'operacion3'];
+    campos.forEach((campo, i) => {
+      let texto = String(r[campo] || '').trim();
+      if (texto == '') return;
+      if (partes.length > 0) partes.push(r[operaciones[i - 1]] == 'O' ? 'O' : 'Y');
+      partes.push(texto);
+    });
+    return partes.length == 0 ? 'Siempre' : partes.join(' ');
+  }
+
+  get seleccionadas(): number[] {
+    return this.reglas.filter(r => this.copia.seleccion[r.idrow]).map(r => r.idrow);
+  }
+
+  todasMarcadas(): boolean {
+    let lista = this.reglasCopiables();
+    return lista.length > 0 && lista.every(r => this.copia.seleccion[r.idrow]);
+  }
+
+  MarcarTodas(marcar: boolean) {
+    this.reglasCopiables().forEach(r => this.copia.seleccion[r.idrow] = marcar);
+  }
+
+  erroresCopia(): string[] {
+    let errores = [];
+    if (this.seleccionadas.length == 0) errores.push('Marque las reglas que quiere copiar');
+    if (!this.copia.destino) errores.push('Elija la fabricación de destino');
+    if (this.copia.clienteModo == 'cliente' && !this.copia.cliente) errores.push('Elija el cliente de las reglas copiadas');
+    return errores;
+  }
+
+  /* Clientes (null = Todos) que tendrán las reglas copiadas */
+  clientesDestinoCopia(): any[] {
+    if (this.copia.clienteModo == 'todos') return [null];
+    if (this.copia.clienteModo == 'cliente') return [Number(this.copia.cliente)];
+    let ids = this.seleccionadas;
+    let clientes = this.reglas.filter(r => ids.indexOf(r.idrow) >= 0)
+      .map(r => r.cliente === undefined ? null : r.cliente);
+    return clientes.filter((c, i) => clientes.indexOf(c) === i);
+  }
+
+  CopiarReglas() {
+    if (this.erroresCopia().length > 0 || this.copiando) {
+      return;
+    }
+    let destino = String(this.copia.destino);
+    this.copiando = true;
+
+    /* Destino nuevo: primero se crea el juego (como "Añadir sistema") y después se copia */
+    if (destino.indexOf('nuevo:') === 0) {
+      let values = JSON.stringify({ producto: this.producto, acc_sistema_id: destino.substring(6) });
+      this.service.HTTP_Post('/sm/fabricacion/sistemas', values).subscribe(
+        data => {
+          if (data.message == 'OK') {
+            this.enviarCopia(data.sistema, true);
+          } else {
+            this.copiando = false;
+          }
+        },
+        error => {
+          this.copiando = false;
+          this.toaster.error(this.errorMessage(error), 'Copiar reglas');
+        });
+      return;
+    }
+
+    /* Destino existente: se avisa si ya tiene reglas de esos clientes (quedarían repetidas) */
+    this.service.HTTP_Get('/sm/fabricacion/reglas?sistema=' + encodeURIComponent(destino)).subscribe(
+      data => {
+        let clientes = this.clientesDestinoCopia();
+        let coinciden = data.Table.filter(r => clientes.indexOf(r.cliente === undefined ? null : r.cliente) >= 0).length;
+        if (coinciden > 0 && !confirm('La fabricación de destino ya tiene ' + coinciden
+          + (coinciden == 1 ? ' regla' : ' reglas') + ' de ese cliente. Las copias se añaden a las que hay'
+          + ' (si ya estaban, quedarán repetidas). ¿Desea continuar?')) {
+          this.copiando = false;
+          return;
+        }
+        this.enviarCopia(destino, false);
+      },
+      error => {
+        this.copiando = false;
+        this.toaster.error(this.errorMessage(error), 'Copiar reglas');
+      });
+  }
+
+  enviarCopia(destino: string, nuevo: boolean) {
+    let body = {
+      origen: this.sistema,
+      destino: destino,
+      ids: this.seleccionadas,
+      cliente_modo: this.copia.clienteModo,
+      cliente: this.copia.clienteModo == 'cliente' ? this.copia.cliente : null
+    };
+    this.service.HTTP_Post('/sm/fabricacion/reglas/copiar', JSON.stringify(body)).subscribe(
+      data => {
+        this.copiando = false;
+        this.modalCopiar.hide();
+        this.toaster.success(data.copiadas + (data.copiadas == 1 ? ' regla copiada' : ' reglas copiadas')
+          + (nuevo ? ' a la fabricación nueva' : ''), 'Copiar reglas');
+        if (data.faltan && data.faltan.length > 0) {
+          this.toaster.warning('La fabricación de destino no tiene ' + (data.faltan.length == 1 ? 'el parámetro ' : 'los parámetros ')
+            + data.faltan.join(', ') + '. Las reglas que los usan salen con error hasta que se creen.',
+            'Copiar reglas', { timeOut: 15000 });
+        }
+        /* Se pasa a la fabricación de destino para revisar las copias */
+        if (nuevo) {
+          this.loadSistemas(destino);
+        } else if (destino != this.sistema) {
+          this.sistema = destino;
+          this.ChangeSistema();
+        } else {
+          this.loadDetails({ conservar: true });
+        }
+      },
+      error => {
+        this.copiando = false;
+        if (nuevo) {
+          /* El juego se creó pero sin reglas: se recarga para que aparezca */
+          this.modalCopiar.hide();
+          this.loadSistemas(destino);
+          this.toaster.error('Se ha creado la fabricación, pero no se han podido copiar las reglas: '
+            + this.errorMessage(error), 'Copiar reglas', { timeOut: 15000 });
+        } else {
+          this.toaster.error(this.errorMessage(error), 'Copiar reglas');
+        }
+      });
   }
 
   /* ---------------- AJUSTE DE COLUMNAS AL CONTENIDO ----------------
@@ -1385,7 +1568,7 @@ export class ArtikelnFacCdV3Component implements OnInit {
         if (data.message == 'OK') {
           this.toaster.success(this.regla.idrow > 0 ? 'Regla guardada' : 'Regla creada', 'Reglas');
           this.modalRegla.hide();
-          this.loadDetails();
+          this.loadDetails({ conservar: true, seleccionar: data.idrow });
         }
       },
       error => {

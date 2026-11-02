@@ -364,6 +364,95 @@ async function regla_delete(req, res) {
   }
 }
 
+/* POST /fabricacion/reglas/copiar { origen, destino, ids: [idrow...], cliente_modo, cliente }
+   Copia las reglas elegidas del juego origen al destino (el mismo u otro juego del mismo producto).
+   cliente_modo: 'mismo' (el de cada regla), 'todos' (NULL) o 'cliente' (el indicado en cliente).
+   Se copian aunque usen parámetros que el destino no tiene: se devuelven en `faltan` para avisar
+   (en la pantalla salen con error hasta que se creen) */
+const PARAMETRO = /@[A-Za-z0-9_]+/g;
+const CAMPOS_CON_PARAMETROS = ['articulos', 'consumo', 'nombre_parametro1', 'nombre_parametro2',
+  'nombre_parametro3', 'nombre_parametro4', 'param_ancho', 'param_alto'];
+
+async function regla_copiar(req, res) {
+  const body = req.body || {};
+  const ids = (Array.isArray(body.ids) ? body.ids : [])
+    .map(id => parseInt(id, 10))
+    .filter(id => !isNaN(id) && id > 0);
+  const modo = String(body.cliente_modo || '');
+  if (ids.length === 0 || ids.length > 1000) {
+    return res.status(400).send({ message: 'Seleccione las reglas que quiere copiar' });
+  }
+  if (['mismo', 'todos', 'cliente'].indexOf(modo) === -1) {
+    return res.status(400).send({ message: 'Indique el cliente de las reglas copiadas' });
+  }
+  const clienteDestino = modo === 'cliente' ? cliente(body.cliente) : null;
+  if (modo === 'cliente' && clienteDestino === null) {
+    return res.status(400).send({ message: 'Indique el cliente de las reglas copiadas' });
+  }
+  try {
+    const pool = await sql.connect();
+    const origen = await sistemaActivo(pool, body.origen);
+    const destino = await sistemaActivo(pool, body.destino);
+    if (!origen || !destino) {
+      return res.status(400).send({ message: 'Fabricación de origen o de destino no válida' });
+    }
+    if (origen.producto !== destino.producto) {
+      return res.status(400).send({ message: 'Solo se pueden copiar reglas entre fabricaciones del mismo producto' });
+    }
+    if (clienteDestino !== null) {
+      const existe = await pool.request().input('cliente', sql.Int, clienteDestino)
+        .query('select count(*) as n from SOL_CLIENTES where idrow = @cliente');
+      if (existe.recordset[0].n === 0) {
+        return res.status(400).send({ message: 'Cliente no válido' });
+      }
+    }
+
+    /* Los ids son enteros validados: van en la consulta tal cual */
+    const lista = ids.join(',');
+    const reglas = (await pool.request().input('origen', sql.VarChar(50), origen.sistema).query(`
+      select idrow, ${CAMPOS_CON_PARAMETROS.join(', ')}
+      from SOL_ARTICULOS_FABRICACION_RELACION_V2
+      where sistema = @origen and idrow in (${lista})`)).recordset;
+    if (reglas.length !== ids.length) {
+      return res.status(400).send({ message: 'Alguna regla no existe o no es de la fabricación de origen' });
+    }
+
+    /* Una sola sentencia: o se copian todas o ninguna */
+    const result = await pool.request()
+      .input('origen', sql.VarChar(50), origen.sistema)
+      .input('destino', sql.VarChar(50), destino.sistema)
+      .input('modo', sql.VarChar(10), modo)
+      .input('cliente', sql.Int, clienteDestino)
+      .query(`
+        insert into SOL_ARTICULOS_FABRICACION_RELACION_V2
+          (orden, sistema, cliente, atributo, valor, valor2, articulos,
+           nombre_parametro1, operacion, nombre_parametro2, operacion2,
+           nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto)
+        select orden, @destino, case @modo when 'mismo' then cliente when 'cliente' then @cliente else null end,
+           atributo, valor, valor2, articulos,
+           nombre_parametro1, operacion, nombre_parametro2, operacion2,
+           nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto
+        from SOL_ARTICULOS_FABRICACION_RELACION_V2
+        where sistema = @origen and idrow in (${lista})
+        order by orden, idrow`);
+
+    /* Parámetros que usan las reglas copiadas y no existen en el destino */
+    const delDestino = (await pool.request().input('destino', sql.VarChar(50), destino.sistema)
+      .query('select upper(name) as name from SOL_FABRICACION_PARAMETROS where sistema = @destino')).recordset
+      .map(p => p.name);
+    const usados = new Set();
+    reglas.forEach(r => CAMPOS_CON_PARAMETROS.forEach(campo => {
+      (String(r[campo] || '').match(PARAMETRO) || []).forEach(p => usados.add(p.toUpperCase()));
+    }));
+    const faltan = Array.from(usados).filter(p => delDestino.indexOf(p) === -1).sort();
+
+    res.status(200).send({ message: 'OK', copiadas: result.rowsAffected[0], faltan: faltan });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 /* ---------------- PARAMETROS ---------------- */
 
 async function parametros(req, res) {
@@ -697,6 +786,7 @@ module.exports = {
   regla_save,
   regla_update,
   regla_delete,
+  regla_copiar,
   parametros,
   parametros_valores,
   columnas,
