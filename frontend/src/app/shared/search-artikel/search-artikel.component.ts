@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef, NgZone } from '@angular/core';
 import { destruirGrids } from '../grid-destruir';
 import { SearchArticleType } from '../../models/SearchArticleType';
 import { jqxGridComponent } from 'jqwidgets-framework/jqwidgets-ts/angular_jqxgrid';
@@ -275,7 +275,8 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
 
   constructor(private service: HaruService,
     private toaster: ToastrService,
-    vRef: ViewContainerRef) {
+    vRef: ViewContainerRef,
+    private zone: NgZone) {
 
     // this.toaster.setRootViewContainerRef(vRef);
     this.editable = 1;
@@ -300,7 +301,10 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    this.mySGrid.createComponent(this.settings);
+    /* Fuera de la zona de Angular: mientras la rejilla está oculta (ventana del buscador cerrada) jqx la
+       comprueba cada 100-300 ms, y dentro de la zona cada comprobación revisaba toda la pantalla que la contiene.
+       Los eventos que cambian datos (selección y edición de fila) vuelven a la zona */
+    this.zone.runOutsideAngular(() => this.mySGrid.createComponent(this.settings));
     if (this.mySGrid != null) {
       this.createButtons();
     }
@@ -557,6 +561,10 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
   }
 
   GridOnRowSelect(event: any): void {
+    if (!NgZone.isInAngularZone()) {
+      this.zone.run(() => this.GridOnRowSelect(event));
+      return;
+    }
     console.log(event.args);
 
     let tipoCalculo = event.args.row.tipocalculo;
@@ -610,6 +618,10 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
   };
 
   cellEndEditEvent(event) {
+    if (!NgZone.isInAngularZone()) {
+      this.zone.run(() => this.cellEndEditEvent(event));
+      return;
+    }
 
     if (event.args.value != event.args.oldvalue) {
 

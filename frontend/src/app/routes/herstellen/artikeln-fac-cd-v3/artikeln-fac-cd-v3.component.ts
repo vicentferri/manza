@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, HostListener, NgZone } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ModalDirective } from 'ngx-bootstrap/modal';
 import { SearchArtikelComponent } from '../../../shared/search-artikel/search-artikel.component';
@@ -472,14 +472,36 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   };
 
   constructor(private service: HaruService,
-    private toaster: ToastrService) {
+    private toaster: ToastrService,
+    private zone: NgZone) {
+  }
+
+  /* ---------------- REJILLAS FUERA DE LA ZONA DE ANGULAR ----------------
+     jqxGrid programa temporizadores (cada 100-300 ms) mientras una rejilla está oculta (pestañas sin abrir) para
+     pintarla cuando se vea. Dentro de la zona de Angular cada uno provocaba una revisión completa de la pantalla
+     (~65 por segundo sin tocar nada), y las animaciones iban a saltos. Por eso todo lo que crea o repinta las
+     rejillas se hace fuera de la zona, y los eventos de la rejilla que cambian la pantalla vuelven a ella. */
+
+  private fueraDeZona<T>(fn: () => T): T {
+    return this.zone.runOutsideAngular(fn);
+  }
+
+  /* true si la llamada venía de fuera de la zona: el manejador se ha vuelto a lanzar dentro y no debe seguir */
+  private relanzarEnZona(fn: () => void): boolean {
+    if (NgZone.isInAngularZone()) {
+      return false;
+    }
+    this.zone.run(fn);
+    return true;
   }
 
   ngAfterViewInit() {
-    this.myGrid.createComponent(this.settings);
-    this.myGrid2.createComponent(this.settings2);
-    this.myGrid3.createComponent(this.settingsDet);
-    this.myGrid4.createComponent(this.settings4);
+    this.fueraDeZona(() => {
+      this.myGrid.createComponent(this.settings);
+      this.myGrid2.createComponent(this.settings2);
+      this.myGrid3.createComponent(this.settingsDet);
+      this.myGrid4.createComponent(this.settings4);
+    });
     this.performResize();
     this.loadProductos();
   }
@@ -500,8 +522,10 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   performResize() {
     if (this.myGrid != null) {
       let height = 0.7 * this.getScreenHeight;
-      this.myGrid.height(height);
-      this.myGrid2.height(height);
+      this.fueraDeZona(() => {
+        this.myGrid.height(height);
+        this.myGrid2.height(height);
+      });
     }
   }
 
@@ -531,13 +555,15 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   /* Se aplica al cargar datos o al mostrar la pestaña (ajustarColumnas). Antes de que jqxGrid haya
      pintado la tabla, hidecolumn falla: no debe cortar el arranque de la pantalla */
   aplicarColumnasOcultas() {
-    try {
-      this.columnasOcultables.forEach(c => {
-        let oculta = this.estaOculta(c);
-        c.campos.forEach(campo => oculta ? this.myGrid.hidecolumn(campo) : this.myGrid.showcolumn(campo));
-      });
-    }
-    catch (e) { }
+    this.fueraDeZona(() => {
+      try {
+        this.columnasOcultables.forEach(c => {
+          let oculta = this.estaOculta(c);
+          c.campos.forEach(campo => oculta ? this.myGrid.hidecolumn(campo) : this.myGrid.showcolumn(campo));
+        });
+      }
+      catch (e) { }
+    });
   }
 
   /* Solo cambia la vista: los valores de las reglas no se tocan */
@@ -657,7 +683,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     this.service.HTTP_Get('/sm/fabricacion/busquedas' + this.querySistema()).subscribe(
       data => {
         this.busquedas = data.Table;
-        this.myGrid2.refresh();
+        this.fueraDeZona(() => this.myGrid2.refresh());
       },
       error => {
         this.toaster.error(this.errorMessage(error));
@@ -764,7 +790,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
         this.nombresParametros = data.Table.map(p => p.name);
         this.source2.localdata = data.Table;
         this.dataAdapter2.dataBind();
-        this.myGrid2.updatebounddata();
+        this.fueraDeZona(() => this.myGrid2.updatebounddata());
         this.loadDetails();
       },
       error => {
@@ -851,6 +877,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   Cellclick2(event) {
+    if (this.relanzarEnZona(() => this.Cellclick2(event))) return;
     let args = event.args;
     let row = args.row.bounddata;
     if (args.datafield == 'idrow') {
@@ -900,7 +927,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
         });
 
         this.reglas = data.Table;
-        recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones);
+        this.fueraDeZona(() => recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones));
       },
       error => {
         this.toaster.error(this.errorMessage(error));
@@ -908,6 +935,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   Cellclick(event) {
+    if (this.relanzarEnZona(() => this.Cellclick(event))) return;
     let args = event.args;
     if (args.datafield != 'acciones') {
       return;
@@ -922,6 +950,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   Rowdoubleclick(event) {
+    if (this.relanzarEnZona(() => this.Rowdoubleclick(event))) return;
     this.EditarRegla(event.args.row.bounddata);
   }
 
@@ -1179,12 +1208,14 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   ajustarColumnas(): boolean {
-    try {
-      return this.ajustarColumnasReglas();
-    }
-    catch (e) {
-      return false;
-    }
+    return this.fueraDeZona(() => {
+      try {
+        return this.ajustarColumnasReglas();
+      }
+      catch (e) {
+        return false;
+      }
+    });
   }
 
   ajustarColumnasReglas(): boolean {
@@ -1216,12 +1247,14 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   ajustarColumnasSimulacion(): boolean {
-    try {
-      return this.ajustarColumnasSimulacionGrids();
-    }
-    catch (e) {
-      return false;
-    }
+    return this.fueraDeZona(() => {
+      try {
+        return this.ajustarColumnasSimulacionGrids();
+      }
+      catch (e) {
+        return false;
+      }
+    });
   }
 
   ajustarColumnasSimulacionGrids(): boolean {
@@ -1247,11 +1280,11 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   /* jqxGrid termina de pintar una tabla que estaba oculta un poco después de mostrarse */
   reintentar(accion: () => boolean, intentos: number = 10) {
-    setTimeout(() => {
+    this.fueraDeZona(() => setTimeout(() => {
       if (!accion() && intentos > 1) {
         this.reintentar(accion, intentos - 1);
       }
-    }, 150);
+    }, 150));
   }
 
   /* ---------------- REGLAS: VENTANA DE EDICION ---------------- */
@@ -1754,13 +1787,15 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   /* ---------------- SIMULACION ---------------- */
 
   mostrarResultado(fabricacion: any[], parametros: any[]) {
-    this.sourceDet.localdata = fabricacion;
-    this.dataAdapterDet.dataBind();
-    this.myGrid3.updatebounddata();
+    this.fueraDeZona(() => {
+      this.sourceDet.localdata = fabricacion;
+      this.dataAdapterDet.dataBind();
+      this.myGrid3.updatebounddata();
 
-    this.source4.localdata = parametros;
-    this.dataAdapter4.dataBind();
-    this.myGrid4.updatebounddata();
+      this.source4.localdata = parametros;
+      this.dataAdapter4.dataBind();
+      this.myGrid4.updatebounddata();
+    });
   }
 
   Simulate() {

@@ -407,10 +407,10 @@
 
 <!-- ======================= VENTANA DE REGLA ======================= -->
 <div
-  class="modal fade"
+  class="modal"
   bsModal
   #modalRegla="bs-modal"
-  [config]="{ backdrop: 'static' }"
+  [config]="{ backdrop: 'static', animated: false }"
   tabindex="-1"
   role="dialog"
   aria-hidden="true"
@@ -599,10 +599,10 @@
 
 <!-- ======================= VENTANA COPIAR REGLAS ======================= -->
 <div
-  class="modal fade"
+  class="modal"
   bsModal
   #modalCopiar="bs-modal"
-  [config]="{ backdrop: 'static' }"
+  [config]="{ backdrop: 'static', animated: false }"
   tabindex="-1"
   role="dialog"
   aria-hidden="true"
@@ -761,10 +761,10 @@
 
 <!-- Buscador de artículos -->
 <div
-  class="modal fade"
+  class="modal"
   bsModal
   #staticModalAdd="bs-modal"
-  [config]="{ backdrop: 'static', keyboard: false }"
+  [config]="{ backdrop: 'static', keyboard: false, animated: false }"
   tabindex="-1"
   role="dialog"
   aria-labelledby="myModalLabel"
