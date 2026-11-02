@@ -377,5 +377,16 @@
     "Modelo de cajón": "Modelo de caixa",
     "Altura": "Altura",
     "Cargador": "Carregador",
-    "Tipo": "Tipo"
+    "Tipo": "Tipo",
+    "Izquierda": "Esquerda",
+    "Derecha": "Direita",
+    "Ambos lados": "Ambos lados",
+    "Techo": "Teto",
+    "Pared 6 cm": "Parede 6 cm",
+    "Pared 17 cm": "Parede 17 cm",
+    "Cordón": "Cordão",
+    "Varilla": "Vareta",
+    "Motor sin mando": "Motor sem comando",
+    "Motor mando 1 canal": "Motor comando 1 canal",
+    "Motor mando 6 canales": "Motor comando 6 canais"
 }

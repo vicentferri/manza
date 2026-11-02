@@ -32,7 +32,7 @@
     <div class="cfg-linea-datos">
       <div class="cfg-dato">
         <span>{{ "TIPO DE JUNQUILLO" | translate }}</span>
-        <strong>{{ item.junquillo }}</strong>
+        <strong>{{ (item.junquillo == 'JR' ? 'REDONDEADO' : 'CUADRADO') | translate }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "ANCHO" | translate }}</span>

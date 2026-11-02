@@ -63,23 +63,23 @@
       </div>
       <div class="cfg-dato">
         <span>{{ "COLORMECANISMO" | translate }}</span>
-        <strong>{{ item.PJ_ColorRiel_2 }}</strong>
+        <strong>{{ item.PJ_ColorRiel_2 | translate }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "POSICIONMANDO" | translate }}</span>
-        <strong>{{ item.PJ_PosicionMando_2 }}</strong>
+        <strong>{{ item.PJ_PosicionMando_2 | translate }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "RECOGIDA" | translate }}</span>
-        <strong>{{ item.PJ_TipoRecogida_2 }}</strong>
+        <strong>{{ item.PJ_TipoRecogida_2 | translate }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "Soporte" | translate }}</span>
-        <strong>{{ item.PJ_TipoSoporte_2 }}</strong>
+        <strong>{{ item.PJ_TipoSoporte_2 | smtrans | translate }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "CONTRAPESO" | translate }}</span>
-        <strong>{{ item.PJ_Contrapeso_1 }}</strong>
+        <strong>{{ (item.PJ_Contrapeso_1 == '1' ? 'SI' : (item.PJ_Contrapeso_1 == '0' ? 'NO' : '—')) | translate }}</strong>
       </div>
 
       <div class="cfg-linea-grupo">{{ "Lamas y tejido" | translate }}</div>
