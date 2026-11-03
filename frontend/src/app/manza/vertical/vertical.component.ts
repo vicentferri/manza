@@ -806,7 +806,10 @@ export class VerticalComponent implements OnInit, OnChanges {
 
 
    asignaPrecios(): void {
-      const cantidad = parseInt(this.PV_Cantidad_1) || 1;
+      // En "Solo tejido" ('2') y "Solo riel" ('3') el backend ya devuelve el precio multiplicado
+      // por la cantidad, así que no hay que volver a multiplicarlo.
+      const precioYaConCantidad = this.TipoVertical == '2' || this.TipoVertical == '3';
+      const cantidad = precioYaConCantidad ? 1 : (parseInt(this.PV_Cantidad_1) || 1);
       this.precios.T3_PVP = cantidad * (
          this.precios.T3_Tejido
          + this.precios.T3_TejidosCombinados
