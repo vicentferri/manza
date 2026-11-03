@@ -1378,6 +1378,9 @@ export class VerticalComponent implements OnInit, OnChanges {
                            code_c1 = "";
                            this.idLinea = "";
                            nohaytarifa = true;
+                           // Sin tarifa para esas medidas: se borra el precio anterior para que no
+                           // quede en pantalla ni se pueda agregar con un importe que no corresponde.
+                           this.resetPrecios();
                         }
                         else {
                            let message = this.translation.get("PRODUCTOVALORADO");
