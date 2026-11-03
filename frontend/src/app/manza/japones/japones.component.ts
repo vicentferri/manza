@@ -1132,6 +1132,7 @@ export class JaponesComponent implements OnInit, OnChanges {
          this.toaster.info(message, "Valoración");
 
          if (this.CestaPrecios.length == 0) {
+            this.calculando = false;
             this.toaster.error("No hay lineas");
             return -1;
          }
@@ -1185,6 +1186,7 @@ export class JaponesComponent implements OnInit, OnChanges {
 
             },
             error => {
+               this.calculando = false;
                this.toaster.error(error.message);
             }
          );

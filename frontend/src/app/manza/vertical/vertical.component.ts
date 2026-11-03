@@ -1230,6 +1230,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    Tarifa_Mecanismo_Vertical_SoloTejido(ancholama: string, tejido: string, alto: string, lamas: string) {
       this.service.getTarifaVerticalST(ancholama, tejido, alto, lamas).subscribe(
          data => {
+            this.calculando = false;
             if (data.message == "OK") {
                this.Tipo3_PrecioMecanismo = 0;
                this.precios.T3_Tejido = data.v1;
@@ -1242,7 +1243,8 @@ export class VerticalComponent implements OnInit, OnChanges {
             }
          },
          error => {
-
+            this.calculando = false;
+            this.toaster.error(error.message);
          });
    }
 
@@ -1251,6 +1253,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    Tarifa_Mecanismo_Vertical_SoloRiel(cantidad: number, ancho: number, ancholama: string) {
       this.service.getTarifaMecanismoVertical(cantidad, ancholama, ancho).subscribe(
          data => {
+            this.calculando = false;
             if (data.message == "OK") {
                this.Tipo3_PrecioMecanismo = data.v1;
                this.precios.T3_Tejido = this.Tipo3_PrecioMecanismo;
@@ -1264,7 +1267,9 @@ export class VerticalComponent implements OnInit, OnChanges {
             }
          },
          error => {
+            this.calculando = false;
             console.log(error);
+            this.toaster.error(error.message);
          });
    }
 
@@ -1283,6 +1288,7 @@ export class VerticalComponent implements OnInit, OnChanges {
          this.toaster.info(message, "Valoración");
 
          if (this.CestaPrecios.length == 0) {
+            this.calculando = false;
             this.toaster.error("No hay lineas");
             return -1;
          }
@@ -1394,6 +1400,7 @@ export class VerticalComponent implements OnInit, OnChanges {
 
                   },
                   error => {
+                     this.calculando = false;
                      this.toaster.error(error.message);
                   }
                );
