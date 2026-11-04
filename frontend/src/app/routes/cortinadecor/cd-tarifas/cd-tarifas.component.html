@@ -132,6 +132,7 @@
                       <td class="text-right">{{ c.lineas }}</td>
                       <td>
                         <div *ngFor="let s of c.resoluciones" class="resolucion">
+                          <small class="text-muted mr-1" *ngIf="s.condicion">{{ s.condicion }} →</small>
                           <ng-container *ngIf="s.clave">
                             <span class="text-muted">{{ s.hoja }} ·</span>
                             <a href="javascript:void(0)" (click)="verTabla(s.idtarifa)" title="Ver tabla"><strong>{{ s.clave }}</strong></a>
@@ -275,6 +276,24 @@
             </select>
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label class="etiqueta">Además, atributo (opcional)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="regla.atributo" list="listaAtributosRegla" maxlength="100"
+                   placeholder="p. ej. TIPO DE TEJIDO" />
+            <datalist id="listaAtributosRegla"><option *ngFor="let a of atributos" [value]="a.atributo"></option></datalist>
+          </div>
+          <div class="form-group col-6">
+            <label class="etiqueta">Con el valor</label>
+            <input class="form-control form-control-sm" [(ngModel)]="regla.atributo_valor" list="listaValoresRegla" maxlength="255"
+                   [disabled]="!regla.atributo" placeholder="varios: SCREEN|OPACO" />
+            <datalist id="listaValoresRegla"><option *ngFor="let v of valoresAtributoRegla" [value]="v.valor">{{ v.lineas }} líneas</option></datalist>
+          </div>
+        </div>
+        <small class="text-muted d-block mb-2" *ngIf="regla.atributo">
+          La regla solo se aplica a las líneas que traen {{ regla.atributo | uppercase }} con ese valor (varios valores separados por |).
+          Tiene preferencia sobre las reglas de la misma referencia y color sin atributo.
+        </small>
         <small class="text-muted d-block mb-2" *ngIf="!regla.hoja">
           Vale para cualquier sistema. Si la hoja del sistema de la línea no tiene esta tabla, se pasa a la regla siguiente o a la asignación automática.
         </small>

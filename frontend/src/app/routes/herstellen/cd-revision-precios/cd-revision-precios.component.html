@@ -52,11 +52,72 @@
           <td colspan="7">
             <div *ngIf="l.detalle.motivo" class="mb-1"><i class="fa fa-info-circle mr-1"></i>{{ l.detalle.motivo }}</div>
 
-            <ng-container *ngIf="l.idtarifa">
+            <!-- Paneles japoneses: mecanismo + tejido por panel -->
+            <ng-container *ngIf="l.detalle.panel as p">
+              <div class="paso">
+                <span class="titulo">1 · Paneles</span>
+                <span>
+                  <strong>{{ p.formato === 'COMPLETO' ? 'Panel completo' : 'Solo paneles (sin mecanismo)' }}</strong>:
+                  {{ p.formato === 'COMPLETO' ? p.vias_texto : (p.paneles + ' paneles de ' + l.detalle.ancho + ' cm de ancho') }}
+                  <small class="d-block text-muted" *ngIf="p.recogida || p.color_riel">
+                    <span *ngIf="p.recogida">Recogida {{ p.recogida | lowercase }}</span><span *ngIf="p.recogida && p.color_riel"> · </span><span *ngIf="p.color_riel">riel {{ p.color_riel | lowercase }}</span>
+                  </small>
+                </span>
+              </div>
+              <div class="paso" *ngIf="p.formato === 'COMPLETO'">
+                <span class="titulo">2 · Mecanismo</span>
+                <span *ngIf="p.mecanismo">
+                  <strong>{{ p.mecanismo.tabla }}</strong> <span class="text-muted ml-1">(hoja {{ p.mecanismo.hoja }})</span>
+                  <a href="javascript:void(0)" class="ml-2" (click)="abrirTablaDe(p.mecanismo); $event.stopPropagation()"><i class="fa fa-table mr-1"></i>Ver tabla</a>
+                  <br>
+                  Ancho {{ l.detalle.ancho }} cm → escalón {{ p.mecanismo.ancho | number:'1.2-2' }} m = <strong>{{ p.mecanismo.precio | number:'1.2-4' }} €</strong>
+                </span>
+                <span *ngIf="!p.mecanismo" class="text-muted">—</span>
+              </div>
+              <div class="paso" *ngIf="p.tejido">
+                <span class="titulo">{{ p.formato === 'COMPLETO' ? '3' : '2' }} · Tejido</span>
+                <span>
+                  <strong>{{ p.tejido.tabla }}</strong> <span class="text-muted ml-1">(hoja {{ p.tejido.hoja }})</span>
+                  <a href="javascript:void(0)" class="ml-2" (click)="abrirTablaDe(p.tejido); $event.stopPropagation()"><i class="fa fa-table mr-1"></i>Ver tabla</a>
+                  <br>
+                  <small class="text-muted">{{ textoOrigen(p.tejido.origen) }}: {{ p.tejido.regla }}</small>
+                  <br>
+                  Ancho de cada panel
+                  <ng-container *ngIf="p.formato === 'COMPLETO'">{{ l.detalle.ancho }} / {{ p.paneles }} + 7 = </ng-container>{{ p.ancho_panel | number:'1.0-1' }} cm
+                  × alto {{ l.detalle.alto }} cm → escalón {{ p.tejido.ancho | number:'1.2-2' }} × {{ p.tejido.alto | number:'1.2-2' }} m
+                  = {{ p.tejido.precio_panel | number:'1.2-2' }} € × {{ p.paneles }} paneles = <strong>{{ p.tejido.total | number:'1.2-2' }} €</strong>
+                </span>
+              </div>
+              <div class="paso" *ngIf="p.formato === 'COMPLETO' && l.esperado !== null">
+                <span class="titulo">4 · Incrementos</span>
+                <span>
+                  <table class="table table-sm table-borderless mb-0 incrementos" *ngIf="l.detalle.incrementos?.length">
+                    <tr *ngFor="let i of l.detalle.incrementos">
+                      <td>{{ i.nombre }}<small class="d-block text-muted" *ngIf="i.condicion">{{ i.condicion }}</small></td>
+                      <td><small class="text-muted">{{ i.codigo ? (i.codigo + ' ' + i.descripcion) : 'Importe fijo' }}</small></td>
+                      <td class="text-right text-nowrap">{{ i.cantidad }} × {{ i.precio | number:'1.2-4' }}</td>
+                      <td class="text-right text-nowrap"><strong>{{ i.importe | number:'1.2-4' }} €</strong></td>
+                    </tr>
+                  </table>
+                  <span *ngIf="!l.detalle.incrementos?.length" class="text-muted">Ninguno</span>
+                </span>
+              </div>
+              <div class="paso" *ngIf="l.esperado !== null">
+                <span class="titulo">{{ p.formato === 'COMPLETO' ? '5' : '3' }} · Total</span>
+                <span>
+                  (<ng-container *ngIf="p.mecanismo">{{ p.mecanismo.precio | number:'1.2-4' }} + </ng-container>{{ p.tejido.total | number:'1.2-2' }}<ng-container *ngIf="l.suplementos"> + {{ l.suplementos | number:'1.2-4' }}</ng-container>) × {{ l.cantidad }} ud.
+                  = <strong>{{ l.esperado | number:'1.2-2' }} €</strong>
+                  <span class="text-muted ml-2">· CortinaDecor {{ l.precio_cd | number:'1.2-2' }} €</span>
+                  <small class="d-block text-muted" *ngIf="p.formato !== 'COMPLETO'">Los paneles sueltos no llevan incrementos.</small>
+                </span>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="l.idtarifa && !l.detalle.panel">
               <div class="paso">
                 <span class="titulo">1 · Tabla</span>
                 <span>
-                  <strong>{{ l.detalle.tabla }}</strong> <span class="text-muted">(hoja {{ l.detalle.hoja }})</span>
+                  <strong>{{ l.detalle.tabla }}</strong> <span class="text-muted ml-1">(hoja {{ l.detalle.hoja }})</span>
                   <a href="javascript:void(0)" class="ml-2" (click)="abrirTabla(l); $event.stopPropagation()"><i class="fa fa-table mr-1"></i>Ver tabla</a>
                   <br>
                   <small class="text-muted">{{ textoOrigen(l.detalle.origen) }}: {{ l.detalle.regla }}</small>

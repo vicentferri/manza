@@ -1,6 +1,7 @@
 'use strict'
 
 const sql = require('mssql');
+const Paneles = require('./cortinadecor_paneles');
 
 /*
  * Revisión de precios de los pedidos de CortinaDecor (cliente 2). Solo informativa.
@@ -29,10 +30,13 @@ const sql = require('mssql');
  * Se aplican estas reglas (cortinadecor sql/REGISTRO_CAMBIOS.md):
  *   - ASIA: el color que envían contiene "ASIA" (tejido oriental).
  *   - Productos valorados por ahora: 1 enrollable y 3 vertical.
+ *   - Paneles japoneses: módulo aparte, cortinadecor_paneles.js (mecanismo + tejido por panel).
  */
 
 const PRODUCTOS_VALORADOS = [1, 3];
 const TOLERANCIA = 0.02;      // € por unidad: diferencias de redondeo
+const ATRIBUTO_COLOR = 'COLOR DE LA LINEA';   // condición de incremento sobre el color que envían (p. ej. COMBINADAS)
+const ATRIBUTO_REFERENCIA = 'REFERENCIA DE LA LINEA';   // ... y sobre la referencia (p. ej. FOTOGR = impresión digital)
 const EPSILON = 1e-9;
 
 /* ---------- Utilidades ---------- */
@@ -73,14 +77,14 @@ async function cargarReferencia(pool) {
   const r = await pool.request().query(`
     select atributo, valor, hoja from SOL_CD_TARIFAS_HOJAS;
     select idtejido, asia, clave from SOL_CD_TARIFAS_TEJIDOS;
-    select idrow, vigencia_desde, vigencia_hasta, hoja, titulo, clave, tipo from SOL_CD_TARIFAS where tipo = 'M';
+    select idrow, vigencia_desde, vigencia_hasta, hoja, titulo, clave, tipo from SOL_CD_TARIFAS where tipo in ('M', 'A');
     select p.idtarifa, p.ancho, p.alto, p.precio
       from SOL_CD_TARIFAS_PRECIOS p inner join SOL_CD_TARIFAS t on t.idrow = p.idtarifa
-     where t.tipo = 'M';
+     where t.tipo in ('M', 'A');
     select idrow, nombre, atributo, campo, modo, valor, producto, codigo, importe, cantidad_modo, cantidad, divisor, minimo
       from SOL_CD_INCREMENTOS_REGLAS where activo = 1 order by idrow;
     select codigo, descripcion, precio from SOL_CD_INCREMENTOS_ARTICULOS;
-    select idrow, referencia, color_modo, color, hoja, clave from SOL_CD_TARIFAS_REGLAS where activo = 1;
+    select * from SOL_CD_TARIFAS_REGLAS where activo = 1;
   `);
   const [hojas, tejidos, tarifas, precios, incrementos, articulos, reglas] = r.recordsets;
 
@@ -88,15 +92,16 @@ async function cargarReferencia(pool) {
     reglas: reglas.map(rg => ({
       id: rg.idrow, referencia: normalizar(rg.referencia), referencia_texto: rg.referencia,
       modo: normalizar(rg.color_modo), color: normalizar(rg.color), color_texto: rg.color,
-      hoja: rg.hoja || null, clave: rg.clave
+      hoja: rg.hoja || null, clave: rg.clave,
+      /* condición opcional sobre un atributo (09_reglas_por_atributo.sql); varios valores separados por | */
+      atributo: rg.atributo ? normalizar(rg.atributo) : null, atributo_texto: rg.atributo || null,
+      valores: rg.atributo_valor ? String(rg.atributo_valor).split('|').map(normalizar).filter(v => v) : []
     })),
     hojas: new Map(hojas.map(h => [normalizar(h.atributo) + '|' + normalizar(h.valor), h.hoja])),
     tejidos: new Map(),
-    tarifas: tarifas.map(t => ({
-      id: t.idrow, hoja: t.hoja, titulo: t.titulo, clave: t.clave,
-      desde: fechaISO(t.vigencia_desde), hasta: fechaISO(t.vigencia_hasta),
-      anchos: [], altos: [], celdas: new Map()
-    })),
+    /* tarifas: tablas por medida (ancho x alto); mecanismos: tablas solo por ancho (MECANISMO PANEL / VERTICAL) */
+    tarifas: [],
+    mecanismos: [],
     incrementos: incrementos.map(i => ({
       id: i.idrow, nombre: i.nombre, atributo: i.atributo ? normalizar(i.atributo) : null,
       campo: normalizar(i.campo), modo: normalizar(i.modo), valor: normalizar(i.valor),
@@ -113,7 +118,15 @@ async function cargarReferencia(pool) {
     ref.tejidos.get(k).push(t.clave);
   });
 
-  const porId = new Map(ref.tarifas.map(t => [t.id, t]));
+  tarifas.forEach(t => {
+    (t.tipo === 'A' ? ref.mecanismos : ref.tarifas).push({
+      id: t.idrow, hoja: t.hoja, titulo: t.titulo, clave: t.clave,
+      desde: fechaISO(t.vigencia_desde), hasta: fechaISO(t.vigencia_hasta),
+      anchos: [], altos: [], celdas: new Map()
+    });
+  });
+
+  const porId = new Map(ref.tarifas.concat(ref.mecanismos).map(t => [t.id, t]));
   precios.forEach(p => {
     const t = porId.get(p.idtarifa);
     if (!t) return;
@@ -122,7 +135,7 @@ async function cargarReferencia(pool) {
     if (!t.anchos.includes(ancho)) t.anchos.push(ancho);
     if (!t.altos.includes(alto)) t.altos.push(alto);
   });
-  ref.tarifas.forEach(t => { t.anchos.sort((a, b) => a - b); t.altos.sort((a, b) => a - b); });
+  porId.forEach(t => { t.anchos.sort((a, b) => a - b); t.altos.sort((a, b) => a - b); });
 
   return ref;
 }
@@ -146,15 +159,25 @@ const MODO_TEXTO = { IGUAL: 'color', CONTIENE: 'color contiene', TODOS: 'cualqui
 
 function describirRegla(rg) {
   return rg.referencia_texto + ' + ' + MODO_TEXTO[rg.modo] + (rg.modo === 'TODOS' ? '' : ' "' + rg.color_texto + '"') +
+    (rg.atributo ? ' + ' + rg.atributo + ' = ' + rg.valores.join(' o ') : '') +
     ' → ' + rg.clave + (rg.hoja ? ' (hoja ' + rg.hoja + ')' : '');
 }
 
-/* Reglas del panel que encajan con la referencia y el color, en orden de preferencia */
-function reglasAplicables(referencia, color, ref) {
+/* ¿La línea cumple la condición por atributo de la regla? (sin condición, siempre) */
+function cumpleAtributo(rg, atributos) {
+  if (!rg.atributo) return true;
+  return (atributos || []).some(a => a.nombre === rg.atributo && rg.valores.includes(a.valor));
+}
+
+/* Reglas del panel que encajan con la referencia, el color y los atributos, en orden de preferencia:
+   color igual > contiene (más largo) > cualquiera; a igualdad, con condición por atributo y después con hoja */
+function reglasAplicables(referencia, color, ref, atributos) {
   const r = normalizar(referencia), c = normalizar(color);
   return ref.reglas
     .filter(rg => rg.referencia === r && (rg.modo === 'TODOS' || (rg.modo === 'IGUAL' && c === rg.color) || (rg.modo === 'CONTIENE' && c.includes(rg.color))))
-    .sort((a, b) => (ORDEN_MODO[a.modo] - ORDEN_MODO[b.modo]) || (b.color.length - a.color.length) || ((b.hoja ? 1 : 0) - (a.hoja ? 1 : 0)));
+    .filter(rg => cumpleAtributo(rg, atributos))
+    .sort((a, b) => (ORDEN_MODO[a.modo] - ORDEN_MODO[b.modo]) || (b.color.length - a.color.length) ||
+      ((b.atributo ? 1 : 0) - (a.atributo ? 1 : 0)) || ((b.hoja ? 1 : 0) - (a.hoja ? 1 : 0)));
 }
 
 /*
@@ -173,7 +196,7 @@ function resolverTabla(entrada, ref, fecha) {
    * si la línea no indica sistema ni lama (paneles, etc.), la regla con hoja sí se aplica y fija la hoja. */
   const deLaReferencia = ref.reglas.some(rg => rg.referencia === normalizar(entrada.referencia));
   const otrasHojas = [];
-  for (const rg of reglasAplicables(entrada.referencia, entrada.color, ref)) {
+  for (const rg of reglasAplicables(entrada.referencia, entrada.color, ref, entrada.atributos)) {
     if (rg.hoja && entrada.hoja && rg.hoja !== entrada.hoja) {
       if (!otrasHojas.includes(rg.hoja)) otrasHojas.push(rg.hoja);
       continue;
@@ -192,7 +215,7 @@ function resolverTabla(entrada, ref, fecha) {
   }
 
   /* 2. Automática: tejido del diccionario + ASIA */
-  if (!deLaReferencia && !PRODUCTOS_VALORADOS.includes(entrada._producto)) {
+  if (!deLaReferencia && !entrada.valorar && !PRODUCTOS_VALORADOS.includes(entrada._producto)) {
     return falla('NO VALORABLE', entrada._producto ? 'Producto ' + entrada._producto + ' aún no se valora' : 'Sin producto: accesorio o artículo sin tarifa por medida');
   }
   if (!entrada.hoja) return falla('SIN TARIFA', entrada.motivoHoja);
@@ -226,6 +249,9 @@ function resolverTabla(entrada, ref, fecha) {
 /* ---------- Revisión de una línea ---------- */
 
 function revisarLinea(linea, ref) {
+  /* Paneles japoneses: lógica propia (mecanismo + tejido por panel) */
+  if (Paneles.esPanel(linea)) return Paneles.revisarPanel(linea, ref);
+
   const cantidad = linea.amount > 0 ? linea.amount : 1;
   const precioCD = linea.cost == null ? null : Number(linea.cost);
   const fecha = linea.fecha;
@@ -244,7 +270,7 @@ function revisarLinea(linea, ref) {
   /* Tabla: reglas del panel (referencia + color) y, si no hay, asignación automática */
   const sol = resolverTabla({
     referencia: linea.name, color: linea.color, _tejido: linea._tejido, tejido: linea.tejido,
-    _producto: linea._producto, hoja: h.hoja, motivoHoja: h.motivo
+    _producto: linea._producto, hoja: h.hoja, motivoHoja: h.motivo, atributos: linea.atributos
   }, ref, fecha);
   if (sol.avisos.length) detalle.avisos = sol.avisos;
   if (sol.tejido) detalle.tejido = sol.tejido;
@@ -275,8 +301,9 @@ function revisarLinea(linea, ref) {
   r.precio_tarifa = precio;
 
   /* Incrementos (es una cortina entera: se ha valorado con una tabla) */
-  const producto = linea._producto || (/^VERTICALES/.test(sol.hoja) ? 3 : 1);
-  const inc = calcularIncrementos(linea.atributos, producto, ancho, ref);
+  /* Producto para los incrementos: 1 o 3 del diccionario; si no (fotográficos = 5, sin producto...), según la hoja */
+  const producto = PRODUCTOS_VALORADOS.includes(linea._producto) ? linea._producto : (/^VERTICALES/.test(sol.hoja) ? 3 : 1);
+  const inc = calcularIncrementos(linea.atributos, producto, ancho, ref, linea.color, linea.name);
   r.suplementos = inc.total;
   if (inc.lista.length) detalle.incrementos = inc.lista;
   if (inc.avisos.length) detalle.avisos = (detalle.avisos || []).concat(inc.avisos);
@@ -288,8 +315,13 @@ function revisarLinea(linea, ref) {
  * Incrementos de una cortina: reglas activas cuya condición cumple la línea.
  * Devuelve { total (unitario), lista: [{ nombre, codigo, descripcion, cantidad, precio, importe, condicion }], avisos }
  */
-function calcularIncrementos(atributos, producto, ancho, ref) {
+function calcularIncrementos(atributos, producto, ancho, ref, color, referencia) {
   const lista = [], avisos = [];
+  /* El color y la referencia de la línea se pueden usar como condición, como si fueran atributos */
+  atributos = atributos.concat([
+    { nombre: ATRIBUTO_COLOR, valor: normalizar(color), valor2: '' },
+    { nombre: ATRIBUTO_REFERENCIA, valor: normalizar(referencia), valor2: '' }
+  ]);
   for (const rg of ref.incrementos) {
     if (rg.producto && rg.producto !== producto) continue;
     let condicion = null;
@@ -530,5 +562,13 @@ module.exports = {
   cargarReferencia,
   cargarLineas,
   resumen,
-  normalizar
+  normalizar,
+  /* para cortinadecor_paneles.js */
+  numero,
+  atributo,
+  vigente,
+  comparar,
+  calcularIncrementos,
+  ATRIBUTO_COLOR,
+  ATRIBUTO_REFERENCIA
 };

@@ -83,10 +83,16 @@ export class CdRevisionPreciosComponent implements OnChanges {
     if (origen === 'REGLA') return 'Regla del panel de tarifas';
     if (origen === 'AUTOMATICA ASIA') return 'Automática (tejido del diccionario + ASIA)';
     if (origen === 'AUTOMATICA') return 'Automática (tejido del diccionario)';
+    if (origen === 'NOMBRE') return 'Automática (por el nombre de la referencia)';
     return '';
   }
 
   abrirTabla(l: any) {
     this.verTabla.emit({ idtarifa: l.idtarifa, ancho: l.ancho_tarifa, alto: l.alto_tarifa });
+  }
+
+  /* Paneles: tabla de mecanismo o de tejido del desglose */
+  abrirTablaDe(t: any) {
+    this.verTabla.emit({ idtarifa: t.idtarifa, ancho: t.ancho, alto: t.alto });
   }
 }

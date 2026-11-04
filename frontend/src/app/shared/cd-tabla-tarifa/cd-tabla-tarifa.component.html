@@ -5,19 +5,20 @@
   <div class="mb-2">
     <strong>{{ tabla.titulo }}</strong>
     <span class="text-muted ml-2">Hoja {{ tabla.hoja }}</span>
-    <span class="text-muted ml-2" *ngIf="ancho !== null && alto !== null">· celda ancho {{ ancho | number:'1.2-2' }} × alto {{ alto | number:'1.2-2' }} m</span>
+    <span class="text-muted ml-2" *ngIf="ancho !== null && alto !== null && tabla.tipo !== 'A'">· celda ancho {{ ancho | number:'1.2-2' }} × alto {{ alto | number:'1.2-2' }} m</span>
+    <span class="text-muted ml-2" *ngIf="ancho !== null && tabla.tipo === 'A'">· solo por ancho: celda {{ ancho | number:'1.2-2' }} m</span>
   </div>
   <div class="tabla-scroll">
     <table class="table table-sm table-bordered mb-0 matriz">
       <thead>
         <tr>
-          <th class="esquina">Alto \ Ancho (m)</th>
+          <th class="esquina"><span *ngIf="tabla.tipo === 'A'">Ancho (m)</span><span *ngIf="tabla.tipo !== 'A'">Alto \ Ancho (m)</span></th>
           <th *ngFor="let a of anchos" [class.marcada]="esColumna(a)">{{ a | number:'1.1-2' }}</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let f of filas">
-          <th [class.marcada]="esFila(f.alto)">{{ f.alto | number:'1.1-2' }}</th>
+          <th [class.marcada]="esFila(f.alto)">{{ tabla.tipo === 'A' ? 'Precio' : (f.alto | number:'1.1-2') }}</th>
           <td *ngFor="let p of f.precios; let i = index"
               [class.cruce]="esFila(f.alto) || esColumna(anchos[i])"
               [class.celda]="esFila(f.alto) && esColumna(anchos[i])">

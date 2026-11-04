@@ -2,6 +2,7 @@
 
 const sql = require('mssql');
 const motor = require('./cortinadecor_precios');
+const Paneles = require('./cortinadecor_paneles');
 
 /*
  * Panel Cortinadecor > Tarifas (routes/cdeco/cd_tarifas, permiso cdeco_tarifas).
@@ -43,16 +44,31 @@ function error(res, donde, e) {
 
 async function analizar(pool, desde) {
   const ref = await motor.cargarReferencia(pool);
-  const r = await pool.request().input('desde', sql.Date, desde).query(`
+
+  /* Atributos que usan las reglas con condición (p. ej. TIPO DE TEJIDO): se agrupa también por su valor */
+  const nombresCondicion = [...new Set(ref.reglas.filter(rg => rg.atributo_texto).map(rg => rg.atributo_texto.toUpperCase()))].slice(0, 20);
+  const request = pool.request().input('desde', sql.Date, desde);
+  nombresCondicion.forEach((n, i) => request.input('ac' + i, sql.VarChar(100), n));
+  const condicion = nombresCondicion.length
+    ? `stuff((select '|' + upper(a.atributte) + '=' + upper(isnull(a.value, ''))
+                 from SOL_CORTINADECOR_LINES_ATTRIBUTES a
+                where a.id = l.id and upper(a.atributte) in (${nombresCondicion.map((n, i) => '@ac' + i).join(', ')})
+                order by a.atributte for xml path('')), 1, 1, '')`
+    : 'null';
+
+  const r = await request.query(`
     select l.name, l.color, l._tejido, t.descripcion as tejido, l._producto, sis.value as sistema, lama.value as lama,
-           count(*) as lineas, max(try_convert(date, h.date)) as ultima
+           ab.value as abertura, cond.valor as condicion, count(*) as lineas, max(try_convert(date, h.date)) as ultima
       from SOL_CORTINADECOR_LINES l
      inner join SOL_CORTINADECOR_HEADER h on h.idrow = l.idrow
       left join SOL_ARTICULOS_TEJIDOS t on t.idrow = l._tejido
      outer apply (select top 1 a.value from SOL_CORTINADECOR_LINES_ATTRIBUTES a where a.id = l.id and a.atributte = 'SISTEMA') sis
      outer apply (select top 1 a.value from SOL_CORTINADECOR_LINES_ATTRIBUTES a where a.id = l.id and a.atributte = 'ANCHO DE LAMA') lama
+     outer apply (select top 1 a.value from SOL_CORTINADECOR_LINES_ATTRIBUTES a
+                   where a.id = l.id and a.atributte in ('FACTOR DE ABERTURA', 'APERTURA') and l.name like 'Panel%') ab
+     outer apply (select ${condicion} as valor) cond
      where try_convert(date, h.date) >= @desde
-     group by l.name, l.color, l._tejido, t.descripcion, l._producto, sis.value, lama.value`);
+     group by l.name, l.color, l._tejido, t.descripcion, l._producto, sis.value, lama.value, ab.value, cond.valor`);
 
   const N = motor.normalizar;
   const fecha = hoy();
@@ -79,16 +95,29 @@ async function analizar(pool, desde) {
     const atributos = [];
     if (fila.sistema) atributos.push({ nombre: 'SISTEMA', valor: N(fila.sistema), valor2: '' });
     if (fila.lama) atributos.push({ nombre: 'ANCHO DE LAMA', valor: N(fila.lama), valor2: '' });
-    const h = motor.hojaDeLinea(atributos, ref);
-    const sol = motor.resolverTabla({
-      referencia: fila.name, color: fila.color, _tejido: fila._tejido, tejido: fila.tejido,
-      _producto: fila._producto, hoja: h.hoja, motivoHoja: h.motivo
-    }, ref, fecha);
+    /* "TIPO DE TEJIDO=OPACO|..." -> atributos de la condición */
+    const condiciones = String(fila.condicion || '').split('|').filter(x => x.includes('='))
+      .map(x => ({ nombre: N(x.split('=')[0]), valor: N(x.split('=').slice(1).join('=')), valor2: '' }));
+    condiciones.forEach(a => atributos.push(a));
+    const entrada = {
+      referencia: fila.name, color: fila.color, _tejido: fila._tejido, tejido: fila.tejido, _producto: fila._producto, atributos
+    };
+    let h, sol;
+    if (Paneles.esPanel({ name: fila.name, _producto: fila._producto, atributos: [] })) {
+      /* Paneles japoneses: tabla de tejido en la hoja TEJIDO PANEL (el mecanismo depende del nº de paneles de cada pedido) */
+      const ab = fila.abertura && String(fila.abertura).match(/(\d+)/);
+      h = { hoja: Paneles.HOJA_TEJIDO, sistema: null, lama: null, motivo: null };
+      sol = Paneles.tablaTejido(Object.assign(entrada, { abertura: ab ? ab[1] : null }), ref, fecha);
+    } else {
+      h = motor.hojaDeLinea(atributos, ref);
+      sol = motor.resolverTabla(Object.assign(entrada, { hoja: h.hoja, motivoHoja: h.motivo }), ref, fecha);
+    }
 
-    const clave = [h.sistema || '', h.lama || '', sol.tarifa ? sol.tarifa.id : sol.estado + '|' + sol.motivo].join('|');
+    const textoCondicion = condiciones.map(a => a.nombre + ' ' + a.valor).join(' · ') || null;
+    const clave = [h.sistema || '', h.lama || '', textoCondicion || '', sol.tarifa ? sol.tarifa.id : sol.estado + '|' + sol.motivo].join('|');
     if (!color.resoluciones.has(clave)) {
       color.resoluciones.set(clave, {
-        sistema: h.sistema || null, lama: h.lama || null, hoja: sol.hoja || h.hoja || null,
+        sistema: h.sistema || null, lama: h.lama || null, condicion: textoCondicion, hoja: sol.hoja || h.hoja || null,
         idtarifa: sol.tarifa ? sol.tarifa.id : null, clave: sol.tarifa ? sol.tarifa.clave : null,
         tabla: sol.tarifa ? sol.tarifa.titulo : null, origen: sol.origen || null, regla: sol.regla || null,
         estado: sol.tarifa ? 'OK' : sol.estado, motivo: sol.motivo || null, avisos: sol.avisos, tejido: fila.tejido || null, lineas: 0
@@ -194,9 +223,14 @@ async function validarRegla(pool, body) {
     hoja: texto(body.hoja, 50) || null,
     clave: texto(body.clave, 100),
     activo: body.activo === false || body.activo === 0 || body.activo === '0' ? 0 : 1,
-    nota: texto(body.nota, 255) || null
+    nota: texto(body.nota, 255) || null,
+    /* condición opcional por atributo; varios valores separados por | */
+    atributo: texto(body.atributo, 100).toUpperCase() || null,
+    atributo_valor: texto(body.atributo_valor, 255).toUpperCase().split('|').map(v => v.trim()).filter(v => v).join('|') || null
   };
   if (!regla.referencia) return { error: 'Indique la referencia' };
+  if (regla.atributo && !regla.atributo_valor) return { error: 'Indique el valor del atributo' };
+  if (!regla.atributo) regla.atributo_valor = null;
   if (!MODOS_COLOR.includes(regla.color_modo)) return { error: 'Condición de color no válida' };
   if (regla.color_modo === 'TODOS') regla.color = '';
   else if (!regla.color) return { error: 'Indique el color' };
@@ -226,19 +260,22 @@ async function regla_guardar(req, res) {
       .input('clave', sql.VarChar(100), rg.clave)
       .input('activo', sql.Bit, rg.activo)
       .input('nota', sql.VarChar(255), rg.nota)
+      .input('atributo', sql.VarChar(100), rg.atributo)
+      .input('atributo_valor', sql.VarChar(255), rg.atributo_valor)
       .input('usuario', sql.VarChar(100), usuario(req));
     const r = await request.query(rg.idrow
       ? `update SOL_CD_TARIFAS_REGLAS set referencia = @referencia, color_modo = @color_modo, color = @color, hoja = @hoja,
-                clave = @clave, activo = @activo, nota = @nota, usuario = @usuario, fecha_modif = getdate()
+                clave = @clave, atributo = @atributo, atributo_valor = @atributo_valor,
+                activo = @activo, nota = @nota, usuario = @usuario, fecha_modif = getdate()
           where idrow = @idrow;
          select @idrow as idrow, @@rowcount as n`
-      : `insert into SOL_CD_TARIFAS_REGLAS (referencia, color_modo, color, hoja, clave, activo, nota, usuario)
-         values (@referencia, @color_modo, @color, @hoja, @clave, @activo, @nota, @usuario);
+      : `insert into SOL_CD_TARIFAS_REGLAS (referencia, color_modo, color, hoja, clave, atributo, atributo_valor, activo, nota, usuario)
+         values (@referencia, @color_modo, @color, @hoja, @clave, @atributo, @atributo_valor, @activo, @nota, @usuario);
          select cast(scope_identity() as int) as idrow, 1 as n`);
     if (!r.recordset[0].n) return res.status(404).send({ message: 'La regla no existe' });
     res.status(200).send({ message: 'OK', idrow: r.recordset[0].idrow });
   } catch (e) {
-    if (e && (e.number === 2601 || e.number === 2627)) return res.status(409).send({ message: 'Ya hay una regla para esa referencia, color y hoja' });
+    if (e && (e.number === 2601 || e.number === 2627)) return res.status(409).send({ message: 'Ya hay una regla para esa referencia, color, hoja y condición' });
     error(res, 'cd_tarifas_regla_guardar', e);
   }
 }
@@ -288,7 +325,7 @@ async function incremento_guardar(req, res) {
     campo: texto(b.campo, 10).toUpperCase() || 'VALOR',
     modo: texto(b.modo, 10).toUpperCase() || 'IGUAL',
     valor: texto(b.valor, 255).toUpperCase() || null,
-    producto: [1, 3].includes(parseInt(b.producto, 10)) ? parseInt(b.producto, 10) : null,
+    producto: [1, 2, 3].includes(parseInt(b.producto, 10)) ? parseInt(b.producto, 10) : null,
     codigo: texto(b.codigo, 20) || null,
     importe: numeroONulo(b.importe),
     cantidad_modo: texto(b.cantidad_modo, 10).toUpperCase() || 'FIJA',
@@ -409,13 +446,28 @@ async function articulo_borrar(req, res) {
 async function atributos(req, res) {
   try {
     const pool = await sql.connect();
-    const r = await pool.request().input('desde', sql.Date, fechaDesde(req.query.desde)).query(`
+    const r = await pool.request().input('desde', sql.Date, fechaDesde(req.query.desde))
+      .input('color', sql.VarChar(50), motor.ATRIBUTO_COLOR)
+      .input('referencia', sql.VarChar(50), motor.ATRIBUTO_REFERENCIA).query(`
       select upper(a.atributte) as atributo, upper(isnull(a.value, '')) as valor, upper(isnull(a.value2, '')) as valor2, count(*) as n
         from SOL_CORTINADECOR_LINES_ATTRIBUTES a
        inner join SOL_CORTINADECOR_LINES l on l.id = a.id
        inner join SOL_CORTINADECOR_HEADER h on h.idrow = l.idrow
        where try_convert(date, h.date) >= @desde and isnull(a.atributte, '') <> ''
-       group by upper(a.atributte), upper(isnull(a.value, '')), upper(isnull(a.value2, ''))`);
+       group by upper(a.atributte), upper(isnull(a.value, '')), upper(isnull(a.value2, ''))
+      union all
+      /* El color y la referencia de la línea también se pueden usar como condición (motor.ATRIBUTO_COLOR / _REFERENCIA) */
+      select @color, upper(isnull(l.color, '')), '', count(*)
+        from SOL_CORTINADECOR_LINES l
+       inner join SOL_CORTINADECOR_HEADER h on h.idrow = l.idrow
+       where try_convert(date, h.date) >= @desde and isnull(l.color, '') <> ''
+       group by upper(isnull(l.color, ''))
+      union all
+      select @referencia, upper(isnull(l.name, '')), '', count(*)
+        from SOL_CORTINADECOR_LINES l
+       inner join SOL_CORTINADECOR_HEADER h on h.idrow = l.idrow
+       where try_convert(date, h.date) >= @desde and isnull(l.name, '') <> ''
+       group by upper(isnull(l.name, ''))`);
     const porAtributo = new Map();
     r.recordset.forEach(x => {
       if (!porAtributo.has(x.atributo)) porAtributo.set(x.atributo, { atributo: x.atributo, lineas: 0, valores: new Map(), valores2: new Map() });

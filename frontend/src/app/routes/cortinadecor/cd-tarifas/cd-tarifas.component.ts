@@ -62,6 +62,7 @@ export class CdTarifasComponent implements OnInit {
   readonly productos = [
     { id: null, texto: 'Todas las cortinas' },
     { id: 1, texto: 'Enrollables' },
+    { id: 2, texto: 'Paneles japoneses' },
     { id: 3, texto: 'Verticales' }
   ];
 
@@ -159,16 +160,18 @@ export class CdTarifasComponent implements OnInit {
   }
 
   textoCondicion(rg: any): string {
-    if (rg.color_modo === 'IGUAL') return 'Color = "' + rg.color + '"';
-    if (rg.color_modo === 'CONTIENE') return 'Color contiene "' + rg.color + '"';
-    return 'Cualquier color';
+    let t = 'Cualquier color';
+    if (rg.color_modo === 'IGUAL') t = 'Color = "' + rg.color + '"';
+    if (rg.color_modo === 'CONTIENE') t = 'Color contiene "' + rg.color + '"';
+    if (rg.atributo) t += ' y ' + rg.atributo + ' = ' + String(rg.atributo_valor || '').split('|').join(' o ');
+    return t;
   }
 
   /* ---- Alta / edición de reglas ---- */
 
   nuevaReferencia() {
     this.coloresReferencia = [];
-    this.abrirRegla({ referencia: '', color_modo: 'TODOS', color: '', hoja: null, clave: '', activo: true, nota: '' }, true);
+    this.abrirRegla({ referencia: '', color_modo: 'TODOS', color: '', hoja: null, clave: '', atributo: '', atributo_valor: '', activo: true, nota: '' }, true);
   }
 
   nuevaRegla(color?: any) {
@@ -180,17 +183,25 @@ export class CdTarifasComponent implements OnInit {
       color: color ? color.color : '',
       hoja: null,
       clave: color && color.resoluciones.length && color.resoluciones[0].clave ? color.resoluciones[0].clave : '',
+      atributo: '', atributo_valor: '',
       activo: true, nota: ''
     }, false);
   }
 
   editarRegla(rg: any) {
-    this.abrirRegla(Object.assign({}, rg, { activo: !!rg.activo }), false);
+    this.abrirRegla(Object.assign({}, rg, { activo: !!rg.activo, atributo: rg.atributo || '', atributo_valor: rg.atributo_valor || '' }), false);
   }
 
   private abrirRegla(regla: any, referenciaLibre: boolean) {
     this.regla = Object.assign({ referenciaLibre }, regla);
+    if (!this.atributos.length) this.cargarAtributos();
     this.modalRegla.show();
+  }
+
+  /* Valores recibidos del atributo de la condición de la regla (ayuda para escribir) */
+  get valoresAtributoRegla(): any[] {
+    const a = this.atributos.find(x => x.atributo === (this.regla.atributo || '').toUpperCase());
+    return a ? a.valores : [];
   }
 
   get clavesDeLaHoja(): string[] {
@@ -202,7 +213,11 @@ export class CdTarifasComponent implements OnInit {
     if (!(this.regla.referencia || '').trim()) { this.toaster.warning('Indique la referencia', 'Atención'); return; }
     if (this.regla.color_modo !== 'TODOS' && !(this.regla.color || '').trim()) { this.toaster.warning('Indique el color', 'Atención'); return; }
     if (!this.regla.clave) { this.toaster.warning('Elija la tabla', 'Atención'); return; }
+    const atributo = (this.regla.atributo || '').trim();
+    if (atributo && !(this.regla.atributo_valor || '').trim()) { this.toaster.warning('Indique el valor del atributo', 'Atención'); return; }
     const datos = {
+      atributo: atributo || null,
+      atributo_valor: atributo ? this.regla.atributo_valor.trim() : null,
       idrow: this.regla.idrow || 0,
       referencia: this.regla.referencia.trim(),
       color_modo: this.regla.color_modo,
