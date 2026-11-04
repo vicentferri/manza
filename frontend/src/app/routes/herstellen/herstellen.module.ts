@@ -16,6 +16,7 @@ import { TransetikettComponent } from './transetikett/transetikett.component';
 import { BudgetListeComponent } from './budget-liste/budget-liste.component';
 import { SimulateComponent } from './simulate/simulate.component';
 import { PreBestellungV2Component } from './pre-bestellung-v2/pre-bestellung-v2.component';
+import { CdRevisionPreciosComponent } from './cd-revision-precios/cd-revision-precios.component';
 import { PreBestellungV3Component } from './pre-bestellung-v3/pre-bestellung-v3.component';
 import { ArtikelnComponent } from './artikeln/artikeln.component';
 import { ArtikelnFabComponent } from './artikeln-fab/artikeln-fab.component';
@@ -111,7 +112,8 @@ const routes: Routes = [
     TarifsPaneljaponesComponent,
     TarifsIncrementsComponent,
     ArtikelnFacCdV3Component,
-    BackupComponent
+    BackupComponent,
+    CdRevisionPreciosComponent
   ],
   providers: [PermisosGuard],
   exports: [

@@ -1,0 +1,463 @@
+<div class="container-fluid">
+  <div class="card">
+
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h6 class="mb-0"><i class="icon-calculator mr-2"></i>Tarifas · Cortinadecor</h6>
+      <ul class="nav nav-pills nav-sm">
+        <li class="nav-item">
+          <a class="nav-link py-1" href="javascript:void(0)" [class.active]="pestana === 'tablas'" (click)="cambiarPestana('tablas')">Tablas por referencia</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link py-1" href="javascript:void(0)" [class.active]="pestana === 'incrementos'" (click)="cambiarPestana('incrementos')">Incrementos</a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ===================== TABLAS POR REFERENCIA ===================== -->
+    <div class="card-body" *ngIf="pestana === 'tablas'">
+      <div class="d-flex align-items-end flex-wrap mb-2">
+        <div class="mr-2">
+          <label class="etiqueta mb-0">Pedidos desde</label>
+          <input type="date" class="form-control form-control-sm" style="width: 150px" [(ngModel)]="desde" />
+        </div>
+        <button class="btn btn-outline-primary btn-sm mr-3" (click)="cargarReferencias()" [disabled]="cargandoReferencias">
+          <i class="fa" [ngClass]="cargandoReferencias ? 'fa-spinner fa-spin' : 'fa-refresh'"></i> Actualizar
+        </button>
+        <div class="custom-control custom-checkbox mr-3">
+          <input type="checkbox" class="custom-control-input" id="soloSinTabla" [(ngModel)]="filtro.soloSinTabla">
+          <label class="custom-control-label" for="soloSinTabla">Solo con líneas sin tabla</label>
+        </div>
+        <button class="btn btn-primary btn-sm ml-auto" (click)="nuevaReferencia()">
+          <i class="fa fa-plus mr-1"></i>Nueva referencia + color
+        </button>
+      </div>
+
+      <div class="row">
+        <!-- Referencias -->
+        <div class="col-5 pr-1">
+          <div class="panel-box">
+            <div class="panel-box-header">
+              Referencias recibidas <span class="badge badge-secondary ml-1">{{ referenciasFiltradas.length }}</span>
+            </div>
+            <div class="table-scroll">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Referencia</th>
+                    <th class="text-right">Líneas</th>
+                    <th>Tabla aplicada</th>
+                  </tr>
+                  <tr class="filter-row">
+                    <th colspan="3">
+                      <input type="text" class="form-control form-control-sm" placeholder="Filtrar por referencia o tabla..." [(ngModel)]="filtro.texto" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let r of referenciasFiltradas" class="fila" [class.selected-row]="seleccionada?.clave === r.clave" (click)="seleccionar(r)">
+                    <td>
+                      {{ r.referencia }}
+                      <span *ngIf="r.reglas" class="badge badge-primary ml-1" title="Reglas del panel">{{ r.reglas }} regla{{ r.reglas === 1 ? '' : 's' }}</span>
+                    </td>
+                    <td class="text-right">{{ r.lineas }}</td>
+                    <td>
+                      <span *ngFor="let t of r.tablas" class="badge chip mr-1">{{ t.clave }} <small>{{ t.lineas }}</small></span>
+                      <span *ngIf="r.sin_tabla" class="badge badge-danger mr-1">sin tabla {{ r.sin_tabla }}</span>
+                      <span *ngIf="r.no_valorable" class="badge badge-secondary mr-1" title="Producto o artículo que aún no se valora">no valorable {{ r.no_valorable }}</span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!cargandoReferencias && referenciasFiltradas.length === 0">
+                    <td colspan="3" class="text-center text-muted py-3">Sin resultados</td>
+                  </tr>
+                  <tr *ngIf="cargandoReferencias">
+                    <td colspan="3" class="text-center text-muted py-3"><i class="fa fa-spinner fa-spin mr-1"></i>Cargando...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalle de la referencia -->
+        <div class="col-7 pl-1">
+          <div *ngIf="!seleccionada" class="empty-state">
+            <i class="fa fa-hand-pointer-o fa-2x text-muted mb-2"></i>
+            <p class="text-muted">Selecciona una referencia para ver sus colores y la tabla que se consulta</p>
+          </div>
+
+          <div *ngIf="seleccionada" class="panel-box">
+            <div class="panel-box-header d-flex justify-content-between align-items-center">
+              <span><i class="fa fa-tag mr-1"></i>{{ detalle?.referencia?.referencia || seleccionada.referencia }}</span>
+              <button class="btn btn-primary btn-xs" (click)="nuevaRegla()" [disabled]="!detalle">
+                <i class="fa fa-plus mr-1"></i>Regla para cualquier color
+              </button>
+            </div>
+
+            <div *ngIf="cargandoDetalle" class="text-muted p-3"><i class="fa fa-spinner fa-spin mr-1"></i>Cargando...</div>
+
+            <ng-container *ngIf="detalle && !cargandoDetalle">
+              <!-- Reglas -->
+              <div class="seccion">Reglas de esta referencia</div>
+              <table class="table table-sm mb-0">
+                <thead class="thead-light">
+                  <tr><th>Condición</th><th>Hoja</th><th>Tabla</th><th>Nota</th><th class="text-center" style="width: 160px"></th></tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let rg of detalle.reglas" [class.text-muted]="!rg.activo">
+                    <td>{{ textoCondicion(rg) }} <span *ngIf="!rg.activo" class="badge badge-warning ml-1">inactiva</span></td>
+                    <td>{{ rg.hoja ? 'Solo ' + rg.hoja : 'Cualquier sistema' }}</td>
+                    <td><strong>{{ rg.clave }}</strong></td>
+                    <td><small>{{ rg.nota }}</small><small class="d-block text-muted" *ngIf="rg.usuario">{{ rg.usuario }}</small></td>
+                    <td class="text-center">
+                      <button class="btn btn-primary btn-xs accion mr-1" title="Editar" (click)="editarRegla(rg)"><i class="fa fa-pencil mr-1"></i>Editar</button>
+                      <button class="btn btn-danger btn-xs accion" title="Borrar" (click)="borrarRegla(rg)"><i class="fa fa-trash mr-1"></i>Borrar</button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!detalle.reglas.length">
+                    <td colspan="5" class="text-muted small">Sin reglas: se usa la asignación automática (tejido del diccionario + ASIA).</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Colores -->
+              <div class="seccion">Colores recibidos desde {{ detalle.desde | date:'dd/MM/yyyy' }}</div>
+              <div class="table-scroll table-scroll-sm">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="thead-light">
+                    <tr><th>Color</th><th class="text-right">Líneas</th><th>Tabla que se consulta</th><th style="width: 40px"></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let c of detalle.referencia.colores">
+                      <td>{{ c.color || '(sin color)' }}</td>
+                      <td class="text-right">{{ c.lineas }}</td>
+                      <td>
+                        <div *ngFor="let s of c.resoluciones" class="resolucion">
+                          <ng-container *ngIf="s.clave">
+                            <span class="text-muted">{{ s.hoja }} ·</span>
+                            <a href="javascript:void(0)" (click)="verTabla(s.idtarifa)" title="Ver tabla"><strong>{{ s.clave }}</strong></a>
+                            <span class="badge ml-1" [ngClass]="claseOrigen(s.origen)" [title]="s.regla">{{ textoOrigen(s.origen) }}</span>
+                          </ng-container>
+                          <ng-container *ngIf="!s.clave">
+                            <span class="badge" [ngClass]="s.estado === 'NO VALORABLE' ? 'badge-secondary' : 'badge-danger'">{{ s.estado }}</span>
+                            <small class="ml-1">{{ s.motivo }}</small>
+                          </ng-container>
+                          <small class="text-muted ml-1" *ngIf="c.resoluciones.length > 1">({{ s.lineas }})</small>
+                          <i *ngIf="s.avisos?.length" class="fa fa-exclamation-triangle text-warning ml-1" [title]="s.avisos.join('\n')"></i>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <button class="btn btn-outline-primary btn-xs" title="Regla para este color" (click)="nuevaRegla(c)"><i class="fa fa-plus"></i></button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!detalle.referencia.colores.length">
+                      <td colspan="4" class="text-muted small">No ha llegado ninguna línea con esta referencia en el periodo.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================ INCREMENTOS ============================ -->
+    <div class="card-body" *ngIf="pestana === 'incrementos'">
+      <p class="text-muted small mb-2">
+        Nuestro precio de una cortina entera = celda de la tabla + incrementos. Un incremento se suma cuando la línea cumple su
+        condición; lo que no tiene incremento no suma.
+      </p>
+
+      <div class="panel-box mb-3">
+        <div class="panel-box-header d-flex justify-content-between align-items-center">
+          <span>Incrementos <span class="badge badge-secondary ml-1">{{ incrementos.length }}</span></span>
+          <button class="btn btn-primary btn-xs" (click)="nuevoIncremento()"><i class="fa fa-plus mr-1"></i>Nuevo incremento</button>
+        </div>
+        <table class="table table-sm table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>Nombre</th><th>Condición</th><th>Aplica a</th><th>Artículo / importe</th>
+              <th class="text-right">Precio ud.</th><th>Cantidad</th><th class="text-center" style="width: 160px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let i of incrementos" [class.text-muted]="!i.activo">
+              <td>{{ i.nombre }} <span *ngIf="!i.activo" class="badge badge-warning ml-1">inactivo</span></td>
+              <td><small>{{ textoCondicionIncremento(i) }}</small></td>
+              <td><small>{{ textoProducto(i.producto) }}</small></td>
+              <td>
+                <small *ngIf="i.codigo">{{ i.codigo }} {{ i.articulo || '(no está en la lista)' }}</small>
+                <small *ngIf="!i.codigo">Importe fijo</small>
+              </td>
+              <td class="text-right">{{ (i.codigo ? i.precio_articulo : i.importe) | number:'1.2-4' }}</td>
+              <td><small>{{ textoCantidad(i) }}</small></td>
+              <td class="text-center">
+                <button class="btn btn-primary btn-xs accion mr-1" title="Editar" (click)="editarIncremento(i)"><i class="fa fa-pencil mr-1"></i>Editar</button>
+                <button class="btn btn-danger btn-xs accion" title="Borrar" (click)="borrarIncremento(i)"><i class="fa fa-trash mr-1"></i>Borrar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-box">
+        <div class="panel-box-header d-flex justify-content-between align-items-center">
+          <span>Artículos de incremento <span class="badge badge-secondary ml-1">{{ articulos.length }}</span></span>
+          <button class="btn btn-primary btn-xs" (click)="nuevoArticulo()"><i class="fa fa-plus mr-1"></i>Nuevo artículo</button>
+        </div>
+        <div class="table-scroll table-scroll-sm">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="thead-light">
+              <tr><th>Código</th><th>Descripción</th><th class="text-right">Precio</th><th class="text-center">Incrementos</th><th>Modificado</th><th class="text-center" style="width: 160px"></th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of articulos">
+                <td>{{ a.codigo }}</td>
+                <td>{{ a.descripcion }}</td>
+                <td class="text-right">{{ a.precio | number:'1.2-4' }}</td>
+                <td class="text-center">{{ a.reglas || '' }}</td>
+                <td><small class="text-muted">{{ a.fecha_modif | date:'dd/MM/yyyy' }} {{ a.usuario }}</small></td>
+                <td class="text-center">
+                  <button class="btn btn-primary btn-xs accion mr-1" title="Editar" (click)="editarArticulo(a)"><i class="fa fa-pencil mr-1"></i>Editar</button>
+                  <button class="btn btn-danger btn-xs accion" title="Borrar" (click)="borrarArticulo(a)" [disabled]="a.reglas > 0"><i class="fa fa-trash mr-1"></i>Borrar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Modal: regla Referencia + color → tabla ── -->
+<div class="modal fade" bsModal #modalRegla="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ regla.idrow ? 'Editar regla' : 'Nueva regla' }}</h5>
+        <button type="button" class="close" (click)="modalRegla.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="etiqueta">Referencia (como llega en el pedido)</label>
+          <input class="form-control form-control-sm" [(ngModel)]="regla.referencia" [readonly]="!regla.referenciaLibre && !regla.idrow"
+                 placeholder="Ej.: Estores enrollables Screen Corti 3000" />
+        </div>
+        <div class="form-row">
+          <div class="form-group col-5">
+            <label class="etiqueta">Color</label>
+            <select class="form-control form-control-sm" [(ngModel)]="regla.color_modo">
+              <option *ngFor="let m of modosColor" [value]="m.id">{{ m.texto }}</option>
+            </select>
+          </div>
+          <div class="form-group col-7" *ngIf="regla.color_modo !== 'TODOS'">
+            <label class="etiqueta">{{ regla.color_modo === 'IGUAL' ? 'Color exacto' : 'Texto que contiene el color' }}</label>
+            <input class="form-control form-control-sm" [(ngModel)]="regla.color" list="coloresReferencia"
+                   [placeholder]="regla.color_modo === 'CONTIENE' ? 'Ej.: ASIA' : ''" />
+            <datalist id="coloresReferencia"><option *ngFor="let c of coloresReferencia" [value]="c"></option></datalist>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label class="etiqueta">Hoja</label>
+            <select class="form-control form-control-sm" [(ngModel)]="regla.hoja">
+              <option [ngValue]="null">Cualquier sistema (la hoja de la línea)</option>
+              <option *ngFor="let h of hojas" [ngValue]="h">{{ h }}</option>
+            </select>
+          </div>
+          <div class="form-group col-6">
+            <label class="etiqueta">Tabla</label>
+            <select class="form-control form-control-sm" [(ngModel)]="regla.clave">
+              <option value="">— Elegir —</option>
+              <option *ngFor="let k of clavesDeLaHoja" [value]="k">{{ k }}</option>
+            </select>
+          </div>
+        </div>
+        <small class="text-muted d-block mb-2" *ngIf="!regla.hoja">
+          Vale para cualquier sistema. Si la hoja del sistema de la línea no tiene esta tabla, se pasa a la regla siguiente o a la asignación automática.
+        </small>
+        <small class="text-muted d-block mb-2" *ngIf="regla.hoja">
+          Solo se aplica a las líneas de la hoja {{ regla.hoja }} (las que traen ese SISTEMA o ancho de lama) y a las que no
+          indican sistema. Si hay otra regla de la misma referencia y color sin hoja, esta tiene preferencia.
+        </small>
+        <div class="form-group">
+          <label class="etiqueta">Nota</label>
+          <input class="form-control form-control-sm" [(ngModel)]="regla.nota" maxlength="255" />
+        </div>
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="reglaActiva" [(ngModel)]="regla.activo">
+          <label class="custom-control-label" for="reglaActiva">Activa</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="modalRegla.hide()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="guardarRegla()" [disabled]="guardandoRegla"><i class="fa fa-check mr-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: ver tabla ── -->
+<div class="modal fade" bsModal #modalTabla="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document" style="max-width: 1200px; width: 95vw">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tabla de la tarifa</h5>
+        <button type="button" class="close" (click)="modalTabla.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <cd-tabla-tarifa [idtarifa]="tablaVer.id" [ancho]="tablaVer.ancho" [alto]="tablaVer.alto"></cd-tabla-tarifa>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: incremento ── -->
+<div class="modal fade" bsModal #modalIncremento="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ incremento.idrow ? 'Editar incremento' : 'Nuevo incremento' }}</h5>
+        <button type="button" class="close" (click)="modalIncremento.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-8">
+            <label class="etiqueta">Nombre (aparece en el desglose)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="incremento.nombre" maxlength="100" />
+          </div>
+          <div class="form-group col-4">
+            <label class="etiqueta">Aplica a</label>
+            <select class="form-control form-control-sm" [(ngModel)]="incremento.producto">
+              <option *ngFor="let p of productos" [ngValue]="p.id">{{ p.texto }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="seccion-modal">Condición (vacía = se suma siempre)</div>
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label class="etiqueta">Atributo de la línea</label>
+            <input class="form-control form-control-sm" [(ngModel)]="incremento.atributo" list="listaAtributos" placeholder="Ej.: TIPO DE SOPORTE" />
+            <datalist id="listaAtributos"><option *ngFor="let a of atributos" [value]="a.atributo"></option></datalist>
+          </div>
+          <div class="form-group col-2">
+            <label class="etiqueta">Campo</label>
+            <select class="form-control form-control-sm" [(ngModel)]="incremento.campo" [disabled]="!incremento.atributo">
+              <option value="VALOR">Valor</option>
+              <option value="VALOR2">Valor 2</option>
+            </select>
+          </div>
+          <div class="form-group col-2">
+            <label class="etiqueta">Comparación</label>
+            <select class="form-control form-control-sm" [(ngModel)]="incremento.modo" [disabled]="!incremento.atributo">
+              <option value="IGUAL">Igual a</option>
+              <option value="CONTIENE">Contiene</option>
+            </select>
+          </div>
+          <div class="form-group col-4">
+            <label class="etiqueta">Valor</label>
+            <input class="form-control form-control-sm" [(ngModel)]="incremento.valor" list="listaValores" [disabled]="!incremento.atributo" />
+            <datalist id="listaValores"><option *ngFor="let v of valoresAtributo" [value]="v.valor">{{ v.lineas }} líneas</option></datalist>
+          </div>
+        </div>
+
+        <div class="seccion-modal">Precio</div>
+        <div class="form-row align-items-end">
+          <div class="form-group col-3">
+            <select class="form-control form-control-sm" [(ngModel)]="incremento.tipoPrecio">
+              <option value="ARTICULO">Artículo de la lista</option>
+              <option value="IMPORTE">Importe fijo</option>
+            </select>
+          </div>
+          <div class="form-group col-9" *ngIf="incremento.tipoPrecio === 'ARTICULO'">
+            <select class="form-control form-control-sm" [(ngModel)]="incremento.codigo">
+              <option value="">— Elegir artículo —</option>
+              <option *ngFor="let a of articulos" [value]="a.codigo">{{ a.codigo }} · {{ a.descripcion }} · {{ a.precio | number:'1.2-4' }} €</option>
+            </select>
+          </div>
+          <div class="form-group col-3" *ngIf="incremento.tipoPrecio === 'IMPORTE'">
+            <input type="number" step="0.01" class="form-control form-control-sm" [(ngModel)]="incremento.importe" placeholder="€" />
+          </div>
+        </div>
+
+        <div class="seccion-modal">Cantidad</div>
+        <div class="form-row align-items-end">
+          <div class="form-group col-3">
+            <select class="form-control form-control-sm" [(ngModel)]="incremento.cantidad_modo">
+              <option value="FIJA">Fija</option>
+              <option value="ANCHO">Según el ancho</option>
+            </select>
+          </div>
+          <div class="form-group col-2" *ngIf="incremento.cantidad_modo === 'FIJA'">
+            <input type="number" step="1" min="1" class="form-control form-control-sm" [(ngModel)]="incremento.cantidad" />
+          </div>
+          <ng-container *ngIf="incremento.cantidad_modo === 'ANCHO'">
+            <div class="form-group col-3">
+              <label class="etiqueta">Ancho (cm) dividido entre</label>
+              <input type="number" step="1" min="1" class="form-control form-control-sm" [(ngModel)]="incremento.divisor" />
+            </div>
+            <div class="form-group col-2">
+              <label class="etiqueta">Mínimo</label>
+              <input type="number" step="1" min="0" class="form-control form-control-sm" [(ngModel)]="incremento.minimo" />
+            </div>
+            <div class="form-group col-4">
+              <small class="text-muted">Siempre hacia arriba: ancho 130 / 50 = 2,6 → 3</small>
+            </div>
+          </ng-container>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-9">
+            <label class="etiqueta">Nota</label>
+            <input class="form-control form-control-sm" [(ngModel)]="incremento.nota" maxlength="255" />
+          </div>
+          <div class="form-group col-3 d-flex align-items-end">
+            <div class="custom-control custom-checkbox mb-1">
+              <input type="checkbox" class="custom-control-input" id="incrementoActivo" [(ngModel)]="incremento.activo">
+              <label class="custom-control-label" for="incrementoActivo">Activo</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="modalIncremento.hide()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="guardarIncremento()" [disabled]="guardando"><i class="fa fa-check mr-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: artículo ── -->
+<div class="modal fade" bsModal #modalArticulo="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ articuloNuevo ? 'Nuevo artículo' : 'Editar artículo' }}</h5>
+        <button type="button" class="close" (click)="modalArticulo.hide()"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label class="etiqueta">Código</label>
+            <input class="form-control form-control-sm" [(ngModel)]="articulo.codigo" [readonly]="!articuloNuevo" maxlength="20" />
+          </div>
+          <div class="form-group col-8">
+            <label class="etiqueta">Precio (€)</label>
+            <input type="number" step="0.0001" min="0" class="form-control form-control-sm" [(ngModel)]="articulo.precio" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="etiqueta">Descripción</label>
+          <input class="form-control form-control-sm" [(ngModel)]="articulo.descripcion" maxlength="255" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="modalArticulo.hide()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="guardarArticulo()" [disabled]="guardando"><i class="fa fa-check mr-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>

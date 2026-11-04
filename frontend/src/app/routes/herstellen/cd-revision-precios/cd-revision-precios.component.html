@@ -1,0 +1,105 @@
+<div *ngIf="cargando" class="text-muted p-2"><i class="fa fa-spinner fa-spin mr-1"></i>Revisando el pedido...</div>
+<div *ngIf="error" class="alert alert-danger py-1">{{ error }}</div>
+
+<ng-container *ngIf="resumen && !cargando">
+  <div class="resumen mb-2">
+    <div class="dato"><span class="etiqueta">Precio CortinaDecor</span><span class="valor">{{ resumen.cd | number:'1.2-2' }} €</span></div>
+    <div class="dato"><span class="etiqueta">Nuestro precio</span><span class="valor">{{ resumen.nuestro | number:'1.2-2' }} €</span></div>
+    <div class="dato">
+      <span class="etiqueta">Diferencia</span>
+      <span class="valor" [class.text-danger]="resumen.diferencias > 0" [class.text-success]="resumen.diferencias === 0">
+        {{ resumen.diferencia > 0 ? '+' : '' }}{{ resumen.diferencia | number:'1.2-2' }} €
+      </span>
+    </div>
+    <div class="dato" *ngIf="resumen.sinValorar">
+      <span class="etiqueta">Sin nuestro precio</span>
+      <span class="valor text-muted">{{ resumen.sinValorar }} línea{{ resumen.sinValorar === 1 ? '' : 's' }}</span>
+    </div>
+    <small class="text-muted align-self-end ml-auto">Totales de las líneas que tienen nuestro precio. Revisión solo informativa.</small>
+  </div>
+
+  <table class="table table-sm mb-0 lineas">
+    <thead class="thead-light">
+      <tr>
+        <th style="width: 24px"></th>
+        <th>Referencia · color</th>
+        <th class="text-right">Medidas</th>
+        <th class="text-right">Ud.</th>
+        <th class="text-right">Precio CD</th>
+        <th class="text-right">Nuestro</th>
+        <th class="text-right">Dif.</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let l of lineas">
+        <tr class="linea" [class.abierta]="abiertas[l.id]" (click)="alternar(l)">
+          <td><i class="fa" [ngClass]="abiertas[l.id] ? 'fa-caret-down' : 'fa-caret-right'"></i></td>
+          <td>{{ l.detalle.referencia }} <span class="text-muted">· {{ l.detalle.color }}</span></td>
+          <td class="text-right">{{ l.detalle.ancho ? (l.detalle.ancho + ' × ' + l.detalle.alto) : '' }}</td>
+          <td class="text-right">{{ l.cantidad }}</td>
+          <td class="text-right">{{ l.precio_cd | number:'1.2-2' }}</td>
+          <td class="text-right"><strong>{{ l.esperado === null ? '—' : (l.esperado | number:'1.2-2') }}</strong></td>
+          <td class="text-right" [class.text-danger]="l.estado === 'DIFERENCIA'">
+            {{ l.diferencia === null ? '' : ((l.diferencia > 0 ? '+' : '') + (l.diferencia | number:'1.2-2')) }}
+          </td>
+          <td><span class="badge" [ngClass]="claseEstado(l.estado)">{{ l.estado }}</span></td>
+        </tr>
+
+        <!-- Desglose de nuestro precio -->
+        <tr *ngIf="abiertas[l.id]" class="desglose">
+          <td></td>
+          <td colspan="7">
+            <div *ngIf="l.detalle.motivo" class="mb-1"><i class="fa fa-info-circle mr-1"></i>{{ l.detalle.motivo }}</div>
+
+            <ng-container *ngIf="l.idtarifa">
+              <div class="paso">
+                <span class="titulo">1 · Tabla</span>
+                <span>
+                  <strong>{{ l.detalle.tabla }}</strong> <span class="text-muted">(hoja {{ l.detalle.hoja }})</span>
+                  <a href="javascript:void(0)" class="ml-2" (click)="abrirTabla(l); $event.stopPropagation()"><i class="fa fa-table mr-1"></i>Ver tabla</a>
+                  <br>
+                  <small class="text-muted">{{ textoOrigen(l.detalle.origen) }}: {{ l.detalle.regla }}</small>
+                  <small class="d-block text-muted" *ngIf="l.detalle.sistema || l.detalle.ancho_lama">
+                    Sistema {{ l.detalle.sistema || '—' }}<span *ngIf="l.detalle.ancho_lama"> · ancho de lama {{ l.detalle.ancho_lama }}</span>
+                  </small>
+                </span>
+              </div>
+              <div class="paso">
+                <span class="titulo">2 · Celda</span>
+                <span>
+                  Medida {{ l.detalle.ancho }} × {{ l.detalle.alto }} cm → escalón ancho {{ l.ancho_tarifa | number:'1.2-2' }} × alto {{ l.alto_tarifa | number:'1.2-2' }} m
+                  = <strong>{{ l.precio_tarifa | number:'1.2-4' }} €</strong>
+                </span>
+              </div>
+              <div class="paso">
+                <span class="titulo">3 · Incrementos</span>
+                <span>
+                  <table class="table table-sm table-borderless mb-0 incrementos" *ngIf="l.detalle.incrementos?.length">
+                    <tr *ngFor="let i of l.detalle.incrementos">
+                      <td>{{ i.nombre }}<small class="d-block text-muted" *ngIf="i.condicion">{{ i.condicion }}</small></td>
+                      <td><small class="text-muted">{{ i.codigo ? (i.codigo + ' ' + i.descripcion) : 'Importe fijo' }}</small></td>
+                      <td class="text-right text-nowrap">{{ i.cantidad }} × {{ i.precio | number:'1.2-4' }}</td>
+                      <td class="text-right text-nowrap"><strong>{{ i.importe | number:'1.2-4' }} €</strong></td>
+                    </tr>
+                  </table>
+                  <span *ngIf="!l.detalle.incrementos?.length" class="text-muted">Ninguno</span>
+                </span>
+              </div>
+              <div class="paso">
+                <span class="titulo">4 · Total</span>
+                <span>
+                  ({{ l.precio_tarifa | number:'1.2-4' }} + {{ l.suplementos | number:'1.2-4' }}) × {{ l.cantidad }} ud.
+                  = <strong>{{ l.esperado | number:'1.2-2' }} €</strong>
+                  <span class="text-muted ml-2">· CortinaDecor {{ l.precio_cd | number:'1.2-2' }} €</span>
+                </span>
+              </div>
+            </ng-container>
+
+            <div *ngFor="let a of l.detalle.avisos" class="aviso"><i class="fa fa-exclamation-triangle mr-1"></i>{{ a }}</div>
+          </td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
+</ng-container>

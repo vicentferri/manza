@@ -1,0 +1,124 @@
+.panel-box {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.panel-box-header {
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.table-scroll {
+  height: 560px;
+  overflow-y: auto;
+}
+
+.table-scroll-sm {
+  height: 330px;
+}
+
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8f9fa;
+  border-top: none;
+}
+
+.filter-row th {
+  top: 33px;
+  padding: 4px 6px;
+}
+
+.filter-row input {
+  font-size: 0.78rem;
+}
+
+.table {
+  font-size: 0.82rem;
+}
+
+.fila {
+  cursor: pointer;
+}
+
+.selected-row td {
+  background-color: #cfe2ff !important;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #6c757d;
+}
+
+.seccion {
+  padding: 6px 12px;
+  background: #eef1f4;
+  border-top: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5c6873;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.seccion-modal {
+  margin: 6px 0 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5c6873;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e4e7ea;
+}
+
+.etiqueta {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 2px;
+}
+
+.chip {
+  background: #e7f1fb;
+  color: #1f4e79;
+  border: 1px solid #c5dcf0;
+  font-weight: 600;
+}
+
+.chip small {
+  color: #5b7a99;
+  font-weight: 400;
+}
+
+.resolucion + .resolucion {
+  margin-top: 2px;
+}
+
+.btn-xs {
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Editar / Borrar de cada fila: con texto y color sólido, que se vean bien */
+.btn-xs.accion {
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.btn-xs.accion:disabled {
+  opacity: 0.35;
+}
+
+.nav-sm .nav-link {
+  font-size: 0.82rem;
+}

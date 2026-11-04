@@ -15,6 +15,7 @@ import { ToastrService } from 'ngx-toastr';
 import { ModalDirective } from "ngx-bootstrap/modal";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ImpresionDocumentoComponent } from "../../../shared/impresion-documento/impresion-documento.component";
+import { CdRevisionPreciosComponent } from "../cd-revision-precios/cd-revision-precios.component";
 
 @Component({
   selector: "app-pre-bestellung-v2",
@@ -34,6 +35,13 @@ export class PreBestellungV2Component implements OnInit {
 
   @ViewChild("staticModal11", { static: false }) public modalClientes!: ModalDirective;
   @ViewChild("staticModal12", { static: false }) public modalRefClientes!: ModalDirective;
+  @ViewChild("modalPreciosCD", { static: false }) public modalPreciosCD!: ModalDirective;
+  @ViewChild("modalTablaCD", { static: false }) public modalTablaCD!: ModalDirective;
+  @ViewChild("revisionPreciosCD", { static: false }) public revisionPreciosCD!: CdRevisionPreciosComponent;
+
+  /* Revisión de precios de CortinaDecor (cd-revision-precios) */
+  revisionCD = { idrow: 0, pedido: '' };
+  tablaCD = { idtarifa: 0, ancho: null, alto: null };
 
   public staticModal;
 
@@ -675,6 +683,12 @@ export class PreBestellungV2Component implements OnInit {
       { name: "referencia", type: "string" },
       { name: "fabricacion", type: "int" },
       { name: "IMD", type: "int" },
+      /* Revisión de precios (controllers/sm/cortinadecor_precios.js, prepararRejilla) */
+      { name: "rev_estado", type: "string" },
+      { name: "rev_cd", type: "number" },
+      { name: "rev_nuestro", type: "number" },
+      { name: "rev_dif", type: "number" },
+      { name: "rev_sin_valorar", type: "int" },
     ],
     url: "",
   };
@@ -852,6 +866,30 @@ export class PreBestellungV2Component implements OnInit {
       value +
       "&nbsp;&nbsp;</span>"
     );
+  };
+
+  /* CortinaDecor: semáforo de la revisión de precios (rev_estado) */
+  precioRenderer = (row, columnfield, value, defaulthtml, columnproperties, rowdata) => {
+    const estilos = {
+      'OK': ['#4dbd74', 'white', 'OK'],
+      'DIFERENCIA': ['#f86c6b', 'white', 'Diferencia'],
+      'REVISAR': ['#ffc107', 'black', 'Revisar'],
+      'NO VALORABLE': ['#c8ced3', 'black', 'No valorable']
+    };
+    const e = estilos[value];
+    if (!e) return '<span style="margin: 4px; float: left; color: #a0a8b0">—</span>';
+    const fmt = (n) => (n === null || n === undefined || n === '') ? '—' : Number(n).toFixed(2);
+    const titulo = 'CortinaDecor ' + fmt(rowdata.rev_cd) + ' € · nuestro ' + fmt(rowdata.rev_nuestro) + ' €' +
+      (rowdata.rev_sin_valorar > 0 ? ' · ' + rowdata.rev_sin_valorar + ' línea(s) sin nuestro precio' : '');
+    return '<span title="' + titulo + '" style="margin: 3px 4px; float: left; padding: 0 6px; border-radius: 3px; background-color: ' +
+      e[0] + '; color: ' + e[1] + '">' + e[2] + '</span>';
+  };
+
+  difRenderer = (row, columnfield, value, defaulthtml, columnproperties, rowdata) => {
+    if (value === null || value === undefined || value === '' || rowdata.rev_estado === null || rowdata.rev_estado === undefined) return '';
+    const n = Number(value);
+    const color = rowdata.rev_estado === 'DIFERENCIA' ? (n > 0 ? '#2f8a4c' : '#d9534f') : '#73818f';
+    return '<span style="margin: 4px; float: right; color: ' + color + '">' + (n > 0 ? '+' : '') + n.toFixed(2) + '</span>';
   };
 
   dateRenderer = (
@@ -1162,6 +1200,23 @@ export class PreBestellungV2Component implements OnInit {
         width: 150,
         filtertype: "input",
         editable: false,
+      },
+      {
+        text: "Precio",
+        datafield: "rev_estado",
+        width: 95,
+        filtertype: "checkedlist",
+        editable: false,
+        cellsrenderer: this.precioRenderer,
+      },
+      {
+        text: "Dif. €",
+        datafield: "rev_dif",
+        width: 65,
+        filtertype: "number",
+        cellsalign: "right",
+        editable: false,
+        cellsrenderer: this.difRenderer,
       },
       {
         text: "FAB",
@@ -2214,6 +2269,26 @@ export class PreBestellungV2Component implements OnInit {
     } else {
       alert("No ha seleccionado ninguna linea");
     }
+  }
+
+  /* CortinaDecor: precio que envían frente al nuestro, con el desglose de cada línea (solo informativo) */
+  RevisarPreciosCD() {
+    const filas = this.getSelectedRows(this.myGrid2, "");
+    if (filas.length !== 1) {
+      this.toaster.warning("Seleccione un pedido de Cortinadecor", "Revisar precios");
+      return;
+    }
+    if (this.revisionCD.idrow === filas[0].idrow && this.revisionPreciosCD) {
+      this.revisionPreciosCD.cargar();   // mismo pedido: se vuelve a revisar
+    } else {
+      this.revisionCD = { idrow: filas[0].idrow, pedido: filas[0].id };
+    }
+    this.modalPreciosCD.show();
+  }
+
+  VerTablaCD(t: { idtarifa: number, ancho: number, alto: number }) {
+    this.tablaCD = t;
+    this.modalTablaCD.show();
   }
 
   VerDetalle() {

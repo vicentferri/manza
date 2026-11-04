@@ -34,6 +34,7 @@ const PAGE_TITLES: { [url: string]: PageTitle } = {
   '/routes/cdeco/main': T('Cortinadecor', 'Tejidos'),
   '/routes/herstellen/artikeln_fab_cd': T('Cortinadecor', 'Configuración Atributos'),
   '/routes/herstellen/artikeln_fab_cd_v2': T('Cortinadecor', 'Configuración'),
+  '/routes/cdeco/cd_tarifas': T('Cortinadecor', 'Tarifas'),
 
   // ── Tarjetas de la página de Configuración ────────────────────
   '/routes/master/promociones-monitor': T('Promociones', 'Monitor'),

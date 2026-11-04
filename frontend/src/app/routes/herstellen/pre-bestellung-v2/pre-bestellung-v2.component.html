@@ -167,6 +167,12 @@
             </button>
           </div>
 
+          <div class="BtnToolBar" [hidden]="SelectedCliente != 2">
+            <button class="btn btn-primary btn-block btn-sm" (click)="RevisarPreciosCD()">
+              <i class="fa fa-eur mr-1"></i>Revisar precios
+            </button>
+          </div>
+
           <div class="BtnToolBar">
             <div class="input-group">
               <div class="input-group-prepend">
@@ -437,6 +443,43 @@
         <button type="button" class="btn btn-secondary btn-sm" (click)="staticModal12.hide()">
           Cerrar
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CortinaDecor: revisión de precios del pedido (solo informativa) -->
+<div class="modal fade" bsModal #modalPreciosCD="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document" style="max-width: 1150px; width: 95vw">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Revisión de precios · pedido {{ revisionCD.pedido }}</h5>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalPreciosCD.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <cd-revision-precios #revisionPreciosCD [idrow]="revisionCD.idrow" [pedido]="revisionCD.pedido" (verTabla)="VerTablaCD($event)"></cd-revision-precios>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="modalPreciosCD.hide()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CortinaDecor: tabla de la tarifa con la celda usada -->
+<div class="modal fade" bsModal #modalTablaCD="bs-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document" style="max-width: 1200px; width: 95vw">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tabla de la tarifa</h5>
+        <button type="button" class="close pull-right" aria-label="Close" (click)="modalTablaCD.hide()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <cd-tabla-tarifa [idtarifa]="tablaCD.idtarifa" [ancho]="tablaCD.ancho" [alto]="tablaCD.alto"></cd-tabla-tarifa>
       </div>
     </div>
   </div>

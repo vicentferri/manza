@@ -1,0 +1,45 @@
+.tabla-scroll {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.matriz {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.matriz th,
+.matriz td {
+  padding: 0.15rem 0.35rem;
+  text-align: right;
+}
+
+.matriz thead th {
+  position: sticky;
+  top: 0;
+  background: #f0f3f5;
+  z-index: 1;
+}
+
+.matriz tbody th {
+  background: #f0f3f5;
+}
+
+.matriz .esquina {
+  text-align: left;
+  color: #73818f;
+}
+
+.matriz .marcada {
+  background: #ffe8a1 !important;
+}
+
+.matriz .cruce {
+  background: #fff8e1;
+}
+
+.matriz .celda {
+  background: #ffc107 !important;
+  font-weight: bold;
+  outline: 2px solid #e0a800;
+}

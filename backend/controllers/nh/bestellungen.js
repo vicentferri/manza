@@ -1,6 +1,7 @@
 'use strict'
 
 var sql = require('mssql');
+var CortinaDecorPrecios = require('../sm/cortinadecor_precios');
 
 function ExecuteSQL(query,res)
 {
@@ -393,20 +394,40 @@ function bestellungen_zustand_customer(req,res)
         }
 
 
-            var request = new sql.Request();
-            request.input('cliente',sql.Int,customer);
-            request.execute('sp_bestellungen_scope', 
-            function(err, recordsets, returnValue) {
-              
-              if (err == null)
-              {    
-                  ExecuteSQL(query,res);
-              }
-              else 
-              {
-                res.status(500).send({message: 'KO'});
-              }
-            });
+            var ejecutar = function(consulta) {
+              var request = new sql.Request();
+              request.input('cliente',sql.Int,customer);
+              request.execute('sp_bestellungen_scope',
+              function(err, recordsets, returnValue) {
+
+                if (err == null)
+                {
+                    ExecuteSQL(consulta,res);
+                }
+                else
+                {
+                  res.status(500).send({message: 'KO'});
+                }
+              });
+            };
+
+            /* CortinaDecor: revisión de precios (solo informativa). Se revisan los pedidos del rango y se añade a cada
+               uno el resumen de su revisión (columnas rev_*). Si falla, la rejilla se carga como siempre. */
+            if (customer == 2)
+            {
+              CortinaDecorPrecios.prepararRejilla(desde, hasta)
+                .then(function(extra) {
+                  ejecutar(extra ? query.replace(' from vw_cd_bestellungen_cue', extra.columnas + ' from vw_cd_bestellungen_cue v ' + extra.apply) : query);
+                })
+                .catch(function(e) {
+                  console.log('cd_revision rejilla: ' + (e && e.message));
+                  ejecutar(query);
+                });
+            }
+            else
+            {
+              ejecutar(query);
+            }
     }
 }
 

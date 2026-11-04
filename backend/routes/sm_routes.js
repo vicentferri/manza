@@ -379,6 +379,26 @@ smapi.post('/cd_articulo_update', CortinaDecorController.Atributos_Articulos_Upd
 smapi.post('/cd_model_atributes_add', CortinaDecorController.Atributos_Articulos_Add);
 smapi.post('/cd_model_atributes_new', CortinaDecorController.Atributos_Articulos_New);
 
+/* REVISIÓN DE PRECIOS CORTINADECOR (solo informativa): tarifa en SOL_CD_TARIFAS*, resultado en SOL_CD_REVISION */
+var CortinaDecorPreciosController = require('../controllers/sm/cortinadecor_precios');
+smapi.get('/cd_revision/:idrow', Auth.ensureAuth, CortinaDecorPreciosController.revision_pedido);
+smapi.post('/cd_revision/lote', Auth.ensureAuth, CortinaDecorPreciosController.revision_lote);
+
+/* Panel Cortinadecor > Tarifas: reglas Referencia + color -> tabla e incrementos */
+var CortinaDecorTarifasController = require('../controllers/sm/cortinadecor_tarifas');
+smapi.get('/cd_tarifas/referencias', Auth.ensureAuth, CortinaDecorTarifasController.referencias);
+smapi.get('/cd_tarifas/referencia', Auth.ensureAuth, CortinaDecorTarifasController.referencia);
+smapi.get('/cd_tarifas/tablas', Auth.ensureAuth, CortinaDecorTarifasController.tablas);
+smapi.get('/cd_tarifas/tabla/:id', Auth.ensureAuth, CortinaDecorTarifasController.tabla);
+smapi.post('/cd_tarifas/reglas', Auth.ensureAuth, CortinaDecorTarifasController.regla_guardar);
+smapi.delete('/cd_tarifas/reglas/:id', Auth.ensureAuth, CortinaDecorTarifasController.regla_borrar);
+smapi.get('/cd_tarifas/incrementos', Auth.ensureAuth, CortinaDecorTarifasController.incrementos);
+smapi.post('/cd_tarifas/incrementos/reglas', Auth.ensureAuth, CortinaDecorTarifasController.incremento_guardar);
+smapi.delete('/cd_tarifas/incrementos/reglas/:id', Auth.ensureAuth, CortinaDecorTarifasController.incremento_borrar);
+smapi.post('/cd_tarifas/incrementos/articulos', Auth.ensureAuth, CortinaDecorTarifasController.articulo_guardar);
+smapi.delete('/cd_tarifas/incrementos/articulos/:codigo', Auth.ensureAuth, CortinaDecorTarifasController.articulo_borrar);
+smapi.get('/cd_tarifas/atributos', Auth.ensureAuth, CortinaDecorTarifasController.atributos);
+
 var ConfigController = require('../controllers/sm/config');
 smapi.get('/configuracion', ConfigController.configuracion_get);
 smapi.post('/configuracion', ConfigController.configuracion_post);
