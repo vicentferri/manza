@@ -1,0 +1,76 @@
+/* CortinaDecor: barra de resumen sobre la rejilla */
+.cd-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: #f7f8fa;
+  border: 1px solid #e4e7ea;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.cd-total {
+  font-weight: 600;
+  color: #23282c;
+}
+
+.cd-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.cd-etiqueta {
+  margin-right: 2px;
+  color: #8f9ba6;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.cd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border: 1px solid #d5dade;
+  border-radius: 12px;
+  background: white;
+  color: #3c4b64;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.cd-chip:hover {
+  border-color: #20a8d8;
+}
+
+.cd-chip b {
+  font-weight: 600;
+  color: #23282c;
+}
+
+.cd-chip.activo {
+  border-color: #20a8d8;
+  background: #e1f0fa;
+}
+
+.cd-punto {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cd-quitar {
+  border: none;
+  background: none;
+  color: #20a8d8;
+  font-size: 12px;
+  cursor: pointer;
+}
