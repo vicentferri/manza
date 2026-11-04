@@ -677,7 +677,7 @@ export class PreBestellungV2Component implements OnInit {
       { name: "phone", type: "string" },
       { name: "factura_codigo", type: "string" },
       { name: "detalles", type: "string" },
-      { name: "prod", type: "string" },
+      { name: "prod_ok", type: "string" },
       { name: "prod_reason", type: "string" },
       { name: "refcliente", type: "string" },
       { name: "referencia", type: "string" },
@@ -877,11 +877,11 @@ export class PreBestellungV2Component implements OnInit {
       'NO VALORABLE': ['#c8ced3', 'black', 'No valorable']
     };
     const e = estilos[value];
-    if (!e) return '<span style="margin: 4px; float: left; color: #a0a8b0">—</span>';
+    if (!e) return '<span style="margin: 0 6px; line-height: 30px; color: #a0a8b0">—</span>';
     const fmt = (n) => (n === null || n === undefined || n === '') ? '—' : Number(n).toFixed(2);
     const titulo = 'CortinaDecor ' + fmt(rowdata.rev_cd) + ' € · nuestro ' + fmt(rowdata.rev_nuestro) + ' €' +
       (rowdata.rev_sin_valorar > 0 ? ' · ' + rowdata.rev_sin_valorar + ' línea(s) sin nuestro precio' : '');
-    return '<span title="' + titulo + '" style="margin: 3px 4px; float: left; padding: 0 6px; border-radius: 3px; background-color: ' +
+    return '<span title="' + titulo + '" style="display: inline-block; margin: 6px; padding: 1px 8px; border-radius: 10px; font-size: 11px; line-height: 16px; background-color: ' +
       e[0] + '; color: ' + e[1] + '">' + e[2] + '</span>';
   };
 
@@ -889,8 +889,121 @@ export class PreBestellungV2Component implements OnInit {
     if (value === null || value === undefined || value === '' || rowdata.rev_estado === null || rowdata.rev_estado === undefined) return '';
     const n = Number(value);
     const color = rowdata.rev_estado === 'DIFERENCIA' ? (n > 0 ? '#2f8a4c' : '#d9534f') : '#73818f';
-    return '<span style="margin: 4px; float: right; color: ' + color + '">' + (n > 0 ? '+' : '') + n.toFixed(2) + '</span>';
+    return '<div style="margin: 0 6px; line-height: 30px; text-align: right; color: ' + color + '">' + (n > 0 ? '+' : '') + n.toFixed(2) + '</div>';
   };
+
+  /* ---------- CortinaDecor: presentación de la rejilla ---------- */
+
+  /* Colores por código de estado (bestellung_zustanden). Los que no estén aquí salen en gris. */
+  cdEstilosEstado = {
+    0: ['#e4e7ea', '#3c4b64'],     // Pdte. Aceptación
+    3: ['#20a8d8', 'white'],       // En proceso
+    100: ['#4dbd74', 'white'],     // Finalizado
+    200: ['#f8a14b', 'white'],     // Pedido con errores
+    999: ['#f86c6b', 'white'],     // Imposible fabricar
+  };
+
+  cdEscapar(texto) {
+    return String(texto === null || texto === undefined ? '' : texto)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  cdCodigoRenderer = (row, columnfield, value) => {
+    return '<span style="margin: 0 6px; line-height: 30px; font-weight: 600; color: #23282c">' + this.cdEscapar(value) + '</span>';
+  };
+
+  cdFechaRenderer = (row, columnfield, value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const dd = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+    return '<span style="margin: 0 6px; line-height: 30px; color: #23282c">' + dd + '</span>';
+  };
+
+  cdEstadoRenderer = (row, columnfield, value, defaulthtml, columnproperties, rowdata) => {
+    if (!value) return '';
+    const e = this.cdEstilosEstado[Number(rowdata.estado)] || ['#c8ced3', '#23282c'];
+    return '<span style="display: inline-block; margin: 6px; padding: 1px 8px; border-radius: 10px; font-size: 11px; line-height: 16px; ' +
+      'background-color: ' + e[0] + '; color: ' + e[1] + '">' + this.cdEscapar(value) + '</span>';
+  };
+
+  cdContenidoRenderer = (row, columnfield, value) => {
+    const texto = String(value || '').split(',').map((t) => t.trim()).filter((t) => t).join(' · ');
+    const t = this.cdEscapar(texto);
+    return '<div title="' + t + '" style="margin: 0 6px; line-height: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">' + t + '</div>';
+  };
+
+  cdCheckRenderer = (row, columnfield, value) => {
+    if (value === null || value === undefined || value === '') return '';
+    const ok = Number(value) > 0;
+    return '<div title="' + this.cdEscapar(value) + '" style="text-align: center; line-height: 30px">' +
+      (ok ? '<i class="fa fa-check" style="color: #4dbd74"></i>' : '<i class="fa fa-times" style="color: #f86c6b"></i>') + '</div>';
+  };
+
+  cdIdrowRenderer = (row, columnfield, value) => {
+    return '<span style="margin: 0 6px; line-height: 30px; color: #5c6873">' + this.cdEscapar(value) + '</span>';
+  };
+
+  /* Barra de resumen: pedidos por estado y por resultado de la revisión de precios. Pulsar un contador filtra la
+     rejilla por ese valor; pulsarlo de nuevo quita el filtro. */
+  resumenCD = { total: 0, estados: [], precios: [] };
+  filtroCD = { campo: null, valor: null };
+  cdOrdenPrecios = [['OK', 'OK', '#4dbd74'], ['DIFERENCIA', 'Diferencia', '#f86c6b'], ['REVISAR', 'Revisar', '#ffc107'], ['NO VALORABLE', 'No valorable', '#c8ced3']];
+
+  CalcularResumenCD() {
+    const filas: any[] = (this.dataAdapter2 as any).records || [];
+    const estados = {};
+    const precios = {};
+    filas.forEach((f) => {
+      const clave = f.descestado || '';
+      if (!estados[clave]) estados[clave] = { valor: clave, estado: Number(f.estado), n: 0 };
+      estados[clave].n++;
+      if (f.rev_estado) precios[f.rev_estado] = (precios[f.rev_estado] || 0) + 1;
+    });
+    this.resumenCD = {
+      total: filas.length,
+      estados: Object.keys(estados).map((k) => {
+        const e = estados[k];
+        const c = this.cdEstilosEstado[e.estado] || ['#c8ced3', '#23282c'];
+        return { valor: e.valor, texto: e.valor || '(sin estado)', n: e.n, color: c[0] === '#e4e7ea' ? '#8f9ba6' : c[0], orden: e.estado };
+      }).sort((a, b) => a.orden - b.orden),
+      precios: this.cdOrdenPrecios.filter((p) => precios[p[0]]).map((p) => ({ valor: p[0], texto: p[1], n: precios[p[0]], color: p[2] })),
+    };
+    /* Si al recargar el valor filtrado ya no existe, se quita el filtro */
+    if (this.filtroCD.campo) {
+      const lista = this.filtroCD.campo === 'descestado' ? this.resumenCD.estados : this.resumenCD.precios;
+      if (!lista.some((x) => x.valor === this.filtroCD.valor)) this.QuitarFiltroCD();
+    }
+    this.cdr.detectChanges();
+  }
+
+  FiltrarCD(campo: string, valor: string) {
+    if (this.filtroCD.campo === campo && this.filtroCD.valor === valor) {
+      this.QuitarFiltroCD();
+      return;
+    }
+    this.myGrid2.clearfilters();
+    const grupo = new $.jqx.filter();
+    grupo.addfilter(1, grupo.createfilter('stringfilter', valor, 'EQUAL_CASE_SENSITIVE'));
+    this.myGrid2.addfilter(campo, grupo);
+    this.myGrid2.applyfilters();
+    this.filtroCD = { campo, valor };
+  }
+
+  QuitarFiltroCD() {
+    this.filtroCD = { campo: null, valor: null };
+    if (this.myGrid2) this.myGrid2.clearfilters();
+  }
+
+  /* Si el usuario borra los filtros desde la propia rejilla, se desmarca el contador */
+  AlFiltrarCD() {
+    if (!this.filtroCD.campo) return;
+    const info: any[] = this.myGrid2.getfilterinformation() || [];
+    if (!info.some((i) => i.filtercolumn === this.filtroCD.campo)) {
+      this.filtroCD = { campo: null, valor: null };
+      this.cdr.detectChanges();
+    }
+  }
 
   dateRenderer = (
     row,
@@ -1154,6 +1267,8 @@ export class PreBestellungV2Component implements OnInit {
     ],
   };
 
+  /* CortinaDecor: rejilla de pedidos. Las columnas que CortinaDecor no rellena (datos del cliente final, Prod,
+     Fra., Ref Cliente) y el nombre del fichero de entrada se mantienen ocultas: los botones siguen usando sus campos. */
   settings2: any = {
     width: "100%",
     height: 600,
@@ -1165,218 +1280,44 @@ export class PreBestellungV2Component implements OnInit {
     scrollmode: "logical",
     sortable: true,
     altrows: true,
-    enabletooltips: true,
+    enabletooltips: false,
     editable: false,
     groupable: true,
     selectionmode: "singlerow",
-    /* wir haben hier verschiedene Optionen,
-     * damit zu benutzen beispielweise singlerow,multiplerow, multiplecelladvanced*/ showfilterrow: true,
+    showfilterrow: true,
     filterable: true,
     columnsresize: true,
     columnsreorder: true,
     enablehover: true,
     showtoolbar: false,
     showstatusbar: false,
+    rowsheight: 30,
+    columnsheight: 32,
     source: this.dataAdapter2,
     columns: [
-      {
-        text: "idrow",
-        datafield: "idrow",
-        width: 45,
-        filtertype: "textbox",
-        editable: false,
-      },
-      {
-        text: "Dias",
-        datafield: "dias",
-        width: 45,
-        filtertype: "input",
-        editable: false,
-        cellsrenderer: this.diasRenderer,
-      },
-      {
-        text: "Estado",
-        datafield: "descestado",
-        width: 150,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Precio",
-        datafield: "rev_estado",
-        width: 95,
-        filtertype: "checkedlist",
-        editable: false,
-        cellsrenderer: this.precioRenderer,
-      },
-      {
-        text: "Dif. €",
-        datafield: "rev_dif",
-        width: 65,
-        filtertype: "number",
-        cellsalign: "right",
-        editable: false,
-        cellsrenderer: this.difRenderer,
-      },
-      {
-        text: "FAB",
-        datafield: "fabricacion",
-        width: 50,
-        filtertype: "textbox",
-        editable: false,
-        columngroup: "Pedido",
-        cellsalign: "center",
-        cellclassname: function (row, columnfield, value) {
-          if (value == 0)
-            return 'jqx-input-glacier-red-white';
-          if (value > 0)
-            return 'jqx-input-glacier-green';
-          return '';
-        }
-      },
-      {
-        text: "Fra.",
-        datafield: "factura_codigo",
-        width: 50,
-        filtertype: "input",
-        editable: false,
-        columngroup: "Pedido",
-      },
-      {
-        text: "Detalles",
-        datafield: "detalles",
-        width: 60,
-        filtertype: "textbox",
-        editable: false,
-        columngroup: "Pedido",
-      },
-      {
-        text: "Contenido",
-        datafield: "referencia",
-        width: 300,
-        filtertype: "textbox",
-        editable: false,
-        columngroup: "Pedido",
-      },
-      {
-        text: "Prod",
-        datafield: "prod_ok",
-        width: 40,
-        filtertype: "textbox",
-        editable: false,
-        columngroup: "Pedido",
-      },
-      {
-        text: "Prod_Razon",
-        datafield: "prod_reason",
-        width: 150,
-        filtertype: "textbox",
-        editable: false,
-        columngroup: "Pedido",
-      },
-      {
-        text: "Ref Cliente",
-        datafield: "refcliente",
-        width: 175,
-        filtertype: "textbox",
-        editable: false,
-        columngroup: "Pedido",
-      },
-      {
-        text: "ID",
-        datafield: "IMD",
-        width: 50,
-        filtertype: "textbox",
-        editable: false,
-        columngroup: "Pedido",
-        cellsalign: "center",
-        cellclassname: function (row, columnfield, value) {
-          if (value == 0)
-            return 'jqx-input-glacier-red-white';
-          if (value > 0)
-            return 'jqx-input-glacier-green';
-          return '';
-        }
-      },
+      { text: "idrow", datafield: "idrow", width: 65, filtertype: "input", editable: false, cellsrenderer: this.cdIdrowRenderer },
+      { text: "Código", datafield: "id", width: 120, filtertype: "input", editable: false, cellsrenderer: this.cdCodigoRenderer },
+      { text: "Fecha", datafield: "date", width: 90, filtertype: "input", editable: false, cellsformat: "dd/MM/yyyy", cellsrenderer: this.cdFechaRenderer },
+      { text: "Estado", datafield: "descestado", width: 140, filtertype: "checkedlist", editable: false, cellsrenderer: this.cdEstadoRenderer },
+      { text: "Precio", datafield: "rev_estado", width: 100, filtertype: "checkedlist", editable: false, cellsrenderer: this.precioRenderer },
+      { text: "Dif. €", datafield: "rev_dif", width: 70, filtertype: "number", cellsalign: "right", editable: false, cellsrenderer: this.difRenderer },
+      { text: "Contenido", datafield: "referencia", width: 520, filtertype: "input", editable: false, cellsrenderer: this.cdContenidoRenderer },
+      { text: "FAB", datafield: "fabricacion", width: 50, filtertype: "number", cellsalign: "center", editable: false, cellsrenderer: this.cdCheckRenderer },
 
-      {
-        text: "Codigo",
-        datafield: "id",
-        width: 125,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Referencia",
-        datafield: "filename",
-        width: 250,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Fecha",
-        datafield: "date",
-        width: 90,
-        filtertype: "input",
-        editable: false,
-        cellsformat: "dd/MM/yyyy",
-      },
-      {
-        text: "Nombre",
-        datafield: "name",
-        width: 150,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Apellidos",
-        datafield: "lastname",
-        width: 150,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Dirección",
-        datafield: "address",
-        width: 200,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "CP",
-        datafield: "postcode",
-        width: 50,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Población",
-        datafield: "city",
-        width: 100,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Provincia",
-        datafield: "province",
-        width: 100,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Pais",
-        datafield: "country",
-        width: 50,
-        filtertype: "input",
-        editable: false,
-      },
-      {
-        text: "Teléfono",
-        datafield: "phone",
-        width: 100,
-        filtertype: "input",
-        editable: false,
-      },
+      /* Ocultas: CortinaDecor no las rellena */
+      { text: "Fichero", datafield: "filename", width: 250, editable: false, hidden: true },
+      { text: "Fra.", datafield: "factura_codigo", width: 50, editable: false, hidden: true },
+      { text: "Prod", datafield: "prod_ok", width: 40, editable: false, hidden: true },
+      { text: "Prod_Razon", datafield: "prod_reason", width: 150, editable: false, hidden: true },
+      { text: "Ref Cliente", datafield: "refcliente", width: 175, editable: false, hidden: true },
+      { text: "Nombre", datafield: "name", width: 150, editable: false, hidden: true },
+      { text: "Apellidos", datafield: "lastname", width: 150, editable: false, hidden: true },
+      { text: "Dirección", datafield: "address", width: 200, editable: false, hidden: true },
+      { text: "CP", datafield: "postcode", width: 50, editable: false, hidden: true },
+      { text: "Población", datafield: "city", width: 100, editable: false, hidden: true },
+      { text: "Provincia", datafield: "province", width: 100, editable: false, hidden: true },
+      { text: "Pais", datafield: "country", width: 50, editable: false, hidden: true },
+      { text: "Teléfono", datafield: "phone", width: 100, editable: false, hidden: true },
     ],
   };
 

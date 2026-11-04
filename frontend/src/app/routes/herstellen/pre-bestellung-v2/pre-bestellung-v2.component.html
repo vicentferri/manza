@@ -61,8 +61,31 @@
                   <i class="icon-layers"></i>&nbsp;Cortinadecor
                 </div>
               </ng-template>
+              <div class="cd-resumen">
+                <span class="cd-total">{{ resumenCD.total }} pedidos</span>
+                <span class="cd-grupo" *ngIf="resumenCD.estados.length">
+                  <span class="cd-etiqueta">Estado</span>
+                  <button type="button" class="cd-chip" *ngFor="let e of resumenCD.estados"
+                    [class.activo]="filtroCD.campo === 'descestado' && filtroCD.valor === e.valor"
+                    (click)="FiltrarCD('descestado', e.valor)">
+                    <i class="cd-punto" [style.background-color]="e.color"></i>{{ e.texto }}<b>{{ e.n }}</b>
+                  </button>
+                </span>
+                <span class="cd-grupo" *ngIf="resumenCD.precios.length">
+                  <span class="cd-etiqueta">Precio</span>
+                  <button type="button" class="cd-chip" *ngFor="let p of resumenCD.precios"
+                    [class.activo]="filtroCD.campo === 'rev_estado' && filtroCD.valor === p.valor"
+                    (click)="FiltrarCD('rev_estado', p.valor)">
+                    <i class="cd-punto" [style.background-color]="p.color"></i>{{ p.texto }}<b>{{ p.n }}</b>
+                  </button>
+                </span>
+                <button type="button" class="cd-quitar" *ngIf="filtroCD.campo" (click)="QuitarFiltroCD()">
+                  <i class="fa fa-times"></i> Quitar filtro
+                </button>
+              </div>
               <div>
-                <jqxGrid #gridReference2 [auto-create]="false"></jqxGrid>
+                <jqxGrid #gridReference2 [auto-create]="false" (onBindingcomplete)="CalcularResumenCD()"
+                  (onFilter)="AlFiltrarCD()"></jqxGrid>
               </div>
             </tab>
             <tab>
@@ -99,119 +122,69 @@
         </div>
       </div>
 
-      <div class="row mt-1">
-        <div class="col col-lg-12">
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="exportData()">
-              Exportar
+      <!-- Acciones sobre el pedido seleccionado, agrupadas -->
+      <div class="acciones mt-2">
+        <div class="acc-grupo">
+          <span class="acc-titulo">Documento</span>
+          <div class="acc-botones">
+            <button class="btn btn-sm btn-outline-secondary" (click)="exportData()">
+              <i class="fa fa-file-excel-o"></i> Exportar
             </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="Impresion2(staticModalI)">
-              Imprimir
+            <button class="btn btn-sm btn-outline-secondary" (click)="Impresion2(staticModalI)">
+              <i class="fa fa-print"></i> Imprimir
             </button>
-          </div>
-          <div class="BtnToolBar" [hidden]="true">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="SetDocumentEXP()">
-              Exportar a ERP
+            <button class="btn btn-sm btn-outline-secondary" (click)="VerImagen(); staticModal3.show()">
+              <i class="fa fa-file-text-o"></i> Fichero entrada
             </button>
+            <!-- Ocultos desde antes -->
+            <button class="btn btn-sm btn-outline-secondary" [hidden]="true" (click)="SetDocumentEXP()">Exportar a ERP</button>
+            <button class="btn btn-sm btn-outline-secondary" [hidden]="true" (click)="staticModal9.show()">Enlazar Factura desde ERP</button>
+            <button class="btn btn-sm btn-outline-secondary" [hidden]="true" (click)="VerImagen(); staticModal3.show()">Ver Factura Enlazada</button>
           </div>
-          <div class="BtnToolBar" [hidden]="true">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="staticModal9.show()">
-              Enlazar Factura desde ERP
-            </button>
-          </div>
-          <div class="BtnToolBar" [hidden]="true">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="VerImagen(); staticModal3.show()">
-              Ver Factura Enlazada
-            </button>
-          </div>
+        </div>
 
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="HojaFabricacion()">
-              Fichero Fabricación
+        <div class="acc-grupo">
+          <span class="acc-titulo">Fabricación</span>
+          <div class="acc-botones">
+            <button class="btn btn-sm btn-outline-secondary" (click)="HojaFabricacion()">Fichero</button>
+            <button class="btn btn-sm btn-outline-secondary" [hidden]="OcultarHojaFabricacion"
+              (click)="VerHojaFabricacion(0); staticModal10.show()">Detalle</button>
+            <button class="btn btn-sm btn-outline-secondary" [hidden]="OcultarHojaFabricacion"
+              (click)="VerHojaFabricacion(1); staticModal10.show()">Reconstruir</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="Herstellung()">Editar</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="IniciarFabricacion()">
+              <i class="fa fa-play"></i> Iniciar
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="DetenerFabricacion()">
+              <i class="fa fa-stop"></i> Detener
             </button>
           </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" [hidden]="OcultarHojaFabricacion"
-              (click)="VerHojaFabricacion(0); staticModal10.show()">
-              Detalle Fabricación
-            </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" [hidden]="OcultarHojaFabricacion"
-              (click)="VerHojaFabricacion(1); staticModal10.show()">
-              Reconstruir Fabricación
-            </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="Herstellung()">
-              Editar Fabricación
-            </button>
-          </div>
+        </div>
 
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="IniciarFabricacion()">
-              Iniciar Fabricación
-            </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="DetenerFabricacion()">
-              Detener Fabricación
-            </button>
-          </div>
-
-          <div class="BtnToolBar" [hidden]="SelectedCliente != 5">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="Reprocesar()">
-              Reprocesar
-            </button>
-          </div>
-
-          <div class="BtnToolBar" [hidden]="SelectedCliente != 2">
-            <button class="btn btn-primary btn-block btn-sm" (click)="RevisarPreciosCD()">
-              <i class="fa fa-eur mr-1"></i>Revisar precios
-            </button>
-          </div>
-
-          <div class="BtnToolBar">
-            <div class="input-group">
-              <div class="input-group-prepend">
-                <div class="input-group-text mt-1" id="btnGroupAddon">
-                  &nbsp;Cambiar Estado a &nbsp;
-                </div>
-              </div>
-              <select class="form-control form-control-sm" name="EstadoOrden" [(ngModel)]="Target_EstadoOrden"
-                [ngModelOptions]="{ standalone: true }" style="width: 125px">
-                <option *ngFor="let pow of zustanden" [value]="pow.p1">
-                  {{ pow.p2 }}
-                </option>
+        <div class="acc-grupo">
+          <span class="acc-titulo">Pedido</span>
+          <div class="acc-botones">
+            <div class="acc-estado">
+              <select class="form-control form-control-sm" name="Target_EstadoOrden" [(ngModel)]="Target_EstadoOrden"
+                [ngModelOptions]="{ standalone: true }" title="Nuevo estado">
+                <option *ngFor="let pow of zustanden" [value]="pow.p1">{{ pow.p2 }}</option>
               </select>
+              <button class="btn btn-sm btn-outline-secondary" (click)="CambiarEstado()">Cambiar estado</button>
             </div>
+            <button class="btn btn-sm btn-outline-secondary" (click)="ModificarCliente()">Cambiar cliente</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="ModificarRefCliente()">Cambiar referencia</button>
+            <button class="btn btn-sm btn-outline-secondary" *ngIf="SelectedCliente == 5" (click)="Reprocesar()">Reprocesar</button>
+            <button class="btn btn-sm btn-primary" *ngIf="SelectedCliente == 2" (click)="RevisarPreciosCD()">
+              <i class="fa fa-eur"></i> Revisar precios
+            </button>
           </div>
+        </div>
 
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-sm" (click)="CambiarEstado()">
-              Cambiar
-            </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-sm" (click)="ModificarCliente()">
-              Cambiar Cliente
-            </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-sm" (click)="ModificarRefCliente()">
-              Cambiar Referencia
-            </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="VerImagen(); staticModal3.show()">
-              Ver Fichero Entrada
-            </button>
-          </div>
-          <div class="BtnToolBar">
-            <button class="btn btn-secondary btn-block btn-sm" (click)="BorrarPedido()">
-              Borrar Pedido
+        <div class="acc-grupo acc-peligro">
+          <span class="acc-titulo">&nbsp;</span>
+          <div class="acc-botones">
+            <button class="btn btn-sm btn-outline-danger" (click)="BorrarPedido()">
+              <i class="fa fa-trash"></i> Borrar pedido
             </button>
           </div>
         </div>
