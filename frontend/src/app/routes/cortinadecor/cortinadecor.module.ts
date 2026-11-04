@@ -8,6 +8,7 @@ import { ModalModule } from 'ngx-bootstrap/modal';
 import { Routes, RouterModule } from '@angular/router';
 import { CdProductoComponent } from './cd-producto/cd-producto.component';
 import { CdProductoV2Component } from './cd-producto-v2/cd-producto-v2.component';
+import { CdTarifasComponent } from './cd-tarifas/cd-tarifas.component';
 import { ItemnamePipe } from './itemname.pipe';
 import { PermisosGuard } from '../../services/PermisosGuard';
 
@@ -17,7 +18,8 @@ const routes: Routes = [
     { path: '', component: CdMainComponent },
     { path: 'main', component: CdMainComponent, canActivate: [PermisosGuard], data: { permiso: 'cdeco_tejidos' } },
     { path: 'cd_producto', component: CdProductoComponent },
-    { path: 'cd_producto_v2', component: CdProductoV2Component }
+    { path: 'cd_producto_v2', component: CdProductoV2Component },
+    { path: 'cd_tarifas', component: CdTarifasComponent, canActivate: [PermisosGuard], data: { permiso: 'cdeco_tarifas' } }
 ];
 
 
@@ -29,7 +31,7 @@ const routes: Routes = [
     RouterModule.forChild(routes),
     ModalModule.forRoot()
   ],
-  declarations: [CdMainComponent, CdProductoComponent, CdProductoV2Component, ItemnamePipe],
+  declarations: [CdMainComponent, CdProductoComponent, CdProductoV2Component, CdTarifasComponent, ItemnamePipe],
   providers: [PermisosGuard],
   exports: [
     RouterModule

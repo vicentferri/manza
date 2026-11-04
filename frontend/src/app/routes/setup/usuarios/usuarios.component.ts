@@ -62,6 +62,7 @@ export class UsuariosComponent implements OnInit {
             { clave: 'cdeco_tejidos',   label: 'Tejidos' },
             { clave: 'cdeco_atributos', label: 'Configuración Atributos' },
             { clave: 'cdeco_config',    label: 'Configuración' },
+            { clave: 'cdeco_tarifas',   label: 'Tarifas' },
         ]},
     ];
 

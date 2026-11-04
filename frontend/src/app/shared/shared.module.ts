@@ -36,6 +36,7 @@ import { TranslatePipe } from './translate.pipe';
 import { ImpresionDigitalSelectorComponent } from './impresion-digital-selector/impresion-digital-selector.component';
 import { PedidosGridComponent } from './pedidos-grid/pedidos-grid.component';
 import { ImpresionDocumentoComponent } from './impresion-documento/impresion-documento.component';
+import { CdTablaTarifaComponent } from './cd-tabla-tarifa/cd-tabla-tarifa.component';
 
 @NgModule({
     imports: [
@@ -73,7 +74,8 @@ import { ImpresionDocumentoComponent } from './impresion-documento/impresion-doc
         TranslatePipe,
         ImpresionDigitalSelectorComponent,
         PedidosGridComponent,
-        ImpresionDocumentoComponent
+        ImpresionDocumentoComponent,
+        CdTablaTarifaComponent
     ],
     exports: [
         CommonModule,
@@ -99,7 +101,8 @@ import { ImpresionDocumentoComponent } from './impresion-documento/impresion-doc
         TranslatePipe,
         ImpresionDigitalSelectorComponent,
         PedidosGridComponent,
-        ImpresionDocumentoComponent
+        ImpresionDocumentoComponent,
+        CdTablaTarifaComponent
     ]
 })
 // https://github.com/ocombe/ng2-translate/issues/209
