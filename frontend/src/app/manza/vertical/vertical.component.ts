@@ -5,6 +5,7 @@ import { errorPasoMedidas } from '../config/medidas';
 import { ToastrService } from 'ngx-toastr';
 import { TranslationService } from 'src/app/services/translation.service';
 import { Tipo } from '../config/Tipo';
+import { OPCIONES_SOPORTE, TarifaSoporte, tarifaSoporte, textoSoporte } from '../config/soportes';
 import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
@@ -103,6 +104,7 @@ export class VerticalComponent implements OnInit, OnChanges {
    Tipo3_TipoSoporte_Extra: string = '';
    Tipo32_TipoSoporte_Label: string = 'Tipo de soporte';
    Tipo32_TipoSoporte_Extra: string = '';
+   readonly opcionesSoporte = OPCIONES_SOPORTE;
    Tipo4_Accionamiento_Label: string = 'Accionamiento';
    Tipo4_Accionamiento_Extra: string = '';
    Tipo4_Accionamiento_Label_2: string = 'Accionamiento';
@@ -187,6 +189,9 @@ export class VerticalComponent implements OnInit, OnChanges {
 
    CambiaTipoVertical() {
       this.intentoCalculo = false;
+      // Los precios calculados eran del otro tipo: se borran para que no viajen en la línea
+      this.resetPrecios();
+      this.Tipo3_TipoSoporte_Extra = ''; this.Tipo32_TipoSoporte_Extra = '';
       if (this.VerticalInclinada == '0') {
          this.PV_SEL_1 = true;
          this.PV_SEL_2 = false;
@@ -461,7 +466,9 @@ export class VerticalComponent implements OnInit, OnChanges {
       if (this.PV_SEL_2) {
          const combinados = this.Tipo3_TejidoColor1_2 !== this.Tipo3_TejidoColor2_2;
          this.precios.T32_TejidosCombinados = combinados ? 82.09 : 0;
-         this.precios.T32_TejidosCombinados_C1 = combinados ? 'C1 0004210' : '';
+         this.precios.T32_TejidosCombinados_C1 = combinados
+            ? this.getCombinados_C1(this.cantidadLinea(), 4210)
+            : '';
          this.Tipo32_Incremento_Tejidos = combinados ? '+ 82.09€ (C1 0004210)' : '';
       }
    }
@@ -471,261 +478,39 @@ export class VerticalComponent implements OnInit, OnChanges {
       return `C1 ${valor.toString().padStart(7, '0')}`;
    }
 
+   // Tarifa del soporte (común con el panel japonés, ver config/soportes.ts).
+   // NumSoportes es por cortina; el C1 es el de todos los soportes de la línea.
    private calcularSoporteYTotales(): void {
       const usaSel1 = this.PV_SEL_1;
-      const soporte = usaSel1 ? this.PV_TipoSoporte_1 : this.PV_TipoSoporte_2;
+      // En "Solo tejido" el campo de soporte está oculto: no se cobra aunque quede un valor de antes
+      const soporte = usaSel1 ? (this.TipoVertical == '2' ? '-1' : this.PV_TipoSoporte_1) : this.PV_TipoSoporte_2;
       const ancho = usaSel1 ? this.PV_Ancho_1 : this.PV_Ancho_2;
-      const cantidad = usaSel1 ? this.precios.T3_Cantidad : this.precios.T32_Cantidad;
-      const sancho = this.getSanchoFromSoporte(soporte);
+      const cantidad = this.cantidadLinea();
 
-      if (soporte === '-1' || sancho === '0') {
-         this.resetSoporte(usaSel1);
-         if (soporte === 'TEC') {
-            if (usaSel1) {
-               this.precios.T3_TipoSoporte_C1 = 'C1 0000000';
-            } else {
-               this.precios.T32_TipoSoporte_C1 = 'C1 0000000';
-            }
-         }
+      this.setSoporte(usaSel1, null);
+      tarifaSoporte(this.service, this.Cliente, soporte, ancho, cantidad).subscribe(t => {
+         this.setSoporte(usaSel1, t);
          this.CalculateC1_Tipo3();
-         return;
-      }
-
-      const numSoportes = Math.round(Number(ancho) / 50.0) * cantidad;
-
-      this.service.getTarifaAccesorio('1', sancho, numSoportes).subscribe(
-         data => {
-            if (data.message === 'OK') {
-               this.setSoporte(usaSel1, numSoportes, data.v1, data.v2, ancho, cantidad);
-            } else {
-               this.resetSoporte(usaSel1);
-            }
-            this.CalculateC1_Tipo3();
-         },
-         error => console.error(error)
-      );
+      });
    }
 
-   private getSanchoFromSoporte(soporte: string): string {
-      const map: Record<string, string> = {
-         P08: '80',
-         P10: '100',
-         P12: '120',
-         P14: '140',
-         P15: '150',
-         P19: '190',
-         P21: '210',
-         P23: '230'
-      };
-      return map[soporte] || '0';
+   /** Cortinas de la línea (vertical normal o inclinada). */
+   private cantidadLinea(): number {
+      return parseInt(this.PV_SEL_1 ? this.PV_Cantidad_1 : this.PV_Cantidad_2) || 1;
    }
 
-   private setSoporte(sel1: boolean, num: number, precio: number, c1: string, ancho: string, cantidad: number): void {
-      const extra = `(${num} x ${precio}€)`;
+   private setSoporte(sel1: boolean, t: TarifaSoporte | null): void {
+      const extra = t ? textoSoporte(t) : '';
       if (sel1) {
          this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = extra;
-         this.precios.T3_NumSoportes = num;
-         this.precios.T3_TipoSoporte = precio;
-         this.precios.T3_TipoSoporte_C1 = c1;
+         this.precios.T3_NumSoportes = t ? t.numSoportes : 0;
+         this.precios.T3_TipoSoporte = t ? t.precio : 0;
+         this.precios.T3_TipoSoporte_C1 = t ? t.c1 : '';
       } else {
          this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = extra;
-         this.precios.T32_NumSoportes = num;
-         this.precios.T32_TipoSoporte = precio;
-         this.precios.T32_TipoSoporte_C1 = c1;
-      }
-   }
-
-   private resetSoporte(sel1: boolean): void {
-      if (sel1) {
-         this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
-         this.precios.T3_NumSoportes = 0;
-         this.precios.T3_TipoSoporte = 0;
-         this.precios.T3_TipoSoporte_C1 = '';
-      } else {
-         this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
-         this.precios.T32_NumSoportes = 0;
-         this.precios.T32_TipoSoporte = 0;
-         this.precios.T32_TipoSoporte_C1 = '';
-      }
-   }
-
-
-   Tarifa_Vertical_Soporte() {
-      this.precios.T3_TipoSoporte = 0;
-      this.precios.T3_NumSoportes = 0;
-      this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
-
-      if (this.PV_TipoSoporte_1 != "-1") {
-         var soporte = this.PV_TipoSoporte_1;
-         var cliente = "1";
-         var ancho = this.PV_Ancho_1;
-         var sancho = "0";
-
-         var soportes = 0;
-
-         if (soporte == "P08") {
-            sancho = "80";
-         }
-
-         if (soporte == "P10") {
-            sancho = "100";
-         }
-
-         if (soporte == "P12") {
-            sancho = "120";
-         }
-
-         if (soporte == "P14") {
-            sancho = "140";
-         }
-
-         if (soporte == "P15") {
-            sancho = "150";
-         }
-
-         if (soporte == "P19") {
-            sancho = "190";
-         }
-
-         if (soporte == "P21") {
-            sancho = "210";
-         }
-
-         if (soporte == "P23") {
-            sancho = "230";
-         }
-
-         soportes = Number(ancho) / 50.0;
-         soportes = Math.round(soportes);
-
-         var cantidad = this.precios.T3_Cantidad;
-         soportes = cantidad * soportes;
-
-         this.precios.T3_TipoSoporte = 0;
-         this.precios.T3_NumSoportes = 0;
-
-         if (soporte == "TEC") {
-            this.precios.T3_TipoSoporte_C1 = 'C1 0000000';
-         }
-
-         if (sancho != "0") {
-
-            this.service.getTarifaAccesorio("1", sancho, soportes).subscribe(
-               data => {
-
-
-                  if (data.message == "OK") {
-                     this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = "(" + soportes.toString() + " x " + data.v1 + "€)";
-                     this.precios.T3_NumSoportes = soportes;
-                     this.precios.T3_TipoSoporte = data.v1;
-                     this.precios.T3_TipoSoporte_C1 = data.v2;
-                  } else {
-                     this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
-                     this.precios.T3_TipoSoporte = 0;
-                     this.precios.T3_NumSoportes = 0;
-                     this.precios.T3_TipoSoporte_C1 = 'C1 0000000';
-                  }
-
-                  this.CalculateC1_Tipo3();
-               },
-               error => {
-
-               }
-            );
-         }
-         else {
-            this.Tipo3_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo3_TipoSoporte_Extra = '';
-            this.precios.T3_TipoSoporte = 0;
-            this.precios.T3_NumSoportes = 0;
-         }
-      }
-   }
-
-   Tarifa_VerticalInclinada_Soporte() {
-      this.precios.T32_TipoSoporte = 0;
-      this.precios.T32_NumSoportes = 0;
-      this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
-
-      if (this.PV_TipoSoporte_2 != "-1") {
-         var soporte = this.PV_TipoSoporte_2;
-         var cliente = "1";
-         var ancho = this.PV_Ancho_2;
-         var sancho = "0";
-
-         var soportes = 0;
-
-         if (soporte == "P08") {
-            sancho = "80";
-         }
-
-         if (soporte == "P10") {
-            sancho = "100";
-         }
-
-         if (soporte == "P12") {
-            sancho = "120";
-         }
-
-         if (soporte == "P14") {
-            sancho = "140";
-         }
-
-         if (soporte == "P15") {
-            sancho = "150";
-         }
-
-         if (soporte == "P19") {
-            sancho = "190";
-         }
-
-         if (soporte == "P21") {
-            sancho = "210";
-         }
-
-         if (soporte == "P23") {
-            sancho = "230";
-         }
-
-         soportes = Number(ancho) / 50.0;
-         soportes = Math.round(soportes);
-
-         var cantidad = this.precios.T32_Cantidad;
-         soportes = cantidad * soportes;
-
-         this.precios.T32_TipoSoporte = 0;
-         this.precios.T32_NumSoportes = 0;
-
-         if (soporte == "TEC") {
-            this.precios.T32_TipoSoporte_C1 = 'C1 0000000';
-         }
-
-         if (sancho != "0") {
-
-            this.service.getTarifaAccesorio("1", sancho, soportes).subscribe(
-               data => {
-                  if (data.message == "OK") {
-                     this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = "(" + soportes.toString() + " x " + data.v1 + "€)";
-                     this.precios.T32_NumSoportes = soportes;
-                     this.precios.T32_TipoSoporte = data.v1;
-                     this.precios.T32_TipoSoporte_C1 = data.v2;
-                  } else {
-                     this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
-                     this.precios.T32_TipoSoporte = 0;
-                     this.precios.T32_NumSoportes = 0;
-                     this.precios.T32_TipoSoporte_C1 = '';
-                  }
-                  this.CalculateC1_Tipo3();
-               },
-               error => {
-
-               }
-            );
-         }
-         else {
-            this.Tipo32_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo32_TipoSoporte_Extra = '';
-            this.precios.T32_TipoSoporte = 0;
-            this.precios.T32_NumSoportes = 0;
-         }
+         this.precios.T32_NumSoportes = t ? t.numSoportes : 0;
+         this.precios.T32_TipoSoporte = t ? t.precio : 0;
+         this.precios.T32_TipoSoporte_C1 = t ? t.c1 : '';
       }
    }
 
@@ -748,6 +533,7 @@ export class VerticalComponent implements OnInit, OnChanges {
             this.precios.T32_TipoSoporte_C1, "", "", "", "", "").subscribe(
                data => {
                   this.precios.T3_PVP_C1 = data[0].res;
+                  this.asignaPrecios();
                },
                error => {
                   console.log(error);
@@ -790,7 +576,7 @@ export class VerticalComponent implements OnInit, OnChanges {
          if (color1 != color2) {
             this.Tipo32_Incremento_Tejidos = "+ 82.09€ (C1 0004210)"
             this.precios.T32_TejidosCombinados = 82.09;
-            this.precios.T32_TejidosCombinados_C1 = "C1 0004210";
+            this.precios.T32_TejidosCombinados_C1 = this.getCombinados_C1(this.cantidadLinea(), 4210);
          }
          else {
             this.Tipo32_Incremento_Tejidos = "";
@@ -806,15 +592,22 @@ export class VerticalComponent implements OnInit, OnChanges {
 
 
    asignaPrecios(): void {
+      // Inclinada: tejido y combinados por cortina, como la normal, con su propia cantidad.
+      // El total de la línea va en T3_PVP en los dos casos.
+      if (this.PV_SEL_2) {
+         const cantidad2 = parseInt(this.PV_Cantidad_2) || 1;
+         this.precios.T3_PVP = cantidad2 * (this.precios.T32_Tejido + this.precios.T32_TejidosCombinados)
+            + cantidad2 * this.precios.T32_NumSoportes * this.precios.T32_TipoSoporte;
+         return;
+      }
       // En "Solo tejido" ('2') y "Solo riel" ('3') el backend ya devuelve el precio multiplicado
       // por la cantidad, así que no hay que volver a multiplicarlo.
       const precioYaConCantidad = this.TipoVertical == '2' || this.TipoVertical == '3';
-      const cantidad = precioYaConCantidad ? 1 : (parseInt(this.PV_Cantidad_1) || 1);
-      this.precios.T3_PVP = cantidad * (
-         this.precios.T3_Tejido
-         + this.precios.T3_TejidosCombinados
-         + this.precios.T3_NumSoportes * this.precios.T3_TipoSoporte
-      );
+      const cantidad = parseInt(this.PV_Cantidad_1) || 1;
+      const base = this.precios.T3_Tejido + this.precios.T3_TejidosCombinados;
+      // Los soportes son por cortina, así que siempre se multiplican por la cantidad
+      this.precios.T3_PVP = (precioYaConCantidad ? base : cantidad * base)
+         + cantidad * this.precios.T3_NumSoportes * this.precios.T3_TipoSoporte;
    }
 
    // ─── VALIDACIÓN ──────────────────────────────────────────────────────────────
@@ -961,7 +754,10 @@ export class VerticalComponent implements OnInit, OnChanges {
             this.Tipo31_Estancia, this.Tipo31_Estancia_Obs,
             Number(this.TipoVertical),
             this.PV_ID_Quiero_2, this.PV_ID_Imagen_2,
-            preciosCompleto
+            preciosCompleto,
+            parseInt(this.Tipo3_Tejido_2), this.textoDe(this.pv_tejidos_1, this.Tipo3_Tejido_2),
+            parseInt(this.Tipo3_TejidoColor1_2), this.textoDe(this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2),
+            parseInt(this.Tipo3_TejidoColor2_2), this.textoDe(this.pv_tejidosC_2, this.Tipo3_TejidoColor2_2)
          );
       }
 
@@ -969,6 +765,11 @@ export class VerticalComponent implements OnInit, OnChanges {
       const message = this.translation.get('AGREGADO VERTICAL A CESTA');
       this.toaster.success(message, 'Cesta');
       this.reset();
+   }
+
+   private textoDe(lista: any[], id: string): string {
+      const pos = this.getPos(lista, parseInt(id));
+      return pos >= 0 ? lista[pos].text : '';
    }
 
    private buildPreciosCompleto(): any {
@@ -1052,8 +853,21 @@ export class VerticalComponent implements OnInit, OnChanges {
          this.idSeleccion2 = null;
          this.Tipo31_Estancia = item.PV_estancia_id_2;
          this.Tipo31_Estancia_Obs = item.PV_estancia_obs_2;
-         // Vertical_Add_T2 no guarda un tejido propio para T2 en el CortinaTipo,
-         // así que no hay nada que restaurar para Tipo3_Tejido_2/TejidoColor*_2.
+
+         const tejidoId2 = item.PV_Tejido_id;
+         this.Tipo3_Tejido_2 = tejidoId2 != null && tejidoId2 > 0 ? tejidoId2.toString() : '-1';
+         if (tejidoId2 > 0) {
+            this.service.getTejidosColor(tejidoId2, cliente, this.SubCliente).subscribe(
+               data => {
+                  this.pv_tejidosC_2 = data;
+                  const c1 = this.getPos(data, item.PV_Tejido_c1_id);
+                  this.Tipo3_TejidoColor1_2 = c1 >= 0 ? data[c1].id.toString() : (data.length ? data[0].id.toString() : '-1');
+                  const c2 = this.getPos(data, item.PV_Tejido_c2_id);
+                  this.Tipo3_TejidoColor2_2 = c2 >= 0 ? data[c2].id.toString() : this.Tipo3_TejidoColor1_2;
+               },
+               error => { this.toaster.error(error.message); }
+            );
+         }
       }
    }
 
@@ -1216,8 +1030,8 @@ export class VerticalComponent implements OnInit, OnChanges {
             tipo.Vertical_Add_T2(ancho2, cantidad2, alturamin, alturamax, ancholama2,
                posMecanismo2, colorRiel2, accionamiento2, tiposoporte2, tiporecogida2,
                this.Tipo31_Estancia, this.Tipo31_Estancia_Obs,
-               /*it22_2, it22_2s, it23_2, it23_2s, it24_2, it24_2s,*/
-               Number(this.TipoVertical), this.PV_ID_Quiero_2, this.PV_ID_Imagen_2, this.precios);
+               Number(this.TipoVertical), this.PV_ID_Quiero_2, this.PV_ID_Imagen_2, this.precios,
+               it22_2, it22_2s, it23_2, it23_2s, it24_2, it24_2s);
          }
 
          this.CestaPrecios = [];
@@ -1390,6 +1204,12 @@ export class VerticalComponent implements OnInit, OnChanges {
                               this.precios.T3_Cantidad = pvp_cantidad;
                               this.precios.T3_Tejido = pvp;
                               this.precios.T3_Tejido_C1 = code_c1;
+                              if (this.PV_SEL_2) {
+                                 // La inclinada tiene sus propios campos (los lee la cesta)
+                                 this.precios.T32_Cantidad = pvp_cantidad;
+                                 this.precios.T32_Tejido = pvp;
+                                 this.precios.T32_Tejido_C1 = code_c1;
+                              }
                               this.Recalcular_Tipo3();
                            }
                            else {

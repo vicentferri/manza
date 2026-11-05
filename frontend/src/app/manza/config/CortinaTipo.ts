@@ -819,7 +819,12 @@ export class CortinaTipo {
         estancia: string, estanciaobs: string,
         TipoVertical: number,
         PV_Impresion_2: boolean, PV_ID_Imagen_2: string,
-        values: any) {
+        values: any,
+        // Tejido y colores de la inclinada: se guardan en los mismos PV_Tejido_* que la normal
+        // (solo hay una de las dos por línea) y son los que lee el SP de tarifas.
+        PV_Tejido_id: number = -1, PV_Tejido_text: string = '',
+        PV_Tejido_c1_id: number = -1, PV_Tejido_c1_text: string = '',
+        PV_Tejido_c2_id: number = -1, PV_Tejido_c2_text: string = '') {
         this.TipoCortina = 3;
         this.PV_SEL_2 = true;
         this.PV_Ancho_2 = Number(PV_Ancho_2);
@@ -837,6 +842,12 @@ export class CortinaTipo {
         this.TipoVertical = TipoVertical
         this.PV_Impresion_2 = PV_Impresion_2
         this.PV_ID_Imagen_2 = PV_ID_Imagen_2;
+        this.PV_Tejido_id = PV_Tejido_id;
+        this.PV_Tejido_text = PV_Tejido_text;
+        this.PV_Tejido_c1_id = PV_Tejido_c1_id;
+        this.PV_Tejido_c1_text = PV_Tejido_c1_text;
+        this.PV_Tejido_c2_id = PV_Tejido_c2_id;
+        this.PV_Tejido_c2_text = PV_Tejido_c2_text;
         this.precios = Object.assign({}, values);
         this.instrucciones = "";
     }

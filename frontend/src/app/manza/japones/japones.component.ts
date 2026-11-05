@@ -6,6 +6,7 @@ import { TranslationService } from 'src/app/services/translation.service';
 import { SMAPIService } from '../config/smapi.service';
 import { errorPasoMedidas } from '../config/medidas';
 import { Tipo } from '../config/Tipo';
+import { OPCIONES_SOPORTE, tarifaSoporte, textoSoporte } from '../config/soportes';
 import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
 
@@ -116,6 +117,7 @@ export class JaponesComponent implements OnInit, OnChanges {
    Tipo2_TipoSoporte_Label: string = 'Tipo de soporte';
    Tipo2_TipoSoporte_Extra: string = '';
    PJ_SoporteTotal: number = 0;
+   readonly opcionesSoporte = OPCIONES_SOPORTE;
    Accesorios_Japones: string = '';
    Tipo2_Desglose: boolean = false;
 
@@ -505,83 +507,28 @@ export class JaponesComponent implements OnInit, OnChanges {
       }
    }
 
-   Tarifa_Japones_Soporte() {
+   // Tarifa del soporte (común con las verticales, ver config/soportes.ts). Si la línea ya está
+   // valorada, rehace el total para que el cambio de soporte se vea al momento.
+   Tarifa_Japones_Soporte(rehacerTotal: boolean = false) {
       this.precios.T2_TipoSoporte = 0;
       this.precios.T2_NumSoportes = 0;
+      this.precios.T2_TipoSoporte_C1 = '';
       this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = '';
 
-      if (this.PJ_TipoSoporte_2 != "-1") {
-         var cantidad = this.PJ_Cantidad_1;
-         var soporte = this.PJ_TipoSoporte_2;
-         var ancho = this.PJ_Ancho_2;
-         var sancho = "0";
-         var soportes = 0;
-
-         if (soporte == "P08") {
-            sancho = "80";
+      const cantidad = Number(this.PJ_Cantidad_1) || 1;
+      const soporte = this.TipoJapones == '2' ? '-1' : this.PJ_TipoSoporte_2;
+      tarifaSoporte(this.service, this.Cliente, soporte, this.PJ_Ancho_2, cantidad).subscribe(t => {
+         if (t) {
+            this.Tipo2_TipoSoporte_Extra = textoSoporte(t);
+            this.precios.T2_NumSoportes = t.numSoportes;
+            // T2_TipoSoporte es el precio de una posición de soporte para toda la cantidad
+            this.precios.T2_TipoSoporte = cantidad * t.precio;
+            this.precios.T2_TipoSoporte_C1 = t.c1;
          }
-
-         if (soporte == "P10") {
-            sancho = "100";
+         if (rehacerTotal || this.precios.T2_PVP > 0) {
+            this.CalculateC1_Tipo2();
          }
-
-         if (soporte == "P12") {
-            sancho = "120";
-         }
-
-         if (soporte == "P14") {
-            sancho = "140";
-         }
-
-         if (soporte == "P15") {
-            sancho = "150";
-         }
-
-         if (soporte == "P19") {
-            sancho = "190";
-         }
-
-         if (soporte == "P21") {
-            sancho = "210";
-         }
-
-         if (soporte == "P23") {
-            sancho = "230";
-         }
-
-         soportes = Number(ancho) / 50.0;
-         soportes = Math.round(soportes);
-
-         if (sancho != "0") {
-
-            this.service.getTarifaAccesorio(this.Cliente, sancho, soportes * Number(cantidad)).subscribe(
-               data => {
-
-                  if (data.message == "OK") {
-                     this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = "(" + soportes.toString() + " x " + data.v1 + "€ " + data.v2 + ")";
-                     this.precios.T2_NumSoportes = soportes;
-                     this.precios.T2_TipoSoporte = Number(cantidad) * data.v1;
-                     this.precios.T2_TipoSoporte_C1 = data.v2;
-                  }
-                  else {
-                     this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = '';
-                     this.precios.T2_TipoSoporte = 0;
-                     this.precios.T2_NumSoportes = 0;
-                     this.precios.T2_TipoSoporte_C1 = '';
-                  }
-               },
-               error => {
-
-               }
-            );
-         }
-         else {
-            this.Tipo2_TipoSoporte_Label = 'Tipo de soporte'; this.Tipo2_TipoSoporte_Extra = '';
-            this.precios.T2_TipoSoporte = 0;
-            this.precios.T2_NumSoportes = 0;
-            this.precios.T2_TipoSoporte_C1 = ''
-         }
-      }
+      });
    }
 
    asignaPrecios(): void {
@@ -592,7 +539,7 @@ export class JaponesComponent implements OnInit, OnChanges {
       var v4 = this.precios.T2_NumSoportes;
       var v5 = this.precios.T2_Inc_Impresion;
 
-      this.precios.T2_SoporteTotal = cantidad * v3 * v4;
+      this.precios.T2_SoporteTotal = v3 * v4;  // v3 ya va multiplicado por la cantidad
       this.precios.T2_PVP = v1 + v2 + (v3 * v4) + v5;
    }
 
@@ -1170,7 +1117,8 @@ export class JaponesComponent implements OnInit, OnChanges {
                         this.precios.T2_Cantidad = pvp_cantidad;
                         this.precios.T2_Tejido = pvp_cantidad * pvp;
                         this.precios.T2_Tejido_C1 = code_c1;
-                        this.CalculateC1_Tipo2();
+                        // El soporte se recalcula con la cantidad y el ancho actuales; al terminar suma los C1
+                        this.Tarifa_Japones_Soporte(true);
                      }
                      else {
                         this.resetPrecios();

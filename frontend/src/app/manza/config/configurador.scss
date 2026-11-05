@@ -634,11 +634,14 @@ cfg-resumen {
     font-weight: 600;
   }
 
+  // C1 (Leroy): la mitad del PVP, más claro que este pero legible
   small {
     display: block;
     text-align: right;
+    color: #4b5563;
     font-family: $cfg-mono;
-    font-size: 0.72rem;
+    font-size: 0.95rem;
+    font-weight: 500;
   }
 }
 
@@ -1010,7 +1013,7 @@ cfg-resumen {
 
   > div { text-align: right; }
   strong { display: block; font-family: $cfg-mono; font-size: 1.6rem; font-weight: 600; line-height: 1.1; }
-  small { font-family: $cfg-mono; font-size: 0.7rem; }
+  small { color: #4b5563; font-family: $cfg-mono; font-size: 0.8rem; font-weight: 500; }
 }
 
 // Botón de la cesta en la cabecera del resumen

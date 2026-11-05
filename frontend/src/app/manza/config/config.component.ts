@@ -852,7 +852,10 @@ export class ConfigComponent implements OnInit {
                 item.PV_TipoSoporte_2,
                 item.PV_TipoRecogida_2,
                 item.estancia, item.estanciaobs, item.TipoVertical,
-                item.PV_Impresion_2, item.PV_ID_Imagen_2, precios);
+                item.PV_Impresion_2, item.PV_ID_Imagen_2, precios,
+                item.PV_Tejido_id, item.PV_Tejido_text,
+                item.PV_Tejido_c1_id, item.PV_Tejido_c1_text,
+                item.PV_Tejido_c2_id, item.PV_Tejido_c2_text);
             }
 
             this.Cesta.push(tipo);
