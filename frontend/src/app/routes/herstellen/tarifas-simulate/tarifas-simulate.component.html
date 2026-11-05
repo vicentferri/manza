@@ -281,6 +281,28 @@
               </tab>
               <tab>
                 <ng-template tabHeading><i class="icon-list"></i>&nbsp;Mano de Obra</ng-template>
+                <div class="mt-2" [hidden]="model.idrow == -1 || model.bloqueo == 1">
+                  <div class="BtnToolBar">
+                    <button class="btn btn-secondary btn-block btn-sm" (click)="AnadirTramo()">Añadir tramo</button>
+                  </div>
+                  <div class="BtnToolBar">
+                    <button class="btn btn-secondary btn-block btn-sm" (click)="BorrarTramo()">Borrar tramo</button>
+                  </div>
+                  <div class="BtnToolBar">
+                    <button class="btn btn-primary btn-block btn-sm" (click)="GuardarTramos()"
+                      [disabled]="!tiemposPendientes">Guardar tramos</button>
+                  </div>
+                  <div class="BtnToolBar">
+                    <button class="btn btn-secondary btn-block btn-sm" (click)="DescartarTramos()"
+                      [disabled]="!tiemposPendientes">Descartar cambios</button>
+                  </div>
+                  <span class="text-danger small ml-2" *ngIf="tiemposPendientes">Hay cambios sin guardar</span>
+                  <div class="small text-muted mt-1">
+                    Los tramos tienen que ir seguidos (cada uno empieza en el "hasta" del anterior + 1), el primero
+                    desde 40 cm o antes y el último hasta {{ model.tipoproducto == 4 ? 1200 : 600 }} cm como mínimo.
+                    Después de guardar, pulsa "Genera Tarifa" para actualizar el mapa.
+                  </div>
+                </div>
                 <jqxGrid #gridTiempos [auto-create]="false" class="mt-2"
                   (onCellbeginedit)="cellBeginEditEvent_Tiempos($event)"
                   (onCellendedit)="cellEndEditEvent_Tiempos($event)"></jqxGrid>

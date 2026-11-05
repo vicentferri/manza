@@ -962,6 +962,52 @@ function tarifa_simulate_times(req,res)
             });
 }
 
+/* sqlManoObra/01: guarda todos los tramos de mano de obra de una tarifa de una vez. El SP los valida
+   (sin huecos ni solapes, desde 40 cm y hasta el ancho máximo del mapa) y, si algo falla, no toca nada */
+const TRAMOS_ERRORES = {
+    '-1': 'La tarifa no existe',
+    '-2': 'La tarifa está bloqueada',
+    '-3': 'Tiene que haber al menos un tramo',
+    '-4': 'Todos los tramos necesitan desde, hasta y tiempo; el desde no puede ser mayor que el hasta ni el tiempo negativo',
+    '-5': 'El primer tramo tiene que empezar en 40 cm o antes',
+    '-6': 'Hay huecos o solapes: cada tramo tiene que empezar en el hasta del anterior + 1',
+    '-7': 'El último tramo no llega al ancho máximo del mapa (1200 cm en línea blanca, 600 cm en el resto)'
+};
+
+function tarifa_simulate_times_save(req,res)
+{
+    const idrow = parseInt(req.body.idrow, 10);
+    const tramos = req.body.tramos;
+
+    if (!Number.isInteger(idrow) || !Array.isArray(tramos)) {
+        return res.status(400).send({ message: 'Datos no válidos' });
+    }
+
+    /* Se pasa como XML (la BD está en nivel de compatibilidad 110, sin OPENJSON). Solo números:
+       un valor vacío o no numérico se manda sin atributo y el SP lo rechaza (-4) */
+    const atributo = (nombre, valor) => {
+        const n = Number(valor);
+        return (valor === null || valor === undefined || valor === '' || !Number.isFinite(n)) ? '' : ` ${nombre}="${n}"`;
+    };
+    const xml = tramos.map(t => `<t${atributo('d', t.desde)}${atributo('h', t.hasta)}${atributo('m', t.tiempo)}/>`).join('');
+
+    const request = new sql.Request();
+    request.input('idrow', sql.Int, idrow);
+    request.input('tramos', sql.NVarChar(sql.MAX), xml);
+    request.execute('sp_tarifas_simulate_times_guardar', (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).send({ message: 'KO' });
+        }
+        const codigo = result.returnValue;
+        if (codigo === 1) {
+            res.status(200).send({ message: 'OK' });
+        } else {
+            res.status(200).send({ message: 'ERROR', codigo, texto: TRAMOS_ERRORES[String(codigo)] || ('Error ' + codigo) });
+        }
+    });
+}
+
 function tarifa_simulate_export_types(req,res)
 {
     
@@ -2727,6 +2773,7 @@ module.exports = {
     tarifa_simulate_lines,
     tarifa_simulate_line,
     tarifa_simulate_times,
+    tarifa_simulate_times_save,
     tarifa_simulate_table,
     tarifa_simulate_cliente_table,
     clonate,

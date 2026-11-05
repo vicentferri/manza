@@ -297,6 +297,7 @@ smapi.post('/tarifa_simulate_articles', TarifasController.tarifa_simulate_articl
 smapi.get('/tarifa_simulate_lines/:idrow', TarifasController.tarifa_simulate_lines);
 smapi.get('/tarifa_simulate_line/:id', TarifasController.tarifa_simulate_line);
 smapi.get('/tarifa_simulate_times/:idrow', TarifasController.tarifa_simulate_times);
+smapi.post('/tarifa_simulate_times_save', Auth.ensureAuth, TarifasController.tarifa_simulate_times_save);
 smapi.get('/tarifa_simulate_table/:idrow/:bloque', TarifasController.tarifa_simulate_table);
 smapi.get('/tarifa_simulate_cliente_table/:idrow/:bloque', TarifasController.tarifa_simulate_cliente_table);
 smapi.get('/tarifa_simulate_table_details/:tarifa/:row/:col', TarifasController.tarifa_simulate_table_details);
