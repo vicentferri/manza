@@ -5,6 +5,12 @@
         <div class="mb-2">
             <h6>
                 <i class="icon-list mt-1"></i>&nbsp;{{ title }}
+                <!-- PRODUCTO: cada uno tiene su menú de secciones -->
+                <div class="btn-group btn-group-sm ml-3" role="group">
+                    <button *ngFor="let p of productos" type="button" class="btn"
+                        [class.btn-primary]="producto === p.id" [class.btn-outline-primary]="producto !== p.id"
+                        (click)="cambiarProducto(p.id)">{{ p.label }}</button>
+                </div>
                 <div class="pull-right">
                     <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
                 </div>
@@ -246,6 +252,59 @@
                         aquí se revisan y, pulsando una línea, se cambian. Los suplementos de los elementos elegidos se suman al precio de la cortina.
                     </div>
                     <app-acc-suplementos-resumen [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
+                </ng-container>
+
+                <!-- SOLAR MINI · 1. PERFILERÍA -->
+                <ng-container *ngIf="seccion === 'mini_perfileria'">
+                    <div class="acc-intro">
+                        Opciones de la perfilería del Solar Mini. Son listas independientes: todos los colores valen para cualquier tipo de junquillo.
+                    </div>
+                    <ul class="nav nav-tabs acc-tabs">
+                        <li class="nav-item" *ngFor="let l of perfileria">
+                            <a class="nav-link" href="javascript:void(0)" [class.active]="pestanaPerfileria.id === l.id" (click)="pestanaPerfileria = l">{{ l.label }}</a>
+                        </li>
+                    </ul>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla [catalogo]="pestanaPerfileria.id" [titulo]="pestanaPerfileria.label" [singular]="pestanaPerfileria.singular"
+                                [ayuda]="pestanaPerfileria.ayuda"></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- SOLAR MINI · 2. ACCIONAMIENTO -->
+                <ng-container *ngIf="seccion === 'mini_accionamiento'">
+                    <div class="acc-intro">
+                        Colores de la cadena y de las tapas del Solar Mini. Son listas propias, aparte de las del enrollable.
+                    </div>
+                    <ul class="nav nav-tabs acc-tabs">
+                        <li class="nav-item" *ngFor="let l of accionamientoMini">
+                            <a class="nav-link" href="javascript:void(0)" [class.active]="pestanaAccMini.id === l.id" (click)="pestanaAccMini = l">{{ l.label }}</a>
+                        </li>
+                    </ul>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla [catalogo]="pestanaAccMini.id" [titulo]="pestanaAccMini.label" [singular]="pestanaAccMini.singular"
+                                [ayuda]="pestanaAccMini.ayuda"></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- SOLAR MINI · 3. TEJIDO -->
+                <ng-container *ngIf="seccion === 'mini_tejidos'">
+                    <div class="acc-intro">
+                        Tejidos del <strong>Maestro de tejidos</strong> que ofrece el Solar Mini en el configurador. Una sola lista, la misma para todos los clientes.
+                    </div>
+                    <app-acc-tejidos producto="mini"></app-acc-tejidos>
+                </ng-container>
+
+                <!-- SOLAR MINI · SUPLEMENTOS -->
+                <ng-container *ngIf="seccion === 'mini_suplementos'">
+                    <div class="acc-intro">
+                        Todos los suplementos de precio del Solar Mini. Se ponen en la columna <strong>Suplemento</strong> de cada lista;
+                        aquí se revisan y, pulsando una línea, se cambian. El Solar Mini no tiene sistemas: los precios van por cliente y medida.
+                    </div>
+                    <app-acc-suplementos-resumen producto="mini" [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
                 </ng-container>
 
                 <!-- LISTAS DE OPCIONES -->

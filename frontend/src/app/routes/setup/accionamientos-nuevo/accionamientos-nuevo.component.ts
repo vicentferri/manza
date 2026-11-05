@@ -12,6 +12,9 @@ import { ToastrService } from 'ngx-toastr';
  * reutilizan (sistemas, colores, mandos...).
  * Cada sección se arma con app-acc-tabla (catálogo) y app-acc-relacion (N:M). Para un catálogo
  * nuevo (soportes, contrapesos...) basta con declararlo en el backend y añadir aquí su sección.
+ *
+ * Arriba se elige el producto: Enrollable o Solar Mini (sqlSolarMini/01). El Solar Mini tiene sus propias listas
+ * (mini_* en el backend), planas y sin sistemas: perfilería, accionamiento, tejido y sus suplementos.
  */
 @Component({
     selector: 'app-accionamientos-nuevo',
@@ -23,7 +26,13 @@ export class AccionamientosNuevoComponent implements OnInit {
 
     title = 'Productos';
 
-    readonly secciones = [
+    readonly productos = [
+        { id: 'enrollable', label: 'Enrollable' },
+        { id: 'mini', label: 'Solar Mini' }
+    ];
+    producto = 'enrollable';
+
+    readonly seccionesEnrollable = [
         { id: 'accionamientos', paso: '1', label: 'Accionamientos', ayuda: 'Qué sistemas tiene cada uno', icono: 'fa-hand-pointer-o' },
         { id: 'cadena', paso: '2', label: 'Cadena', ayuda: 'Tipos, alturas y colores', icono: 'fa-link' },
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
@@ -32,7 +41,30 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' },
         { id: 'suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
+
+    readonly seccionesMini = [
+        { id: 'mini_perfileria', paso: '1', label: 'Perfilería', ayuda: 'Tipos de junquillo, colores y colores RAL', icono: '' },
+        { id: 'mini_accionamiento', paso: '2', label: 'Accionamiento', ayuda: 'Colores de cadena y de tapas', icono: '' },
+        { id: 'mini_tejidos', paso: '3', label: 'Tejido', ayuda: 'Los que ofrece el Solar Mini', icono: '' },
+        { id: 'mini_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
+    ];
+
+    secciones = this.seccionesEnrollable;
     seccion = 'accionamientos';
+
+    /* Pestañas de las secciones del Solar Mini: cada una es una lista (clave de CATALOGOS del backend) */
+    readonly perfileria = [
+        { id: 'mini_junquillos', label: 'Tipo de junquillo', singular: 'tipo de junquillo',
+          ayuda: 'Redondeado / Biselado y Cuadrado son fijos: se pueden renombrar u ocultar, pero no borrar. Se pueden añadir más.' },
+        { id: 'mini_colores_perfil', label: 'Colores', singular: 'color', ayuda: 'Colores de la perfilería.' },
+        { id: 'mini_colores_ral', label: 'Colores RAL', singular: 'color RAL', ayuda: 'Colores RAL de la perfilería, aparte de los colores.' }
+    ];
+    readonly accionamientoMini = [
+        { id: 'mini_colores_cadena', label: 'Color cadena', singular: 'color de cadena', ayuda: 'Colores de la cadena del Solar Mini (no son los del enrollable).' },
+        { id: 'mini_colores_tapa', label: 'Color tapas', singular: 'color de tapa', ayuda: 'Colores de las tapas del Solar Mini (no son los del enrollable).' }
+    ];
+    pestanaPerfileria: any = this.perfileria[0];
+    pestanaAccMini: any = this.accionamientoMini[0];
 
     readonly listas = [
         { id: 'sistemas', label: 'Sistemas', singular: 'sistema', ayuda: 'Rhin, Duero, Sena deco... Se asignan a cada accionamiento en el paso 1. Su precio base sale de las tarifas del generador que tengan este sistema.' },
@@ -60,7 +92,7 @@ export class AccionamientosNuevoComponent implements OnInit {
     readonly nombresListas: { [clave: string]: string } = Object.assign({
         accionamientos: 'Accionamientos', tipos_cadena: 'Tipos de cadena',
         alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores'
-    }, ...this.listas.map(l => ({ [l.id]: l.label })));
+    }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini).map(l => ({ [l.id]: l.label })));
 
     /* Los tipos de cadena y de motor cuelgan de los accionamientos fijos CADENA y MOTOR */
     accCadena: any = null;
@@ -93,6 +125,14 @@ export class AccionamientosNuevoComponent implements OnInit {
 
     ngOnInit() {
         this.cargarAccionamientos();
+    }
+
+    /* Cada producto tiene su menú; se empieza por su primera sección */
+    cambiarProducto(id: string) {
+        if (id === this.producto) { return; }
+        this.producto = id;
+        this.secciones = id === 'mini' ? this.seccionesMini : this.seccionesEnrollable;
+        this.cambiarSeccion(this.secciones[0].id);
     }
 
     cambiarSeccion(id: string) {

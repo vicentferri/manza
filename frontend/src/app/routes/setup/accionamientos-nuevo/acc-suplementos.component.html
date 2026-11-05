@@ -9,8 +9,8 @@
             </div>
             <div class="modal-body">
                 <div class="acc-ayuda mb-2">
-                    Importe por cortina que se suma al precio cuando se elige este elemento. Deje cliente o sistema en
-                    <strong>Todos</strong> para el precio general; si hay uno para el cliente o el sistema concreto, gana ese.
+                    Importe por cortina que se suma al precio cuando se elige este elemento. Deje {{ sinSistema ? 'el cliente' : 'cliente o sistema' }} en
+                    <strong>Todos</strong> para el precio general; si hay uno para {{ sinSistema ? 'el cliente concreto' : 'el cliente o el sistema concreto' }}, gana ese.
                     Para precios por tramos elija la medida y escriba hasta cuántos cm vale cada importe: se aplica el primer
                     tramo que cubre la medida, y si la medida supera el último, la línea no se puede pedir.
                 </div>
@@ -19,7 +19,7 @@
                     <thead class="thead-light">
                         <tr>
                             <th>Cliente</th>
-                            <th>Sistema</th>
+                            <th *ngIf="!sinSistema">Sistema</th>
                             <th>Medida</th>
                             <th class="acc-sup-num">Hasta (cm)</th>
                             <th class="acc-sup-num">Importe (€)</th>
@@ -35,7 +35,7 @@
                                     <option *ngFor="let c of clientes" [value]="c.id">{{ c.nombre }}</option>
                                 </select>
                             </td>
-                            <td>
+                            <td *ngIf="!sinSistema">
                                 <select class="form-control form-control-sm" [(ngModel)]="l.sistema_id" [ngModelOptions]="{ standalone: true }">
                                     <option value="">Todos</option>
                                     <option *ngFor="let s of sistemas" [value]="s.id">{{ s.nombre }}</option>
