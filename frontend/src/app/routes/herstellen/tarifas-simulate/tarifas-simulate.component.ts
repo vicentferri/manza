@@ -275,6 +275,11 @@ export class TarifasSimulateComponent implements OnInit {
     editor.jqxNumberInput({ decimalDigits: 0, digits: 3, min: 0, spinButtons: false });
   }
 
+  /* centímetros de los tramos de mano de obra (hasta 1200 en línea blanca) */
+  intValueCm = (row, cellvalue, editor) => {
+    editor.jqxNumberInput({ decimalDigits: 0, digits: 4, min: 0, spinButtons: false });
+  }
+
   getWidth(): any {
     if (document.body.offsetWidth < 850) {
       return '100%';
@@ -454,30 +459,41 @@ export class TarifasSimulateComponent implements OnInit {
     pagesizeoptions: ['50', '100', '500'],
     pagesize: 500,
     scrollmode: 'logical',
-    sortable: true,
+    /* sqlManoObra/01: sin ordenar ni filtrar, para que los tramos se vean siempre en su orden */
+    sortable: false,
     altrows: true,
     enabletooltips: true,
     editable: true,
     groupable: false,
     selectionmode: 'singlerow', /* wir haben hier verschiedene Optionen,
                                   * damit zu benutzen beispielweise singlerow,multiplerow, multiplecelladvanced*/
-    showfilterrow: true,
-    filterable: true,
+    showfilterrow: false,
+    filterable: false,
     columnsresize: true,
-    columnsreorder: true,
+    columnsreorder: false,
     enablehover: true,
     showtoolbar: false,
     showstatusbar: false,
     source: this.dataAdapter3,
     columns: [
-      { text: 'Desde (cm)', datafield: 'desde', width: 100, filtertype: 'textbox', editable: false, cellsalign: 'right' },
-      { text: 'Hasta (cm)', datafield: 'hasta', width: 100, filtertype: 'textbox', editable: false, cellsalign: 'right' },
       {
-        text: 'Tiempo (min)', datafield: 'tiempo', width: 100, filtertype: 'textbox', editable: true, cellsalign: 'right', cellsformat: 'd2',
+        text: 'Desde (cm)', datafield: 'desde', width: 100, editable: true, cellsalign: 'right',
+        columntype: 'numberinput', createeditor: this.intValueCm
+      },
+      {
+        text: 'Hasta (cm)', datafield: 'hasta', width: 100, editable: true, cellsalign: 'right',
+        columntype: 'numberinput', createeditor: this.intValueCm
+      },
+      {
+        text: 'Tiempo (min)', datafield: 'tiempo', width: 100, editable: true, cellsalign: 'right', cellsformat: 'd2',
         columntype: 'numberinput', createeditor: this.decimalValueCantidad
       }
     ]
   };
+
+  /* sqlManoObra/01: tramos de mano de obra. Se editan en la rejilla y se guardan todos juntos con
+     "Guardar tramos" (el servidor los valida); hasta entonces hay cambios sin guardar */
+  tiemposPendientes = false;
 
 
   ngAfterViewInit() {
@@ -1176,11 +1192,10 @@ export class TarifasSimulateComponent implements OnInit {
       const url = '/sm/tarifa_simulate_times/' + this.model.idrow;
       this.service.HTTP_Get(url).subscribe(
         data => {
-          if (data.Table.length > 0) {
-            this.source3.localdata = data.Table;
-            this.dataAdapter3.dataBind();
-            this.myTiempo.updatebounddata();
-          }
+          this.source3.localdata = data.Table;
+          this.dataAdapter3.dataBind();
+          this.myTiempo.updatebounddata();
+          this.tiemposPendientes = false;
         },
         error => {
           this.toaster.error(error.message);
@@ -1232,38 +1247,68 @@ export class TarifasSimulateComponent implements OnInit {
     //this.beginEdit.nativeElement.innerHTML = 'Event Type: cellbeginedit, Column: ' + args.datafield + ', Row: ' + (1 + args.rowindex) + ', Value: ' + args.value;
   }
 
+  /* sqlManoObra/01: editar una celda ya no guarda; se guarda todo con "Guardar tramos" */
   cellEndEditEvent_Tiempos(event: any): void {
-    let args = event.args;
-    //this.endEdit.nativeElement.innerHTML = 'Event Type: cellendedit, Column: ' + args.datafield + ', Row: ' + (1 + args.rowindex) + ', Value: ' + args.value;
-
-    var model = {
-      table: 'SOL_TARIFAS_SIMULATE_TIMES',
-      column: 'id',
-      id: args.row.id,
-      field: args.datafield,
-      value: args.value,
-      type: 0,
-      param1: -1,
-      param2: -1,
-      param3: -1
+    const args = event.args;
+    if (args.oldvalue !== args.value) {
+      this.tiemposPendientes = true;
     }
+  }
 
+  /* Tramos tal como están en la rejilla, ordenados por desde */
+  private tramosRejilla(): any[] {
+    const filas = this.myTiempo.getrows() || [];
+    return filas
+      .map(f => ({ desde: f.desde, hasta: f.hasta, tiempo: f.tiempo }))
+      .sort((a, b) => (Number(a.desde) || 0) - (Number(b.desde) || 0));
+  }
 
-    let values = JSON.stringify(model);
-    var route = "/bulk";
-    this.service.HTTP_Post(route, values).subscribe(
+  /* Ancho máximo del mapa: 12 m en línea blanca, 6 m en el resto */
+  private anchoMaximoMapa(): number {
+    return this.model.tipoproducto == 4 ? 1200 : 600;
+  }
+
+  AnadirTramo() {
+    const tramos = this.tramosRejilla();
+    const ultimo = tramos.length > 0 ? tramos[tramos.length - 1] : null;
+    const desde = ultimo ? (Number(ultimo.hasta) || 0) + 1 : 40;
+    const maximo = this.anchoMaximoMapa();
+    const hasta = desde < maximo ? maximo : desde + 199;
+    const tiempo = ultimo ? Number(ultimo.tiempo) || 0 : 0;
+    this.myTiempo.addrow(null, { id: null, desde, hasta, tiempo });
+    this.tiemposPendientes = true;
+  }
+
+  BorrarTramo() {
+    const indice = this.myTiempo.getselectedrowindex();
+    if (indice == null || indice < 0) {
+      this.toaster.warning('Selecciona el tramo que quieres borrar', 'MANO DE OBRA');
+      return;
+    }
+    this.myTiempo.deleterow(this.myTiempo.getrowid(indice));
+    this.myTiempo.clearselection();
+    this.tiemposPendientes = true;
+  }
+
+  GuardarTramos() {
+    const values = JSON.stringify({ idrow: this.model.idrow, tramos: this.tramosRejilla() });
+    this.service.HTTP_Post('/sm/tarifa_simulate_times_save', values).subscribe(
       data => {
-
-        if (data.message === "OK") {
-          this.myGrid.clearselection();
+        if (data.message === 'OK') {
           this.LoadTimes();
-          this.toaster.success("Actualizado los tiempos", "TIEMPOS");
+          this.toaster.success('Tramos guardados. Pulsa "Genera Tarifa" para actualizar el mapa', 'MANO DE OBRA');
+        } else {
+          this.toaster.error(data.texto || 'No se han guardado los tramos', 'MANO DE OBRA');
         }
       },
       error => {
         this.toaster.error(error.message);
       }
     );
+  }
+
+  DescartarTramos() {
+    this.LoadTimes();
   }
 
   GeneraTarifa() {
