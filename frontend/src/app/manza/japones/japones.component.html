@@ -135,15 +135,7 @@
               <select name="PJ_TipoSoporte_2" [(ngModel)]="PJ_TipoSoporte_2"
                 class="form-control form-control-sm" (change)="Tarifa_Japones_Soporte()">
                 <option value="-1">{{ "ELEGIR" | translate }}</option>
-                <option value="TEC">{{ "TECHO" | translate }}</option>
-                <option value="P08">{{ "Pared 8 cm" | translate }}</option>
-                <option value="P10">{{ "Pared 10 cm" | translate }}</option>
-                <option value="P12">{{ "Pared 12 cm" | translate }}</option>
-                <option value="P14">{{ "Pared 14 cm" | translate }}</option>
-                <option value="P15">{{ "Pared 15 cm" | translate }}</option>
-                <option value="P19">{{ "Pared 19 cm" | translate }}</option>
-                <option value="P21">{{ "Pared 21 cm" | translate }}</option>
-                <option value="P23">{{ "Pared 23 cm" | translate }}</option>
+                <option *ngFor="let o of opcionesSoporte" [value]="o.valor">{{ o.etiqueta | translate }}</option>
               </select>
             </div>
             <div class="cfg-field" [class.cfg-error]="PJ_Contrapeso_1 == '-1'">
