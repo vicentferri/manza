@@ -550,6 +550,10 @@ var AccionamientosNuevoController = require('../controllers/sm/accionamientos_nu
 smapi.get('/acc/tejidos/:sistema', NuevoSistema, AccionamientosNuevoController.tejidos);
 smapi.post('/acc/tejidos/:sistema', NuevoSistema, AccionamientosNuevoController.tejidos_guardar);
 smapi.post('/acc/tejidos/:sistema/copiar', NuevoSistema, AccionamientosNuevoController.tejidos_copiar);
+/* Tejidos del Solar Mini (sqlSolarMini/01): una sola lista, sin sistema; se puede copiar de un sistema del enrollable */
+smapi.get('/acc/mini/tejidos', NuevoSistema, AccionamientosNuevoController.mini_tejidos);
+smapi.post('/acc/mini/tejidos', NuevoSistema, AccionamientosNuevoController.mini_tejidos_guardar);
+smapi.post('/acc/mini/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.mini_tejidos_copiar);
 smapi.get('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion_guardar);
 smapi.get('/acc/matriz/motores', NuevoSistema, AccionamientosNuevoController.matriz_motores);
@@ -578,6 +582,10 @@ smapi.post('/acc_cfg/precio/:cliente', Auth.ensureAuth, AccConfiguradorControlle
 smapi.post('/acc_cfg/pedido/:cliente/:ref', Auth.ensureAuth, AccConfiguradorController.pedido);
 smapi.post('/acc_cfg/presupuesto/:cliente/:ref', Auth.ensureAuth, AccConfiguradorController.presupuesto);
 smapi.post('/acc_cfg/presupuesto_a_pedido/:id', Auth.ensureAuth, AccConfiguradorController.presupuesto_a_pedido);
+/* Solar Mini con el configurador nuevo (sqlSolarMini 01-05); el pedido y el presupuesto son los de arriba */
+smapi.get('/acc_cfg/mini/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.mini_activo);
+smapi.get('/acc_cfg/mini/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.mini_opciones);
+smapi.post('/acc_cfg/mini/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.mini_precio);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);

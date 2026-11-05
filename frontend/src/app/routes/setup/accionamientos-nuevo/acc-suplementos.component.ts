@@ -26,6 +26,8 @@ export class AccSuplementosComponent {
     elemento = '';
     /* La medida LONGITUD solo se ofrece en los elementos de la cadena */
     conLongitud = false;
+    /* Productos sin sistemas (Solar Mini): no se enseña la columna Sistema */
+    sinSistema = false;
     lineas: any[] = [];
     clientes: any[] = [];
     sistemas: any[] = [];
@@ -43,6 +45,7 @@ export class AccSuplementosComponent {
             data => {
                 this.elemento = data.elemento;
                 this.conLongitud = !!data.longitud;
+                this.sinSistema = !!data.sinSistema;
                 this.lineas = (data.lineas || []).map(l => ({
                     cliente: l.cliente === null ? '' : String(l.cliente),
                     sistema_id: l.sistema_id === null ? '' : String(l.sistema_id),

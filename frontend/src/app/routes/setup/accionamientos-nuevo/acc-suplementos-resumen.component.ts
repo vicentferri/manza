@@ -16,6 +16,8 @@ export class AccSuplementosResumenComponent implements OnInit {
 
     /* Nombre de cada lista (clave del backend → texto), lo pasa la pantalla */
     @Input() nombresListas: { [clave: string]: string } = {};
+    /* Producto del que se enseñan los suplementos: 'enrollable' o 'mini' (Solar Mini, listas mini_*, sin sistema) */
+    @Input() producto = 'enrollable';
 
     lineas: any[] = [];
     filtradas: any[] = [];
@@ -34,7 +36,8 @@ export class AccSuplementosResumenComponent implements OnInit {
     cargar() {
         this.service.HTTP_Get('/sm/acc/suplementos').subscribe(
             data => {
-                this.lineas = data.Table || [];
+                const mini = this.producto === 'mini';
+                this.lineas = (data.Table || []).filter(l => String(l.clave).indexOf('mini_') === 0 === mini);
                 this.cargado = true;
                 this.opcionesFiltro();
                 this.filtrar();

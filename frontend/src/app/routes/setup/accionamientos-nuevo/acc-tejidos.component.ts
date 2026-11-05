@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
 
@@ -11,6 +11,8 @@ import { ToastrService } from 'ngx-toastr';
  * marca los colores de 200, de 250 y de cualquier otro ancho). La casilla del grupo y "Marcar / Quitar
  * lo filtrado" cambian varios de una vez.
  * Cada cambio se guarda al momento; si falla, las casillas vuelven a como estaban.
+ * producto = 'mini' (Solar Mini, sqlSolarMini/01): una sola lista sin sistema (SOL_ACC_MINI_TEJIDO); "Copiar"
+ * la deja con los tejidos de un sistema del enrollable.
  */
 @Component({
     selector: 'app-acc-tejidos',
@@ -18,6 +20,9 @@ import { ToastrService } from 'ngx-toastr';
     styleUrls: ['./accionamientos-nuevo.component.css']
 })
 export class AccTejidosComponent implements OnInit {
+
+    /* 'enrollable' (por sistema) o 'mini' (Solar Mini, una sola lista) */
+    @Input() producto = 'enrollable';
 
     /* Sistemas del modelo nuevo (SOL_ACC_SISTEMA) y el elegido; origen de "Copiar de otro sistema" */
     sistemas: any[] = [];
@@ -43,9 +48,12 @@ export class AccTejidosComponent implements OnInit {
     constructor(private service: HaruService, private toaster: ToastrService) { }
 
     ngOnInit() {
+        /* En el Solar Mini los sistemas solo hacen falta como origen de "Copiar" */
+        if (this.esMini) { this.cargar(); }
         this.service.HTTP_Get('/sm/acc/sistemas').subscribe(
             data => {
                 this.sistemas = data.Table || [];
+                if (this.esMini) { return; }
                 const primero = this.sistemas.find(s => s.activo) || this.sistemas[0];
                 if (primero) { this.cambiarSistema(primero.id); } else { this.cargado = true; }
             },
@@ -53,12 +61,30 @@ export class AccTejidosComponent implements OnInit {
         );
     }
 
+    get esMini(): boolean {
+        return this.producto === 'mini';
+    }
+
+    /* Hay una lista que enseñar: la del Solar Mini o la del sistema elegido */
+    get conLista(): boolean {
+        return this.esMini || !!this.sistema;
+    }
+
+    /* Nombre de la lista que se edita, para los mensajes */
+    get nombreLista(): string {
+        return this.esMini ? 'Solar Mini' : (this.sistemaSel ? this.sistemaSel.nombre : '');
+    }
+
+    private get url(): string {
+        return this.esMini ? '/sm/acc/mini/tejidos' : '/sm/acc/tejidos/' + this.sistema;
+    }
+
     get sistemaSel(): any {
         return this.sistemas.find(s => s.id === this.sistema) || null;
     }
 
     get otrosSistemas(): any[] {
-        return this.sistemas.filter(s => s.id !== this.sistema);
+        return this.esMini ? this.sistemas : this.sistemas.filter(s => s.id !== this.sistema);
     }
 
     cambiarSistema(id: any) {
@@ -72,14 +98,15 @@ export class AccTejidosComponent implements OnInit {
     /* El sistema elegido pasa a tener exactamente los tejidos del sistema origen */
     copiar() {
         const origen = this.sistemas.find(s => s.id === Number(this.origenCopia));
-        if (!origen || !this.sistemaSel) { return; }
-        if (!confirm('¿Dejar ' + this.sistemaSel.nombre + ' con los mismos tejidos que ' + origen.nombre + '? Se quitan los que tenga ahora.')) { return; }
+        if (!origen || !this.conLista) { return; }
+        const nombre = this.nombreLista;
+        if (!confirm('¿Dejar ' + nombre + ' con los mismos tejidos que ' + origen.nombre + '? Se quitan los que tenga ahora.')) { return; }
         this.copiando = true;
-        this.service.HTTP_Post('/sm/acc/tejidos/' + this.sistema + '/copiar', JSON.stringify({ origen: origen.id })).subscribe(
+        this.service.HTTP_Post(this.url + '/copiar', JSON.stringify({ origen: origen.id })).subscribe(
             data => {
                 this.copiando = false;
                 this.origenCopia = null;
-                this.toaster.success(this.sistemaSel.nombre + ': ' + data.disponibles + ' tejidos disponibles, como ' + origen.nombre, 'Tejidos');
+                this.toaster.success(nombre + ': ' + data.disponibles + ' tejidos disponibles, como ' + origen.nombre, 'Tejidos');
                 this.cargar();
             },
             err => {
@@ -92,7 +119,7 @@ export class AccTejidosComponent implements OnInit {
 
     cargar() {
         const sistema = this.sistema;
-        this.service.HTTP_Get('/sm/acc/tejidos/' + sistema).subscribe(
+        this.service.HTTP_Get(this.url).subscribe(
             data => {
                 /* si se cambió de sistema mientras cargaba, esta respuesta ya no vale */
                 if (sistema !== this.sistema) { return; }
@@ -181,7 +208,7 @@ export class AccTejidosComponent implements OnInit {
         this.estado = 'guardando';
         clearTimeout(this.temporizador);
         const body = { ids: cambian.map(t => t.id), disponible };
-        this.service.HTTP_Post('/sm/acc/tejidos/' + this.sistema, JSON.stringify(body)).subscribe(
+        this.service.HTTP_Post(this.url, JSON.stringify(body)).subscribe(
             () => {
                 this.estado = 'guardado';
                 this.temporizador = setTimeout(() => this.estado = '', 2000);

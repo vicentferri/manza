@@ -5,7 +5,8 @@ const sql = require('mssql');
 /*
  * Modelo nuevo de accionamientos (tablas SOL_ACC_*).
  * Pantalla: routes/setup/accionamientos-nuevo ("Productos", antes "Accionamientos nuevo")
- * Scripts:  C:\dev\sqlAccionamientos\ (01 tablas, 02 accionamientos fijos CADENA y MOTOR)
+ * Scripts:  C:\dev\sqlAccionamientos\ (01 tablas, 02 accionamientos fijos CADENA y MOTOR,
+ *           y prod/sqlSolarMini/01: Solar Mini, catálogos mini_* y tejidos sin sistema)
  *
  * Las tablas y columnas salen solo de CATALOGOS y RELACIONES: el cliente manda la
  * clave del catálogo, nunca un nombre de tabla.
@@ -33,7 +34,14 @@ const CATALOGOS = {
   contrapesos:         { tabla: 'SOL_ACC_CONTRAPESO' },
   colores_soporte:     { tabla: 'SOL_ACC_COLOR_SOPORTE' },
   colores_tapa:        { tabla: 'SOL_ACC_COLOR_TAPA' },
-  colores_contrapeso:  { tabla: 'SOL_ACC_COLOR_CONTRAPESO' }
+  colores_contrapeso:  { tabla: 'SOL_ACC_COLOR_CONTRAPESO' },
+  /* Solar Mini (sqlSolarMini/01): listas planas, sin relaciones entre ellas. Sin sistema: sus suplementos van
+     por cliente y medida. JR y JC son los códigos del configurador de siempre */
+  mini_junquillos:     { tabla: 'SOL_ACC_MINI_JUNQUILLO', sinSistema: true, protegidos: ['JR', 'JC'] },
+  mini_colores_perfil: { tabla: 'SOL_ACC_MINI_COLOR_PERFIL', sinSistema: true },
+  mini_colores_ral:    { tabla: 'SOL_ACC_MINI_COLOR_RAL', sinSistema: true },
+  mini_colores_cadena: { tabla: 'SOL_ACC_MINI_COLOR_CADENA', sinSistema: true },
+  mini_colores_tapa:   { tabla: 'SOL_ACC_MINI_COLOR_TAPA', sinSistema: true }
 };
 
 /* Relaciones N:M: origen = registro que se edita, destino = opciones que se marcan */
@@ -498,7 +506,8 @@ async function suplementos(req, res) {
       where s.catalogo = @tabla and s.elemento_id = @id
       order by case when s.cliente is null then 0 else 1 end, c.descripcion,
                case when s.sistema_id is null then 0 else 1 end, si.nombre, s.medida, s.hasta`);
-    res.status(200).send({ elemento: elemento.nombre, longitud: CATALOGOS_CADENA.includes(req.params.catalogo), lineas: r.recordset });
+    res.status(200).send({ elemento: elemento.nombre, longitud: CATALOGOS_CADENA.includes(req.params.catalogo),
+                           sinSistema: !!cat.sinSistema, lineas: r.recordset });
   } catch (err) {
     errorSql(err, res);
   }
@@ -562,6 +571,7 @@ async function suplementos_guardar(req, res) {
     if (linea.importe === null || linea.importe < 0) return res.status(400).send({ message: 'Cada línea necesita un importe mayor o igual que 0' });
     if (linea.medida && !MEDIDAS.includes(linea.medida)) return res.status(400).send({ message: 'Medida no válida' });
     if (linea.medida === 'LONGITUD' && !longitud) return res.status(400).send({ message: 'La longitud de cadena solo vale en los elementos de la cadena' });
+    if (cat.sinSistema && linea.sistema_id !== null) return res.status(400).send({ message: 'Este producto no tiene sistemas: deje el sistema en Todos' });
     if (linea.medida && (linea.hasta === null || linea.hasta <= 0)) return res.status(400).send({ message: 'Un tramo necesita un "hasta" mayor que 0' });
     if (!linea.medida && linea.hasta !== null) return res.status(400).send({ message: 'Indique la medida del tramo o deje vacío el "hasta"' });
     lineas.push(linea);
@@ -640,10 +650,28 @@ async function clientes(req, res) {
   }
 }
 
-/* ---------------- TEJIDOS DISPONIBLES (scripts 29 y 36) ---------------- */
+/* ---------------- TEJIDOS DISPONIBLES (scripts 29 y 36; Solar Mini: sqlSolarMini/01) ---------------- */
 
-/* Tejidos del maestro (SOL_TEJIDOS_MAESTRO, una fila por tejido + color) que ofrece cada sistema del
-   configurador (SOL_ACC_SISTEMA_TEJIDO, script 36). Una sola lista por sistema para todos los clientes */
+/* Tejidos del maestro (SOL_TEJIDOS_MAESTRO, una fila por tejido + color) que ofrece el configurador.
+   Una sola lista para todos los clientes, guardada en un "destino":
+   - enrollable: una por sistema (SOL_ACC_SISTEMA_TEJIDO, script 36)
+   - Solar Mini: una sola, sin sistema (SOL_ACC_MINI_TEJIDO, sqlSolarMini/01)
+   clave: columnas que, además del tejido, identifican la lista (con su valor); vacía en el Solar Mini */
+function destinoSistema(sistema) {
+  return { tabla: 'SOL_ACC_SISTEMA_TEJIDO', clave: [{ columna: 'sistema_id', param: 'sistema', valor: sistema }] };
+}
+const DESTINO_MINI = { tabla: 'SOL_ACC_MINI_TEJIDO', clave: [] };
+
+function conClave(request, destino) {
+  destino.clave.forEach(k => request.input(k.param, sql.Int, k.valor));
+  return request;
+}
+
+/* Condición de la lista: "sistema_id = @sistema" (con prefijo si hace falta); vacía en el Solar Mini */
+function condicion(destino, alias) {
+  return destino.clave.map(k => `${alias ? alias + '.' : ''}${k.columna} = @${k.param}`).join(' and ');
+}
+
 async function sistemaValido(pool, sistema) {
   if (sistema === null) return false;
   const r = await pool.request().input('sistema', sql.Int, sistema)
@@ -651,25 +679,25 @@ async function sistemaValido(pool, sistema) {
   return r.recordset.length > 0;
 }
 
-async function disponiblesSistema(pool, sistema) {
-  const r = await pool.request().input('sistema', sql.Int, sistema)
-    .query('select count(*) as n from dbo.SOL_ACC_SISTEMA_TEJIDO where sistema_id = @sistema');
+async function disponibles(pool, destino) {
+  const where = condicion(destino);
+  const r = await conClave(pool.request(), destino)
+    .query(`select count(*) as n from dbo.${destino.tabla}${where ? ' where ' + where : ''}`);
   return r.recordset[0].n;
 }
 
-/* GET /acc/tejidos/:sistema — los tejidos activos del maestro, con disponible = 1/0 en ese sistema */
-async function tejidos(req, res) {
-  const sistema = entero(req.params.sistema);
+/* Los tejidos activos del maestro, con disponible = 1/0 en la lista */
+async function leerTejidos(res, destino) {
   try {
     const pool = await sql.connect();
-    if (!await sistemaValido(pool, sistema)) return res.status(400).send({ message: 'Sistema no válido' });
-    const r = await pool.request().input('sistema', sql.Int, sistema).query(`
+    const on = condicion(destino, 'pt');
+    const r = await conClave(pool.request(), destino).query(`
       select m.idrow as id, m.cod_solupyme, m.nombre, m.color, m.tipo_tejido, t.descripcion as tipo,
              m.criterio, m.impresion_digital, m.coste_m2, m.grupo,
              case when pt.tejido is null then 0 else 1 end as disponible
       from dbo.SOL_TEJIDOS_MAESTRO m
       left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
-      left join dbo.SOL_ACC_SISTEMA_TEJIDO pt on pt.tejido = m.idrow and pt.sistema_id = @sistema
+      left join dbo.${destino.tabla} pt on pt.tejido = m.idrow${on ? ' and ' + on : ''}
       where m.activo = 1
       order by m.nombre, m.criterio, m.color`);
     res.status(200).send({ Table: r.recordset });
@@ -678,43 +706,41 @@ async function tejidos(req, res) {
   }
 }
 
-/* POST /acc/tejidos/:sistema { ids: [...], disponible } — marca o quita varios tejidos de una vez */
-async function tejidos_guardar(req, res) {
-  const sistema = entero(req.params.sistema);
+/* { ids: [...], disponible } — marca o quita varios tejidos de una vez */
+async function guardarTejidos(req, res, pool, destino) {
   const body = req.body || {};
   const ids = [...new Set((body.ids || []).map(entero).filter(n => n !== null))];
   if (ids.length === 0) return res.status(400).send({ message: 'Faltan los tejidos' });
+  const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+  const columnas = destino.clave.map(k => k.columna).concat(['tejido', 'usuario']).join(', ');
+  const valores = destino.clave.map(k => '@' + k.param).concat(['m.idrow', '@usuario']).join(', ');
+  const on = condicion(destino, 'pt');
+  const where = condicion(destino);
 
   let transaction;
   try {
-    const pool = await sql.connect();
-    if (!await sistemaValido(pool, sistema)) return res.status(400).send({ message: 'Sistema no válido' });
-    const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
-
     transaction = new sql.Transaction(pool);
     await transaction.begin();
     /* De 500 en 500 para no pasar del límite de parámetros de SQL Server */
     for (let i = 0; i < ids.length; i += 500) {
       const lote = ids.slice(i, i + 500);
-      const request = new sql.Request(transaction)
-        .input('sistema', sql.Int, sistema)
-        .input('usuario', sql.VarChar(100), usuario);
+      const request = conClave(new sql.Request(transaction), destino).input('usuario', sql.VarChar(100), usuario);
       lote.forEach((id, j) => request.input('id' + j, sql.Int, id));
       const enIds = lote.map((id, j) => '@id' + j).join(', ');
       if (body.disponible) {
         /* Solo tejidos activos del maestro; los que ya están se dejan como estaban */
         await request.query(`
-          insert into dbo.SOL_ACC_SISTEMA_TEJIDO (sistema_id, tejido, usuario)
-          select @sistema, m.idrow, @usuario from dbo.SOL_TEJIDOS_MAESTRO m
+          insert into dbo.${destino.tabla} (${columnas})
+          select ${valores} from dbo.SOL_TEJIDOS_MAESTRO m
           where m.idrow in (${enIds}) and m.activo = 1
-            and not exists (select 1 from dbo.SOL_ACC_SISTEMA_TEJIDO pt where pt.sistema_id = @sistema and pt.tejido = m.idrow)`);
+            and not exists (select 1 from dbo.${destino.tabla} pt where pt.tejido = m.idrow${on ? ' and ' + on : ''})`);
       } else {
-        await request.query(`delete from dbo.SOL_ACC_SISTEMA_TEJIDO where sistema_id = @sistema and tejido in (${enIds})`);
+        await request.query(`delete from dbo.${destino.tabla} where ${where ? where + ' and ' : ''}tejido in (${enIds})`);
       }
     }
     await transaction.commit();
 
-    res.status(200).send({ message: 'OK', disponibles: await disponiblesSistema(pool, sistema) });
+    res.status(200).send({ message: 'OK', disponibles: await disponibles(pool, destino) });
   } catch (err) {
     if (transaction) {
       try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
@@ -723,38 +749,99 @@ async function tejidos_guardar(req, res) {
   }
 }
 
-/* POST /acc/tejidos/:sistema/copiar { origen } — el sistema pasa a tener exactamente los tejidos del
-   sistema origen (los suyos de antes se quitan). Todo en una transacción */
+/* La lista pasa a tener exactamente los tejidos de un sistema del enrollable (los suyos de antes se
+   quitan). Todo en una transacción */
+async function copiarTejidos(req, res, pool, destino, origen) {
+  const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+  const columnas = destino.clave.map(k => k.columna).concat(['tejido', 'usuario']).join(', ');
+  const valores = destino.clave.map(k => '@' + k.param).concat(['st.tejido', '@usuario']).join(', ');
+  const where = condicion(destino);
+
+  let transaction;
+  try {
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    await conClave(new sql.Request(transaction), destino)
+      .input('origen', sql.Int, origen)
+      .input('usuario', sql.VarChar(100), usuario)
+      .query(`
+        delete from dbo.${destino.tabla}${where ? ' where ' + where : ''};
+        insert into dbo.${destino.tabla} (${columnas})
+        select ${valores} from dbo.SOL_ACC_SISTEMA_TEJIDO st where st.sistema_id = @origen`);
+    await transaction.commit();
+
+    res.status(200).send({ message: 'OK', disponibles: await disponibles(pool, destino) });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
+/* GET /acc/tejidos/:sistema — los del sistema del enrollable */
+async function tejidos(req, res) {
+  const sistema = entero(req.params.sistema);
+  try {
+    const pool = await sql.connect();
+    if (!await sistemaValido(pool, sistema)) return res.status(400).send({ message: 'Sistema no válido' });
+  } catch (err) {
+    return errorSql(err, res);
+  }
+  return leerTejidos(res, destinoSistema(sistema));
+}
+
+/* POST /acc/tejidos/:sistema { ids: [...], disponible } */
+async function tejidos_guardar(req, res) {
+  const sistema = entero(req.params.sistema);
+  try {
+    const pool = await sql.connect();
+    if (!await sistemaValido(pool, sistema)) return res.status(400).send({ message: 'Sistema no válido' });
+    return guardarTejidos(req, res, pool, destinoSistema(sistema));
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/tejidos/:sistema/copiar { origen } — el sistema queda con los tejidos del sistema origen */
 async function tejidos_copiar(req, res) {
   const sistema = entero(req.params.sistema);
   const origen = entero((req.body || {}).origen);
   if (origen === sistema) return res.status(400).send({ message: 'Elija otro sistema del que copiar' });
-
-  let transaction;
   try {
     const pool = await sql.connect();
     if (!await sistemaValido(pool, sistema) || !await sistemaValido(pool, origen)) {
       return res.status(400).send({ message: 'Sistema no válido' });
     }
-    const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
-
-    transaction = new sql.Transaction(pool);
-    await transaction.begin();
-    const request = new sql.Request(transaction)
-      .input('sistema', sql.Int, sistema)
-      .input('origen', sql.Int, origen)
-      .input('usuario', sql.VarChar(100), usuario);
-    await request.query(`
-      delete from dbo.SOL_ACC_SISTEMA_TEJIDO where sistema_id = @sistema;
-      insert into dbo.SOL_ACC_SISTEMA_TEJIDO (sistema_id, tejido, usuario)
-      select @sistema, st.tejido, @usuario from dbo.SOL_ACC_SISTEMA_TEJIDO st where st.sistema_id = @origen`);
-    await transaction.commit();
-
-    res.status(200).send({ message: 'OK', disponibles: await disponiblesSistema(pool, sistema) });
+    return copiarTejidos(req, res, pool, destinoSistema(sistema), origen);
   } catch (err) {
-    if (transaction) {
-      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
-    }
+    errorSql(err, res);
+  }
+}
+
+/* GET /acc/mini/tejidos — los del Solar Mini (sqlSolarMini/01) */
+function mini_tejidos(req, res) {
+  return leerTejidos(res, DESTINO_MINI);
+}
+
+/* POST /acc/mini/tejidos { ids: [...], disponible } */
+async function mini_tejidos_guardar(req, res) {
+  try {
+    const pool = await sql.connect();
+    return guardarTejidos(req, res, pool, DESTINO_MINI);
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/mini/tejidos/copiar { origen } — el Solar Mini queda con los tejidos de un sistema del enrollable */
+async function mini_tejidos_copiar(req, res) {
+  const origen = entero((req.body || {}).origen);
+  try {
+    const pool = await sql.connect();
+    if (!await sistemaValido(pool, origen)) return res.status(400).send({ message: 'Sistema no válido' });
+    return copiarTejidos(req, res, pool, DESTINO_MINI, origen);
+  } catch (err) {
     errorSql(err, res);
   }
 }
@@ -763,6 +850,9 @@ module.exports = {
   tejidos,
   tejidos_guardar,
   tejidos_copiar,
+  mini_tejidos,
+  mini_tejidos_guardar,
+  mini_tejidos_copiar,
   suplementos,
   suplemento_fijo,
   suplementos_guardar,

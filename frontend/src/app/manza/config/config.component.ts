@@ -14,6 +14,7 @@ import { VerticalComponent } from '../vertical/vertical.component';
 import { CompacComponent } from '../compac/compac.component';
 import { HoneycombComponent } from '../honeycomb/honeycomb.component';
 import { EnrollableNuevoComponent } from '../enrollable-nuevo/enrollable-nuevo.component';
+import { CompacNuevoComponent } from '../compac-nuevo/compac-nuevo.component';
 import { AccConfiguradorService } from '../enrollable-nuevo/acc-configurador.service';
 
 declare var $: any;
@@ -35,9 +36,12 @@ export class ConfigComponent implements OnInit {
   @ViewChild(CompacComponent, { static: false }) public compacRef!: CompacComponent;
   @ViewChild(HoneycombComponent, { static: false }) public honeycombRef!: HoneycombComponent;
   @ViewChild(EnrollableNuevoComponent, { static: false }) public enrollableNuevoRef!: EnrollableNuevoComponent;
+  @ViewChild(CompacNuevoComponent, { static: false }) public compacNuevoRef!: CompacNuevoComponent;
 
   /* Configurador nuevo de accionamientos (SOL_ACC_CLIENTE). false = el de siempre; Leroy no tiene fila */
   accNuevo: boolean = false;
+  /* Solar Mini con las listas de Productos (sqlSolarMini): interruptor propio, SOL_ACC_MINI_CLIENTE */
+  miniNuevo: boolean = false;
 
   editingItem: CortinaTipo | null = null;
 
@@ -188,8 +192,10 @@ export class ConfigComponent implements OnInit {
   /* Solo cambia algo si el cliente tiene el interruptor activo; ante cualquier error sigue el configurador de siempre */
   comprobarAccNuevo(): void {
     this.accNuevo = false;
+    this.miniNuevo = false;
     if (!(parseInt(this.Cliente, 10) > 0)) { return; }
     this.accConfigurador.activo(this.Cliente).subscribe(activo => this.accNuevo = activo);
+    this.accConfigurador.miniActivo(this.Cliente).subscribe(activo => this.miniNuevo = activo);
   }
 
   ChangeUser() {
@@ -444,7 +450,8 @@ export class ConfigComponent implements OnInit {
       this.btnPedido = 1;
       this.btnPresupuesto = 1;
 
-      if (this.accNuevo) { this.ProcesarPedidoAcc(); return; }
+      /* Con cualquiera de los dos interruptores el documento va por el flujo nuevo (enrollables y Solar Mini) */
+      if (this.accNuevo || this.miniNuevo) { this.ProcesarPedidoAcc(); return; }
 
       let lineas = JSON.stringify(this.Cesta);
       this.service.altaPedido(lineas, this.ReferenciaTienda, parseInt(this.Cliente)).subscribe(
@@ -503,7 +510,7 @@ export class ConfigComponent implements OnInit {
   }
 
   ProcesarPresupuesto() {
-    if (this.accNuevo) {
+    if (this.accNuevo || this.miniNuevo) {
       if (confirm("¿Desea Guardar el documento como Presupuesto?")) {
         this.btnPedido = 1;
         this.btnPresupuesto = 1;
@@ -925,6 +932,24 @@ export class ConfigComponent implements OnInit {
               item.perfileria, item.ral, item.impresion, item.impresion_imagen,
               precios);
 
+            /* Línea del configurador nuevo del Solar Mini: se recupera su selección (nmini_*) para poder editarla y volver a guardarla */
+            if (item.nmini_junquillo_id) {
+              (tipo as any).nmini = {
+                junquillo: item.nmini_junquillo_id,
+                color_perfil: item.nmini_color_perfil_id, color_ral: item.nmini_color_ral_id,
+                color_cadena: item.nmini_color_cadena_id, color_tapa: item.nmini_color_tapa_id,
+                tejido: item.nmini_tejido_id,
+                altura_cadena: parseFloat(item.cad_Altura) > 0 ? parseFloat(item.cad_Altura) : null,
+                posicion: item.acc_posicion_id
+              };
+              /* Tarifa (T1/T2) con la que se calculó el precio: el servidor lo recalcula al pedir */
+              (tipo as any).tipo_tarifa = item.nmini_tipo_tarifa;
+              tipo.estancia_id = item.Estancia_ID;
+              tipo.estancia_obs = item.Estancia;
+              tipo.com_estancia_id = item.Estancia_ID;
+              tipo.com_estancia_obs = item.Estancia;
+            }
+
             this.Cesta.push(tipo);
           }
           const message = this.translation.get('AGREGADO COMPAC A CESTA');
@@ -999,7 +1024,11 @@ export class ConfigComponent implements OnInit {
         if (this.verticalRef) { this.verticalRef.cargarEdicion(item); }
         break;
       case 4:
-        if (this.compacRef) { this.compacRef.cargarEdicion(item); }
+        if (item.nmini && this.compacNuevoRef) {
+          this.compacNuevoRef.cargarEdicion(item);
+        } else if (this.compacRef) {
+          this.compacRef.cargarEdicion(item);
+        }
         break;
       case 7:
         if (this.honeycombRef) { this.honeycombRef.cargarEdicion(item); }

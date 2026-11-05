@@ -32,7 +32,8 @@
     <div class="cfg-linea-datos">
       <div class="cfg-dato">
         <span>{{ "TIPO DE JUNQUILLO" | translate }}</span>
-        <strong>{{ (item.junquillo == 'JR' ? 'REDONDEADO' : 'CUADRADO') | translate }}</strong>
+        <!-- Con el Solar Mini nuevo pueden existir junquillos con otros códigos: se enseña el código -->
+        <strong>{{ (item.junquillo == 'JR' ? 'REDONDEADO' : (item.junquillo == 'JC' ? 'CUADRADO' : item.junquillo)) | translate }}</strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "ANCHO" | translate }}</span>

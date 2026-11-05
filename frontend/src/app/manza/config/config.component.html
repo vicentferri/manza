@@ -31,9 +31,9 @@
     <span class="cfg-subbar-titulo">{{ "Presupuesto en curso" | translate }}</span>
     <button type="button" class="cfg-btn" (click)="Nueva()">{{ "NUEVA" | translate }}</button>
     <button type="button" class="cfg-btn cfg-btn-peligro" (click)="BorrarPedido()">{{ "BORRAR" | translate }}</button>
-    <!-- Se finaliza desde el resumen lateral del producto o desde la cesta; aquí solo en el enrollable nuevo -->
+    <!-- Se finaliza desde el resumen lateral del producto o desde la cesta; aquí solo en el enrollable y el Solar Mini nuevos -->
     <button type="button" class="cfg-btn cfg-btn-azul" (click)="ShowBtns(); staticModal2.show()"
-      *ngIf="Cesta.length > 0 && bConfigurador == 0 && TipoCortina == 1 && accNuevo">{{ "FINALIZAR" | translate }}</button>
+      *ngIf="Cesta.length > 0 && bConfigurador == 0 && ((TipoCortina == 1 && accNuevo) || (TipoCortina == 4 && miniNuevo))">{{ "FINALIZAR" | translate }}</button>
 
     <div class="cfg-subbar-info">
       <strong class="cfg-mono">{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate }} ·
@@ -122,7 +122,7 @@
       (onVerCesta)="VerPedido()">
     </manza-vertical>
 
-    <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4"
+    <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4 && !miniNuevo"
       [Cliente]="Cliente" [codeCentro]="codeCentro"
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
@@ -130,6 +130,13 @@
       (onFinalizar)="ShowBtns(); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-compac>
+
+    <!-- Solar Mini con las listas de Productos: solo clientes con su interruptor (SOL_ACC_MINI_CLIENTE) -->
+    <manza-compac-nuevo *ngIf="TipoCortina == 4 && productos.prod_4 && miniNuevo"
+      [Cliente]="Cliente" [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+      (onAdd)="AgregarDesdeHijo($event)">
+    </manza-compac-nuevo>
 
     <!-- HONEYCOMB -->
     <manza-honeycomb *ngIf="TipoCortina == 7 && productos.prod_7"
