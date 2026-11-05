@@ -83,6 +83,8 @@ export class TarifasSimulateComponent implements OnInit {
     acc_sistema_id: '',
     /* T2 del configurador nuevo con un tejido del maestro (nombre; el criterio es el de la tarifa). '' = ninguno */
     acc_tejido_nombre: '',
+    /* sqlSolarMini/03: tarifa del Solar Mini en el configurador nuevo ('4'); excluye el sistema. '' = no */
+    acc_producto: '',
     desactivar_duplicadas: false
   }
 
@@ -533,6 +535,7 @@ export class TarifasSimulateComponent implements OnInit {
     this.model.desmultiplicador_trigger = 1.9;
     this.model.desmultiplicador_value = 1.12;
     this.model.acc_sistema_id = '';
+    this.model.acc_producto = '';
     this.model.acc_tejido_nombre = '';
     this.serie_maestro = '';
     this.model.desactivar_duplicadas = false;
@@ -564,8 +567,8 @@ export class TarifasSimulateComponent implements OnInit {
    * 
    */
   SaveValues() {
-    /* El tejido del maestro solo vale en una T2 con sistema del configurador nuevo */
-    if (this.model.grupotejido != '0' || !this.model.acc_sistema_id) {
+    /* El tejido del maestro solo vale en una T2 con sistema (o producto) del configurador nuevo */
+    if (this.model.grupotejido != '0' || !this.tieneAccDestino) {
       this.model.acc_tejido_nombre = '';
       this.serie_maestro = '';
     }
@@ -766,6 +769,7 @@ export class TarifasSimulateComponent implements OnInit {
         this.model.grupo = data.Table[0].grupo;
         this.model.grupotejido = data.Table[0].grupotejido ? '1' : '0';
         this.model.acc_sistema_id = data.Table[0].acc_sistema_id === null || data.Table[0].acc_sistema_id === undefined ? '' : String(data.Table[0].acc_sistema_id);
+        this.model.acc_producto = data.Table[0].acc_producto === null || data.Table[0].acc_producto === undefined ? '' : String(data.Table[0].acc_producto);
         this.model.acc_tejido_nombre = data.Table[0].acc_tejido_nombre || '';
         this.serie_maestro = this.model.acc_tejido_nombre ? this.model.acc_tejido_nombre + '|' + this.model.criterio : '';
         this.mapa_fecha = data.Table[0].mapa_fecha || null;
@@ -909,6 +913,22 @@ export class TarifasSimulateComponent implements OnInit {
 
   /* T2 del configurador nuevo: al elegir un tejido del maestro se toman su criterio y su coste m²
      (si sus colores cuestan distinto, el mayor) y se deja sin tejido de siempre */
+  /* Desplegable "Sistema o producto (configurador nuevo)": un sistema del enrollable (su id), el Solar Mini
+     ('P4', sqlSolarMini/03) o ninguno (''). Sistema y producto se excluyen */
+  get accDestino(): string {
+    return this.model.acc_producto ? 'P' + this.model.acc_producto : (this.model.acc_sistema_id || '');
+  }
+
+  get tieneAccDestino(): boolean {
+    return !!this.model.acc_sistema_id || !!this.model.acc_producto;
+  }
+
+  cambiarAccDestino(valor: string) {
+    const v = valor || '';
+    this.model.acc_producto = v.charAt(0) === 'P' ? v.substring(1) : '';
+    this.model.acc_sistema_id = v.charAt(0) === 'P' ? '' : v;
+  }
+
   ChangeSerieMaestro() {
     const serie = this.series_maestro.find(t => t.clave === this.serie_maestro);
     if (!serie) {

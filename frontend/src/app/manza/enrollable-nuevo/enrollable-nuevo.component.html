@@ -1,7 +1,7 @@
 <div class="enx">
    <div class="enx-aviso">
       <i class="fa fa-flask"></i>
-      Configurador nuevo de accionamientos: de momento solo enrollables en la cesta.
+      Configurador nuevo de accionamientos: de momento solo enrollables y Solar Mini en la cesta.
    </div>
 
    <!-- MEDIDAS -->
@@ -10,11 +10,11 @@
       <div class="row">
          <div class="col-md-3 col-6 form-group">
             <label>{{ "ANCHO" | translate }} (cm)</label>
-            <input type="number" class="form-control form-control-sm" min="1" [(ngModel)]="ancho" [ngModelOptions]="{ standalone: true }" />
+            <input type="number" class="form-control form-control-sm" min="1" [step]="pasoMedida" [(ngModel)]="ancho" [ngModelOptions]="{ standalone: true }" />
          </div>
          <div class="col-md-3 col-6 form-group">
             <label>{{ "ALTO" | translate }} (cm)</label>
-            <input type="number" class="form-control form-control-sm" min="1" [(ngModel)]="alto" [ngModelOptions]="{ standalone: true }" />
+            <input type="number" class="form-control form-control-sm" min="1" [step]="pasoMedida" [(ngModel)]="alto" [ngModelOptions]="{ standalone: true }" />
          </div>
          <div class="col-md-2 col-6 form-group">
             <label>{{ "CANTIDAD" | translate }}</label>

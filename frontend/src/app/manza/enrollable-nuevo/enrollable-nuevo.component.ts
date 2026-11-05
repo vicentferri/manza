@@ -3,6 +3,7 @@ import { ToastrService } from 'ngx-toastr';
 import { CortinaTipo } from '../config/CortinaTipo';
 import { SMAPIService } from '../config/smapi.service';
 import { AccConfiguradorService } from './acc-configurador.service';
+import { errorPasoMedidas, PASO_MEDIDA } from '../config/medidas';
 
 /*
  * Enrollable con el accionamiento del modelo nuevo (SOL_ACC_*).
@@ -37,6 +38,9 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
    @Input() SubCliente: string = '2';
    @Input() ReferenciaTienda: string = '';
    @Output() onAdd = new EventEmitter<CortinaTipo>();
+
+   /* las medidas van en pasos de 0,5 cm, como el configurador de siempre */
+   readonly pasoMedida = PASO_MEDIDA;
 
    /* opciones del modelo nuevo (GET /acc_cfg/opciones) */
    opc: any = null;
@@ -302,6 +306,8 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
 
    private validar(): string {
       if (!(this.ancho > 0) || !(this.alto > 0)) { return 'Indique el ancho y el alto'; }
+      const errorMedida = errorPasoMedidas({ 'Ancho': this.ancho, 'Alto': this.alto });
+      if (errorMedida) { return errorMedida; }
       if (!(this.cantidad > 0)) { return 'Indique la cantidad'; }
       if (!this.sel.accionamiento) { return 'Seleccione el accionamiento'; }
       if (!this.sel.sistema) { return 'Seleccione el sistema'; }

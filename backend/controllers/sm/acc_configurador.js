@@ -19,6 +19,12 @@ const sql = require('mssql');
  *   POST /api/sm/acc_cfg/pedido/:cliente/:ref       alta del pedido (solo enrollables del flujo nuevo)
  *   POST /api/sm/acc_cfg/presupuesto/:cliente/:ref  alta del presupuesto (ídem)
  *   POST /api/sm/acc_cfg/presupuesto_a_pedido/:id   convertir en pedido un presupuesto del flujo nuevo
+ *
+ * Solar Mini (C:\dev\prod\sqlSolarMini 01-05; interruptor propio SOL_ACC_MINI_CLIENTE):
+ *   GET  /api/sm/acc_cfg/mini/activo/:cliente    ¿usa el configurador nuevo del Solar Mini?
+ *   GET  /api/sm/acc_cfg/mini/opciones/:cliente  listas activas del Solar Mini y sus tejidos
+ *   POST /api/sm/acc_cfg/mini/precio/:cliente    precio de una línea de Solar Mini con su desglose
+ *   El pedido y el presupuesto son los mismos de arriba: admiten líneas de enrollable y de Solar Mini.
  */
 
 /* Mensajes de los códigos de sp_acc_pedido_tipo_1_add */
@@ -49,6 +55,28 @@ const ERRORES_LINEA = {
   '-24': 'El tejido no está disponible en el configurador'
 };
 
+/* Mensajes de los códigos de sp_acc_mini_pedido_tipo_4_add / sp_acc_mini_presupuesto_tipo_4_add (sqlSolarMini/05) */
+const ERRORES_MINI = {
+  '-1': 'El documento no existe',
+  '-2': 'El cliente no tiene activado el configurador nuevo del Solar Mini',
+  '-21': 'Precio de la línea incoherente',
+  '-22': 'Desglose del precio no válido',
+  '-23': 'Falta la tarifa (T1 o T2) con la que se calculó el precio',
+  '-30': 'Tipo de junquillo no válido',
+  '-31': 'Elija un color de perfilería o un color RAL, no los dos',
+  '-32': 'Color de perfilería no válido',
+  '-33': 'Color RAL no válido',
+  '-34': 'Color de cadena no válido',
+  '-35': 'Color de tapas no válido',
+  '-36': 'El tejido no está disponible para el Solar Mini',
+  '-37': 'Posición del mando no válida',
+  '-38': 'El segundo ancho es obligatorio con el junquillo Redondeado / Biselado, y solo con él',
+  '-39': 'Altura de cadena no válida',
+  '-40': 'Faltan las medidas o la cantidad',
+  '-41': 'El tejido no admite impresión digital',
+  '-42': 'Entre el ancho exterior y el interior no puede haber más de 2 cm de diferencia'
+};
+
 function entero(value) {
   const n = parseInt(value, 10);
   return isNaN(n) ? null : n;
@@ -66,6 +94,29 @@ function decimal(value) {
   return isNaN(n) ? null : n;
 }
 
+/* Medidas en cm con decimales, en pasos de 0,5 como el configurador de siempre (frontend: config/medidas.ts).
+   Devuelve el número, o null si falta, no es un número o no va en pasos de 0,5 */
+const PASO_MEDIDA = 0.5;
+const MAX_DIFERENCIA_BISELADO = 2;
+function medida(value) {
+  const n = decimal(value);
+  if (n === null || n <= 0) return null;
+  const pasos = n / PASO_MEDIDA;
+  return Math.abs(pasos - Math.round(pasos)) > 1e-6 ? null : n;
+}
+
+/* Mensaje si alguna medida de la línea no es válida ('' si todas lo son). ancho2 solo si llega con valor */
+function errorMedidas(l) {
+  const vacio = (v) => v === null || v === undefined || v === '' || Number(v) === 0;
+  if (medida(l.ancho) === null || medida(l.alto) === null) return 'El ancho y el alto tienen que ser mayores que 0 y en múltiplos de 0,5 cm';
+  if (!vacio(l.ancho2) && medida(l.ancho2) === null) return 'El ancho exterior tiene que ir en múltiplos de 0,5 cm';
+  /* Solar Mini Redondeado / Biselado (el único con ancho exterior): no más de 2 cm de diferencia con el interior */
+  if (!vacio(l.ancho2) && Math.abs(medida(l.ancho2) - medida(l.ancho)) > MAX_DIFERENCIA_BISELADO) {
+    return `Entre el ancho exterior y el interior no puede haber más de ${MAX_DIFERENCIA_BISELADO} cm de diferencia`;
+  }
+  return '';
+}
+
 function texto(value, max) {
   if (value === null || value === undefined) return null;
   const t = String(value).trim().substring(0, max);
@@ -75,6 +126,13 @@ function texto(value, max) {
 async function clienteActivo(pool, cliente) {
   const result = await pool.request().input('cliente', sql.Int, cliente)
     .query('select 1 as ok from dbo.SOL_ACC_CLIENTE where cliente = @cliente and activo = 1');
+  return result.recordset.length > 0;
+}
+
+/* Interruptor del Solar Mini (sqlSolarMini/02), independiente del del enrollable */
+async function miniActivo(pool, cliente) {
+  const result = await pool.request().input('cliente', sql.Int, cliente)
+    .query('select 1 as ok from dbo.SOL_ACC_MINI_CLIENTE where cliente = @cliente and activo = 1');
   return result.recordset.length > 0;
 }
 
@@ -242,8 +300,8 @@ async function precioLinea(pool, cliente, l) {
     d('col_tejido'), d('col_mando'), d('col_cargador'), d('col_contrapeso'), d('col_cadena')];
   const request = pool.request()
     .input('cliente', sql.Int, cliente)
-    .input('ancho', sql.Decimal(12, 2), entero(l.ancho))
-    .input('alto', sql.Decimal(12, 2), entero(l.alto))
+    .input('ancho', sql.Decimal(12, 2), medida(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medida(l.alto))
     .input('cantidad', sql.Int, entero(l.cantidad) || 1)
     .input('tej_tipo_id', sql.Int, enteroAntiguo(l.tej_tipo_id))
     /* script 31: tejido del maestro (con él, tej_tipo_id llega a -1) */
@@ -310,6 +368,8 @@ async function precio(req, res) {
   if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
   const l = req.body || {};
   if (!l.nacc) return res.status(400).send({ message: 'Falta la selección del accionamiento' });
+  const errorM = errorMedidas(l);
+  if (errorM) return res.status(400).send({ message: errorM });
   try {
     const pool = await sql.connect();
     if (!await clienteActivo(pool, cliente)) {
@@ -324,11 +384,160 @@ async function precio(req, res) {
   }
 }
 
+/* ---------------- SOLAR MINI (sqlSolarMini/01-05) ----------------
+   Mismo flujo que el enrollable, con sus propias listas (Productos → Solar Mini), su interruptor
+   (SOL_ACC_MINI_CLIENTE) y su tarifa (producto Solar Mini en el generador). Una línea de Solar Mini:
+   { TipoCortina: 4, ancho, ancho2 (solo con JR), alto, cantidad, codeCentro, tipo_tarifa ('T1' o 'T2'),
+     nmini: { junquillo, color_perfil | color_ral, color_cadena, color_tapa, tejido (SOL_TEJIDOS_MAESTRO.idrow),
+              altura_cadena (cm), posicion ('DER' o 'IZQ') },
+     instrucciones, estancia_id, estancia_obs } */
+
+/* GET /acc_cfg/mini/activo/:cliente — ante cualquier duda, false: el cliente sigue con el configurador de siempre */
+async function mini_activo(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(200).send({ activo: false });
+  try {
+    const pool = await sql.connect();
+    res.status(200).send({ activo: await miniActivo(pool, cliente) });
+  } catch (err) {
+    console.error(err);
+    res.status(200).send({ activo: false });
+  }
+}
+
+/* GET /acc_cfg/mini/opciones/:cliente — las listas activas del Solar Mini y sus tejidos del maestro */
+async function mini_opciones(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  try {
+    const pool = await sql.connect();
+    if (!await miniActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Solar Mini' });
+    }
+    const q = async (consulta) => (await pool.request().query(consulta)).recordset;
+    const lista = (tabla) => q(`select id, codigo, nombre from dbo.${tabla} where activo = 1 order by orden, nombre`);
+    const [junquillos, coloresPerfil, coloresRal, coloresCadena, coloresTapa, tejidos] = await Promise.all([
+      lista('SOL_ACC_MINI_JUNQUILLO'),
+      lista('SOL_ACC_MINI_COLOR_PERFIL'),
+      lista('SOL_ACC_MINI_COLOR_RAL'),
+      lista('SOL_ACC_MINI_COLOR_CADENA'),
+      lista('SOL_ACC_MINI_COLOR_TAPA'),
+      /* una fila por tejido + color + criterio; el configurador elige el criterio según el ancho */
+      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, m.impresion_digital, t.descripcion as tipo
+         from dbo.SOL_ACC_MINI_TEJIDO mt
+         join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = mt.tejido and m.activo = 1
+         left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+         order by t.descripcion, m.nombre, m.color, m.criterio`)
+    ]);
+    res.status(200).send({ junquillos, coloresPerfil, coloresRal, coloresCadena, coloresTapa, tejidos });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Precio de una línea de Solar Mini con sp_acc_mini_precio_linea (sqlSolarMini/04): base de la tarifa del
+   producto Solar Mini (T1 o T2 con el tejido del maestro) + suplementos de sus listas. Misma respuesta que
+   precioLinea (sin impresión ni columnas: el Solar Mini guarda el precio en T4_Tejido / T4_PVP) */
+async function precioLineaMini(pool, cliente, l) {
+  const n = l.nmini || {};
+  const d = (nombre) => [nombre, sql.Decimal(12, 2)];
+  const request = pool.request()
+    .input('cliente', sql.Int, cliente)
+    .input('ancho', sql.Decimal(12, 2), medida(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medida(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad) || 1)
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('tipo_tarifa', sql.VarChar(2), TIPOS_TARIFA.includes(l.tipo_tarifa) ? l.tipo_tarifa : null)
+    .input('junquillo', sql.Int, entero(n.junquillo))
+    .input('color_perfil', sql.Int, entero(n.color_perfil))
+    .input('color_ral', sql.Int, entero(n.color_ral))
+    .input('color_cadena', sql.Int, entero(n.color_cadena))
+    .input('color_tapa', sql.Int, entero(n.color_tapa))
+    .input('desglose', sql.Bit, 1)
+    /* impresión digital: importe fijo, como el enrollable */
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
+    .output('tarifa', sql.Int)
+    .output('mensaje', sql.VarChar(250))
+    .output('aviso', sql.VarChar(250));
+  [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
+  const r = await request.execute('sp_acc_mini_precio_linea');
+  const o = r.output;
+  if (r.returnValue !== 0) {
+    return { codigo: r.returnValue, mensaje: o.mensaje || 'No se puede calcular el precio', aviso: o.aviso || null };
+  }
+  return {
+    codigo: 0,
+    aviso: o.aviso || null,
+    tipo_tarifa: l.tipo_tarifa,
+    tarifa: o.tarifa,
+    base: o.base, impresion: o.importe_impresion, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
+    desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
+  };
+}
+
+/* POST /acc_cfg/mini/precio/:cliente   body: una línea de Solar Mini. No graba nada */
+async function mini_precio(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  const l = req.body || {};
+  if (!l.nmini) return res.status(400).send({ message: 'Falta la selección del Solar Mini' });
+  const errorM = errorMedidas(l);
+  if (errorM) return res.status(400).send({ message: errorM });
+  try {
+    const pool = await sql.connect();
+    if (!await miniActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Solar Mini' });
+    }
+    const p = await precioLineaMini(pool, cliente, l);
+    if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
+    res.status(200).send(p);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 /* Pedido y presupuesto se graban igual; solo cambian los SPs y el nombre de sus parámetros */
 const DOCUMENTOS = {
-  pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add', id: 'idPedido', nombre: 'pedido' },
-  presupuesto: { cabecera: 'sp_acc_presupuesto_add', ref: 'refPresupuesto', linea: 'sp_acc_presupuesto_tipo_1_add', id: 'idPresupuesto', nombre: 'presupuesto' }
+  pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add',
+                 lineaMini: 'sp_acc_mini_pedido_tipo_4_add', id: 'idPedido', nombre: 'pedido' },
+  presupuesto: { cabecera: 'sp_acc_presupuesto_add', ref: 'refPresupuesto', linea: 'sp_acc_presupuesto_tipo_1_add',
+                 lineaMini: 'sp_acc_mini_presupuesto_tipo_4_add', id: 'idPresupuesto', nombre: 'presupuesto' }
 };
+
+const esEnrollableNuevo = (l) => entero(l.TipoCortina) === 1 && !!l.nacc;
+const esMiniNuevo = (l) => entero(l.TipoCortina) === 4 && !!l.nmini;
+
+/* Alta de una línea de Solar Mini dentro de la transacción del documento */
+async function altaLineaMini(transaction, doc, idDocumento, l, p) {
+  const n = l.nmini || {};
+  const posicion = String(n.posicion || '').toUpperCase();
+  return new sql.Request(transaction)
+    .input(doc.id, sql.Int, idDocumento)
+    .input('centro', sql.Int, entero(l.codeCentro) || 1)
+    .input('junquillo', sql.Int, entero(n.junquillo))
+    .input('ancho', sql.Decimal(12, 2), medida(l.ancho))
+    .input('ancho2', sql.Decimal(12, 2), medida(l.ancho2) || 0)
+    .input('alto', sql.Decimal(12, 2), medida(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad))
+    .input('color_perfil', sql.Int, entero(n.color_perfil))
+    .input('color_ral', sql.Int, entero(n.color_ral))
+    .input('color_cadena', sql.Int, entero(n.color_cadena))
+    .input('altura_cadena', sql.Decimal(10, 2), decimal(n.altura_cadena))
+    .input('posicion', sql.VarChar(3), posicion.substring(0, 3))
+    .input('color_tapa', sql.Int, entero(n.color_tapa))
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('instrucciones', sql.VarChar(250), texto(l.instrucciones, 250))
+    .input('estancia_id', sql.Int, enteroAntiguo(l.estancia_id))
+    .input('estancia', sql.VarChar(2500), texto(l.estancia_obs, 2500))
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
+    .input('impresion_imagen', sql.VarChar(250), texto(l.impresion_imagen, 250))
+    .input('pvp_unitario', sql.Decimal(12, 2), p.unitario)
+    .input('desglose', sql.Xml, desgloseXml(p.desglose))
+    .input('tipo_tarifa', sql.VarChar(2), p.tipo_tarifa)
+    .execute(doc.lineaMini);
+}
 
 /* POST /acc_cfg/pedido/:cliente/:ref y /acc_cfg/presupuesto/:cliente/:ref   body: [ líneas ]
    Cada línea: { TipoCortina: 1, ancho, alto, cantidad, codeCentro, tipo_tarifa ('T1' o 'T2'),
@@ -351,19 +560,32 @@ async function alta(doc, req, res) {
   if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
   if (lineas.length === 0) return res.status(400).send({ message: `El ${doc.nombre} no tiene líneas` });
 
-  const otras = lineas.findIndex(l => entero(l.TipoCortina) !== 1 || !l.nacc);
+  /* sqlSolarMini/05: enrollables nuevos (nacc) y Solar Mini nuevos (nmini) pueden ir en el mismo documento */
+  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l));
   if (otras >= 0) {
-    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables` });
+    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables y Solar Mini` });
+  }
+  for (let i = 0; i < lineas.length; i++) {
+    const errorM = errorMedidas(lineas[i]);
+    if (errorM) return res.status(400).send({ message: `Línea ${i + 1}: ${errorM}` });
   }
 
   let transaction;
   try {
     const pool = await sql.connect();
 
+    /* Cada producto con su interruptor (los SPs lo vuelven a comprobar) */
+    if (lineas.some(esEnrollableNuevo) && !await clienteActivo(pool, cliente)) {
+      return res.status(400).send({ message: ERRORES_LINEA['-2'] });
+    }
+    if (lineas.some(esMiniNuevo) && !await miniActivo(pool, cliente)) {
+      return res.status(400).send({ message: ERRORES_MINI['-2'] });
+    }
+
     /* Precio de cada línea, fuera de la transacción */
     const precios = [];
     for (let i = 0; i < lineas.length; i++) {
-      const p = await precioLinea(pool, cliente, lineas[i]);
+      const p = esMiniNuevo(lineas[i]) ? await precioLineaMini(pool, cliente, lineas[i]) : await precioLinea(pool, cliente, lineas[i]);
       if (p.codigo !== 0) return res.status(400).send({ message: `Línea ${i + 1}: ${p.mensaje}` });
       precios.push(p);
     }
@@ -384,12 +606,21 @@ async function alta(doc, req, res) {
 
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
+      if (esMiniNuevo(l)) {
+        const rm = await altaLineaMini(transaction, doc, idDocumento, l, precios[i]);
+        if (!(rm.returnValue > 0)) {
+          await transaction.rollback();
+          const motivo = ERRORES_MINI[String(rm.returnValue)] || 'Línea no válida';
+          return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
+        }
+        continue;
+      }
       const n = l.nacc || {};
       const r = await new sql.Request(transaction)
         .input(doc.id, sql.Int, idDocumento)
         .input('centro', sql.Int, entero(l.codeCentro) || 1)
-        .input('ancho', sql.Int, entero(l.ancho))
-        .input('alto', sql.Int, entero(l.alto))
+        .input('ancho', sql.Decimal(12, 2), medida(l.ancho))
+        .input('alto', sql.Decimal(12, 2), medida(l.alto))
         .input('cantidad', sql.Int, entero(l.cantidad))
         .input('accionamiento', sql.Int, entero(n.accionamiento))
         .input('sistema', sql.Int, entero(n.sistema))
@@ -482,6 +713,9 @@ module.exports = {
   activo,
   opciones,
   precio,
+  mini_activo,
+  mini_opciones,
+  mini_precio,
   pedido,
   presupuesto,
   presupuesto_a_pedido

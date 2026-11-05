@@ -27,6 +27,7 @@ import { SafeUrlPipe } from './safe-url.pipe';
 import { HoneycombAdminLinkComponent } from './honeycomb-admin-link/honeycomb-admin-link.component';
 import { EnrollableComponent } from './enrollable/enrollable.component';
 import { EnrollableNuevoComponent } from './enrollable-nuevo/enrollable-nuevo.component';
+import { CompacNuevoComponent } from './compac-nuevo/compac-nuevo.component';
 import { JaponesComponent } from './japones/japones.component';
 import { VerticalComponent } from './vertical/vertical.component';
 import { CompacComponent } from './compac/compac.component';
@@ -62,6 +63,7 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
     HoneycombAdminLinkComponent,
     EnrollableComponent,
     EnrollableNuevoComponent,
+    CompacNuevoComponent,
     JaponesComponent,
     VerticalComponent,
     CompacComponent,

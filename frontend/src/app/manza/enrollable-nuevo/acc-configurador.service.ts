@@ -35,7 +35,25 @@ export class AccConfiguradorService {
         return this.http.post<any>(this.url + '/precio/' + cliente, linea);
     }
 
-    /* Alta del pedido: solo líneas de enrollable del flujo nuevo (con nacc) */
+    /* ¿El cliente configura el Solar Mini con las listas de Productos? (sqlSolarMini) Ante cualquier error, false */
+    miniActivo(cliente: string | number): Observable<boolean> {
+        return this.http.get<any>(this.url + '/mini/activo/' + cliente).pipe(
+            map(r => !!(r && r.activo === true)),
+            catchError(() => of(false))
+        );
+    }
+
+    /* Listas activas del Solar Mini y sus tejidos del maestro */
+    miniOpciones(cliente: string | number): Observable<any> {
+        return this.http.get<any>(this.url + '/mini/opciones/' + cliente);
+    }
+
+    /* Precio de una línea de Solar Mini (tarifa T1/T2 del producto Solar Mini + suplementos), sin grabar nada */
+    miniPrecio(cliente: string | number, linea: any): Observable<any> {
+        return this.http.post<any>(this.url + '/mini/precio/' + cliente, linea);
+    }
+
+    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc y Solar Mini con nmini) */
     altaPedido(lineas: any[], referencia: string, cliente: string | number): Observable<any> {
         const ref = encodeURIComponent(referencia || '-');
         return this.http.post<any>(this.url + '/pedido/' + cliente + '/' + ref, lineas);
