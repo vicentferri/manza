@@ -270,9 +270,9 @@ export class HoneycombComponent implements OnInit, OnDestroy {
 
 
   // Límites de medidas (cm)
-  readonly ANCHO_MIN = 30;
-  readonly ANCHO_MAX = 130;
-  readonly ALTO_MIN = 30;
+  readonly ANCHO_MIN = 40;
+  readonly ANCHO_MAX = 120;
+  readonly ALTO_MIN = 40;
   readonly ALTO_MAX = 280;
 
   anchoInvalido(): boolean {

@@ -30,15 +30,15 @@
                   class="form-control"
                   [class.is-invalid]="anchoInvalido()"
                   type="number"
-                  min="30"
-                  max="130"
+                  [min]="ANCHO_MIN"
+                  [max]="ANCHO_MAX"
                   step="0.1"
                   [(ngModel)]="model.Ancho"
                   (change)="ChangeAncho(ancho.value)"
                 />
                 <span>cm</span>
               </div>
-              <small class="cfg-ayuda">30 - 130</small>
+              <small class="cfg-ayuda">{{ ANCHO_MIN }} - {{ ANCHO_MAX }}</small>
             </div>
             <div class="cfg-field">
               <label>{{ "ALTO" | translate }}</label>
@@ -48,15 +48,15 @@
                   class="form-control"
                   [class.is-invalid]="altoInvalido()"
                   type="number"
-                  min="30"
-                  max="280"
+                  [min]="ALTO_MIN"
+                  [max]="ALTO_MAX"
                   step="0.1"
                   [(ngModel)]="model.Alto"
                   (change)="ChangeAlto(alto.value)"
                 />
                 <span>cm</span>
               </div>
-              <small class="cfg-ayuda">30 - 280</small>
+              <small class="cfg-ayuda">{{ ALTO_MIN }} - {{ ALTO_MAX }}</small>
             </div>
             <div class="cfg-field">
               <label>{{ "CANTIDAD" | translate }}</label>
