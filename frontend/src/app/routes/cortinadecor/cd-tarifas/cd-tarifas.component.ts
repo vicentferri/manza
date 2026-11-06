@@ -63,7 +63,9 @@ export class CdTarifasComponent implements OnInit {
     { id: null, texto: 'Todas las cortinas' },
     { id: 1, texto: 'Enrollables' },
     { id: 2, texto: 'Paneles japoneses' },
-    { id: 3, texto: 'Verticales' }
+    { id: 3, texto: 'Verticales' },
+    /* Piezas sueltas (sin medidas): la regla da el precio de la pieza; condición habitual REFERENCIA DE LA LINEA = nombre */
+    { id: 9, texto: 'Piezas sueltas' }
   ];
 
   constructor(private service: HaruService, private toaster: ToastrService) { }

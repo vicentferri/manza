@@ -113,6 +113,31 @@
               </div>
             </ng-container>
 
+            <!-- Piezas sueltas: artículos de la lista de incrementos -->
+            <ng-container *ngIf="l.detalle.pieza && l.esperado !== null">
+              <div class="paso">
+                <span class="titulo">1 · Pieza suelta</span>
+                <span>
+                  <table class="table table-sm table-borderless mb-0 incrementos">
+                    <tr *ngFor="let i of l.detalle.incrementos">
+                      <td>{{ i.nombre }}<small class="d-block text-muted" *ngIf="i.condicion">{{ i.condicion }}</small></td>
+                      <td><small class="text-muted">{{ i.codigo ? (i.codigo + ' ' + i.descripcion) : 'Importe fijo' }}</small></td>
+                      <td class="text-right text-nowrap">{{ i.cantidad }} × {{ i.precio | number:'1.2-4' }}</td>
+                      <td class="text-right text-nowrap"><strong>{{ i.importe | number:'1.2-4' }} €</strong></td>
+                    </tr>
+                  </table>
+                </span>
+              </div>
+              <div class="paso">
+                <span class="titulo">2 · Total</span>
+                <span>
+                  {{ l.suplementos | number:'1.2-4' }} × {{ l.cantidad }} ud.
+                  = <strong>{{ l.esperado | number:'1.2-2' }} €</strong>
+                  <span class="text-muted ml-2">· CortinaDecor {{ l.precio_cd | number:'1.2-2' }} €</span>
+                </span>
+              </div>
+            </ng-container>
+
             <ng-container *ngIf="l.idtarifa && !l.detalle.panel">
               <div class="paso">
                 <span class="titulo">1 · Tabla</span>
