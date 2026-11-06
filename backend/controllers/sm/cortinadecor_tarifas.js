@@ -325,7 +325,8 @@ async function incremento_guardar(req, res) {
     campo: texto(b.campo, 10).toUpperCase() || 'VALOR',
     modo: texto(b.modo, 10).toUpperCase() || 'IGUAL',
     valor: texto(b.valor, 255).toUpperCase() || null,
-    producto: [1, 2, 3].includes(parseInt(b.producto, 10)) ? parseInt(b.producto, 10) : null,
+    /* 1 enrollable, 2 paneles japoneses, 3 vertical, 9 piezas sueltas (motor.PRODUCTO_PIEZA); vacío = todas las cortinas */
+    producto: [1, 2, 3, motor.PRODUCTO_PIEZA].includes(parseInt(b.producto, 10)) ? parseInt(b.producto, 10) : null,
     codigo: texto(b.codigo, 20) || null,
     importe: numeroONulo(b.importe),
     cantidad_modo: texto(b.cantidad_modo, 10).toUpperCase() || 'FIJA',

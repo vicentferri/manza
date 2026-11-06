@@ -31,9 +31,11 @@ const Paneles = require('./cortinadecor_paneles');
  *   - ASIA: el color que envían contiene "ASIA" (tejido oriental).
  *   - Productos valorados por ahora: 1 enrollable y 3 vertical.
  *   - Paneles japoneses: módulo aparte, cortinadecor_paneles.js (mecanismo + tejido por panel).
+ *   - Piezas sueltas (sin medidas): reglas de incremento del producto 9 (revisarPieza).
  */
 
 const PRODUCTOS_VALORADOS = [1, 3];
+const PRODUCTO_PIEZA = 9;     // "producto" de las reglas de incremento que valoran piezas sueltas (14_piezas_sueltas.sql)
 const TOLERANCIA = 0.02;      // € por unidad: diferencias de redondeo
 const ATRIBUTO_COLOR = 'COLOR DE LA LINEA';   // condición de incremento sobre el color que envían (p. ej. COMBINADAS)
 const ATRIBUTO_REFERENCIA = 'REFERENCIA DE LA LINEA';   // ... y sobre la referencia (p. ej. FOTOGR = impresión digital)
@@ -248,9 +250,46 @@ function resolverTabla(entrada, ref, fecha) {
 
 /* ---------- Revisión de una línea ---------- */
 
+/*
+ * Piezas sueltas (frenos, conteras, cadenas, soportes...): llegan sin medidas ni atributos, solo con el nombre.
+ * Se valoran con las reglas de incremento del producto PRODUCTO_PIEZA (normalmente "REFERENCIA DE LA LINEA" = nombre
+ * exacto): nuestro precio = suma de esos artículos x cantidad de la línea. Sin regla -> null (sigue como NO VALORABLE).
+ */
+function revisarPieza(linea, ref) {
+  const ancho = numero(atributo(linea.atributos, ['ANCHO', 'ANCHO CM', 'WIDTH']));
+  const alto = numero(atributo(linea.atributos, ['ALTO', 'ALTO CM', 'HEIGHT']));
+  if (ancho > 0 || alto > 0) return null;
+
+  /* Solo las reglas de piezas: las de "todas las cortinas" (0,31, soportes...) no se aplican a una pieza */
+  const soloPiezas = Object.assign({}, ref, { incrementos: ref.incrementos.filter(rg => rg.producto === PRODUCTO_PIEZA) });
+  const inc = calcularIncrementos(linea.atributos, PRODUCTO_PIEZA, 0, soloPiezas, linea.color, linea.name);
+  if (!inc.lista.length && !inc.avisos.length) return null;
+
+  const cantidad = linea.amount > 0 ? linea.amount : 1;
+  const detalle = { referencia: linea.name, color: linea.color, pieza: true };
+  if (inc.avisos.length) detalle.avisos = inc.avisos;
+  const r = {
+    id: linea.id, idrow: linea.idrow, estado: null, idtarifa: null, ancho_tarifa: null, alto_tarifa: null,
+    precio_tarifa: null, suplementos: null, cantidad, esperado: null,
+    precio_cd: linea.cost == null ? null : Number(linea.cost), diferencia: null, detalle
+  };
+  if (!inc.lista.length) {
+    r.estado = 'NO VALORABLE';
+    detalle.motivo = 'Pieza suelta sin artículo en la lista de incrementos';
+    return r;
+  }
+  r.suplementos = inc.total;
+  detalle.incrementos = inc.lista;
+  return comparar(r, inc.total);
+}
+
 function revisarLinea(linea, ref) {
   /* Paneles japoneses: lógica propia (mecanismo + tejido por panel) */
   if (Paneles.esPanel(linea)) return Paneles.revisarPanel(linea, ref);
+
+  /* Piezas sueltas con regla en la pantalla de Incrementos */
+  const pieza = revisarPieza(linea, ref);
+  if (pieza) return pieza;
 
   const cantidad = linea.amount > 0 ? linea.amount : 1;
   const precioCD = linea.cost == null ? null : Number(linea.cost);
@@ -570,5 +609,6 @@ module.exports = {
   comparar,
   calcularIncrementos,
   ATRIBUTO_COLOR,
-  ATRIBUTO_REFERENCIA
+  ATRIBUTO_REFERENCIA,
+  PRODUCTO_PIEZA
 };
