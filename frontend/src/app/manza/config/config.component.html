@@ -279,6 +279,22 @@
         <div *ngIf="Cesta.length > 0">
           <p class="cfg-modal-intro" [innerHTML]="(modoFinalizar == 'pedido' ? 'INDICACIONESENVIOPEDIDO' : modoFinalizar == 'presupuesto' ? 'INDICACIONESENVIOPRES' : 'INDICACIONESENVIO') | translate"></p>
 
+          <!-- Resumen de las líneas antes de enviar: las mismas tarjetas de la cesta, sin modificar ni borrar -->
+          <h5 class="cfg-modal-resumen-titulo">
+            {{ (modoFinalizar == 'pedido' ? 'Resumen del pedido' : modoFinalizar == 'presupuesto' ? 'Resumen del presupuesto' : 'Resumen') | translate }}
+          </h5>
+          <div class="cfg-cesta-lista cfg-modal-resumen">
+            <ng-container *ngFor="let item of Cesta">
+              <ng-container [ngSwitch]="item.TipoCortina">
+                <app-preview-1 *ngSwitchCase="1" [item]="item" [soloLectura]="true"></app-preview-1>
+                <app-preview-2 *ngSwitchCase="2" [item]="item" [soloLectura]="true"></app-preview-2>
+                <app-preview-3 *ngSwitchCase="3" [item]="item" [soloLectura]="true"></app-preview-3>
+                <app-preview-4 *ngSwitchCase="4" [item]="item" [Cliente]="Cliente" [soloLectura]="true"></app-preview-4>
+                <app-preview-7 *ngSwitchCase="7" [item]="item" [soloLectura]="true"></app-preview-7>
+              </ng-container>
+            </ng-container>
+          </div>
+
           <div class="cfg-modal-totales">
             <div>
               {{ "CORTINAS" | translate }}

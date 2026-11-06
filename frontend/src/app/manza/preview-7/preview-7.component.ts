@@ -9,6 +9,7 @@ import { CortinaTipo } from '../config/CortinaTipo';
 export class Preview7Component {
 
    @Input() item!: CortinaTipo;
+   @Input() soloLectura = false; // en la ventana de finalizar: sin MODIFICAR ni BORRAR
    @Output() onDelete = new EventEmitter<CortinaTipo>();
    @Output() onEdit = new EventEmitter<CortinaTipo>();
    // Detalle técnico y desglose de precio, plegados por defecto

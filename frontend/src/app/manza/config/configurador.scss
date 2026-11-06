@@ -1081,6 +1081,22 @@ cfg-resumen {
   color: $cfg-texto-suave;
 }
 
+// Resumen de líneas en la ventana de finalizar: con scroll propio para que los botones sigan a la vista
+.cfg-modal-resumen-titulo {
+  margin: 0 0 10px;
+  color: $cfg-texto-suave;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cfg-cesta-lista.cfg-modal-resumen {
+  max-height: 45vh;
+  margin-bottom: 20px;
+  overflow-y: auto;
+}
+
 .cfg-modal-totales {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

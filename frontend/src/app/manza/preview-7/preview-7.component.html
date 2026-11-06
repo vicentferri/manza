@@ -21,7 +21,7 @@
       <strong>{{ item.precios.T7_PVP | number:'1.2-2' }} €</strong>
       <small>{{ item.precios.T7_PVP_C1 }}</small>
     </div>
-    <div class="cfg-linea-botones">
+    <div class="cfg-linea-botones" *ngIf="!soloLectura">
       <button type="button" class="cfg-btn" (click)="EditLine(item)">{{ "MODIFICAR" | translate }}</button>
       <button type="button" class="cfg-btn cfg-btn-peligro" (click)="DeleteLine(item)">{{ "BORRAR" | translate }}</button>
     </div>
