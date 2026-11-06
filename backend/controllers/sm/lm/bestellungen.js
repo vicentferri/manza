@@ -183,13 +183,17 @@ function Add_Tipo_1(idrow,values){
    request.input('cargador',sql.Int,cargador);
    request.input('T1_Inc_Cargador',sql.VarChar(25),T1_Inc_Cargador);
    request.input('T1_Inc_Cargador_C1',sql.VarChar(25),T1_Inc_Cargador_C1);
-     request.execute('sp_sol_pedidos_cola_tipo_1_add', 
+     // Devuelve una promesa que se resuelve al terminar el alta de la línea (los errores solo se registran)
+  return new Promise(function (resolve) {
+  request.execute('sp_sol_pedidos_cola_tipo_1_add',
         function(err, recordsets, returnValue) {
             
             if (err){
                 console.log(err);
             }
+           resolve();
        });
+  });
      
 }
  
@@ -339,14 +343,19 @@ function Add_Tipo_2(idrow,values){
         request.input('T2_TejidoColor_5',sql.VarChar(10),T2_TejidoColor_5);
         request.input('iCombinarColores',sql.Int,iCombinarColores);
 
-        request.execute('sol_pedidos_cola_tipo_2_add', 
+        // Devuelve una promesa que se resuelve al terminar el alta de la línea (los errores solo se registran)
+  return new Promise(function (resolve) {
+  request.execute('sol_pedidos_cola_tipo_2_add',
         function(err, recordsets, returnValue) {
             
             if (err){
                 console.log(err);
             }
                         
+           resolve();
+                        
        });
+  });
  
 }
  
@@ -519,13 +528,17 @@ var request = new sql.Request();
   request.input('impresion_imagen_2',sql.VarChar(250),PV_ID_Imagen_2);
   request.input('Estancia_ID',sql.Int,Estancia_ID);
   request.input('Estancia',sql.VarChar(250),Estancia);
-  request.execute('sol_pedidos_cola_tipo_3_add', 
+  // Devuelve una promesa que se resuelve al terminar el alta de la línea (los errores solo se registran)
+  return new Promise(function (resolve) {
+  request.execute('sol_pedidos_cola_tipo_3_add',
         function(err, recordsets, returnValue) {
             
             if (err){
                 console.log(err);
             }
+           resolve();
        });
+  });
      
 }
  
@@ -659,7 +672,9 @@ function Add_Tipo_4(idrow,values){
   request.input('impresion_imagen',sql.VarChar(250),ID_Imagen);
   request.input('Estancia_ID',sql.Int,Estancia_ID);
   request.input('Estancia',sql.VarChar(250),Estancia);
-    request.execute('sol_pedidos_cola_tipo_4_add', 
+    // Devuelve una promesa que se resuelve al terminar el alta de la línea (los errores solo se registran)
+  return new Promise(function (resolve) {
+  request.execute('sol_pedidos_cola_tipo_4_add',
         function(err, recordsets, returnValue) {
             
  
@@ -667,7 +682,10 @@ function Add_Tipo_4(idrow,values){
                 console.log(err);
             }
 
+           resolve();
+
        });
+  });
 }
 
 function Add_Tipo_7(idrow,values){
@@ -715,6 +733,8 @@ function Add_Tipo_7(idrow,values){
   request.input('T7_Fecha_Entrega',sql.VarChar(25),T7_Fecha_Entrega);
   request.input('T7_Transporte',sql.VarChar(25),T7_Transporte);
   request.input('centro',sql.Int,codeCentro);
+  // Devuelve una promesa que se resuelve al terminar el alta de la línea (los errores solo se registran)
+  return new Promise(function (resolve) {
   request.execute('sol_pedidos_cola_tipo_7_add',
       function(err, recordsets, returnValue) {
           
@@ -723,7 +743,10 @@ function Add_Tipo_7(idrow,values){
               console.log(err);
           }
 
+         resolve();
+
      });
+  });
 }
  
 
@@ -848,18 +871,21 @@ function bestellungen_hinzu2(req,res)
       
          if (idPedido > 0)
          {
+             var altas = []; // se responde cuando todas las líneas están grabadas (para poder imprimir ya)
              for (var i=0, len = jsonIN.length; i<len;i++)
              {
                 var tipo = jsonIN[i].TipoCortina;               
-                if (tipo == 1) Add_Tipo_1(idPedido,jsonIN[i]);
-                if (tipo == 2) Add_Tipo_2(idPedido,jsonIN[i]);  
-                if (tipo == 3) Add_Tipo_3(idPedido,jsonIN[i]);
-                if (tipo == 4) Add_Tipo_4(idPedido,jsonIN[i]);
-                if (tipo == 7) Add_Tipo_7(idPedido,jsonIN[i]);
+                if (tipo == 1) altas.push(Add_Tipo_1(idPedido,jsonIN[i]));
+                if (tipo == 2) altas.push(Add_Tipo_2(idPedido,jsonIN[i]));  
+                if (tipo == 3) altas.push(Add_Tipo_3(idPedido,jsonIN[i]));
+                if (tipo == 4) altas.push(Add_Tipo_4(idPedido,jsonIN[i]));
+                if (tipo == 7) altas.push(Add_Tipo_7(idPedido,jsonIN[i]));
              }
 
               SaveLog(idPedido+'_'+referencia+".json",jsonIN);
-             res.json({message:'ok',referencia:referencia,idPedido:idPedido});
+             Promise.all(altas.map(function (p) { return p.catch(function (e) { console.log(e); }); })).then(function () {
+               res.json({message:'ok',referencia:referencia,idPedido:idPedido});
+             });
         }
         else
         {
