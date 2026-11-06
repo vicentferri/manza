@@ -34,7 +34,7 @@ export class JaponesComponent implements OnInit, OnChanges {
    @Input() TotalCesta: number = 0;
 
    @Output() onAdd = new EventEmitter<CortinaTipo>();
-   @Output() onFinalizar = new EventEmitter<void>();
+   @Output() onFinalizar = new EventEmitter<string>();
    @Output() onVerCesta = new EventEmitter<void>();
 
    public CestaPrecios: Array<CortinaTipo> = [];

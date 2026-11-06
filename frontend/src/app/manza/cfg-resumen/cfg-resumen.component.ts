@@ -16,7 +16,7 @@ export function medida(valor: any): string {
 
 /*
  * Resumen lateral del configurador: datos de la línea que se está configurando, fechas, total y
- * botones (calcular, agregar al presupuesto y finalizar). Lo pinta cada producto a la derecha de su
+ * botones (calcular, agregar al carrito y finalizar pedido o presupuesto). Lo pinta cada producto a la derecha de su
  * formulario; los estilos (cfg-resumen-*) están en config/configurador.scss.
  */
 @Component({
@@ -36,7 +36,7 @@ export class CfgResumenComponent {
 
    @Output() calcular = new EventEmitter<void>();
    @Output() agregar = new EventEmitter<void>();
-   @Output() finalizar = new EventEmitter<void>();
+   @Output() finalizar = new EventEmitter<string>(); // 'pedido' o 'presupuesto'
    /** Abre el panel lateral de la cesta */
    @Output() verCesta = new EventEmitter<void>();
 

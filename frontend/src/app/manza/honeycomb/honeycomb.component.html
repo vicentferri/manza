@@ -325,7 +325,7 @@
     [totalCesta]="TotalCesta"
     (calcular)="CalcularPrecio()"
     (agregar)="Agregar()"
-    (finalizar)="onFinalizar.emit()"
+    (finalizar)="onFinalizar.emit($event)"
     (verCesta)="onVerCesta.emit()">
   </cfg-resumen>
 

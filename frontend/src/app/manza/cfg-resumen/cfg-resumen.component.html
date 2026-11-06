@@ -30,18 +30,21 @@
         {{ calculando ? ('CALCULANDO' | translate) : ('Calcular precio' | translate) }}
       </button>
       <button type="button" class="cfg-btn cfg-btn-bloque" (click)="agregar.emit()" [disabled]="!puedeAgregar">
-        + {{ "Agregar al presupuesto" | translate }}
+        + {{ "Agregar al carrito" | translate }}
       </button>
     </div>
     <p class="cfg-resumen-nota" *ngIf="!puedeAgregar">{{ "Calcula el precio para poder agregar." | translate }}</p>
 
     <div class="cfg-resumen-cesta" *ngIf="numCortinas > 0">
       <p>
-        {{ "En el presupuesto" | translate }}
+        {{ "En el carrito" | translate }}
         <strong>{{ numCortinas }} · {{ totalCesta | number : '1.2-2' }} €</strong>
       </p>
-      <button type="button" class="cfg-btn cfg-btn-azul cfg-btn-bloque" (click)="finalizar.emit()">
-        {{ "FINALIZAR" | translate }}
+      <button type="button" class="cfg-btn cfg-btn-azul cfg-btn-bloque" (click)="finalizar.emit('pedido')">
+        {{ "FINALIZAR PEDIDO" | translate }}
+      </button>
+      <button type="button" class="cfg-btn cfg-btn-bloque" (click)="finalizar.emit('presupuesto')">
+        {{ "FINALIZAR PRESUPUESTO" | translate }}
       </button>
     </div>
   </div>

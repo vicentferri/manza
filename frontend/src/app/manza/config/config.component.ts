@@ -503,9 +503,11 @@ export class ConfigComponent implements OnInit {
     );
   }
 
-  ShowBtns() {
-    this.btnPedido = 0;
-    this.btnPresupuesto = 0;
+  /* Prepara la ventana de finalizar. Con modo 'pedido' o 'presupuesto' solo se ve ese botón;
+     sin modo (FINALIZAR de la barra superior) se ven los dos */
+  ShowBtns(modo?: string) {
+    this.btnPedido = modo === 'presupuesto' ? 1 : 0;
+    this.btnPresupuesto = modo === 'pedido' ? 1 : 0;
     this.TransmitOK = 0;
   }
 

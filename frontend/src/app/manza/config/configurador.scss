@@ -1014,6 +1014,12 @@ cfg-resumen {
   box-shadow: 0 -4px 12px rgba(16, 24, 40, 0.06);
 }
 
+// FINALIZAR PEDIDO y FINALIZAR PRESUPUESTO, uno debajo del otro (resumen y cesta)
+.cfg-resumen-cesta,
+.cfg-cajon-pie {
+  .cfg-btn-bloque + .cfg-btn-bloque { margin-top: 10px; }
+}
+
 .cfg-cajon-fila {
   display: flex;
   align-items: baseline;

@@ -68,7 +68,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   @Input() TotalCesta: number = 0;
 
   @Output() onAdd = new EventEmitter<any>();
-  @Output() onFinalizar = new EventEmitter<void>();
+  @Output() onFinalizar = new EventEmitter<string>();
   @Output() onVerCesta = new EventEmitter<void>();
 
   @ViewChild('modalVideo', { static: false }) modalVideo!: ModalDirective;

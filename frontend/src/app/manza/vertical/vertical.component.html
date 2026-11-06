@@ -501,7 +501,7 @@
   <!-- Resumen, precio y acciones -->
   <cfg-resumen [filas]="resumenFilas" [total]="precios?.T3_PVP" [totalC1]="precios?.T3_PVP_C1" [calculando]="calculando"
     [numCortinas]="NumeroCortinas" [totalCesta]="TotalCesta" (calcular)="CheckPrice()" (agregar)="Agregar()"
-    (finalizar)="onFinalizar.emit()" (verCesta)="onVerCesta.emit()">
+    (finalizar)="onFinalizar.emit($event)" (verCesta)="onVerCesta.emit()">
   </cfg-resumen>
 
 </div>

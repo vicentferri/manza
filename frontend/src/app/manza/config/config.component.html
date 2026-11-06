@@ -88,7 +88,7 @@
       [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-enrollable>
 
@@ -109,7 +109,7 @@
       [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-japones>
 
@@ -120,7 +120,7 @@
       [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-vertical>
 
@@ -129,7 +129,7 @@
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-compac>
 
@@ -146,7 +146,7 @@
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
       (onAdd)="AgregarDesdeHijo($event)"
-      (onFinalizar)="ShowBtns(); staticModal2.show()"
+      (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-honeycomb>
 
@@ -220,8 +220,12 @@
       </div>
     </div>
     <button type="button" class="cfg-btn cfg-btn-primario cfg-btn-bloque"
-      (click)="CerrarCesta(); ShowBtns(); staticModal2.show()">
-      {{ "FINALIZAR" | translate }}
+      (click)="CerrarCesta(); ShowBtns('pedido'); staticModal2.show()">
+      {{ "FINALIZAR PEDIDO" | translate }}
+    </button>
+    <button type="button" class="cfg-btn cfg-btn-bloque"
+      (click)="CerrarCesta(); ShowBtns('presupuesto'); staticModal2.show()">
+      {{ "FINALIZAR PRESUPUESTO" | translate }}
     </button>
   </div>
 </aside>
