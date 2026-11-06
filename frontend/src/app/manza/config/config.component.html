@@ -257,6 +257,7 @@
   class="modal fade cfg-modal"
   bsModal
   #staticModal2="bs-modal"
+  (onHidden)="CerrarImpresion()"
   tabindex="-1"
   role="dialog"
   aria-labelledby="myModalLabel2"
@@ -280,6 +281,7 @@
           <p class="cfg-modal-intro" [innerHTML]="(modoFinalizar == 'pedido' ? 'INDICACIONESENVIOPEDIDO' : modoFinalizar == 'presupuesto' ? 'INDICACIONESENVIOPRES' : 'INDICACIONESENVIO') | translate"></p>
 
           <!-- Resumen de las líneas antes de enviar: las mismas tarjetas de la cesta, sin modificar ni borrar -->
+          <ng-container *ngIf="!verImpresion">
           <h5 class="cfg-modal-resumen-titulo">
             {{ (modoFinalizar == 'pedido' ? 'Resumen del pedido' : modoFinalizar == 'presupuesto' ? 'Resumen del presupuesto' : 'Resumen') | translate }}
           </h5>
@@ -293,6 +295,10 @@
                 <app-preview-7 *ngSwitchCase="7" [item]="item" [soloLectura]="true"></app-preview-7>
               </ng-container>
             </ng-container>
+          </div>
+          </ng-container>
+          <div class="cfg-modal-impresion" [hidden]="!verImpresion">
+            <app-impresion-documento #impresionFin></app-impresion-documento>
           </div>
 
           <div class="cfg-modal-totales">
@@ -338,6 +344,12 @@
                 </span>
               </div>
             </div>
+            <!-- Imprimir el documento recién enviado: el visor sale en el sitio del resumen -->
+            <button type="button" class="cfg-btn cfg-btn-azul" *ngIf="idDocumento > 0 && !verImpresion"
+              (click)="ImprimirEnviado()">
+              <i class="fas fa-print"></i>
+              {{ (docEnviado == 'pedido' ? 'IMPRIMIR PEDIDO' : 'IMPRIMIR PRESUPUESTO') | translate }}
+            </button>
           </div>
 
           <div class="cfg-aviso-error" *ngIf="TransmitOK == -1">

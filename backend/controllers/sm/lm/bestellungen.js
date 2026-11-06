@@ -859,7 +859,7 @@ function bestellungen_hinzu2(req,res)
              }
 
               SaveLog(idPedido+'_'+referencia+".json",jsonIN);
-             res.json({message:'ok',referencia:referencia});
+             res.json({message:'ok',referencia:referencia,idPedido:idPedido});
         }
         else
         {

@@ -16,6 +16,7 @@ import { HoneycombComponent } from '../honeycomb/honeycomb.component';
 import { EnrollableNuevoComponent } from '../enrollable-nuevo/enrollable-nuevo.component';
 import { CompacNuevoComponent } from '../compac-nuevo/compac-nuevo.component';
 import { AccConfiguradorService } from '../enrollable-nuevo/acc-configurador.service';
+import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
 declare var $: any;
 
@@ -30,6 +31,7 @@ export class ConfigComponent implements OnInit {
 
   @ViewChild('staticModalAdd', { static: false }) public modal!: ModalDirective;
   @ViewChild("desgloseZIP", { static: false }) public desgloseZIP!: DesgloseComponent;
+  @ViewChild("impresionFin", { static: false }) public impresionFin!: ImpresionDocumentoComponent;
   @ViewChild(EnrollableComponent, { static: false }) public enrollableRef!: EnrollableComponent;
   @ViewChild(JaponesComponent, { static: false }) public japonesRef!: JaponesComponent;
   @ViewChild(VerticalComponent, { static: false }) public verticalRef!: VerticalComponent;
@@ -117,6 +119,10 @@ export class ConfigComponent implements OnInit {
   btnPresupuesto = 0;
   btnPedido = 0;
   modoFinalizar = ''; // 'pedido', 'presupuesto' o '' (las dos opciones)
+  // Último documento enviado desde la ventana de finalizar, para poder imprimirlo
+  docEnviado: 'pedido' | 'presupuesto' | '' = '';
+  idDocumento = 0;
+  verImpresion = false;
   alertShow = false;
   alertMsg = "";
   idLinea = "";
@@ -459,6 +465,7 @@ export class ConfigComponent implements OnInit {
         data => {
           if (data.message == "ok") {
             this.NumeroPedido = data.referencia;
+            this.DocumentoEnviado('pedido', data);
             this.TransmitOK = 1;
             this.toaster.success('Agregado PEDIDO Satisfactoriamente', 'Agregar Pedido');
           } else {
@@ -477,6 +484,7 @@ export class ConfigComponent implements OnInit {
     this.accConfigurador.altaPedido(this.Cesta, this.ReferenciaTienda, this.Cliente).subscribe(
       data => {
         this.NumeroPedido = data.referencia;
+        this.DocumentoEnviado('pedido', data);
         this.TransmitOK = 1;
         this.toaster.success('Agregado PEDIDO Satisfactoriamente', 'Agregar Pedido');
       },
@@ -493,6 +501,7 @@ export class ConfigComponent implements OnInit {
     this.accConfigurador.altaPresupuesto(this.Cesta, this.ReferenciaTienda, this.Cliente).subscribe(
       data => {
         this.NumeroPedido = data.referencia;
+        this.DocumentoEnviado('presupuesto', data);
         this.TransmitOK = 1;
         this.toaster.success('Agregado PRESUPUESTO Satisfactoriamente', 'Agregar PRESUPUESTO');
       },
@@ -511,6 +520,29 @@ export class ConfigComponent implements OnInit {
     this.btnPedido = modo === 'presupuesto' ? 1 : 0;
     this.btnPresupuesto = modo === 'pedido' ? 1 : 0;
     this.TransmitOK = 0;
+    this.docEnviado = '';
+    this.idDocumento = 0;
+    this.verImpresion = false;
+  }
+
+  /* Guarda qué se ha enviado y su IDROW (idPedido en la respuesta del alta) para el botón IMPRIMIR */
+  DocumentoEnviado(doc: 'pedido' | 'presupuesto', data: any) {
+    this.docEnviado = doc;
+    this.idDocumento = Number(data && data.idPedido) || 0;
+    this.verImpresion = false;
+  }
+
+  /* Abre el visor de impresión con el documento recién enviado, en el sitio del resumen */
+  ImprimirEnviado() {
+    if (!this.docEnviado || !(this.idDocumento > 0) || !this.impresionFin) { return; }
+    this.verImpresion = true;
+    this.impresionFin.cargar(this.docEnviado, this.idDocumento);
+  }
+
+  /* Al cerrar la ventana de finalizar se descarta el PDF cargado */
+  CerrarImpresion() {
+    if (this.impresionFin) { this.impresionFin.limpiar(); }
+    this.verImpresion = false;
   }
 
   ProcesarPresupuesto() {
@@ -531,6 +563,7 @@ export class ConfigComponent implements OnInit {
         data => {
           if (data.message == "ok") {
             this.NumeroPedido = data.referencia;
+            this.DocumentoEnviado('presupuesto', data);
             this.TransmitOK = 1;
             this.toaster.success('Agregado PRESUPUESTO Satisfactoriamente', 'Agregar PRESUPUESTO');
           } else {
