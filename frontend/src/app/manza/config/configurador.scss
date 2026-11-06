@@ -176,10 +176,10 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
 .cfg-subbar-empresa {
   flex: 1;
   text-align: center;
-  color: $cfg-texto;
+  color: $cfg-azul; // azul corporativo
   font-family: $cfg-mono;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
   letter-spacing: 0.05em;
 }
 
