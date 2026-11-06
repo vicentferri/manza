@@ -172,6 +172,17 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   strong { color: $cfg-texto; }
 }
 
+// Texto fijo entre los botones y el contador de la cesta, centrado en el hueco libre
+.cfg-subbar-empresa {
+  flex: 1;
+  text-align: center;
+  color: $cfg-texto;
+  font-family: $cfg-mono;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
 // ---------- Botones ----------
 .cfg-btn {
   display: inline-flex;

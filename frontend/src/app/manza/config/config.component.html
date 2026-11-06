@@ -35,6 +35,8 @@
     <button type="button" class="cfg-btn cfg-btn-azul" (click)="ShowBtns(); staticModal2.show()"
       *ngIf="Cesta.length > 0 && bConfigurador == 0 && ((TipoCortina == 1 && accNuevo) || (TipoCortina == 4 && miniNuevo))">{{ "FINALIZAR" | translate }}</button>
 
+    <span class="cfg-subbar-empresa">SOLARMANES 205502</span>
+
     <div class="cfg-subbar-info">
       <strong class="cfg-mono">{{ NumeroCortinas }}</strong> {{ "CORTINAS" | translate }} ·
       <strong class="cfg-mono">{{ TotalCesta | number:'1.2-2' }} €</strong>
