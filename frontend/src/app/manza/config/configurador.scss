@@ -475,6 +475,12 @@ section.cfg-panel {
 
   .form-control { padding-right: 44px; }
 
+  // El icono de error de Bootstrap va a la derecha, justo donde está «cm»: se pone a su izquierda
+  .form-control.is-invalid {
+    padding-right: 72px;
+    background-position: right 44px center;
+  }
+
   > span {
     position: absolute;
     top: 50%;
