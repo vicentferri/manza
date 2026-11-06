@@ -265,7 +265,7 @@
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title pull-left">{{ "ENVIOPEDIDOPRES" | translate }}</h4>
+        <h4 class="modal-title pull-left">{{ (modoFinalizar == 'pedido' ? 'ENVIOPEDIDO' : modoFinalizar == 'presupuesto' ? 'ENVIOPRESUPUESTO' : 'ENVIOPEDIDOPRES') | translate }}</h4>
         <button
           type="button"
           class="close pull-right"
@@ -277,7 +277,7 @@
       </div>
       <div class="modal-body">
         <div *ngIf="Cesta.length > 0">
-          <p class="cfg-modal-intro" [innerHTML]="'INDICACIONESENVIO' | translate"></p>
+          <p class="cfg-modal-intro" [innerHTML]="(modoFinalizar == 'pedido' ? 'INDICACIONESENVIOPEDIDO' : modoFinalizar == 'presupuesto' ? 'INDICACIONESENVIOPRES' : 'INDICACIONESENVIO') | translate"></p>
 
           <div class="cfg-modal-totales">
             <div>

@@ -116,6 +116,7 @@ export class ConfigComponent implements OnInit {
   SubTipoCortina = 1;
   btnPresupuesto = 0;
   btnPedido = 0;
+  modoFinalizar = ''; // 'pedido', 'presupuesto' o '' (las dos opciones)
   alertShow = false;
   alertMsg = "";
   idLinea = "";
@@ -506,6 +507,7 @@ export class ConfigComponent implements OnInit {
   /* Prepara la ventana de finalizar. Con modo 'pedido' o 'presupuesto' solo se ve ese botón;
      sin modo (FINALIZAR de la barra superior) se ven los dos */
   ShowBtns(modo?: string) {
+    this.modoFinalizar = modo === 'pedido' || modo === 'presupuesto' ? modo : '';
     this.btnPedido = modo === 'presupuesto' ? 1 : 0;
     this.btnPresupuesto = modo === 'pedido' ? 1 : 0;
     this.TransmitOK = 0;
