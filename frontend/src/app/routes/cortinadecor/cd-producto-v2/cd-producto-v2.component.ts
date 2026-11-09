@@ -22,6 +22,9 @@ export class CdProductoV2Component implements OnInit {
     { id: 3, name: 'Paneles Verticales' },
     { id: 5, name: 'Enrollables Impresión' },
     { id: 7, name: 'Menorca sin Cordón' },
+    /* Piezas sueltas (frenos, conteras, cadenas, mandos...): sin tejido; cada color lleva su artículo y van al
+       XML de producción como API.005 (sqlCortinaDecor/07) */
+    { id: 9, name: 'Piezas sueltas' },
     { id: 0, name: 'No Asignado' }
   ];
 
@@ -83,6 +86,7 @@ export class CdProductoV2Component implements OnInit {
       3: 'badge-warning',
       5: 'badge-info',
       7: 'badge-secondary',
+      9: 'badge-dark',
       0: 'badge-light'
     };
     return map[id] !== undefined ? map[id] : 'badge-light';
@@ -282,6 +286,13 @@ export class CdProductoV2Component implements OnInit {
       tejido: this.tejidosList.length > 0 ? this.tejidosList[0].idrow : -1
     };
     this.modalAddTejido.show();
+  }
+
+  /* Las piezas sueltas (producto 9) no llevan tejido */
+  cambiarProductoNuevo(producto) {
+    if (producto == 9) {
+      this.tejidomodel.tejido = 0;
+    }
   }
 
   addTejido() {
