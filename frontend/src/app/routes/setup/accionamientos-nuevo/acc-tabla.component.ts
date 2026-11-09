@@ -72,6 +72,7 @@ export class AccTablaComponent implements OnChanges {
         const f = this.filaSeleccionada;
         if (!f) { return ''; }
         if (f.protegido) { return 'Es fijo: no se puede borrar. Puede ocultarlo'; }
+        if (f.uso_externo) { return 'Está en uso: ' + f.uso_externo + '. No se puede borrar. Puede ocultarlo'; }
         if (f.dependencias > 0) { return 'Está en uso (' + f.dependencias + '): no se puede borrar. Puede ocultarlo'; }
         if (f.suplementos > 0) { return 'Tiene suplementos de precio: quítelos antes de borrarlo, o ocúltelo'; }
         return '';

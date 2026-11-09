@@ -33,6 +33,12 @@
               <option *ngIf="sistemas.length === 0" value="">Sin sistemas: añada uno</option>
               <option *ngFor="let s of sistemas" [value]="s.sistema">{{ s.sistema_nombre || s.descripcion }}</option>
             </select>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="!sistema" (click)="BorrarSistema()"
+                title="Borra el juego de fabricación de este sistema y sus parámetros. Solo si no tiene reglas, búsquedas ni tablas">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
           </div>
           <div *ngIf="productoConSistema" class="input-group input-group-sm fab-sistema">
             <select

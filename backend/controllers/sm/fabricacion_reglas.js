@@ -191,6 +191,56 @@ async function sistema_add(req, res) {
   }
 }
 
+/* POST /fabricacion/sistemas/delete { sistema } — borra el juego de fabricación de un sistema y sus
+   parámetros. Solo juegos de productos con sistemas (nunca HONEYCOMB) y solo si no tienen reglas,
+   búsquedas ni tablas de valores: lo que se pierde son los parámetros, que se vuelven a crear al añadirlo */
+async function sistema_delete(req, res) {
+  const clave = texto((req.body || {}).sistema, 50);
+  if (!clave) return res.status(400).send({ message: 'Indique el sistema' });
+  try {
+    const pool = await sql.connect();
+    const s = (await pool.request().input('sistema', sql.VarChar(50), clave).query(`
+      select s.sistema, s.acc_sistema_id, fp.con_sistema
+      from SOL_FABRICACION_SISTEMAS s
+      left join SOL_FABRICACION_PRODUCTOS fp on fp.producto = s.producto
+      where s.sistema = @sistema`)).recordset[0];
+    if (!s) return res.status(404).send({ message: 'Ese juego de fabricación no existe' });
+    if (s.acc_sistema_id === null || !s.con_sistema) {
+      return res.status(400).send({ message: 'Este juego de fabricación no se puede borrar' });
+    }
+    const usos = (await pool.request().input('sistema', sql.VarChar(50), clave).query(`
+      select (select count(*) from SOL_ARTICULOS_FABRICACION_RELACION_V2 where sistema = @sistema) as reglas,
+             (select count(*) from SOL_FABRICACION_BUSQUEDAS where sistema = @sistema) as busquedas,
+             (select count(*) from SOL_FABRICACION_TABLAS where sistema = @sistema) as tablas`)).recordset[0];
+    const partes = [];
+    if (usos.reglas > 0) partes.push(usos.reglas + (usos.reglas === 1 ? ' regla' : ' reglas'));
+    if (usos.busquedas > 0) partes.push(usos.busquedas + (usos.busquedas === 1 ? ' búsqueda' : ' búsquedas'));
+    if (usos.tablas > 0) partes.push(usos.tablas + (usos.tablas === 1 ? ' tabla de valores' : ' tablas de valores'));
+    if (partes.length) {
+      return res.status(400).send({ message: 'No se puede borrar: tiene ' + partes.join(', ') + '. Quítelas antes' });
+    }
+
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    try {
+      await new sql.Request(transaction).input('sistema', sql.VarChar(50), clave)
+        .query('delete from SOL_FABRICACION_PARAMETROS where sistema = @sistema');
+      await new sql.Request(transaction).input('sistema', sql.VarChar(50), clave)
+        .query('delete from SOL_FABRICACION_SISTEMAS where sistema = @sistema');
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+    res.status(200).send({ message: 'OK' });
+  } catch (err) {
+    const numero = err && (err.number || (err.originalError && err.originalError.info && err.originalError.info.number));
+    if (numero === 547) return res.status(400).send({ message: 'No se puede borrar: hay registros que dependen de él' });
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 async function clientes(req, res) {
   try {
     const pool = await sql.connect();
@@ -779,6 +829,7 @@ module.exports = {
   productos,
   sistemas,
   sistema_add,
+  sistema_delete,
   clientes,
   articulos,
   reglas,

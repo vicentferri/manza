@@ -678,6 +678,28 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       });
   }
 
+  /* Borra el juego del sistema elegido y sus parámetros; el backend lo impide si tiene reglas, búsquedas o tablas.
+     Después el sistema vuelve a "Añadir sistema…" y, sin juego, ya se puede borrar en Productos */
+  BorrarSistema() {
+    if (!this.sistema) {
+      return;
+    }
+    if (!confirm('¿Desea borrar el juego de fabricación ' + this.nombreJuego + ' y sus parámetros?')) {
+      return;
+    }
+    let values = JSON.stringify({ sistema: this.sistema });
+    this.service.HTTP_Post('/sm/fabricacion/sistemas/delete', values).subscribe(
+      data => {
+        if (data.message == 'OK') {
+          this.toaster.success('Juego de fabricación borrado', 'Sistemas');
+          this.loadSistemas();
+        }
+      },
+      error => {
+        this.toaster.error(this.errorMessage(error), 'Sistemas');
+      });
+  }
+
   ChangeSistema() {
     this.loadColumnas();
     this.loadBusquedas();

@@ -525,6 +525,7 @@ var FabricacionReglasController = require('../controllers/sm/fabricacion_reglas'
 smapi.get('/fabricacion/productos', NuevoSistema, FabricacionReglasController.productos);
 smapi.get('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistemas);
 smapi.post('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistema_add);
+smapi.post('/fabricacion/sistemas/delete', NuevoSistema, FabricacionReglasController.sistema_delete);
 smapi.get('/fabricacion/clientes', NuevoSistema, FabricacionReglasController.clientes);
 smapi.get('/fabricacion/articulos', NuevoSistema, FabricacionReglasController.articulos);
 smapi.get('/fabricacion/reglas', NuevoSistema, FabricacionReglasController.reglas);

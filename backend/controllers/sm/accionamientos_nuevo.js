@@ -78,6 +78,7 @@ const RELACIONES = {
 /* El código se usará en las reglas de fabricación: mayúsculas, números y _ */
 const CODIGO = /^[A-Z0-9_]+$/;
 const TABLA_ACC = /^SOL_ACC_[A-Z_]+$/;
+const TABLA_SOL = /^SOL_[A-Z0-9_]+$/;
 const COLUMNA = /^[a-z_]+$/;
 
 function texto(value, max) {
@@ -123,9 +124,24 @@ async function referencias(pool, tabla) {
       select object_name(fkc.parent_object_id) as tabla, col_name(fkc.parent_object_id, fkc.parent_column_id) as columna
       from sys.foreign_key_columns fkc
       where fkc.referenced_object_id = object_id(@tabla)`);
-    referenciasCache[tabla] = result.recordset.filter(r => TABLA_ACC.test(r.tabla) && COLUMNA.test(r.columna));
+    const validas = result.recordset.filter(r => COLUMNA.test(r.columna));
+    referenciasCache[tabla] = {
+      internas: validas.filter(r => TABLA_ACC.test(r.tabla)),
+      /* Fuera del catálogo: juegos de fabricación, tarifas, líneas de pedidos y presupuestos... */
+      externas: validas.filter(r => !TABLA_ACC.test(r.tabla) && TABLA_SOL.test(r.tabla))
+    };
   }
   return referenciasCache[tabla];
+}
+
+/* Cómo se llama en la pantalla cada tabla de fuera del catálogo que usa un registro */
+function usoExterno(tabla, n) {
+  const plural = n === 1 ? '' : 's';
+  if (tabla === 'SOL_FABRICACION_SISTEMAS') return `${n} juego${plural} de fabricación (bórrelo en Reglas de fabricación)`;
+  if (tabla === 'SOL_TARIFAS_SIMULATE') return `${n} línea${plural} de tarifa`;
+  if (/^SOL_PEDIDOS_COLA_/.test(tabla)) return `${n} línea${plural} de pedido`;
+  if (/^SOL_PRESUPUESTOS_COLA_/.test(tabla)) return `${n} línea${plural} de presupuesto`;
+  return `${n} en ${tabla}`;
 }
 
 /* Código libre en la tabla a partir de una base: BASE, BASE_2, BASE_3... */
@@ -153,9 +169,12 @@ async function lista(req, res) {
   try {
     const pool = await sql.connect();
     const refs = await referencias(pool, cat.tabla);
-    const dependencias = refs.length
-      ? refs.map(r => `(select count(*) from dbo.${r.tabla} d where d.${r.columna} = x.id)`).join(' + ')
+    const dependencias = refs.internas.length
+      ? refs.internas.map(r => `(select count(*) from dbo.${r.tabla} d where d.${r.columna} = x.id)`).join(' + ')
       : '0';
+    /* Una columna por tabla externa (uso_0, uso_1...): se convierten después en el texto de "uso_externo" */
+    const externas = refs.externas
+      .map((r, i) => `, (select count(*) from dbo.${r.tabla} d where d.${r.columna} = x.id) as uso_${i}`).join('');
     const request = pool.request().input('tabla', sql.VarChar(50), cat.tabla);
     let where = '';
     if (cat.padre) {
@@ -165,14 +184,26 @@ async function lista(req, res) {
     /* suplementos: líneas de precio del elemento (script 16); suplemento_fijo: el importe general
        sin tramos, el que se edita directamente en la tabla */
     const result = await request.query(`
-      select x.*, ${dependencias} as dependencias,
+      select x.*, ${dependencias} as dependencias${externas},
              (select count(*) from dbo.SOL_ACC_SUPLEMENTO s where s.catalogo = @tabla and s.elemento_id = x.id) as suplementos,
              (select s.importe from dbo.SOL_ACC_SUPLEMENTO s where s.catalogo = @tabla and s.elemento_id = x.id
                 and s.cliente is null and s.sistema_id is null and s.medida is null) as suplemento_fijo
       from dbo.${cat.tabla} x ${where}
       order by x.orden, ${cat.valor ? 'x.valor' : 'x.nombre'}`);
     const protegidos = cat.protegidos || [];
-    res.status(200).send({ Table: result.recordset.map(r => Object.assign(r, { protegido: protegidos.includes(r.codigo) })) });
+    const filas = result.recordset.map(r => {
+      const usos = [];
+      refs.externas.forEach((e, i) => {
+        const n = r['uso_' + i];
+        delete r['uso_' + i];
+        if (n > 0) {
+          usos.push(usoExterno(e.tabla, n));
+          r.dependencias += n;
+        }
+      });
+      return Object.assign(r, { protegido: protegidos.includes(r.codigo), uso_externo: usos.join(', ') });
+    });
+    res.status(200).send({ Table: filas });
   } catch (err) {
     errorSql(err, res);
   }

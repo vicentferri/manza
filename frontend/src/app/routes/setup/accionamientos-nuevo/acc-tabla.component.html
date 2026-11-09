@@ -53,7 +53,7 @@
                         <div class="acc-codigo">{{ d.codigo }}</div>
                     </td>
                     <td class="acc-uso">
-                        <span *ngIf="d.dependencias > 0" class="badge badge-light" title="Registros que dependen de este">en uso · {{ d.dependencias }}</span>
+                        <span *ngIf="d.dependencias > 0" class="badge badge-light" [title]="d.uso_externo || 'Registros que dependen de este'">en uso · {{ d.dependencias }}</span>
                     </td>
                     <!-- Importe general fijo: se teclea aquí (Intro o salir del campo guarda; vacío lo quita).
                          Si hay precios por cliente, sistema o tramos, se ven y se cambian en el detalle (···) -->
