@@ -1,9 +1,15 @@
-import { Component, OnInit, ComponentFactoryResolver, ViewChild, ViewContainerRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ViewContainerRef, HostListener } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ModalDirective } from 'ngx-bootstrap/modal';
 import { SearchArtikelComponent } from '../../../shared/search-artikel/search-artikel.component';
 import { jqxGridComponent } from '../../../../../node_modules/jqwidgets-framework/jqwidgets-ts/angular_jqxgrid';
 import { ToastrService } from 'ngx-toastr';
+import { recargarGrid } from '../../../shared/grid-recarga';
+import { destruirGrids } from '../../../shared/grid-destruir';
+
+/* Columnas de la tabla de reglas que se guardan al editarlas (POST /artikel_fabric_cd_celda) */
+const CAMPOS_EDITABLES = ['orden', 'sistema', 'atributo', 'valor', 'nombre_parametro1', 'nombre_parametro2',
+  'consumo', 'articulos', 'operacion'];
 
 @Component({
   selector: 'artikeln-fab-cd-v2',
@@ -11,7 +17,7 @@ import { ToastrService } from 'ngx-toastr';
   styleUrls: ['./artikeln-fab-cd-v2.component.css'],
   providers: [HaruService]
 })
-export class ArtikelnFabCdV2Component implements OnInit {
+export class ArtikelnFabCdV2Component implements OnInit, OnDestroy {
 
   @ViewChild('gridReference', { static: false }) myGrid!: jqxGridComponent;
   @ViewChild('gridReference2', { static: false }) myGrid2!: jqxGridComponent;
@@ -77,10 +83,15 @@ export class ArtikelnFabCdV2Component implements OnInit {
     nombre_parametro1: '',
     nombre_parametro2: '',
     operacion: '-',
+    consumo: '',
     tipo: 0,
     desde: 0,
     hasta: 0
   }
+
+  /* Sistemas que ya tienen reglas (desplegable del alta; se puede escribir uno nuevo) */
+  sistemas: string[] = [];
+  guardando = false;
 
   source = {
     type: "GET",
@@ -172,8 +183,11 @@ export class ArtikelnFabCdV2Component implements OnInit {
     altrows: true,
     enabletooltips: true,
     editable: true,
+    /* Selección por casilla: un clic selecciona, un segundo clic (o escribir, F2, Enter) edita.
+       Tab y Enter pasan a la casilla siguiente */
+    editmode: 'selectedcell',
     groupable: true,
-    selectionmode: 'singlerow',
+    selectionmode: 'singlecell',
     showfilterrow: true,
     filterable: true,
     columnsresize: true,
@@ -184,8 +198,8 @@ export class ArtikelnFabCdV2Component implements OnInit {
     source: this.dataAdapter,
     columns: [
       {
-        text: '', datafield: 'idrow', width: 40, editable: false, cellsrenderer: function (row: any, columnfield: any, value: any, defaulthtml: any, columnproperties: any, rowdata: any) {
-          return '<span style="width:40;padding: 8px;cursor:hand"><i class="fa fa-eraser mt-2"></i></span>';
+        text: '', datafield: 'idrow', width: 40, editable: false, filterable: false, sortable: false, cellsrenderer: function (row: any, columnfield: any, value: any, defaulthtml: any, columnproperties: any, rowdata: any) {
+          return '<span title="Borrar la regla" style="display:block;text-align:center;padding: 6px;cursor:pointer;color:#c0392b"><i class="fa fa-trash"></i></span>';
         }
       },
       { text: 'Orden', datafield: 'orden', width: 50, filtertype: 'textbox', editable: true, cellsalign: 'center' },
@@ -401,6 +415,11 @@ export class ArtikelnFabCdV2Component implements OnInit {
     this.loadDetails();
   }
 
+  /* jqxGrid deja elementos y listeners en el <body> y en document si no se destruye al salir */
+  ngOnDestroy() {
+    destruirGrids(this.myGrid, this.myGrid2, this.myGrid3, this.myGrid4);
+  }
+
   ngOnInit() {
     this.getScreenWidth = window.innerWidth;
     this.getScreenHeight = window.innerHeight;
@@ -440,17 +459,31 @@ export class ArtikelnFabCdV2Component implements OnInit {
       });
   }
 
-  loadDetails() {
+  /* Carga las reglas. conservar: la rejilla se queda donde estaba; seleccionar: idrow de la regla que se
+     selecciona y se deja a la vista (p. ej. la que se acaba de dar de alta) */
+  loadDetails(opciones: { conservar?: boolean, seleccionar?: any } = {}) {
     var route = "/artikel_fabric_setup";
     this.service.HTTP_Get(route).subscribe(
       data => {
-        this.source.localdata = data.Table;
-        this.dataAdapter.dataBind();
-        this.myGrid.updatebounddata("cells");
+        this.sistemas = Array.from(new Set<string>((data.Table || [])
+          .map(r => String(r.sistema || '').trim()).filter(s => s !== ''))).sort();
+        /* La selección es por casilla: tras recargar, la casilla seleccionada apuntaría a otra regla */
+        try { this.myGrid.clearselection(); } catch (e) { /* rejilla sin selección */ }
+        recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones);
+        if (opciones.seleccionar !== undefined && opciones.seleccionar !== null) {
+          const indice = (this.myGrid.getboundrows() || []).findIndex(f => f && String(f.idrow) === String(opciones.seleccionar));
+          if (indice >= 0) {
+            this.myGrid.selectcell(indice, 'orden');
+          }
+        }
       },
       error => {
         this.toaster.error(error.message);
       });
+  }
+
+  Recargar() {
+    this.loadDetails({ conservar: true });
   }
 
   getSelectedRows(myGrid: jqxGridComponent, field: string) {
@@ -476,8 +509,7 @@ export class ArtikelnFabCdV2Component implements OnInit {
   Cellclick(event) {
     var args = event.args;
     if (args.datafield == "idrow") {
-      var value = args.value;
-      this.DelItem(value);
+      this.DelItem(this.myGrid.getrowdata(args.rowindex));
     }
   }
 
@@ -511,27 +543,35 @@ export class ArtikelnFabCdV2Component implements OnInit {
 
   }
 
-  DelItem(idrow) {
+  /* Borra la regla de la fila (confirmando cuál es) y deja la tabla donde estaba */
+  DelItem(regla) {
+    if (!regla) {
+      return;
+    }
+    var descripcion = [regla.sistema, regla.orden, regla.atributo, regla.valor]
+      .filter(v => v !== null && v !== undefined && String(v).trim() !== '').join(' · ');
+    var condiciones = [regla.nombre_parametro1, regla.nombre_parametro2]
+      .filter(v => v && String(v).trim() !== '').join('  ' + (regla.operacion || '-') + '  ');
 
-    if (confirm("¿Desea borrar la línea registrada?")) {
+    if (confirm("¿Desea borrar esta regla?\n\n" + descripcion + (condiciones ? "\n" + condiciones : ""))) {
 
-      var nmodel = {
-        idrow: idrow
-      }
-
-      var values = JSON.stringify(nmodel);
+      var values = JSON.stringify({ idrow: regla.idrow });
       var route = "/artikel_fabric_delete";
       this.service.HTTP_Post(route, values).subscribe(
         data => {
           if (data.message == 'OK') {
-            this.loadDetails();
+            this.toaster.success('Regla borrada', 'Reglas');
+            this.loadDetails({ conservar: true });
           }
         },
         error => {
-
+          this.toaster.error(this.errorMessage(error), 'Reglas');
         });
     }
+  }
 
+  errorMessage(error) {
+    return (error && error.error && error.error.message) ? error.error.message : (error && error.message);
   }
 
   UpdateArticles() {
@@ -539,19 +579,36 @@ export class ArtikelnFabCdV2Component implements OnInit {
     this.model.articulos = rows.join(',');
   }
 
+  /* Alta de una regla. Después se queda en la regla nueva y el formulario se vacía, salvo orden, sistema
+     y elemento, para dar de alta seguidas las variantes de un mismo componente */
   Update() {
+    if (!String(this.model.sistema || '').trim()) {
+      this.toaster.warning('Indique el sistema', 'Reglas');
+      return;
+    }
+    if (this.guardando) {
+      return;
+    }
+    this.guardando = true;
 
     var values = JSON.stringify(this.model);
-    var route = "/artikel_fabric_setup";
-    this.service.HTTP_Post(route, values).subscribe(
+    this.service.HTTP_Post('/artikel_fabric_cd_regla', values).subscribe(
       data => {
+        this.guardando = false;
         if (data.message == 'OK') {
-          this.loadDetails();
-          this.toaster.success('Agregados los Artículos', 'Articulos Fijos');
+          this.toaster.success('Regla añadida', 'Reglas');
+          this.model.valor = '';
+          this.model.articulos = '';
+          this.model.nombre_parametro1 = '';
+          this.model.nombre_parametro2 = '';
+          this.model.operacion = '-';
+          this.model.consumo = '';
+          this.loadDetails({ seleccionar: data.regla.idrow });
         }
       },
       error => {
-        this.toaster.error(error.message);
+        this.guardando = false;
+        this.toaster.error(this.errorMessage(error), 'Reglas');
       });
   }
 
@@ -607,61 +664,56 @@ export class ArtikelnFabCdV2Component implements OnInit {
     return id;
   }
 
+  /* Guarda la casilla editada. No se recarga la tabla (eso es lo que hacía saltar al usuario de casilla y
+     volver al principio): solo se actualiza esta fila con lo que devuelve el servidor. Si falla, la casilla
+     vuelve a su valor anterior */
   cellEndEditEvent(event) {
-
-    if (event.args.datafield == "orden" ||
-      event.args.datafield == "sistema" ||
-      event.args.datafield == "atributo" ||
-      event.args.datafield == "valor" ||
-      event.args.datafield == "nombre_parametro1" ||
-      event.args.datafield == "nombre_parametro2" ||
-      event.args.datafield == "consumo" ||
-      event.args.datafield == "articulos" ||
-      event.args.datafield == "operacion") {
-
-      this.params.table = "sol_articulos_cd_fabricacion_relacion_v2";
-      this.params.column = "idrow";
-      this.params.id = event.args.row.idrow,
-        this.params.field = event.args.datafield;
-      this.params.value = event.args.value;
-
-      if (event.args.datafield == "operacion") {
-        let values = new String(event.args.value).toUpperCase();
-        if (values.includes("Y") ||
-          values.includes("O") ||
-          values.includes("-")) {
-          this.params.value = values;
-        }
-        else {
-          this.params.value = "-";
-        }
-      }
-      if (event.args.datafield == "formula") {
-        this.params.field = "formula";
-
-        var value = this.getId(event.args.value);
-
-        this.params.value = value.toString();
-      }
-
-      //console.log(this.params);
-
-      var values = JSON.stringify(this.params);
-      this.service.HTTP_Post('/update_table', values).subscribe(
-        data => {
-          //console.log(data);
-          if (data.message == "OK") {
-            this.toaster.success('Actualizacion Realizada', 'Parámetros');
-            this.loadDetails();
-          }
-        },
-        error => {
-          console.log(error.message);
-        }
-      );
+    const args = event.args;
+    const campo = args.datafield;
+    if (CAMPOS_EDITABLES.indexOf(campo) === -1 || !args.row) {
+      return;
+    }
+    const anterior = args.oldvalue;
+    const nuevo = args.value;
+    if (String(anterior === null || anterior === undefined ? '' : anterior) === String(nuevo === null || nuevo === undefined ? '' : nuevo)) {
+      return;
     }
 
+    const idrow = args.row.idrow;
+    const values = JSON.stringify({ idrow: idrow, campo: campo, valor: nuevo });
+    this.service.HTTP_Post('/artikel_fabric_cd_celda', values).subscribe(
+      data => {
+        if (data.message == 'OK' && data.regla) {
+          /* El servidor normaliza algunos valores (operación en mayúsculas, artículos sin espacios) y
+             devuelve la descripción de los artículos: solo se tocan las casillas que cambian */
+          this.actualizarCasilla(idrow, campo, data.regla[campo]);
+          if (campo == 'articulos') {
+            this.actualizarCasilla(idrow, 'detalle', data.regla.detalle);
+          }
+          if (campo == 'sistema' && this.sistemas.indexOf(String(data.regla.sistema)) === -1) {
+            this.sistemas = this.sistemas.concat([String(data.regla.sistema)]).sort();
+          }
+          this.toaster.success('Guardado', 'Reglas', { timeOut: 1200 });
+        }
+      },
+      error => {
+        this.actualizarCasilla(idrow, campo, anterior);
+        this.toaster.error(this.errorMessage(error) || 'No se ha podido guardar', 'Reglas');
+      });
+  }
 
+  /* Cambia una casilla de la fila de la regla idrow, si su valor es distinto (la fila puede haberse movido
+     por un filtro u orden de la rejilla desde que se editó: se busca por idrow) */
+  private actualizarCasilla(idrow, campo, valor) {
+    const filas = this.myGrid.getboundrows() || [];
+    const indice = filas.findIndex(f => f && f.idrow == idrow);
+    if (indice < 0) {
+      return;
+    }
+    const actual = filas[indice][campo];
+    if (String(actual === null || actual === undefined ? '' : actual) !== String(valor === null || valor === undefined ? '' : valor)) {
+      this.myGrid.setcellvalue(indice, campo, valor);
+    }
   }
 
   cellEndEditEvent2(event) {
@@ -706,7 +758,8 @@ export class ArtikelnFabCdV2Component implements OnInit {
 
 
   HojaFabricacion() {
-    let url = "/export_csv/" + this.model2.idrow + "/2";
+    /* /sm/: la ruta está en sm_routes (sin /sm daba 404) */
+    let url = "/sm/export_csv/" + this.model2.idrow + "/2";
     url = this.service.HTTP_Url_Get(url);
     window.open(url);
   }
@@ -743,9 +796,10 @@ export class ArtikelnFabCdV2Component implements OnInit {
     let url = "/sm/configuracion";
     this.service.HTTP_Get(url).subscribe(
       (data) => {
-        console.log(data.Table);
-        if (data.Table.length > 0) {
-          this.config.modelo = data[0].ModeloFabricacion;
+        /* data.Table (antes data[0], que no existe: el selector se quedaba siempre en MODELO ANTIGUO).
+           String: las opciones del select son '1' / '2' */
+        if (data.Table && data.Table.length > 0) {
+          this.config.modelo = String(data.Table[0].ModeloFabricacion);
         }
       },
       (error) => {

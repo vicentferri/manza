@@ -163,6 +163,10 @@ api.get('/artikel_fabric_fix/:tipo/:producto',ArtikelnController.artikel_fabric_
 api.get('/artikel_fabric_setup',ArtikelnController.artikel_fabric_setup);
 api.post('/artikel_fabric_setup',ArtikelnController.artikel_fabric_setup_add);
 api.post('/artikel_fabric_delete',ArtikelnController.artikel_fabric_delete);
+/* Reglas de fabricación de CortinaDecor (pantalla artikeln_fab_cd_v2): guardar casilla y alta, con sesión */
+var FabricacionCdReglasController = require('../controllers/haru/fabricacion_cd_reglas');
+api.post('/artikel_fabric_cd_celda',AuthController.ensureAuth,FabricacionCdReglasController.celda);
+api.post('/artikel_fabric_cd_regla',AuthController.ensureAuth,FabricacionCdReglasController.alta);
 
 api.get('/artikel_fabric_setup_sm',ArtikelnController.artikel_fabric_setup_sm);
 api.post('/artikel_fabric_setup_sm',ArtikelnController.artikel_fabric_setup_add_sm);

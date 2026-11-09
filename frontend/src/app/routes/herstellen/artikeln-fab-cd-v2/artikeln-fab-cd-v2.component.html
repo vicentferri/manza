@@ -120,11 +120,17 @@
                 </div>
                 <div style="float: left; padding: 0.2rem">
                   <label>Sistema</label>
+                  <!-- Se elige de los que ya tienen reglas o se escribe uno nuevo -->
                   <input
                     class="form-control form-control-sm"
                     [(ngModel)]="model.sistema"
-                    style="width: 150px"
+                    list="cdSistemasReglas"
+                    autocomplete="off"
+                    style="width: 180px"
                   />
+                  <datalist id="cdSistemasReglas">
+                    <option *ngFor="let s of sistemas" [value]="s"></option>
+                  </datalist>
                 </div>
                 <div style="float: left; padding: 0.2rem">
                   <label>Elemento</label>
@@ -168,6 +174,17 @@
                 </div>
 
                 <div style="float: left; padding: 0.2rem">
+                  <label>Consumo</label>
+                  <input
+                    class="form-control form-control-sm"
+                    [(ngModel)]="model.consumo"
+                    placeholder="1;@ANCHO -- 4.5"
+                    title="Uno por artículo, separados por ;  (con uno solo, vale para todos)"
+                    style="width: 160px"
+                  />
+                </div>
+
+                <div style="float: left; padding: 0.2rem">
                   <label>Artículos</label>
                   <input
                     class="form-control form-control-sm"
@@ -188,11 +205,31 @@
                   <label>&nbsp;</label>
                   <button
                     class="btn btn-secondary btn-sm btn-block"
+                    [disabled]="guardando"
                     (click)="Update()"
                   >
                     Agregar
                   </button>
                 </div>
+                <div style="float: right; padding: 0.2rem">
+                  <label>&nbsp;</label>
+                  <button
+                    class="btn btn-secondary btn-sm btn-block"
+                    title="Vuelve a leer las reglas (p. ej. para ordenarlas tras cambiar el orden)"
+                    (click)="Recargar()"
+                  >
+                    <i class="fa fa-refresh"></i>&nbsp;Recargar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <small class="text-muted">
+                  Un clic selecciona la casilla; otro clic, escribir, F2 o Enter la edita. Se guarda al salir
+                  de la casilla (Enter, Tab o clic fuera). Las reglas no cambian de sitio al editar el orden:
+                  pulse Recargar para ordenarlas.
+                </small>
               </div>
             </div>
 
