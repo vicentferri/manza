@@ -228,6 +228,12 @@ smapi.get('/tejidos_imagenes/imagen/:tejido/:color/:cara', TejidosImagenesContro
 smapi.post('/tejidos_imagenes/imagen/:tejido/:color/:cara', NuevoSistema, TejidosImagenesController.subir);
 smapi.delete('/tejidos_imagenes/imagen/:tejido/:color/:cara', NuevoSistema, TejidosImagenesController.borrar);
 
+/* Imágenes de los contrapesos del enrollable (SOL_ARTICULOS_CONTRAPESO_IMAGENES, ver sqlContrapesos/01).
+   Sin sesión: el configurador las pide desde <img> */
+var ContrapesosImagenesController = require('../controllers/sm/contrapesos_imagenes');
+smapi.get('/contrapesos_imagenes/version/:id', ContrapesosImagenesController.version);
+smapi.get('/contrapesos_imagenes/imagen/:id', ContrapesosImagenesController.imagen);
+
 smapi.get('/tejidos_atributos', TejidosController.tejidos_atributos);
 smapi.post('/tejidos_atributos_put', TejidosController.put_tejidos_atributos);
 smapi.post('/tejidos_atributod_del', TejidosController.del_tejido_atributos);
