@@ -330,9 +330,11 @@
   width: auto;
 }
 
+/* margin-top: el estilo general de las cabeceras (.card-header .btn-sm) los sube 4px */
 .fab-sistema > .input-group-append > .btn {
   height: 30px;
   font-size: 13px;
+  margin-top: 0;
 }
 
 /* Cabecera: etiqueta y desplegable con la misma altura y tamaño de letra */
