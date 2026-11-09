@@ -161,3 +161,11 @@
 .acc-peligro {
   margin-left: auto;
 }
+
+/* CortinaDecor: color de la diferencia de precio (difRenderer). Con la fila seleccionada
+   se usa el color del texto de la rejilla, como en Contenido, para que se lea sobre el fondo */
+:host ::ng-deep .cd-dif-mas { color: #2f8a4c; }
+:host ::ng-deep .cd-dif-menos { color: #d9534f; }
+:host ::ng-deep .cd-dif-neutra { color: #73818f; }
+:host ::ng-deep .jqx-grid-cell-selected .cd-dif,
+:host ::ng-deep .jqx-fill-state-pressed .cd-dif { color: inherit; }
