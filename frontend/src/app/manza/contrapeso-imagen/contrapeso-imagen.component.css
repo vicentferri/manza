@@ -1,0 +1,52 @@
+.contrapeso-imagen {
+  margin-top: 4px;
+}
+
+.contrapeso-imagen figure {
+  display: inline-block;
+  margin: 0;
+  cursor: zoom-in;
+}
+
+.contrapeso-imagen img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Imagen ampliada: un clic la cierra. Las imágenes son de 200 px: no se agrandan más del doble */
+.contrapeso-imagen-ampliada {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  cursor: zoom-out;
+}
+
+.contrapeso-imagen-ampliada figure {
+  margin: 0;
+  text-align: center;
+}
+
+.contrapeso-imagen-ampliada img {
+  width: 400px;
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.contrapeso-imagen-ampliada figcaption {
+  color: #fff;
+  margin-top: 6px;
+}

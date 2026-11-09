@@ -503,6 +503,7 @@
                     {{ pow.text | frase }}
                   </option>
                 </select>
+                <app-contrapeso-imagen [cliente]="Cliente" [contrapeso]="Tipo1_Contrapeso" [contrapesos]="contrapesos"></app-contrapeso-imagen>
               </div>
               <div class="cfg-field" [class.cfg-error]="Tipo1_ContrapesoC == '-1'">
                 <label>{{ "COLOR" | translate }}</label>

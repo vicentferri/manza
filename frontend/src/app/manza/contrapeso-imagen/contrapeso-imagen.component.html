@@ -1,0 +1,12 @@
+<div class="contrapeso-imagen" *ngIf="url">
+  <figure (click)="ampliada = true">
+    <img [src]="url" [alt]="nombre" />
+  </figure>
+</div>
+
+<div class="contrapeso-imagen-ampliada" *ngIf="url && ampliada" (click)="ampliada = false">
+  <figure>
+    <img [src]="url" [alt]="nombre" />
+    <figcaption>{{ nombre | frase }}</figcaption>
+  </figure>
+</div>
