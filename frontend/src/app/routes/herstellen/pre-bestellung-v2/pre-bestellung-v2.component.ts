@@ -888,8 +888,9 @@ export class PreBestellungV2Component implements OnInit {
   difRenderer = (row, columnfield, value, defaulthtml, columnproperties, rowdata) => {
     if (value === null || value === undefined || value === '' || rowdata.rev_estado === null || rowdata.rev_estado === undefined) return '';
     const n = Number(value);
-    const color = rowdata.rev_estado === 'DIFERENCIA' ? (n > 0 ? '#2f8a4c' : '#d9534f') : '#73818f';
-    return '<div style="margin: 0 6px; line-height: 30px; text-align: right; color: ' + color + '">' + (n > 0 ? '+' : '') + n.toFixed(2) + '</div>';
+    // El color va por clase (ver el CSS): con la fila seleccionada se usa el del texto, como en Contenido
+    const clase = rowdata.rev_estado === 'DIFERENCIA' ? (n > 0 ? 'cd-dif-mas' : 'cd-dif-menos') : 'cd-dif-neutra';
+    return '<div class="cd-dif ' + clase + '" style="margin: 0 6px; line-height: 30px; text-align: right">' + (n > 0 ? '+' : '') + n.toFixed(2) + '</div>';
   };
 
   /* ---------- CortinaDecor: presentación de la rejilla ---------- */
@@ -941,7 +942,8 @@ export class PreBestellungV2Component implements OnInit {
   };
 
   cdIdrowRenderer = (row, columnfield, value) => {
-    return '<span style="margin: 0 6px; line-height: 30px; color: #5c6873">' + this.cdEscapar(value) + '</span>';
+    // Sin color propio, como Contenido: así se lee también con la fila seleccionada
+    return '<span style="margin: 0 6px; line-height: 30px">' + this.cdEscapar(value) + '</span>';
   };
 
   /* Barra de resumen: pedidos por estado y por resultado de la revisión de precios. Pulsar un contador filtra la
