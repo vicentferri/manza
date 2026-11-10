@@ -73,3 +73,10 @@
   color: #8a6d00;
   font-size: 0.78rem;
 }
+
+.acciones-precio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}

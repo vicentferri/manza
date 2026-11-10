@@ -35,6 +35,9 @@ const Paneles = require('./cortinadecor_paneles');
  */
 
 const PRODUCTOS_VALORADOS = [1, 3];
+/* Productos que lleva el XML de producción (sp_fichero_produccion_cd_2_V2 por _producto): las líneas sin producto, como las
+   piezas sueltas, no salen en el XML y no tiene sentido aplicarles nuestro precio */
+const PRODUCTOS_XML = [1, 2, 3, 5];
 const PRODUCTO_PIEZA = 9;     // "producto" de las reglas de incremento que valoran piezas sueltas (14_piezas_sueltas.sql)
 const TOLERANCIA = 0.02;      // € por unidad: diferencias de redondeo
 const ATRIBUTO_COLOR = 'COLOR DE LA LINEA';   // condición de incremento sobre el color que envían (p. ej. COMBINADAS)
@@ -412,7 +415,22 @@ function comparar(r, unitario) {
 /* ---------- Carga de líneas y grabación ---------- */
 
 /* filtro: { idrow } o { desde, hasta } (fechas AAAA-MM-DD del pedido) */
+/* ¿Existe la columna cost_cd (16_precio_original_lineas.sql)? Sin ella la revisión funciona como siempre */
+let columnaCostCd = false;
+async function hayCostCd(pool) {
+  if (!columnaCostCd) {
+    const r = await pool.request().query("select case when col_length('dbo.SOL_CORTINADECOR_LINES', 'cost_cd') is null then 0 else 1 end as existe");
+    columnaCostCd = !!r.recordset[0].existe;
+  }
+  return columnaCostCd;
+}
+
 async function cargarLineas(pool, filtro) {
+  /* cost = precio de CortinaDecor: si se ha aplicado nuestro precio, el original está en cost_cd y cost es el nuestro.
+     cost_actual = el valor que hay ahora en cost (el que irá al XML) */
+  const costes = (await hayCostCd(pool))
+    ? 'isnull(l.cost_cd, l.cost) as cost, l.cost_cd, l.cost as cost_actual'
+    : 'l.cost, cast(null as decimal(12, 2)) as cost_cd, l.cost as cost_actual';
   const request = pool.request();
   let where;
   if (filtro.idrow) {
@@ -424,7 +442,7 @@ async function cargarLineas(pool, filtro) {
     where = 'try_convert(date, h.date) between @desde and @hasta';
   }
   const r = await request.query(`
-    select l.id, l.idrow, l.name, l.color, l.amount, l.cost, l._producto, l._tejido, t.descripcion as tejido,
+    select l.id, l.idrow, l.name, l.color, l.amount, ${costes}, l._producto, l._tejido, t.descripcion as tejido,
            try_convert(date, h.date) as fecha
       from SOL_CORTINADECOR_LINES l
      inner join SOL_CORTINADECOR_HEADER h on h.idrow = l.idrow
@@ -488,7 +506,13 @@ async function grabar(pool, resultados) {
 async function revisar(pool, filtro, opciones) {
   const ref = await cargarReferencia(pool);
   const lineas = await cargarLineas(pool, filtro);
-  const resultados = lineas.map(l => revisarLinea(l, ref));
+  const resultados = lineas.map(l => {
+    const r = revisarLinea(l, ref);
+    /* Nuestro precio ya aplicado a la línea (va al XML); null si la línea conserva el de CortinaDecor */
+    r.precio_aplicado = l.cost_cd == null ? null : Number(l.cost_actual);
+    r.en_xml = PRODUCTOS_XML.includes(l._producto);
+    return r;
+  });
   if (!(opciones && opciones.sinGrabar)) await grabar(pool, resultados);
   return resultados;
 }
@@ -565,9 +589,77 @@ async function revision_pedido(req, res) {
   try {
     const pool = await sql.connect();
     const resultados = await revisar(pool, { idrow });
-    res.status(200).send({ Table: resultados, resumen: resumen(resultados) });
+    res.status(200).send({
+      Table: resultados, resumen: resumen(resultados),
+      puede_aplicar: await hayCostCd(pool), xml_generado: await xmlGenerado(pool, idrow)
+    });
   } catch (e) {
     console.log('cd_revision_pedido: ' + e.message);
+    res.status(500).send({ message: e.message });
+  }
+}
+
+/* ¿Ya se generó el XML de producción de este pedido? (FABRICACION cuenta las generaciones) */
+async function xmlGenerado(pool, idrow) {
+  const r = await pool.request().input('idrow', sql.Int, idrow)
+    .query('select isnull(fabricacion, 0) as n from SOL_CORTINADECOR_HEADER where idrow = @idrow');
+  return !!(r.recordset[0] && r.recordset[0].n > 0);
+}
+
+/*
+ * POST /api/sm/cd_revision/:idrow/precio { accion: 'aplicar' | 'deshacer', lineas: [id, ...] (vacío = todas las del pedido) }
+ *
+ * El <Precio> del XML sale de SOL_CORTINADECOR_LINES.cost (sp_fichero_produccion_cd_2_V2).
+ *   aplicar : guarda el precio de CortinaDecor en cost_cd (si no estaba ya) y pone nuestro precio de la línea en cost.
+ *             Solo líneas con DIFERENCIA, precio nuestro y producto que va al XML (PRODUCTOS_XML); las demás conservan
+ *             el de CortinaDecor.
+ *   deshacer: devuelve cost_cd a cost.
+ * El XML ya generado no cambia: hay que volver a generarlo (se avisa con xml_generado).
+ */
+async function precio_pedido(req, res) {
+  const idrow = parseInt(req.params.idrow, 10);
+  const accion = String((req.body && req.body.accion) || '');
+  if (!(idrow > 0)) return res.status(400).send({ message: 'Pedido no válido' });
+  if (!['aplicar', 'deshacer'].includes(accion)) return res.status(400).send({ message: 'Acción no válida' });
+  const pedidas = Array.isArray(req.body.lineas) ? req.body.lineas.map(n => parseInt(n, 10)).filter(n => n > 0) : [];
+  try {
+    const pool = await sql.connect();
+    if (!(await hayCostCd(pool))) {
+      return res.status(409).send({ message: 'Falta ejecutar el script 16_precio_original_lineas.sql en la base de datos' });
+    }
+
+    let lineas;   // [{ id, esperado }]
+    if (accion === 'aplicar') {
+      const resultados = await revisar(pool, { idrow });
+      lineas = resultados
+        .filter(r => r.estado === 'DIFERENCIA' && r.en_xml && r.esperado > 0 && r.precio_cd !== null && (!pedidas.length || pedidas.includes(r.id)))
+        .map(r => ({ id: r.id, esperado: r.esperado }));
+    } else {
+      const r = await pool.request().input('idrow', sql.Int, idrow)
+        .query('select id from SOL_CORTINADECOR_LINES where idrow = @idrow and cost_cd is not null');
+      lineas = r.recordset.filter(l => !pedidas.length || pedidas.includes(l.id)).map(l => ({ id: l.id }));
+    }
+
+    const tx = new sql.Transaction(pool);
+    await tx.begin();
+    try {
+      for (const l of lineas) {
+        const q = new sql.Request(tx).input('id', sql.Int, l.id).input('idrow', sql.Int, idrow);
+        if (accion === 'aplicar') {
+          await q.input('precio', sql.Decimal(12, 2), l.esperado)
+            .query('update SOL_CORTINADECOR_LINES set cost_cd = isnull(cost_cd, cost), cost = @precio where id = @id and idrow = @idrow');
+        } else {
+          await q.query('update SOL_CORTINADECOR_LINES set cost = cost_cd, cost_cd = null where id = @id and idrow = @idrow and cost_cd is not null');
+        }
+      }
+      await tx.commit();
+    } catch (e) {
+      try { await tx.rollback(); } catch (e2) { /* ya deshecha */ }
+      throw e;
+    }
+    res.status(200).send({ message: 'OK', lineas: lineas.length, xml_generado: await xmlGenerado(pool, idrow) });
+  } catch (e) {
+    console.log('cd_revision_precio: ' + e.message);
     res.status(500).send({ message: e.message });
   }
 }
@@ -592,6 +684,7 @@ async function revision_lote(req, res) {
 module.exports = {
   revision_pedido,
   revision_lote,
+  precio_pedido,
   prepararRejilla,
   /* para pruebas y procesos */
   revisar,
