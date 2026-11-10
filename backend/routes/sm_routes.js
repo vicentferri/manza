@@ -390,6 +390,7 @@ smapi.post('/cd_model_atributes_new', CortinaDecorController.Atributos_Articulos
 var CortinaDecorPreciosController = require('../controllers/sm/cortinadecor_precios');
 smapi.get('/cd_revision/:idrow', Auth.ensureAuth, CortinaDecorPreciosController.revision_pedido);
 smapi.post('/cd_revision/lote', Auth.ensureAuth, CortinaDecorPreciosController.revision_lote);
+smapi.post('/cd_revision/:idrow/precio', Auth.ensureAuth, CortinaDecorPreciosController.precio_pedido);
 
 /* Panel Cortinadecor > Tarifas: reglas Referencia + color -> tabla e incrementos */
 var CortinaDecorTarifasController = require('../controllers/sm/cortinadecor_tarifas');

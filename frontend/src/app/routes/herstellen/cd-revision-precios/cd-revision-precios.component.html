@@ -15,7 +15,21 @@
       <span class="etiqueta">Sin nuestro precio</span>
       <span class="valor text-muted">{{ resumen.sinValorar }} línea{{ resumen.sinValorar === 1 ? '' : 's' }}</span>
     </div>
-    <small class="text-muted align-self-end ml-auto">Totales de las líneas que tienen nuestro precio. Revisión solo informativa.</small>
+    <small class="text-muted align-self-end ml-auto">Totales de las líneas que tienen nuestro precio (el de CortinaDecor es el original, aunque ya se haya aplicado el nuestro).</small>
+  </div>
+
+  <!-- Precio del XML: nuestro precio en las líneas con diferencia -->
+  <div class="acciones-precio mb-2" *ngIf="puedeAplicar && (resumen.aplicables || resumen.aplicadas)">
+    <button type="button" class="btn btn-primary btn-sm" *ngIf="resumen.aplicables" [disabled]="aplicando" (click)="aplicar()">
+      <i class="fa fa-check mr-1"></i>Aplicar nuestro precio a {{ resumen.aplicables }} línea{{ resumen.aplicables === 1 ? '' : 's' }} con diferencia
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" *ngIf="resumen.aplicadas" [disabled]="aplicando" (click)="deshacer()">
+      <i class="fa fa-undo mr-1"></i>Volver al precio de CD ({{ resumen.aplicadas }})
+    </button>
+    <small class="text-muted">El XML de producción usa el precio de la línea. <ng-container *ngIf="xmlGenerado">Este pedido ya tiene XML: tras cambiar el precio hay que volver a generarlo.</ng-container></small>
+  </div>
+  <div class="alert alert-warning py-1 mb-2" *ngIf="!puedeAplicar && resumen.diferencias">
+    Para poder aplicar nuestro precio falta ejecutar el script 16 en la base de datos.
   </div>
 
   <table class="table table-sm mb-0 lineas">
@@ -43,7 +57,10 @@
           <td class="text-right" [class.text-danger]="l.estado === 'DIFERENCIA'">
             {{ l.diferencia === null ? '' : ((l.diferencia > 0 ? '+' : '') + (l.diferencia | number:'1.2-2')) }}
           </td>
-          <td><span class="badge" [ngClass]="claseEstado(l.estado)">{{ l.estado }}</span></td>
+          <td>
+            <span class="badge" [ngClass]="claseEstado(l.estado)">{{ l.estado }}</span>
+            <span class="badge badge-info ml-1" *ngIf="estaAplicado(l)" title="El XML llevará nuestro precio">Precio aplicado</span>
+          </td>
         </tr>
 
         <!-- Desglose de nuestro precio -->
@@ -183,6 +200,18 @@
             </ng-container>
 
             <div *ngFor="let a of l.detalle.avisos" class="aviso"><i class="fa fa-exclamation-triangle mr-1"></i>{{ a }}</div>
+
+            <div class="mt-1" *ngIf="puedeAplicar && (sePuedeAplicar(l) || estaAplicado(l))">
+              <button type="button" class="btn btn-primary btn-sm" *ngIf="sePuedeAplicar(l)" [disabled]="aplicando"
+                      (click)="aplicar(l); $event.stopPropagation()">
+                <i class="fa fa-check mr-1"></i>Aplicar nuestro precio a esta línea
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" *ngIf="estaAplicado(l)" [disabled]="aplicando"
+                      (click)="deshacer(l); $event.stopPropagation()">
+                <i class="fa fa-undo mr-1"></i>Volver al precio de CD ({{ l.precio_cd | number:'1.2-2' }} €)
+              </button>
+              <small class="text-muted ml-2" *ngIf="estaAplicado(l)">El XML lleva {{ l.precio_aplicado | number:'1.2-2' }} €</small>
+            </div>
           </td>
         </tr>
       </ng-container>
