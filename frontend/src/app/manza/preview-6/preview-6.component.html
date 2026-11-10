@@ -1,0 +1,72 @@
+<div class="cfg-linea">
+
+  <div class="cfg-linea-fila">
+    <span class="cfg-linea-icono">Z</span>
+    <div class="cfg-linea-info">
+      <div class="cfg-linea-nombre">
+        <strong>Cajón ZIP</strong>
+        <span class="cfg-mono">{{ item.ancho }} × {{ item.alto }} cm</span>
+        <span>· {{ zip.modelo }} · {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}</span>
+      </div>
+      <div class="cfg-linea-sub">
+        <span>{{ zip.tipoMotor }} · {{ zip.motor }}</span>
+        <span *ngIf="zip.lacado"> · Lacado: {{ zip.lacado }}</span>
+      </div>
+      <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
+        <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
+        {{ (verDetalle ? "Ocultar detalle" : "Ver detalle") | translate }}
+      </button>
+    </div>
+    <span class="cfg-linea-uds">{{ item.cantidad }} {{ (item.cantidad == 1 ? "ud." : "uds.") | translate }}</span>
+    <div class="cfg-linea-importe">
+      <strong>{{ item.precios.T6_PVP | number:'1.2-2' }} €</strong>
+      <small>{{ item.precios.T6_PVP_C1 }}</small>
+    </div>
+    <div class="cfg-linea-botones" *ngIf="!soloLectura">
+      <button type="button" class="cfg-btn" (click)="EditLine(item)">{{ "MODIFICAR" | translate }}</button>
+      <button type="button" class="cfg-btn cfg-btn-peligro" (click)="DeleteLine(item)">{{ "BORRAR" | translate }}</button>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="cfg-linea-cuerpo" *ngIf="verDetalle">
+    <div class="cfg-linea-datos">
+      <div class="cfg-dato"><span>{{ "ANCHO" | translate }}</span><strong>{{ item.ancho }} cm</strong></div>
+      <div class="cfg-dato"><span>{{ "ALTO" | translate }}</span><strong>{{ item.alto }} cm</strong></div>
+      <div class="cfg-dato"><span>{{ "CANTIDAD" | translate }}</span><strong>{{ item.cantidad }}</strong></div>
+      <div class="cfg-dato"><span>Modelo de cajón</span><strong>{{ zip.modelo }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.soporte"><span>{{ "SOPORTES" | translate }}</span><strong>{{ zip.soporte }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.salida"><span>{{ "SALIDA CABLE" | translate }}</span><strong>{{ zip.salida }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.vista"><span>{{ "VISTA CAJON" | translate }}</span><strong>{{ zip.vista }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.colorCajon"><span>Color del cajón</span><strong>{{ color(zip.colorCajon) }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.lacado"><span>Lacado</span><strong>{{ zip.lacado }}</strong></div>
+      <div class="cfg-dato cfg-dato-ancho">
+        <span>{{ "TEJIDO" | translate }}</span>
+        <strong>{{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}<span *ngIf="zip.criterio"> · {{ zip.criterio }} cm</span></strong>
+      </div>
+      <div class="cfg-dato"><span>Tipo de motor</span><strong>{{ zip.tipoMotor }}</strong></div>
+      <div class="cfg-dato"><span>{{ "MOTOR" | translate }}</span><strong>{{ zip.motor }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.mando"><span>Mando</span><strong>{{ zip.mando }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.posicion"><span>{{ "POSICIONMANDO" | translate }}</span><strong>{{ zip.posicion }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.guia"><span>Guía</span><strong>{{ zip.guia }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.colorGuia"><span>Color de la guía</span><strong>{{ color(zip.colorGuia) }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.contrapeso"><span>{{ "CONTRAPESO" | translate }}</span><strong>{{ zip.contrapeso }}</strong></div>
+      <div class="cfg-dato" *ngIf="zip.colorContrapeso"><span>Color del contrapeso</span><strong>{{ color(zip.colorContrapeso) }}</strong></div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.estancia_obs"><span>{{ "OBSERVACIONES" | translate }}</span><strong>{{ item.estancia_obs }}</strong></div>
+    </div>
+
+    <div class="cfg-linea-precio">
+      <div>
+        <h5>{{ "Resumen de precio" | translate }}</h5>
+        <div class="cfg-precio-fila" *ngFor="let d of desglose">
+          <span>{{ d.concepto }}<small *ngIf="d.elemento"> · {{ d.elemento }}</small></span>
+          <div>{{ d.importe | number:'1.2-2' }} €</div>
+        </div>
+        <div class="cfg-precio-fila">
+          <span>{{ item.cantidad > 1 ? ('Total (' + item.cantidad + ' uds.)') : 'Total' }}</span>
+          <div><strong>{{ item.precios.T6_PVP | number:'1.2-2' }} €</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

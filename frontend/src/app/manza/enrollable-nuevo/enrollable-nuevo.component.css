@@ -57,3 +57,14 @@
     color: #f86c6b;
     font-size: 12px;
 }
+
+/* Cajón ZIP: muestra del color (hex) junto a la etiqueta */
+.enx-muestra {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 4px;
+  vertical-align: -1px;
+  border: 1px solid rgba(0, 0, 0, .25);
+  border-radius: 2px;
+}

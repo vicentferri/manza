@@ -919,6 +919,49 @@ function budget_herunterladen_T7(req,res)
  }
 
 
+/* CAJÓN ZIP (sqlCajonZip): líneas tipo 6 del configurador nuevo de un presupuesto, para cargarlo en la cesta.
+   Solo las que tienen la selección nueva (nzip_*): las filas antiguas de TIPO_6 (de 2021) no se pueden volver a grabar */
+function budget_herunterladen_T6(req,res)
+ {
+ 	if (!/^\d+$/.test(String(req.params.idrow))) {
+ 		return res.status(400).send({ message: 'idrow no válido' });
+ 	}
+ 	var idrow = parseInt(req.params.idrow);
+
+ 	new sql.Request()
+ 		.input('idrow', sql.Int, idrow)
+ 		/* con los nombres de cada opción, para la cesta (las columnas de siempre no los tienen todos) */
+ 		.query("select t.*, mc.nombre as zip_modelo, so.nombre as zip_soporte, sa.nombre as zip_salida, " +
+ 		       "cc.nombre as zip_color_cajon, cc.ral as zip_color_cajon_ral, cc.hex as zip_color_cajon_hex, " +
+ 		       "tm.nombre as zip_tipo_motor, mm.nombre as zip_motor, ma.nombre as zip_mando, gu.nombre as zip_guia, " +
+ 		       "cg.nombre as zip_color_guia, cg.ral as zip_color_guia_ral, cg.hex as zip_color_guia_hex, " +
+ 		       "co.nombre as zip_contrapeso, ck.nombre as zip_color_contrapeso, ck.ral as zip_color_contrapeso_ral, ck.hex as zip_color_contrapeso_hex, " +
+ 		       "la.nombre as zip_lacado, tj.criterio as zip_criterio " +
+ 		       "from SOL_PRESUPUESTOS_COLA_TIPO_6 t " +
+ 		       "left join SOL_ACC_ZIP_MODELO_CAJON mc on mc.id = t.nzip_modelo_cajon_id " +
+ 		       "left join SOL_ACC_ZIP_SOPORTE so on so.id = t.nzip_soporte_id " +
+ 		       "left join SOL_ACC_ZIP_POSICION_SALIDA sa on sa.id = t.nzip_posicion_salida_id " +
+ 		       "left join SOL_ACC_ZIP_COLOR cc on cc.id = t.nzip_color_cajon_id " +
+ 		       "left join SOL_ACC_ZIP_TIPO_MOTOR tm on tm.id = t.nzip_tipo_motor_id " +
+ 		       "left join SOL_ACC_ZIP_MODELO_MOTOR mm on mm.id = t.nzip_modelo_motor_id " +
+ 		       "left join SOL_ACC_ZIP_MANDO ma on ma.id = t.nzip_mando_id " +
+ 		       "left join SOL_ACC_ZIP_GUIA gu on gu.id = t.nzip_guia_id " +
+ 		       "left join SOL_ACC_ZIP_COLOR cg on cg.id = t.nzip_color_guia_id " +
+ 		       "left join SOL_ACC_ZIP_CONTRAPESO co on co.id = t.nzip_contrapeso_id " +
+ 		       "left join SOL_ACC_ZIP_COLOR ck on ck.id = t.nzip_color_contrapeso_id " +
+ 		       "left join SOL_ACC_ZIP_LACADO la on la.id = t.nzip_lacado_id " +
+ 		       "left join SOL_TEJIDOS_MAESTRO tj on tj.idrow = t.nzip_tejido_id " +
+ 		       "where t.nzip_modelo_cajon_id is not null " +
+ 		       "and t.idrow in (select id from SOL_PRESUPUESTOS_COLA_LINEAS where idrow = @idrow) order by t.id",
+ 		(err, result) => {
+ 			if (err == null) {
+ 				res.status(200).send(result.recordset);
+ 			} else {
+ 				res.status(500).send({ message: err });
+ 			}
+ 		});
+ }
+
 function budget_entrega(req,res)
 {
     var cliente = req.params.cliente;
@@ -1070,5 +1113,6 @@ module.exports = {
     budget_herunterladen_T3,
     budget_herunterladen_T4,
     budget_herunterladen_T7,
+    budget_herunterladen_T6,
     budget_delete
 }
