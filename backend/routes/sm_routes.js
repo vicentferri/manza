@@ -563,6 +563,10 @@ smapi.post('/acc/tejidos/:sistema/copiar', NuevoSistema, AccionamientosNuevoCont
 smapi.get('/acc/mini/tejidos', NuevoSistema, AccionamientosNuevoController.mini_tejidos);
 smapi.post('/acc/mini/tejidos', NuevoSistema, AccionamientosNuevoController.mini_tejidos_guardar);
 smapi.post('/acc/mini/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.mini_tejidos_copiar);
+/* Tejidos del Cajón ZIP (sqlCajonZip/01): una sola lista para todos los modelos de cajón, como el Solar Mini */
+smapi.get('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos);
+smapi.post('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos_guardar);
+smapi.post('/acc/zip/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.zip_tejidos_copiar);
 smapi.get('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion_guardar);
 smapi.get('/acc/matriz/motores', NuevoSistema, AccionamientosNuevoController.matriz_motores);

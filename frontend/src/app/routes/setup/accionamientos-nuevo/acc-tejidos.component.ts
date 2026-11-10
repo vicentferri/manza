@@ -11,8 +11,8 @@ import { ToastrService } from 'ngx-toastr';
  * marca los colores de 200, de 250 y de cualquier otro ancho). La casilla del grupo y "Marcar / Quitar
  * lo filtrado" cambian varios de una vez.
  * Cada cambio se guarda al momento; si falla, las casillas vuelven a como estaban.
- * producto = 'mini' (Solar Mini, sqlSolarMini/01): una sola lista sin sistema (SOL_ACC_MINI_TEJIDO); "Copiar"
- * la deja con los tejidos de un sistema del enrollable.
+ * producto = 'mini' (Solar Mini, sqlSolarMini/01) o 'zip' (Cajón ZIP, sqlCajonZip/01): una sola lista sin
+ * sistema (SOL_ACC_MINI_TEJIDO / SOL_ACC_ZIP_TEJIDO); "Copiar" la deja con los tejidos de un sistema del enrollable.
  */
 @Component({
     selector: 'app-acc-tejidos',
@@ -21,8 +21,10 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class AccTejidosComponent implements OnInit {
 
-    /* 'enrollable' (por sistema) o 'mini' (Solar Mini, una sola lista) */
+    /* 'enrollable' (por sistema), 'mini' (Solar Mini) o 'zip' (Cajón ZIP): estos dos, una sola lista */
     @Input() producto = 'enrollable';
+
+    private readonly NOMBRES = { mini: 'Solar Mini', zip: 'Cajón ZIP' };
 
     /* Sistemas del modelo nuevo (SOL_ACC_SISTEMA) y el elegido; origen de "Copiar de otro sistema" */
     sistemas: any[] = [];
@@ -61,22 +63,28 @@ export class AccTejidosComponent implements OnInit {
         );
     }
 
+    /* Producto con una sola lista, sin sistema (Solar Mini o Cajón ZIP). El nombre se mantiene por la plantilla */
     get esMini(): boolean {
-        return this.producto === 'mini';
+        return !!this.NOMBRES[this.producto];
     }
 
-    /* Hay una lista que enseñar: la del Solar Mini o la del sistema elegido */
+    /* Nombre del producto sin sistema: "Solar Mini", "Cajón ZIP" */
+    get nombreProducto(): string {
+        return this.NOMBRES[this.producto] || '';
+    }
+
+    /* Hay una lista que enseñar: la del producto sin sistema o la del sistema elegido */
     get conLista(): boolean {
         return this.esMini || !!this.sistema;
     }
 
     /* Nombre de la lista que se edita, para los mensajes */
     get nombreLista(): string {
-        return this.esMini ? 'Solar Mini' : (this.sistemaSel ? this.sistemaSel.nombre : '');
+        return this.esMini ? this.nombreProducto : (this.sistemaSel ? this.sistemaSel.nombre : '');
     }
 
     private get url(): string {
-        return this.esMini ? '/sm/acc/mini/tejidos' : '/sm/acc/tejidos/' + this.sistema;
+        return this.esMini ? '/sm/acc/' + this.producto + '/tejidos' : '/sm/acc/tejidos/' + this.sistema;
     }
 
     get sistemaSel(): any {

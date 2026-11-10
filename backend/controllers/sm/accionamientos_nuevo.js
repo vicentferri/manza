@@ -5,8 +5,9 @@ const sql = require('mssql');
 /*
  * Modelo nuevo de accionamientos (tablas SOL_ACC_*).
  * Pantalla: routes/setup/accionamientos-nuevo ("Productos", antes "Accionamientos nuevo")
- * Scripts:  C:\dev\sqlAccionamientos\ (01 tablas, 02 accionamientos fijos CADENA y MOTOR,
- *           y prod/sqlSolarMini/01: Solar Mini, catálogos mini_* y tejidos sin sistema)
+ * Scripts:  C:\dev\sqlAccionamientos\ (01 tablas, 02 accionamientos fijos CADENA y MOTOR),
+ *           prod/sqlSolarMini/01 (Solar Mini, catálogos mini_* y tejidos sin sistema)
+ *           y prod/sqlCajonZip/01 (Cajón ZIP, catálogos y relaciones zip_*, tejidos sin sistema)
  *
  * Las tablas y columnas salen solo de CATALOGOS y RELACIONES: el cliente manda la
  * clave del catálogo, nunca un nombre de tabla.
@@ -41,7 +42,22 @@ const CATALOGOS = {
   mini_colores_perfil: { tabla: 'SOL_ACC_MINI_COLOR_PERFIL', sinSistema: true },
   mini_colores_ral:    { tabla: 'SOL_ACC_MINI_COLOR_RAL', sinSistema: true },
   mini_colores_cadena: { tabla: 'SOL_ACC_MINI_COLOR_CADENA', sinSistema: true },
-  mini_colores_tapa:   { tabla: 'SOL_ACC_MINI_COLOR_TAPA', sinSistema: true }
+  mini_colores_tapa:   { tabla: 'SOL_ACC_MINI_COLOR_TAPA', sinSistema: true },
+  /* Cajón ZIP (sqlCajonZip/01): producto propio, sin sistemas. La raíz es el modelo de cajón; sus soportes,
+     salidas, tipos de motor, guías y colores se marcan en él (RELACIONES zip_*). Todo es propio del ZIP.
+     El color lleva RAL y hex (extras); el lacado es una lista aislada, siempre disponible */
+  zip_modelos_cajon:     { tabla: 'SOL_ACC_ZIP_MODELO_CAJON', sinSistema: true },
+  zip_soportes:          { tabla: 'SOL_ACC_ZIP_SOPORTE', sinSistema: true },
+  zip_posiciones_salida: { tabla: 'SOL_ACC_ZIP_POSICION_SALIDA', sinSistema: true },
+  zip_tipos_motor:       { tabla: 'SOL_ACC_ZIP_TIPO_MOTOR', sinSistema: true },
+  zip_modelos_motor:     { tabla: 'SOL_ACC_ZIP_MODELO_MOTOR', sinSistema: true, padre: 'tipo_motor_id', tablaPadre: 'SOL_ACC_ZIP_TIPO_MOTOR' },
+  zip_mandos:            { tabla: 'SOL_ACC_ZIP_MANDO', sinSistema: true },
+  zip_guias:             { tabla: 'SOL_ACC_ZIP_GUIA', sinSistema: true },
+  zip_contrapesos:       { tabla: 'SOL_ACC_ZIP_CONTRAPESO', sinSistema: true },
+  zip_colores:           { tabla: 'SOL_ACC_ZIP_COLOR', sinSistema: true,
+                           extras: [{ columna: 'ral', max: 20 }, { columna: 'hex', max: 7, patron: /^#[0-9A-F]{6}$/, mayusculas: true,
+                                      error: 'El color hex tiene que ser # y 6 cifras hexadecimales (p. ej. #FFFFFF)' }] },
+  zip_lacados:           { tabla: 'SOL_ACC_ZIP_LACADO', sinSistema: true }
 };
 
 /* Relaciones N:M: origen = registro que se edita, destino = opciones que se marcan */
@@ -72,7 +88,26 @@ const RELACIONES = {
   tapa_color:            { tabla: 'SOL_ACC_TAPA_COLOR', origen: 'tapa_id', destino: 'color_tapa_id',
                            catOrigen: 'tapas', catDestino: 'colores_tapa' },
   contrapeso_color:      { tabla: 'SOL_ACC_CONTRAPESO_COLOR', origen: 'contrapeso_id', destino: 'color_contrapeso_id',
-                           catOrigen: 'contrapesos', catDestino: 'colores_contrapeso' }
+                           catOrigen: 'contrapesos', catDestino: 'colores_contrapeso' },
+  /* Cajón ZIP (sqlCajonZip/01): desde el modelo de cajón se marca lo que ofrece; guías y contrapesos con sus colores */
+  zip_modelo_cajon_soporte:    { tabla: 'SOL_ACC_ZIP_MODELO_CAJON_SOPORTE', origen: 'modelo_cajon_id', destino: 'soporte_id',
+                                 catOrigen: 'zip_modelos_cajon', catDestino: 'zip_soportes' },
+  zip_modelo_cajon_salida:     { tabla: 'SOL_ACC_ZIP_MODELO_CAJON_POSICION_SALIDA', origen: 'modelo_cajon_id', destino: 'posicion_salida_id',
+                                 catOrigen: 'zip_modelos_cajon', catDestino: 'zip_posiciones_salida' },
+  zip_modelo_cajon_tipo_motor: { tabla: 'SOL_ACC_ZIP_MODELO_CAJON_TIPO_MOTOR', origen: 'modelo_cajon_id', destino: 'tipo_motor_id',
+                                 catOrigen: 'zip_modelos_cajon', catDestino: 'zip_tipos_motor' },
+  zip_modelo_cajon_guia:       { tabla: 'SOL_ACC_ZIP_MODELO_CAJON_GUIA', origen: 'modelo_cajon_id', destino: 'guia_id',
+                                 catOrigen: 'zip_modelos_cajon', catDestino: 'zip_guias' },
+  zip_modelo_cajon_color:      { tabla: 'SOL_ACC_ZIP_MODELO_CAJON_COLOR', origen: 'modelo_cajon_id', destino: 'color_id',
+                                 catOrigen: 'zip_modelos_cajon', catDestino: 'zip_colores' },
+  zip_modelo_motor_mando:      { tabla: 'SOL_ACC_ZIP_MODELO_MOTOR_MANDO', origen: 'modelo_motor_id', destino: 'mando_id',
+                                 catOrigen: 'zip_modelos_motor', catDestino: 'zip_mandos' },
+  zip_guia_contrapeso:         { tabla: 'SOL_ACC_ZIP_GUIA_CONTRAPESO', origen: 'guia_id', destino: 'contrapeso_id',
+                                 catOrigen: 'zip_guias', catDestino: 'zip_contrapesos' },
+  zip_guia_color:              { tabla: 'SOL_ACC_ZIP_GUIA_COLOR', origen: 'guia_id', destino: 'color_id',
+                                 catOrigen: 'zip_guias', catDestino: 'zip_colores' },
+  zip_contrapeso_color:        { tabla: 'SOL_ACC_ZIP_CONTRAPESO_COLOR', origen: 'contrapeso_id', destino: 'color_id',
+                                 catOrigen: 'zip_contrapesos', catDestino: 'zip_colores' }
 };
 
 /* El código se usará en las reglas de fabricación: mayúsculas, números y _ */
@@ -226,6 +261,15 @@ async function guardar(req, res) {
   if (!cat.valor && !nombre) return res.status(400).send({ message: 'El nombre no puede estar vacío' });
   if (codigo && !CODIGO.test(codigo)) return res.status(400).send({ message: 'Código no válido: use letras, números o _' });
 
+  /* Columnas propias del catálogo (el color del ZIP: RAL y hex), opcionales; vacías → NULL */
+  const extras = [];
+  for (const e of (cat.extras || [])) {
+    let v = texto(body[e.columna], e.max);
+    if (e.mayusculas) v = v.toUpperCase();
+    if (v && e.patron && !e.patron.test(v)) return res.status(400).send({ message: e.error || `Valor no válido en ${e.columna}` });
+    extras.push({ columna: e.columna, max: e.max, valor: v || null });
+  }
+
   try {
     const pool = await sql.connect();
 
@@ -268,6 +312,10 @@ async function guardar(req, res) {
       request.input('valor', sql.Decimal(10, 2), valor);
       columnas.push('valor');
     }
+    extras.forEach(e => {
+      request.input(e.columna, sql.VarChar(e.max), e.valor);
+      columnas.push(e.columna);
+    });
 
     let result;
     if (id > 0) {
@@ -376,8 +424,10 @@ async function relacion(req, res) {
   const destino = CATALOGOS[rel.catDestino];
   try {
     const pool = await sql.connect();
+    /* Columnas propias del destino (RAL y hex del color del ZIP): la pantalla pinta una muestra del color */
+    const extras = (destino.extras || []).map(e => `d.${e.columna}, `).join('');
     const result = await pool.request().input('id', sql.Int, id).query(`
-      select d.id, d.codigo, ${destino.valor ? 'isnull(d.nombre, cast(d.valor as varchar(20)))' : 'd.nombre'} as nombre, d.activo,
+      select d.id, d.codigo, ${destino.valor ? 'isnull(d.nombre, cast(d.valor as varchar(20)))' : 'd.nombre'} as nombre, ${extras}d.activo,
              case when r.${rel.destino} is null then 0 else 1 end as marcado
       from dbo.${destino.tabla} d
       left join dbo.${rel.tabla} r on r.${rel.destino} = d.id and r.${rel.origen} = @id
@@ -692,6 +742,8 @@ function destinoSistema(sistema) {
   return { tabla: 'SOL_ACC_SISTEMA_TEJIDO', clave: [{ columna: 'sistema_id', param: 'sistema', valor: sistema }] };
 }
 const DESTINO_MINI = { tabla: 'SOL_ACC_MINI_TEJIDO', clave: [] };
+/* Cajón ZIP (sqlCajonZip/01): una sola lista para todos los modelos de cajón */
+const DESTINO_ZIP = { tabla: 'SOL_ACC_ZIP_TEJIDO', clave: [] };
 
 function conClave(request, destino) {
   destino.clave.forEach(k => request.input(k.param, sql.Int, k.valor));
@@ -850,40 +902,47 @@ async function tejidos_copiar(req, res) {
   }
 }
 
-/* GET /acc/mini/tejidos — los del Solar Mini (sqlSolarMini/01) */
-function mini_tejidos(req, res) {
-  return leerTejidos(res, DESTINO_MINI);
+/* Rutas de una lista de tejidos sin sistema (Solar Mini, Cajón ZIP):
+   GET  /acc/<producto>/tejidos                       los del producto
+   POST /acc/<producto>/tejidos { ids, disponible }   marca o quita
+   POST /acc/<producto>/tejidos/copiar { origen }     el producto queda con los tejidos de un sistema del enrollable */
+function tejidosSinSistema(destino) {
+  return {
+    leer: (req, res) => leerTejidos(res, destino),
+    guardar: async (req, res) => {
+      try {
+        const pool = await sql.connect();
+        return guardarTejidos(req, res, pool, destino);
+      } catch (err) {
+        errorSql(err, res);
+      }
+    },
+    copiar: async (req, res) => {
+      const origen = entero((req.body || {}).origen);
+      try {
+        const pool = await sql.connect();
+        if (!await sistemaValido(pool, origen)) return res.status(400).send({ message: 'Sistema no válido' });
+        return copiarTejidos(req, res, pool, destino, origen);
+      } catch (err) {
+        errorSql(err, res);
+      }
+    }
+  };
 }
 
-/* POST /acc/mini/tejidos { ids: [...], disponible } */
-async function mini_tejidos_guardar(req, res) {
-  try {
-    const pool = await sql.connect();
-    return guardarTejidos(req, res, pool, DESTINO_MINI);
-  } catch (err) {
-    errorSql(err, res);
-  }
-}
-
-/* POST /acc/mini/tejidos/copiar { origen } — el Solar Mini queda con los tejidos de un sistema del enrollable */
-async function mini_tejidos_copiar(req, res) {
-  const origen = entero((req.body || {}).origen);
-  try {
-    const pool = await sql.connect();
-    if (!await sistemaValido(pool, origen)) return res.status(400).send({ message: 'Sistema no válido' });
-    return copiarTejidos(req, res, pool, DESTINO_MINI, origen);
-  } catch (err) {
-    errorSql(err, res);
-  }
-}
+const TEJIDOS_MINI = tejidosSinSistema(DESTINO_MINI);
+const TEJIDOS_ZIP = tejidosSinSistema(DESTINO_ZIP);
 
 module.exports = {
+  mini_tejidos: TEJIDOS_MINI.leer,
+  mini_tejidos_guardar: TEJIDOS_MINI.guardar,
+  mini_tejidos_copiar: TEJIDOS_MINI.copiar,
+  zip_tejidos: TEJIDOS_ZIP.leer,
+  zip_tejidos_guardar: TEJIDOS_ZIP.guardar,
+  zip_tejidos_copiar: TEJIDOS_ZIP.copiar,
   tejidos,
   tejidos_guardar,
   tejidos_copiar,
-  mini_tejidos,
-  mini_tejidos_guardar,
-  mini_tejidos_copiar,
   suplementos,
   suplemento_fijo,
   suplementos_guardar,

@@ -14,7 +14,9 @@
         <label *ngFor="let o of opciones" class="acc-casilla" [class.acc-oculto]="!o.activo"
             [title]="o.activo ? '' : 'Oculto en el configurador'">
             <input type="checkbox" [(ngModel)]="o.marcado" [ngModelOptions]="{ standalone: true }" (change)="cambiar(o)" />
-            {{ o.nombre }}
+            <!-- Colores del ZIP: muestra del hex -->
+            <span *ngIf="o.hex" class="acc-muestra" [style.background]="o.hex" [title]="o.hex"></span>
+            {{ o.nombre }}<span *ngIf="o.ral" class="text-muted small"> ({{ o.ral }})</span>
         </label>
         <div *ngIf="opciones.length === 0" class="acc-vacio text-left">{{ vacio }}</div>
     </div>
