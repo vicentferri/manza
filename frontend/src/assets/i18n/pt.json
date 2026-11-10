@@ -254,6 +254,7 @@
     "IMPRIMIR": "Imprimir",
     "HONEYCOMB": "HoneyComb",
     "COLOR_TEJIDO": "Cor do tecido",
+    "HONEYCOMB_TEJIDO_BICOLOR": "O tecido é bicolor: uma das suas faces é de cor branca e a outra apresenta a cor correspondente ao modelo selecionado.",
     "COLOR_PERFIL": "Cor do perfil",
     "GUARDAR BORRADOR": "Guardar rascunho",
     "RECUPERAR BORRADOR": "Recuperar rascunho",

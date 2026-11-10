@@ -127,6 +127,7 @@
     "NO SE HA PODIDO GENERAR EL PDF DE PRODUCCIÓN": "No se ha podido generar el PDF de producción",
     "DESCARGAR": "Descargar",
     "COLOR_TEJIDO": "Color tejido",
+    "HONEYCOMB_TEJIDO_BICOLOR": "El tejido es bicolor: una de sus caras es de color blanco y la otra presenta el color correspondiente al modelo seleccionado.",
     "COLOR_PERFIL": "Color perfil",
     "TEJIDOMASRIEL": "Tejido + riel",
     "SOLORIEL": "Solo riel",
