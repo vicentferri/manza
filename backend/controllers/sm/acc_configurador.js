@@ -25,6 +25,12 @@ const sql = require('mssql');
  *   GET  /api/sm/acc_cfg/mini/opciones/:cliente  listas activas del Solar Mini y sus tejidos
  *   POST /api/sm/acc_cfg/mini/precio/:cliente    precio de una línea de Solar Mini con su desglose
  *   El pedido y el presupuesto son los mismos de arriba: admiten líneas de enrollable y de Solar Mini.
+ *
+ * Cajón ZIP (C:\dev\prod\sqlCajonZip 01-05; interruptor propio SOL_ACC_ZIP_CLIENTE; tipo 6):
+ *   GET  /api/sm/acc_cfg/zip/activo/:cliente     ¿usa el configurador nuevo del Cajón ZIP?
+ *   GET  /api/sm/acc_cfg/zip/opciones/:cliente   listas activas del Cajón ZIP con sus relaciones y tejidos
+ *   POST /api/sm/acc_cfg/zip/precio/:cliente     precio de una línea de Cajón ZIP con su desglose
+ *   El pedido, el presupuesto y la conversión son los mismos de arriba: admiten también líneas de Cajón ZIP.
  */
 
 /* Mensajes de los códigos de sp_acc_pedido_tipo_1_add */
@@ -498,16 +504,255 @@ async function mini_precio(req, res) {
   }
 }
 
+/* ---------------- CAJÓN ZIP (sqlCajonZip/01-05) ----------------
+   Producto propio (tipo 6), con sus listas (Productos → Cajón ZIP), su interruptor (SOL_ACC_ZIP_CLIENTE) y su
+   tarifa (la del modelo de cajón en el generador). La raíz es el modelo de cajón. Una línea de Cajón ZIP:
+   { TipoCortina: 6, ancho, alto, cantidad, codeCentro, tipo_tarifa ('T1' o 'T2'),
+     nzip: { modelo_cajon, soporte, posicion_salida, color_cajon, vista ('EXTERIOR' o 'INTERIOR'),
+             tejido (SOL_TEJIDOS_MAESTRO.idrow), tipo_motor, modelo_motor, mando, posicion (1 Derecha, 2 Izquierda),
+             guia, color_guia, contrapeso, color_contrapeso, lacado },
+     estancia_id, estancia_obs } */
+
+/* Mensajes de los códigos de sp_acc_zip_pedido_tipo_6_add / sp_acc_zip_presupuesto_tipo_6_add (sqlCajonZip/05) */
+const ERRORES_ZIP = {
+  '-1': 'El documento no existe',
+  '-2': 'El cliente no tiene activado el configurador nuevo del Cajón ZIP',
+  '-21': 'Precio de la línea incoherente',
+  '-22': 'Desglose del precio no válido',
+  '-23': 'Falta la tarifa (T1 o T2) con la que se calculó el precio',
+  '-30': 'Modelo de cajón no válido',
+  '-31': 'El soporte no es de ese modelo de cajón',
+  '-32': 'La posición de salida no es de ese modelo de cajón',
+  '-33': 'El color del cajón no es de ese modelo de cajón',
+  '-34': 'El tejido no está disponible para el Cajón ZIP',
+  '-35': 'El tipo de motor no es de ese modelo de cajón',
+  '-36': 'El motor no es de ese tipo de motor',
+  '-37': 'El mando no es de ese motor',
+  '-38': 'La guía no es de ese modelo de cajón',
+  '-39': 'El color de la guía no es de esa guía',
+  '-40': 'El contrapeso no es de esa guía',
+  '-41': 'El color del contrapeso no es de ese contrapeso',
+  '-42': 'Lacado no válido',
+  '-43': 'Vista del cajón no válida (exterior o interior)',
+  '-44': 'Posición del mando no válida',
+  '-45': 'Faltan las medidas o la cantidad'
+};
+
+/* Interruptor del Cajón ZIP (sqlCajonZip/02), independiente de los del enrollable y del Solar Mini */
+async function zipActivo(pool, cliente) {
+  const result = await pool.request().input('cliente', sql.Int, cliente)
+    .query('select 1 as ok from dbo.SOL_ACC_ZIP_CLIENTE where cliente = @cliente and activo = 1');
+  return result.recordset.length > 0;
+}
+
+/* GET /acc_cfg/zip/activo/:cliente — ante cualquier duda, false: el cliente sigue con el configurador de siempre */
+async function zip_activo(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(200).send({ activo: false });
+  try {
+    const pool = await sql.connect();
+    res.status(200).send({ activo: await zipActivo(pool, cliente) });
+  } catch (err) {
+    console.error(err);
+    res.status(200).send({ activo: false });
+  }
+}
+
+/* GET /acc_cfg/zip/opciones/:cliente — todas las listas activas del Cajón ZIP con sus relaciones (ids de las
+   opciones activas de cada una), para resolver la cascada en el navegador, y sus tejidos del maestro */
+async function zip_opciones(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  try {
+    const pool = await sql.connect();
+    if (!await zipActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Cajón ZIP' });
+    }
+    const q = async (consulta) => (await pool.request().query(consulta)).recordset;
+    const lista = (tabla, extra = '') => q(`select id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, nombre`);
+    const [modelosCajon, soportes, salidas, colores, tiposMotor, modelosMotor, mandos, guias, contrapesos, lacados,
+           mcSop, mcSal, mcCol, mcTm, mcGuia, mmMan, gCon, gCol, cCol, tejidos, posiciones] = await Promise.all([
+      lista('SOL_ACC_ZIP_MODELO_CAJON'),
+      lista('SOL_ACC_ZIP_SOPORTE'),
+      lista('SOL_ACC_ZIP_POSICION_SALIDA'),
+      lista('SOL_ACC_ZIP_COLOR', ', ral, hex'),
+      lista('SOL_ACC_ZIP_TIPO_MOTOR'),
+      lista('SOL_ACC_ZIP_MODELO_MOTOR', ', tipo_motor_id'),
+      lista('SOL_ACC_ZIP_MANDO'),
+      lista('SOL_ACC_ZIP_GUIA'),
+      lista('SOL_ACC_ZIP_CONTRAPESO'),
+      lista('SOL_ACC_ZIP_LACADO'),
+      q('select modelo_cajon_id, soporte_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_SOPORTE'),
+      q('select modelo_cajon_id, posicion_salida_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_POSICION_SALIDA'),
+      q('select modelo_cajon_id, color_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_COLOR'),
+      q('select modelo_cajon_id, tipo_motor_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_TIPO_MOTOR'),
+      q('select modelo_cajon_id, guia_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_GUIA'),
+      q('select modelo_motor_id, mando_id from dbo.SOL_ACC_ZIP_MODELO_MOTOR_MANDO'),
+      q('select guia_id, contrapeso_id from dbo.SOL_ACC_ZIP_GUIA_CONTRAPESO'),
+      q('select guia_id, color_id from dbo.SOL_ACC_ZIP_GUIA_COLOR'),
+      q('select contrapeso_id, color_id from dbo.SOL_ACC_ZIP_CONTRAPESO_COLOR'),
+      /* una fila por tejido + color + criterio; el configurador elige el criterio según el ancho */
+      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, t.descripcion as tipo
+         from dbo.SOL_ACC_ZIP_TEJIDO zt
+         join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = zt.tejido and m.activo = 1
+         left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+         order by t.descripcion, m.nombre, m.color, m.criterio`),
+      /* posición del mando: Derecha e Izquierda del catálogo de siempre (como el enrollable nuevo) */
+      q('select idrow as id, descripcion as nombre from dbo.SOL_ARTICULOS_POSICIONMANDO where idrow in (1, 2) order by idrow')
+    ]);
+
+    /* Solo se enlazan ids de opciones activas: una opción oculta desaparece de todas las listas */
+    const activos = (filas) => new Set(filas.map(f => f.id));
+    const filtrar = (ids, conjunto) => (ids || []).filter(id => conjunto.has(id));
+    const sopA = activos(soportes), salA = activos(salidas), colA = activos(colores), tmA = activos(tiposMotor),
+          guiaA = activos(guias), manA = activos(mandos), conA = activos(contrapesos);
+    const sopPorModelo = agrupar(mcSop, 'modelo_cajon_id', 'soporte_id');
+    const salPorModelo = agrupar(mcSal, 'modelo_cajon_id', 'posicion_salida_id');
+    const colPorModelo = agrupar(mcCol, 'modelo_cajon_id', 'color_id');
+    const tmPorModelo = agrupar(mcTm, 'modelo_cajon_id', 'tipo_motor_id');
+    const guiaPorModelo = agrupar(mcGuia, 'modelo_cajon_id', 'guia_id');
+    const manPorMotor = agrupar(mmMan, 'modelo_motor_id', 'mando_id');
+    const conPorGuia = agrupar(gCon, 'guia_id', 'contrapeso_id');
+    const colPorGuia = agrupar(gCol, 'guia_id', 'color_id');
+    const colPorContrapeso = agrupar(cCol, 'contrapeso_id', 'color_id');
+
+    res.status(200).send({
+      modelosCajon: modelosCajon.map(m => Object.assign(m, {
+        soportes: filtrar(sopPorModelo[m.id], sopA), salidas: filtrar(salPorModelo[m.id], salA),
+        colores: filtrar(colPorModelo[m.id], colA), tiposMotor: filtrar(tmPorModelo[m.id], tmA),
+        guias: filtrar(guiaPorModelo[m.id], guiaA)
+      })),
+      soportes, salidas, colores,
+      /* cada tipo de motor con sus modelos, y cada modelo con sus mandos */
+      tiposMotor: tiposMotor.map(t => Object.assign(t, {
+        modelos: modelosMotor.filter(m => m.tipo_motor_id === t.id)
+          .map(m => ({ id: m.id, codigo: m.codigo, nombre: m.nombre, mandos: filtrar(manPorMotor[m.id], manA) }))
+      })),
+      mandos,
+      guias: guias.map(g => Object.assign(g, { contrapesos: filtrar(conPorGuia[g.id], conA), colores: filtrar(colPorGuia[g.id], colA) })),
+      contrapesos: contrapesos.map(c => Object.assign(c, { colores: filtrar(colPorContrapeso[c.id], colA) })),
+      lacados,
+      tejidos,
+      posiciones,
+      vistas: [{ id: 'EXTERIOR', nombre: 'Visto desde el exterior' }, { id: 'INTERIOR', nombre: 'Visto desde el interior' }]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Precio de una línea de Cajón ZIP con sp_acc_zip_precio_linea (sqlCajonZip/04): base de la tarifa del modelo
+   de cajón (T1 o T2 con el tejido del maestro) + suplementos de sus listas. Misma respuesta que precioLineaMini */
+async function precioLineaZip(pool, cliente, l) {
+  const n = l.nzip || {};
+  const d = (nombre) => [nombre, sql.Decimal(12, 2)];
+  const request = pool.request()
+    .input('cliente', sql.Int, cliente)
+    .input('ancho', sql.Decimal(12, 2), medida(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medida(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad) || 1)
+    .input('modelo_cajon', sql.Int, entero(n.modelo_cajon))
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('tipo_tarifa', sql.VarChar(2), TIPOS_TARIFA.includes(l.tipo_tarifa) ? l.tipo_tarifa : null)
+    .input('soporte', sql.Int, entero(n.soporte))
+    .input('posicion_salida', sql.Int, entero(n.posicion_salida))
+    .input('color_cajon', sql.Int, entero(n.color_cajon))
+    .input('tipo_motor', sql.Int, entero(n.tipo_motor))
+    .input('modelo_motor', sql.Int, entero(n.modelo_motor))
+    .input('mando', sql.Int, entero(n.mando))
+    .input('guia', sql.Int, entero(n.guia))
+    .input('color_guia', sql.Int, entero(n.color_guia))
+    .input('contrapeso', sql.Int, entero(n.contrapeso))
+    .input('color_contrapeso', sql.Int, entero(n.color_contrapeso))
+    .input('lacado', sql.Int, entero(n.lacado))
+    .input('desglose', sql.Bit, 1)
+    .output('tarifa', sql.Int)
+    .output('mensaje', sql.VarChar(250))
+    .output('aviso', sql.VarChar(250));
+  [d('base'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
+  const r = await request.execute('sp_acc_zip_precio_linea');
+  const o = r.output;
+  if (r.returnValue !== 0) {
+    return { codigo: r.returnValue, mensaje: o.mensaje || 'No se puede calcular el precio', aviso: o.aviso || null };
+  }
+  return {
+    codigo: 0,
+    aviso: o.aviso || null,
+    tipo_tarifa: l.tipo_tarifa,
+    tarifa: o.tarifa,
+    base: o.base, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
+    desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
+  };
+}
+
+/* POST /acc_cfg/zip/precio/:cliente   body: una línea de Cajón ZIP. No graba nada */
+async function zip_precio(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  const l = req.body || {};
+  if (!l.nzip) return res.status(400).send({ message: 'Falta la selección del Cajón ZIP' });
+  const errorM = errorMedidas(l);
+  if (errorM) return res.status(400).send({ message: errorM });
+  try {
+    const pool = await sql.connect();
+    if (!await zipActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Cajón ZIP' });
+    }
+    const p = await precioLineaZip(pool, cliente, l);
+    if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
+    res.status(200).send(p);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Alta de una línea de Cajón ZIP dentro de la transacción del documento */
+async function altaLineaZip(transaction, doc, idDocumento, l, p) {
+  const n = l.nzip || {};
+  return new sql.Request(transaction)
+    .input(doc.id, sql.Int, idDocumento)
+    .input('centro', sql.Int, entero(l.codeCentro) || 1)
+    .input('modelo_cajon', sql.Int, entero(n.modelo_cajon))
+    .input('ancho', sql.Decimal(12, 2), medida(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medida(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad))
+    .input('soporte', sql.Int, entero(n.soporte))
+    .input('posicion_salida', sql.Int, entero(n.posicion_salida))
+    .input('color_cajon', sql.Int, entero(n.color_cajon))
+    .input('vista', sql.VarChar(10), String(n.vista || '').toUpperCase().substring(0, 10))
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('tipo_motor', sql.Int, entero(n.tipo_motor))
+    .input('modelo_motor', sql.Int, entero(n.modelo_motor))
+    .input('mando', sql.Int, entero(n.mando))
+    .input('posicion', sql.Int, entero(n.posicion))
+    .input('guia', sql.Int, entero(n.guia))
+    .input('color_guia', sql.Int, entero(n.color_guia))
+    .input('contrapeso', sql.Int, entero(n.contrapeso))
+    .input('color_contrapeso', sql.Int, entero(n.color_contrapeso))
+    .input('lacado', sql.Int, entero(n.lacado))
+    .input('estancia_id', sql.Int, enteroAntiguo(l.estancia_id))
+    .input('estancia', sql.VarChar(2500), texto(l.estancia_obs, 2500))
+    .input('pvp_unitario', sql.Decimal(12, 2), p.unitario)
+    .input('desglose', sql.Xml, desgloseXml(p.desglose))
+    .input('tipo_tarifa', sql.VarChar(2), p.tipo_tarifa)
+    .execute(doc.lineaZip);
+}
+
 /* Pedido y presupuesto se graban igual; solo cambian los SPs y el nombre de sus parámetros */
 const DOCUMENTOS = {
   pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add',
-                 lineaMini: 'sp_acc_mini_pedido_tipo_4_add', id: 'idPedido', nombre: 'pedido' },
+                 lineaMini: 'sp_acc_mini_pedido_tipo_4_add', lineaZip: 'sp_acc_zip_pedido_tipo_6_add',
+                 id: 'idPedido', nombre: 'pedido' },
   presupuesto: { cabecera: 'sp_acc_presupuesto_add', ref: 'refPresupuesto', linea: 'sp_acc_presupuesto_tipo_1_add',
-                 lineaMini: 'sp_acc_mini_presupuesto_tipo_4_add', id: 'idPresupuesto', nombre: 'presupuesto' }
+                 lineaMini: 'sp_acc_mini_presupuesto_tipo_4_add', lineaZip: 'sp_acc_zip_presupuesto_tipo_6_add',
+                 id: 'idPresupuesto', nombre: 'presupuesto' }
 };
 
 const esEnrollableNuevo = (l) => entero(l.TipoCortina) === 1 && !!l.nacc;
 const esMiniNuevo = (l) => entero(l.TipoCortina) === 4 && !!l.nmini;
+const esZipNuevo = (l) => entero(l.TipoCortina) === 6 && !!l.nzip;
 
 /* Alta de una línea de Solar Mini dentro de la transacción del documento */
 async function altaLineaMini(transaction, doc, idDocumento, l, p) {
@@ -560,10 +805,11 @@ async function alta(doc, req, res) {
   if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
   if (lineas.length === 0) return res.status(400).send({ message: `El ${doc.nombre} no tiene líneas` });
 
-  /* sqlSolarMini/05: enrollables nuevos (nacc) y Solar Mini nuevos (nmini) pueden ir en el mismo documento */
-  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l));
+  /* sqlSolarMini/05 y sqlCajonZip/05: enrollables (nacc), Solar Mini (nmini) y Cajón ZIP (nzip) nuevos pueden ir
+     en el mismo documento */
+  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l) && !esZipNuevo(l));
   if (otras >= 0) {
-    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables y Solar Mini` });
+    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables, Solar Mini y Cajón ZIP` });
   }
   for (let i = 0; i < lineas.length; i++) {
     const errorM = errorMedidas(lineas[i]);
@@ -581,11 +827,16 @@ async function alta(doc, req, res) {
     if (lineas.some(esMiniNuevo) && !await miniActivo(pool, cliente)) {
       return res.status(400).send({ message: ERRORES_MINI['-2'] });
     }
+    if (lineas.some(esZipNuevo) && !await zipActivo(pool, cliente)) {
+      return res.status(400).send({ message: ERRORES_ZIP['-2'] });
+    }
 
     /* Precio de cada línea, fuera de la transacción */
     const precios = [];
     for (let i = 0; i < lineas.length; i++) {
-      const p = esMiniNuevo(lineas[i]) ? await precioLineaMini(pool, cliente, lineas[i]) : await precioLinea(pool, cliente, lineas[i]);
+      const l = lineas[i];
+      const p = esMiniNuevo(l) ? await precioLineaMini(pool, cliente, l)
+        : esZipNuevo(l) ? await precioLineaZip(pool, cliente, l) : await precioLinea(pool, cliente, l);
       if (p.codigo !== 0) return res.status(400).send({ message: `Línea ${i + 1}: ${p.mensaje}` });
       precios.push(p);
     }
@@ -611,6 +862,15 @@ async function alta(doc, req, res) {
         if (!(rm.returnValue > 0)) {
           await transaction.rollback();
           const motivo = ERRORES_MINI[String(rm.returnValue)] || 'Línea no válida';
+          return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
+        }
+        continue;
+      }
+      if (esZipNuevo(l)) {
+        const rz = await altaLineaZip(transaction, doc, idDocumento, l, precios[i]);
+        if (!(rz.returnValue > 0)) {
+          await transaction.rollback();
+          const motivo = ERRORES_ZIP[String(rz.returnValue)] || 'Línea no válida';
           return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
         }
         continue;
@@ -716,6 +976,9 @@ module.exports = {
   mini_activo,
   mini_opciones,
   mini_precio,
+  zip_activo,
+  zip_opciones,
+  zip_precio,
   pedido,
   presupuesto,
   presupuesto_a_pedido

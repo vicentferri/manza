@@ -218,6 +218,8 @@
               <option *ngFor="let s of acc_sistemas" [value]="s.id">{{ s.nombre }}</option>
               <!-- sqlSolarMini/03: el Solar Mini no tiene sistemas; su tarifa va por producto -->
               <option value="P4">Solar Mini (producto)</option>
+              <!-- sqlCajonZip/03: el Cajón ZIP tampoco tiene sistemas; su tarifa va por modelo de cajón -->
+              <option *ngFor="let m of acc_zip_modelos" [value]="'Z' + m.id">Cajón ZIP · {{ m.nombre }}</option>
             </select>
           </div>
           <!-- T2 del configurador nuevo: tejido del maestro (tejido + criterio, vale para todos sus colores) -->

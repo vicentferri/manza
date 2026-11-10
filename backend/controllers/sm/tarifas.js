@@ -877,7 +877,7 @@ function tarifa_simulate(req,res)
 
             /* acc_sistema_id y mapa_fecha: configurador nuevo (scripts 23-24 de sqlAccionamientos) */
             /* acc_tejido_nombre: T2 de un tejido del maestro (script 31) */
-            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,criterio,preciom2,preciomontaje,bloqueo,desmultiplicador,desmultiplicador_trigger,desmultiplicador_value,tipoproducto,grupotejido,grupo,densidad,sp_sistema,sp_modelo,sp_accionamiento,sp_tejido,acc_sistema_id,mapa_fecha,acc_tejido_nombre,acc_producto,op_synchronized,op_synchr_date from sol_tarifas_simulate ";
+            var sqlquery = "select idrow,nombre,margen1,margen2,margen3,margen4,tipo,marca,tejido,criterio,preciom2,preciomontaje,bloqueo,desmultiplicador,desmultiplicador_trigger,desmultiplicador_value,tipoproducto,grupotejido,grupo,densidad,sp_sistema,sp_modelo,sp_accionamiento,sp_tejido,acc_sistema_id,mapa_fecha,acc_tejido_nombre,acc_producto,acc_zip_modelo_id,op_synchronized,op_synchr_date from sol_tarifas_simulate ";
             sqlquery += " where idrow = " + idrow;
                 new sql.Request().query(sqlquery, (err2,result) => {
 
@@ -1552,6 +1552,11 @@ function Simulation(req,res){
             : (body.acc_producto === null || body.acc_producto === '' ? null : parseInt(body.acc_producto, 10));
         if (accProducto !== null && isNaN(accProducto)) accProducto = -1;
         request.input('acc_producto',sql.Int,accProducto);
+        /* sqlCajonZip/03: tarifa de un modelo de cajón del Cajón ZIP. Si no llega, -1 = no tocarlo; vacío = quitarlo */
+        var accZip = body.acc_zip_modelo_id === undefined ? -1
+            : (body.acc_zip_modelo_id === null || body.acc_zip_modelo_id === '' ? null : parseInt(body.acc_zip_modelo_id, 10));
+        if (accZip !== null && isNaN(accZip)) accZip = -1;
+        request.input('acc_zip_modelo_id',sql.Int,accZip);
         request.execute('sp_tarifas_simulate',
         function(err, recordsets, returnValue) {
 
@@ -1567,7 +1572,7 @@ function Simulation(req,res){
                 }
                 else if (recordsets.returnValue == -13)
                 {
-                    res.status(400).send({message: 'Una tarifa del configurador nuevo es de un sistema o del Solar Mini, no de las dos cosas'});
+                    res.status(400).send({message: 'Una tarifa del configurador nuevo es de un sistema, del Solar Mini o de un modelo de cajón ZIP: solo de uno de ellos'});
                 }
                 else if (recordsets.returnValue == -12)
                 {
@@ -1579,13 +1584,16 @@ function Simulation(req,res){
                     new sql.Request()
                         .input('idrow',sql.Int,body.idrow).input('sistema',sql.Int,accSistema)
                         .input('producto',sql.Int,accProducto !== null && accProducto > 0 ? accProducto : null)
+                        .input('zip',sql.Int,accZip !== null && accZip > 0 ? accZip : null)
                         .input('grupotejido',sql.Int,body.grupotejido).input('grupo',sql.Int,body.grupo).input('tejido',sql.Int,body.tejido)
                         .input('tejnombre',sql.VarChar(100),accTejido).input('criterio',sql.Int,body.criterio)
                         /* misma regla que sp_tarifas_simulate (scripts 27 y 32): en T2, por tejido de siempre o por tejido del maestro + criterio */
                         .query("declare @n varchar(100) = case when @tejnombre = '-' then (select acc_tejido_nombre from SOL_TARIFAS_SIMULATE where idrow = @idrow) else nullif(@tejnombre, '') end; " +
                                "select idrow, nombre from SOL_TARIFAS_SIMULATE where idrow <> @idrow and activa = 1 " +
-                               /* sqlSolarMini/03: con producto (Solar Mini), las del producto; si no, las del sistema */
-                               "and ((@producto is not null and acc_producto = @producto) or (@producto is null and acc_sistema_id = @sistema)) and tipoproducto = 1 " +
+                               /* sqlSolarMini/03 y sqlCajonZip/03: con modelo de cajón, las del modelo; con producto (Solar Mini),
+                                  las del producto; si no, las del sistema */
+                               "and ((@zip is not null and acc_zip_modelo_id = @zip) or (@zip is null and @producto is not null and acc_producto = @producto) " +
+                               "or (@zip is null and @producto is null and acc_sistema_id = @sistema)) and tipoproducto = 1 " +
                                "and isnull(grupotejido,0) = isnull(@grupotejido,0) and ((isnull(@grupotejido,0) = 1 and grupo = @grupo) " +
                                "or (isnull(@grupotejido,0) = 0 and @n is null and acc_tejido_nombre is null and tejido = @tejido) " +
                                "or (isnull(@grupotejido,0) = 0 and @n is not null and acc_tejido_nombre = @n and criterio = @criterio))",
@@ -1593,7 +1601,8 @@ function Simulation(req,res){
                             var duplicadas = err2 ? [] : result.recordset;
                             var tipo = parseInt(body.grupotejido, 10) === 1 ? 'T1' : 'T2';
                             res.status(409).send({
-                                message: 'Ya existe una tarifa ' + tipo + ' activa para ' + (accProducto !== null && accProducto > 0 ? 'el Solar Mini' : 'este sistema') +
+                                message: 'Ya existe una tarifa ' + tipo + ' activa para ' +
+                                         (accZip !== null && accZip > 0 ? 'este modelo de cajón' : accProducto !== null && accProducto > 0 ? 'el Solar Mini' : 'este sistema') +
                                          ' y ' + (tipo === 'T1' ? 'grupo' : 'tejido') +
                                          (duplicadas.length ? ': ' + duplicadas.map(d => d.idrow + ' ' + d.nombre).join(', ') : '') +
                                          '. Si guarda, esa tarifa quedará desactivada.',
