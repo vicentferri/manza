@@ -62,7 +62,7 @@ export class PreBestellungV2Component implements OnInit {
   public SelectedDate2: Date = new Date();
   public responsable = "-1";
   public responsable2 = "-1";
-  public EstadoOrden = "0";
+  public EstadoOrden = "-1";
   public Target_EstadoOrden = "0";
   public FacturaEnlace = "";
   SelectedCliente = 1;
@@ -255,13 +255,12 @@ export class PreBestellungV2Component implements OnInit {
   }
 
   Init() {
-    this.EstadoOrden = "0";
+    // Por defecto: todos los estados y el año en curso completo (1 de enero a 31 de diciembre)
+    this.EstadoOrden = "-1";
 
-    let month = new Date().getMonth();
-    let ano = new Date().getFullYear();
-    let Today = new Date(ano, month, 1);
-    this.SelectedDate = new Date(Today.setMonth(Today.getMonth() - 2));
-    this.SelectedDate2 = new Date();
+    const ano = new Date().getFullYear();
+    this.SelectedDate = new Date(ano, 0, 1);
+    this.SelectedDate2 = new Date(ano, 11, 31);
   }
 
   exportData() {
