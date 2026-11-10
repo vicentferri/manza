@@ -910,7 +910,7 @@ export class PreBestellungV2Component implements OnInit {
   }
 
   cdCodigoRenderer = (row, columnfield, value) => {
-    return '<span style="margin: 0 6px; line-height: 30px; font-weight: 600; color: #23282c">' + this.cdEscapar(value) + '</span>';
+    return '<span style="margin: 0 6px; line-height: 30px; font-weight: 600">' + this.cdEscapar(value) + '</span>';
   };
 
   cdFechaRenderer = (row, columnfield, value) => {
@@ -918,7 +918,7 @@ export class PreBestellungV2Component implements OnInit {
     const d = new Date(value);
     if (isNaN(d.getTime())) return '';
     const dd = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
-    return '<span style="margin: 0 6px; line-height: 30px; color: #23282c">' + dd + '</span>';
+    return '<span style="margin: 0 6px; line-height: 30px">' + dd + '</span>';
   };
 
   cdEstadoRenderer = (row, columnfield, value, defaulthtml, columnproperties, rowdata) => {
