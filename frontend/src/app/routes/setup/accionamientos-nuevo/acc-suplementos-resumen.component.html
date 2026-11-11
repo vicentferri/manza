@@ -8,6 +8,11 @@
             <option value="">Todas las listas</option>
             <option *ngFor="let c of listasConSuplemento" [value]="c">{{ nombreLista(c) }}</option>
         </select>
+        <select *ngIf="gruposConSuplemento.length > 0" class="form-control form-control-sm mr-2 mb-1 acc-sup-filtro"
+            [(ngModel)]="filtroGrupo" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }">
+            <option value="">Todos los tipos</option>
+            <option *ngFor="let g of gruposConSuplemento" [value]="g">{{ g }}</option>
+        </select>
         <select class="form-control form-control-sm mr-2 mb-1 acc-sup-filtro" [(ngModel)]="filtroCliente" (ngModelChange)="filtrar()" [ngModelOptions]="{ standalone: true }">
             <option value="">Todos los clientes</option>
             <option value="general">Solo precios generales</option>

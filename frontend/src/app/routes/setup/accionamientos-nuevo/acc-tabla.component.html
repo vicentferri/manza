@@ -9,16 +9,27 @@
         <input *ngIf="datos.length > 8" type="text" class="form-control form-control-sm mr-2 mb-1 acc-buscar"
             placeholder="Buscar..."
             [(ngModel)]="busqueda" [ngModelOptions]="{ standalone: true }" />
-        <button type="button" class="btn btn-success btn-sm mr-2 mb-1" (click)="abrirAlta()">
+        <button *ngIf="!fijo" type="button" class="btn btn-success btn-sm mr-2 mb-1" (click)="abrirAlta()">
             <i class="fa fa-plus"></i> Añadir {{ singular }}
         </button>
         <button type="button" class="btn btn-outline-secondary btn-sm mr-2 mb-1" [disabled]="!filaSeleccionada" (click)="abrirEdicion()">
             <i class="fa fa-pencil"></i> Editar
         </button>
-        <span [title]="motivoNoBorrar">
+        <span *ngIf="!fijo" [title]="motivoNoBorrar">
             <button type="button" class="btn btn-outline-danger btn-sm mb-1"
                 [disabled]="!filaSeleccionada || motivoNoBorrar" (click)="pedirBorrado()">
                 <i class="fa fa-trash"></i> Borrar
+            </button>
+        </span>
+        <!-- Copiar de otro padre (otro tipo de vertical): añade lo que falte, con sus suplementos -->
+        <span *ngIf="copiarDe.length > 0 && padreId" class="d-flex align-items-center ml-auto mb-1">
+            <select class="form-control form-control-sm acc-copiar-select mr-1" [(ngModel)]="origenCopia" [ngModelOptions]="{ standalone: true }">
+                <option [ngValue]="null">Copiar de...</option>
+                <option *ngFor="let o of copiarDe" [ngValue]="o.id">{{ o.nombre }}</option>
+            </select>
+            <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!origenCopia || copiando" (click)="copiar()"
+                title="Añade aquí los que tenga el elegido y aquí falten (mismo código, nombre o valor), con sus suplementos. Lo que ya hay no se toca">
+                <i class="fa" [ngClass]="copiando ? 'fa-spinner fa-spin' : 'fa-files-o'"></i> Copiar
             </button>
         </span>
     </div>
@@ -80,7 +91,7 @@
                 </tr>
                 <tr *ngIf="datosFiltrados.length === 0">
                     <td colspan="5" class="acc-vacio">
-                        <ng-container *ngIf="!busqueda">Todavía no hay ninguno. Pulse <strong>Añadir {{ singular }}</strong>.</ng-container>
+                        <ng-container *ngIf="!busqueda">Todavía no hay ninguno.<ng-container *ngIf="!fijo"> Pulse <strong>Añadir {{ singular }}</strong>.</ng-container></ng-container>
                         <ng-container *ngIf="busqueda">Nada coincide con «{{ busqueda }}».</ng-container>
                     </td>
                 </tr>

@@ -28,6 +28,11 @@ export class AccTablaComponent implements OnChanges {
     /* Campos propios del catálogo, opcionales (el color del ZIP: [{ campo: 'ral', ... }, { campo: 'hex', color: true }]).
        Se editan en el formulario y se enseñan bajo el nombre; con color: true, además una muestra del color */
     @Input() extras: { campo: string, label: string, max: number, placeholder?: string, color?: boolean }[] = [];
+    /* Lista fija (tipos y modalidades del Vertical): no se añaden ni se borran registros */
+    @Input() fijo = false;
+    /* Padres de los que se pueden copiar los registros a este (los otros tipos de vertical): [{ id, nombre }].
+       Vacío = sin botón Copiar. Solo con padreCampo / padreId */
+    @Input() copiarDe: { id: number, nombre: string }[] = [];
     /* Lo sube el padre cuando cambia algo que afecta a "Uso" (hijos, relaciones) */
     @Input() recarga = 0;
     @Output() seleccion = new EventEmitter<any>();
@@ -38,6 +43,8 @@ export class AccTablaComponent implements OnChanges {
     @ViewChild('modalBorrar', { static: false }) modalBorrar: ModalDirective;
 
     datos: any[] = [];
+    origenCopia: number = null;
+    copiando = false;
     filaSeleccionada: any = null;
     busqueda = '';
     form: any = {};
@@ -51,6 +58,7 @@ export class AccTablaComponent implements OnChanges {
             /* Sin emitir: el padre ya limpia su selección al cambiar de catálogo o de padre */
             this.filaSeleccionada = null;
             this.busqueda = '';
+            this.origenCopia = null;
             this.cargar();
         } else if (changes.recarga && !changes.recarga.firstChange) {
             this.cargar();
@@ -74,7 +82,7 @@ export class AccTablaComponent implements OnChanges {
     get motivoNoBorrar(): string {
         const f = this.filaSeleccionada;
         if (!f) { return ''; }
-        if (f.protegido) { return 'Es fijo: no se puede borrar. Puede ocultarlo'; }
+        if (f.protegido || this.fijo) { return 'Es fijo: no se puede borrar. Puede ocultarlo'; }
         if (f.uso_externo) { return 'Está en uso: ' + f.uso_externo + '. No se puede borrar. Puede ocultarlo'; }
         if (f.dependencias > 0) { return 'Está en uso (' + f.dependencias + '): no se puede borrar. Puede ocultarlo'; }
         if (f.suplementos > 0) { return 'Tiene suplementos de precio: quítelos antes de borrarlo, o ocúltelo'; }
@@ -201,6 +209,29 @@ export class AccTablaComponent implements OnChanges {
         this.service.HTTP_Post('/sm/acc/' + this.catalogo + '/orden', JSON.stringify({ ids })).subscribe(
             () => { },
             err => { this.datos = anterior; this.error(err, 'No se pudo cambiar el orden'); }
+        );
+    }
+
+    /* Añade a este padre los registros del origen que aún no tenga (mismo código, nombre o valor), con sus
+       suplementos; lo que ya tiene no se toca */
+    copiar() {
+        const origen = this.copiarDe.find(o => o.id === Number(this.origenCopia));
+        if (!origen || !this.padreId) { return; }
+        this.copiando = true;
+        this.service.HTTP_Post('/sm/acc/' + this.catalogo + '/copiar', JSON.stringify({ origen: origen.id, destino: this.padreId })).subscribe(
+            data => {
+                this.copiando = false;
+                this.origenCopia = null;
+                const ya = data.yaEstaban ? ' (' + data.yaEstaban + ' ya estaban)' : '';
+                if (data.copiados) {
+                    this.toaster.success(data.copiados + ' copiado(s) de ' + origen.nombre + ya, this.titulo);
+                } else {
+                    this.toaster.info('No había nada nuevo que copiar de ' + origen.nombre + ya, this.titulo);
+                }
+                this.cargar();
+                this.cambio.emit();
+            },
+            err => { this.copiando = false; this.error(err, 'No se pudo copiar'); }
         );
     }
 

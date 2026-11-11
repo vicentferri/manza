@@ -472,6 +472,97 @@
                     <app-acc-suplementos-resumen producto="zip" [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
                 </ng-container>
 
+                <!-- VERTICAL · selector del tipo (pasos 2 y 3: todo lo de debajo es del tipo elegido) -->
+                <ng-template #selectorTipoVer>
+                    <div class="d-flex align-items-center flex-wrap mb-3">
+                        <span class="mr-2"><strong>Tipo de vertical:</strong></span>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button *ngFor="let t of tiposVer" type="button" class="btn"
+                                [class.btn-primary]="tipoVerId === t.id" [class.btn-outline-primary]="tipoVerId !== t.id"
+                                (click)="elegirTipoVer(t.id)">{{ t.nombre }}<span *ngIf="!t.activo"> (oculto)</span></button>
+                        </div>
+                    </div>
+                </ng-template>
+
+                <!-- VERTICAL · 1. TIPO Y MODALIDADES (raíz: cada tipo tiene sus propias opciones) -->
+                <ng-container *ngIf="seccion === 'ver_tipos'">
+                    <div class="acc-intro">
+                        Primer paso del configurador del Vertical. Los tres tipos son fijos: se pueden renombrar, ordenar, ocultar y llevar suplemento.
+                        Elija uno y marque qué se puede pedir de él (la Inclinada, por ejemplo, solo completa). Cada tipo tiene sus propias opciones (paso 2) y sus tejidos (paso 3).
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-5">
+                            <app-acc-tabla catalogo="ver_tipos" titulo="Tipos de vertical" singular="tipo" [fijo]="true"
+                                [recarga]="recargaVerTipo" (seleccion)="seleccionTipoVer($event)"></app-acc-tabla>
+                        </div>
+                        <div class="col-lg-7">
+                            <ng-container *ngIf="tipoVerFila; else elijaTipoVer">
+                                <div class="acc-detalle-titulo">{{ tipoVerFila.nombre }}</div>
+                                <app-acc-relacion relacion="ver_tipo_modalidad" [id]="tipoVerFila.id" [titulo]="'Qué se puede pedir de ' + tipoVerFila.nombre"
+                                    ayuda="Si solo marca una, el configurador no pregunta."
+                                    vacio="No hay modalidades." (cambio)="recargaVerTipo = recargaVerTipo + 1"></app-acc-relacion>
+                            </ng-container>
+                            <ng-template #elijaTipoVer>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un tipo de vertical para marcar qué se puede pedir.</div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- VERTICAL · 2. OPCIONES DEL TIPO (listas propias de cada tipo) -->
+                <ng-container *ngIf="seccion === 'ver_opciones'">
+                    <div class="acc-intro">
+                        Opciones del mecanismo del tipo elegido. Cada tipo tiene las suyas: lo que se da de alta aquí solo sale en ese tipo, con su propio nombre,
+                        orden y suplemento. Con <strong>Copiar de...</strong> se traen las de otro tipo (las que falten, con sus suplementos).
+                    </div>
+                    <ng-container *ngTemplateOutlet="selectorTipoVer"></ng-container>
+                    <ng-container *ngIf="tipoVerId">
+                        <ul class="nav nav-tabs acc-tabs">
+                            <li class="nav-item" *ngFor="let l of listasVer">
+                                <a class="nav-link" href="javascript:void(0)" [class.active]="pestanaVer.id === l.id" (click)="pestanaVer = l">{{ l.label }}</a>
+                            </li>
+                        </ul>
+                        <div class="row">
+                            <div class="col-xl-7 col-lg-9">
+                                <app-acc-tabla [catalogo]="pestanaVer.id" [titulo]="pestanaVer.label" [singular]="pestanaVer.singular" [ayuda]="pestanaVer.ayuda"
+                                    [conValor]="!!pestanaVer.conValor" [unidad]="pestanaVer.unidad || ''"
+                                    padreCampo="tipo_id" [padreId]="tipoVerId" [copiarDe]="otrosTiposVer"></app-acc-tabla>
+                            </div>
+                        </div>
+                    </ng-container>
+                </ng-container>
+
+                <!-- VERTICAL · 3. TEJIDO (una lista por tipo) -->
+                <ng-container *ngIf="seccion === 'ver_tejidos'">
+                    <div class="acc-intro">
+                        Tejidos del <strong>Maestro de tejidos</strong> que ofrece el tipo elegido, para cualquier ancho de lama. Una lista por tipo, la misma para todos los clientes.
+                    </div>
+                    <ng-container *ngTemplateOutlet="selectorTipoVer"></ng-container>
+                    <app-acc-tejidos *ngIf="tipoVerId" producto="ver" [grupo]="tipoVerId"></app-acc-tejidos>
+                </ng-container>
+
+                <!-- VERTICAL · MODALIDADES (lista fija) -->
+                <ng-container *ngIf="seccion === 'ver_modalidades'">
+                    <div class="acc-intro">
+                        Las tres modalidades son fijas (cada una decide qué datos pide el configurador): aquí se renombran, se ordenan, se ocultan y llevan suplemento.
+                        Cuáles tiene cada tipo se marca en el paso 1.
+                    </div>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla catalogo="ver_modalidades" titulo="Modalidades" singular="modalidad" [fijo]="true"></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- VERTICAL · SUPLEMENTOS -->
+                <ng-container *ngIf="seccion === 'ver_suplementos'">
+                    <div class="acc-intro">
+                        Todos los suplementos de precio del Vertical, con el tipo delante de cada opción. Se ponen en la columna <strong>Suplemento</strong> de cada lista;
+                        aquí se revisan y, pulsando una línea, se cambian. El Vertical no tiene sistemas: los precios van por cliente y medida.
+                    </div>
+                    <app-acc-suplementos-resumen producto="ver" [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
+                </ng-container>
+
                 <!-- LISTAS DE OPCIONES -->
                 <ng-container *ngIf="seccion === 'listas'">
                     <div class="acc-intro">Opciones que se reutilizan en los pasos. Aquí se dan de alta; en cada paso se marca cuáles se ofrecen.</div>

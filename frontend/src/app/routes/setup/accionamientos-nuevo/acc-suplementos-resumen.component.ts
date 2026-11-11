@@ -16,18 +16,21 @@ export class AccSuplementosResumenComponent implements OnInit {
 
     /* Nombre de cada lista (clave del backend → texto), lo pasa la pantalla */
     @Input() nombresListas: { [clave: string]: string } = {};
-    /* Producto del que se enseñan los suplementos: 'enrollable', 'mini' (Solar Mini, listas mini_*) o 'zip'
-       (Cajón ZIP, listas zip_*); los dos últimos sin sistema */
+    /* Producto del que se enseñan los suplementos: 'enrollable', 'mini' (Solar Mini, listas mini_*), 'zip'
+       (Cajón ZIP, listas zip_*) o 'ver' (Vertical, listas ver_*, con el tipo de vertical en "grupo"); sin sistema
+       salvo el enrollable */
     @Input() producto = 'enrollable';
 
     /* Prefijo de las listas de cada producto sin sistema; el enrollable son las que no llevan ninguno */
-    private readonly PREFIJOS = ['mini_', 'zip_'];
+    private readonly PREFIJOS = ['mini_', 'zip_', 'ver_'];
 
     lineas: any[] = [];
     filtradas: any[] = [];
     clientes: any[] = [];
     filtroLista = '';
     filtroCliente = '';
+    /* Vertical: tipo de vertical ("grupo" de cada línea) */
+    filtroGrupo = '';
     buscar = '';
     cargado = false;
 
@@ -58,9 +61,11 @@ export class AccSuplementosResumenComponent implements OnInit {
        getters: un getter crearía listas nuevas en cada ciclo y *ngFor recrearía las opciones) */
     listasConSuplemento: string[] = [];
     clientesConSuplemento: any[] = [];
+    gruposConSuplemento: string[] = [];
 
     private opcionesFiltro() {
         this.listasConSuplemento = Array.from(new Set(this.lineas.map(l => l.clave)));
+        this.gruposConSuplemento = Array.from(new Set(this.lineas.map(l => l.grupo).filter(g => !!g))).sort();
         const vistos = {};
         this.clientesConSuplemento = this.lineas.filter(l => l.cliente !== null && !vistos[l.cliente] && (vistos[l.cliente] = true))
             .map(l => ({ id: l.cliente, nombre: l.cliente_nombre }));
@@ -71,6 +76,7 @@ export class AccSuplementosResumenComponent implements OnInit {
         const texto = this.normalizar(this.buscar);
         this.filtradas = this.lineas.filter(l =>
             (!this.filtroLista || l.clave === this.filtroLista) &&
+            (!this.filtroGrupo || l.grupo === this.filtroGrupo) &&
             (!this.filtroCliente || (this.filtroCliente === 'general' ? l.cliente === null : String(l.cliente) === this.filtroCliente)) &&
             (!texto || this.normalizar(l.elemento_nombre).indexOf(texto) >= 0));
     }

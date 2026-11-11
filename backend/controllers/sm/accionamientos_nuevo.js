@@ -13,6 +13,9 @@ const sql = require('mssql');
  * clave del catálogo, nunca un nombre de tabla.
  */
 
+/* Listas del Vertical: cuelgan del tipo de vertical y cada tipo tiene las suyas */
+const POR_TIPO_VERTICAL = { padre: 'tipo_id', tablaPadre: 'SOL_ACC_VER_TIPO', codigoPorPadre: true, nombrePadre: true, copiable: true };
+
 /* padre: columna FK; tablaPadre: catálogo del que cuelga;
    codigoPadre: código obligatorio del registro padre (TIPO_CADENA solo bajo CADENA...) */
 const CATALOGOS = {
@@ -57,7 +60,20 @@ const CATALOGOS = {
   zip_colores:           { tabla: 'SOL_ACC_ZIP_COLOR', sinSistema: true,
                            extras: [{ columna: 'ral', max: 20 }, { columna: 'hex', max: 7, patron: /^#[0-9A-F]{6}$/, mayusculas: true,
                                       error: 'El color hex tiene que ser # y 6 cifras hexadecimales (p. ej. #FFFFFF)' }] },
-  zip_lacados:           { tabla: 'SOL_ACC_ZIP_LACADO', sinSistema: true }
+  zip_lacados:           { tabla: 'SOL_ACC_ZIP_LACADO', sinSistema: true },
+  /* Vertical (sqlVertical/01): producto propio, sin sistemas. La raíz es el tipo de vertical (fijo: NORMAL, INCLINADA,
+     VIENA) y cada tipo tiene SUS PROPIAS listas (padre tipo_id; código y nombre únicos dentro del tipo: codigoPorPadre).
+     fijo: no se dan de alta ni se borran registros (solo renombrar, ordenar, ocultar y suplementos).
+     nombrePadre: en los suplementos el elemento se enseña con su tipo delante ("Viena · Derecha").
+     copiable: se pueden copiar los registros de un tipo a otro (POST /acc/:catalogo/copiar) */
+  ver_tipos:                 { tabla: 'SOL_ACC_VER_TIPO', sinSistema: true, fijo: true, grupoPropio: true, protegidos: ['NORMAL', 'INCLINADA', 'VIENA'] },
+  ver_modalidades:           { tabla: 'SOL_ACC_VER_MODALIDAD', sinSistema: true, fijo: true, protegidos: ['COMPLETA', 'SOLO_MECANISMO', 'SOLO_TEJIDO'] },
+  ver_anchos_lama:           { tabla: 'SOL_ACC_VER_ANCHO_LAMA', sinSistema: true, valor: true, positivo: true, unidad: 'mm', ...POR_TIPO_VERTICAL },
+  ver_posiciones_mecanismo:  { tabla: 'SOL_ACC_VER_POSICION_MECANISMO', sinSistema: true, ...POR_TIPO_VERTICAL },
+  ver_colores_riel:          { tabla: 'SOL_ACC_VER_COLOR_RIEL', sinSistema: true, ...POR_TIPO_VERTICAL },
+  ver_accionamientos:        { tabla: 'SOL_ACC_VER_ACCIONAMIENTO', sinSistema: true, ...POR_TIPO_VERTICAL },
+  ver_soportes:              { tabla: 'SOL_ACC_VER_SOPORTE', sinSistema: true, ...POR_TIPO_VERTICAL },
+  ver_recogidas:             { tabla: 'SOL_ACC_VER_RECOGIDA', sinSistema: true, ...POR_TIPO_VERTICAL }
 };
 
 /* Relaciones N:M: origen = registro que se edita, destino = opciones que se marcan */
@@ -107,7 +123,10 @@ const RELACIONES = {
   zip_guia_color:              { tabla: 'SOL_ACC_ZIP_GUIA_COLOR', origen: 'guia_id', destino: 'color_id',
                                  catOrigen: 'zip_guias', catDestino: 'zip_colores' },
   zip_contrapeso_color:        { tabla: 'SOL_ACC_ZIP_CONTRAPESO_COLOR', origen: 'contrapeso_id', destino: 'color_id',
-                                 catOrigen: 'zip_contrapesos', catDestino: 'zip_colores' }
+                                 catOrigen: 'zip_contrapesos', catDestino: 'zip_colores' },
+  /* Vertical (sqlVertical/01): modalidades de cada tipo (la Inclinada, solo la completa) */
+  ver_tipo_modalidad:          { tabla: 'SOL_ACC_VER_TIPO_MODALIDAD', origen: 'tipo_id', destino: 'modalidad_id',
+                                 catOrigen: 'ver_tipos', catDestino: 'ver_modalidades' }
 };
 
 /* El código se usará en las reglas de fabricación: mayúsculas, números y _ */
@@ -179,13 +198,21 @@ function usoExterno(tabla, n) {
   return `${n} en ${tabla}`;
 }
 
-/* Código libre en la tabla a partir de una base: BASE, BASE_2, BASE_3... */
-async function codigoLibre(pool, tabla, base, id) {
-  const result = await pool.request()
+/* Código libre en la tabla a partir de una base: BASE, BASE_2, BASE_3...
+   padre { columna, valor }: el código solo tiene que ser único dentro de su padre (listas del Vertical: la
+   «Derecha» de la Normal y la de la Viena son DERECHA las dos) */
+async function codigoLibre(pool, tabla, base, id, padre) {
+  const request = pool.request()
     .input('base', sql.VarChar(50), base)
     .input('patron', sql.VarChar(60), base.replace(/_/g, '[_]') + '%')
-    .input('id', sql.Int, id)
-    .query(`select codigo from dbo.${tabla} where (codigo = @base or codigo like @patron) and id <> @id`);
+    .input('id', sql.Int, id);
+  let filtroPadre = '';
+  if (padre) {
+    request.input('padre', sql.Int, padre.valor);
+    filtroPadre = ` and ${padre.columna} = @padre`;
+  }
+  const result = await request
+    .query(`select codigo from dbo.${tabla} where (codigo = @base or codigo like @patron) and id <> @id${filtroPadre}`);
   const usados = new Set(result.recordset.map(r => r.codigo));
   if (!usados.has(base)) return base;
   let n = 2;
@@ -257,7 +284,9 @@ async function guardar(req, res) {
   const padre = entero(body[cat.padre]);
   let codigo = texto(body.codigo, 50).toUpperCase();
 
+  if (cat.fijo && id <= 0) return res.status(400).send({ message: 'Esta lista es fija: no se pueden añadir registros' });
   if (cat.valor && valor === null) return res.status(400).send({ message: 'El valor tiene que ser un número' });
+  if (cat.positivo && valor <= 0) return res.status(400).send({ message: 'El valor tiene que ser mayor que 0' });
   if (!cat.valor && !nombre) return res.status(400).send({ message: 'El nombre no puede estar vacío' });
   if (codigo && !CODIGO.test(codigo)) return res.status(400).send({ message: 'Código no válido: use letras, números o _' });
 
@@ -299,7 +328,7 @@ async function guardar(req, res) {
       } else {
         const base = codigoDesde(nombre || (valor !== null ? String(valor) : ''));
         if (!base) return res.status(400).send({ message: 'No se puede generar el código: escriba uno en Avanzado' });
-        codigo = await codigoLibre(pool, cat.tabla, base, id);
+        codigo = await codigoLibre(pool, cat.tabla, base, id, cat.codigoPorPadre ? { columna: cat.padre, valor: padre } : null);
       }
     }
 
@@ -392,6 +421,7 @@ async function borrar(req, res) {
   if (!cat) return res.status(400).send({ message: 'Catálogo no válido' });
   const id = entero((req.body || {}).id);
   if (id === null) return res.status(400).send({ message: 'Falta el registro' });
+  if (cat.fijo) return res.status(400).send({ message: 'Esta lista es fija: no se pueden borrar registros. Puede ocultarlo' });
   try {
     const pool = await sql.connect();
     if (cat.protegidos) {
@@ -557,7 +587,15 @@ const CATALOGOS_CADENA = ['tipos_cadena', 'alturas', 'colores_cadena'];
 
 /* Nombre que se enseña de un elemento (las alturas pueden no tener nombre: su valor en cm) */
 function nombreElemento(cat, alias) {
-  return cat.valor ? `isnull(${alias}.nombre, cast(cast(${alias}.valor as float) as varchar(20)) + ' cm')` : `${alias}.nombre`;
+  const propio = cat.valor
+    ? `isnull(${alias}.nombre, cast(cast(${alias}.valor as float) as varchar(20)) + ' ${cat.unidad || 'cm'}')` : `${alias}.nombre`;
+  /* Listas del Vertical: con su tipo delante ("Viena · Derecha"), porque cada tipo tiene las suyas */
+  return cat.nombrePadre ? `${nombrePadre(cat, alias)} + ' · ' + ${propio}` : propio;
+}
+
+/* Nombre del registro del que cuelga (el tipo de vertical); null si el catálogo no lo enseña */
+function nombrePadre(cat, alias) {
+  return cat.nombrePadre ? `(select p.nombre from dbo.${cat.tablaPadre} p where p.id = ${alias}.${cat.padre})` : 'null';
 }
 
 async function elementoExiste(pool, cat, id) {
@@ -706,11 +744,13 @@ async function suplementos_resumen(req, res) {
     const pool = await sql.connect();
     const nombres = Object.keys(CATALOGOS).map(clave => {
       const cat = CATALOGOS[clave];
-      return `select '${clave}' as clave, '${cat.tabla}' as tabla, x.id, ${nombreElemento(cat, 'x')} as nombre, x.activo from dbo.${cat.tabla} x`;
+      /* grupo: el tipo de vertical de las listas del Vertical (para filtrar el resumen por tipo) */
+      return `select '${clave}' as clave, '${cat.tabla}' as tabla, x.id, ${nombreElemento(cat, 'x')} as nombre,
+                     cast(${cat.grupoPropio ? 'x.nombre' : nombrePadre(cat, 'x')} as varchar(100)) as grupo, x.activo from dbo.${cat.tabla} x`;
     }).join(' union all ');
     const r = await pool.request().query(`
       with elementos as (${nombres})
-      select e.clave, e.nombre as elemento_nombre, e.activo as elemento_activo, sup.*
+      select e.clave, e.nombre as elemento_nombre, e.grupo, e.activo as elemento_activo, sup.*
       from (${SELECT_SUPLEMENTO}) sup
       join elementos e on e.tabla = sup.catalogo and e.id = sup.elemento_id
       order by e.clave, e.nombre, sup.cliente_nombre, sup.sistema_nombre, sup.medida, sup.hasta`);
@@ -832,9 +872,13 @@ async function guardarTejidos(req, res, pool, destino) {
   }
 }
 
-/* La lista pasa a tener exactamente los tejidos de un sistema del enrollable (los suyos de antes se
-   quitan). Todo en una transacción */
-async function copiarTejidos(req, res, pool, destino, origen) {
+/* Lista de la que se copia: un sistema del enrollable (por defecto) u otro tipo de vertical */
+const ORIGEN_SISTEMA = { tabla: 'SOL_ACC_SISTEMA_TEJIDO', columna: 'sistema_id' };
+const ORIGEN_TIPO_VERTICAL = { tabla: 'SOL_ACC_VER_TIPO_TEJIDO', columna: 'tipo_id' };
+
+/* La lista pasa a tener exactamente los tejidos de la lista origen (los suyos de antes se quitan).
+   Todo en una transacción */
+async function copiarTejidos(req, res, pool, destino, origen, lista = ORIGEN_SISTEMA) {
   const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
   const columnas = destino.clave.map(k => k.columna).concat(['tejido', 'usuario']).join(', ');
   const valores = destino.clave.map(k => '@' + k.param).concat(['st.tejido', '@usuario']).join(', ');
@@ -850,7 +894,7 @@ async function copiarTejidos(req, res, pool, destino, origen) {
       .query(`
         delete from dbo.${destino.tabla}${where ? ' where ' + where : ''};
         insert into dbo.${destino.tabla} (${columnas})
-        select ${valores} from dbo.SOL_ACC_SISTEMA_TEJIDO st where st.sistema_id = @origen`);
+        select ${valores} from dbo.${lista.tabla} st where st.${lista.columna} = @origen`);
     await transaction.commit();
 
     res.status(200).send({ message: 'OK', disponibles: await disponibles(pool, destino) });
@@ -933,7 +977,129 @@ function tejidosSinSistema(destino) {
 const TEJIDOS_MINI = tejidosSinSistema(DESTINO_MINI);
 const TEJIDOS_ZIP = tejidosSinSistema(DESTINO_ZIP);
 
+/* ---------------- VERTICAL: TEJIDOS POR TIPO (sqlVertical/01) ---------------- */
+
+/* Una lista por tipo de vertical (SOL_ACC_VER_TIPO_TEJIDO); vale para cualquier ancho de lama */
+function destinoTipoVertical(tipo) {
+  return { tabla: 'SOL_ACC_VER_TIPO_TEJIDO', clave: [{ columna: 'tipo_id', param: 'tipo', valor: tipo }] };
+}
+
+async function tipoVerticalValido(pool, tipo) {
+  if (tipo === null) return false;
+  const r = await pool.request().input('tipo', sql.Int, tipo).query('select 1 as ok from dbo.SOL_ACC_VER_TIPO where id = @tipo');
+  return r.recordset.length > 0;
+}
+
+/* GET /acc/ver/tejidos/:tipo */
+async function ver_tejidos(req, res) {
+  const tipo = entero(req.params.tipo);
+  try {
+    const pool = await sql.connect();
+    if (!await tipoVerticalValido(pool, tipo)) return res.status(400).send({ message: 'Tipo de vertical no válido' });
+  } catch (err) {
+    return errorSql(err, res);
+  }
+  return leerTejidos(res, destinoTipoVertical(tipo));
+}
+
+/* POST /acc/ver/tejidos/:tipo { ids: [...], disponible } */
+async function ver_tejidos_guardar(req, res) {
+  const tipo = entero(req.params.tipo);
+  try {
+    const pool = await sql.connect();
+    if (!await tipoVerticalValido(pool, tipo)) return res.status(400).send({ message: 'Tipo de vertical no válido' });
+    return guardarTejidos(req, res, pool, destinoTipoVertical(tipo));
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/ver/tejidos/:tipo/copiar { origen } — el tipo queda con los tejidos de otro tipo de vertical */
+async function ver_tejidos_copiar(req, res) {
+  const tipo = entero(req.params.tipo);
+  const origen = entero((req.body || {}).origen);
+  if (origen === tipo) return res.status(400).send({ message: 'Elija otro tipo del que copiar' });
+  try {
+    const pool = await sql.connect();
+    if (!await tipoVerticalValido(pool, tipo) || !await tipoVerticalValido(pool, origen)) {
+      return res.status(400).send({ message: 'Tipo de vertical no válido' });
+    }
+    return copiarTejidos(req, res, pool, destinoTipoVertical(tipo), origen, ORIGEN_TIPO_VERTICAL);
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* ---------------- COPIAR UNA LISTA DE UN PADRE A OTRO (listas del Vertical) ---------------- */
+
+/* POST /acc/:catalogo/copiar { origen, destino } — añade al padre destino (tipo de vertical) los registros del
+   origen que aún no tenga (mismo código, nombre o valor), al final de su lista y con sus suplementos.
+   No quita ni cambia nada de lo que ya tiene. Todo en una transacción */
+async function copiar(req, res) {
+  const cat = CATALOGOS[req.params.catalogo];
+  if (!cat) return res.status(400).send({ message: 'Catálogo no válido' });
+  if (!cat.copiable) return res.status(400).send({ message: 'Esta lista no se puede copiar' });
+  const body = req.body || {};
+  const origen = entero(body.origen);
+  const destino = entero(body.destino);
+  if (origen === null || destino === null) return res.status(400).send({ message: 'Faltan el origen o el destino' });
+  if (origen === destino) return res.status(400).send({ message: 'Elija otro del que copiar' });
+
+  /* Columnas que se copian (el padre y el orden se ponen aparte; el código se conserva: es único dentro del padre) */
+  const columnas = ['codigo', 'nombre', 'nombre_pt'].concat(cat.valor ? ['valor'] : [], ['activo']);
+  /* Ya lo tiene si coincide el código, el nombre (no vacío) o el valor */
+  const repetido = ['d.codigo = o.codigo', 'd.nombre = o.nombre'].concat(cat.valor ? ['d.valor = o.valor'] : []).join(' or ');
+
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    const padres = await pool.request().input('origen', sql.Int, origen).input('destino', sql.Int, destino)
+      .query(`select id from dbo.${cat.tablaPadre} where id in (@origen, @destino)`);
+    if (padres.recordset.length !== 2) return res.status(400).send({ message: 'El origen o el destino no existen' });
+
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const nuevos = await new sql.Request(transaction).input('origen', sql.Int, origen).input('destino', sql.Int, destino).query(`
+      select o.id from dbo.${cat.tabla} o
+      where o.${cat.padre} = @origen
+        and not exists (select 1 from dbo.${cat.tabla} d where d.${cat.padre} = @destino and (${repetido}))
+      order by o.orden, o.${cat.valor ? 'valor' : 'nombre'}`);
+
+    for (const fila of nuevos.recordset) {
+      const r = await new sql.Request(transaction)
+        .input('id', sql.Int, fila.id).input('destino', sql.Int, destino).input('tabla', sql.VarChar(50), cat.tabla)
+        .query(`
+          declare @nuevo table (id int);
+          insert into dbo.${cat.tabla} (${cat.padre}, ${columnas.join(', ')}, orden)
+          output inserted.id into @nuevo
+          select @destino, ${columnas.join(', ')},
+                 (select isnull(max(orden), 0) + 1 from dbo.${cat.tabla} where ${cat.padre} = @destino)
+          from dbo.${cat.tabla} where id = @id;
+          insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, cliente, sistema_id, medida, hasta, importe, activo)
+          select s.catalogo, n.id, s.cliente, s.sistema_id, s.medida, s.hasta, s.importe, s.activo
+          from dbo.SOL_ACC_SUPLEMENTO s cross join @nuevo n
+          where s.catalogo = @tabla and s.elemento_id = @id;
+          select id from @nuevo`);
+      if (!r.recordset[0]) throw new Error('No se pudo copiar el registro ' + fila.id);
+    }
+    await transaction.commit();
+
+    const total = await pool.request().input('origen', sql.Int, origen)
+      .query(`select count(*) as n from dbo.${cat.tabla} where ${cat.padre} = @origen`);
+    res.status(200).send({ message: 'OK', copiados: nuevos.recordset.length, yaEstaban: total.recordset[0].n - nuevos.recordset.length });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
 module.exports = {
+  ver_tejidos,
+  ver_tejidos_guardar,
+  ver_tejidos_copiar,
+  copiar,
   mini_tejidos: TEJIDOS_MINI.leer,
   mini_tejidos_guardar: TEJIDOS_MINI.guardar,
   mini_tejidos_copiar: TEJIDOS_MINI.copiar,

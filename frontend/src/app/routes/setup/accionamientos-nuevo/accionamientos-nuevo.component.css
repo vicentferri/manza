@@ -316,6 +316,7 @@
 /* ---------- Tejidos disponibles ---------- */
 
 .acc-tej-filtro { max-width: 230px; }
+.acc-copiar-select { max-width: 200px; }
 .acc-tej-check { width: 34px; text-align: center; }
 .acc-tej-grupo { cursor: pointer; }
 .acc-tej-tabla .acc-matriz-modelo td:first-child { padding-left: 0.3rem; }

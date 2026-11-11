@@ -569,6 +569,10 @@ smapi.post('/acc/mini/tejidos/copiar', NuevoSistema, AccionamientosNuevoControll
 smapi.get('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos);
 smapi.post('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos_guardar);
 smapi.post('/acc/zip/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.zip_tejidos_copiar);
+/* Tejidos del Vertical (sqlVertical/01): una lista por tipo de vertical; se puede copiar de otro tipo */
+smapi.get('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos);
+smapi.post('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos_guardar);
+smapi.post('/acc/ver/tejidos/:tipo/copiar', NuevoSistema, AccionamientosNuevoController.ver_tejidos_copiar);
 smapi.get('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion_guardar);
 smapi.get('/acc/matriz/motores', NuevoSistema, AccionamientosNuevoController.matriz_motores);
@@ -593,6 +597,8 @@ smapi.post('/acc/:catalogo', NuevoSistema, AccionamientosNuevoController.guardar
 smapi.post('/acc/:catalogo/visible', NuevoSistema, AccionamientosNuevoController.visible);
 smapi.post('/acc/:catalogo/orden', NuevoSistema, AccionamientosNuevoController.orden);
 smapi.post('/acc/:catalogo/delete', NuevoSistema, AccionamientosNuevoController.borrar);
+/* Copia los registros de un padre a otro (listas del Vertical: de un tipo de vertical a otro) */
+smapi.post('/acc/:catalogo/copiar', NuevoSistema, AccionamientosNuevoController.copiar);
 
 /* Configurador nuevo de accionamientos (clientes con el interruptor SOL_ACC_CLIENTE; Leroy no pasa por aquí) */
 var AccConfiguradorController = require('../controllers/sm/acc_configurador');

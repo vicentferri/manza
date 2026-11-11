@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
 
@@ -13,16 +13,20 @@ import { ToastrService } from 'ngx-toastr';
  * Cada cambio se guarda al momento; si falla, las casillas vuelven a como estaban.
  * producto = 'mini' (Solar Mini, sqlSolarMini/01) o 'zip' (Cajón ZIP, sqlCajonZip/01): una sola lista sin
  * sistema (SOL_ACC_MINI_TEJIDO / SOL_ACC_ZIP_TEJIDO); "Copiar" la deja con los tejidos de un sistema del enrollable.
+ * producto = 'ver' (Vertical, sqlVertical/01): una lista por tipo de vertical (SOL_ACC_VER_TIPO_TEJIDO). El tipo lo
+ * elige la pantalla ([grupo]), sin selector propio; "Copiar" la deja con los tejidos de otro tipo.
  */
 @Component({
     selector: 'app-acc-tejidos',
     templateUrl: './acc-tejidos.component.html',
     styleUrls: ['./accionamientos-nuevo.component.css']
 })
-export class AccTejidosComponent implements OnInit {
+export class AccTejidosComponent implements OnInit, OnChanges {
 
     /* 'enrollable' (por sistema), 'mini' (Solar Mini) o 'zip' (Cajón ZIP): estos dos, una sola lista */
     @Input() producto = 'enrollable';
+    /* Vertical: id del tipo de vertical elegido en la pantalla */
+    @Input() grupo: number = null;
 
     private readonly NOMBRES = { mini: 'Solar Mini', zip: 'Cajón ZIP' };
 
@@ -52,15 +56,26 @@ export class AccTejidosComponent implements OnInit {
     ngOnInit() {
         /* En el Solar Mini los sistemas solo hacen falta como origen de "Copiar" */
         if (this.esMini) { this.cargar(); }
-        this.service.HTTP_Get('/sm/acc/sistemas').subscribe(
+        /* En el Vertical la lista es la de los tipos de vertical y el elegido lo marca la pantalla */
+        this.service.HTTP_Get(this.esVertical ? '/sm/acc/ver_tipos' : '/sm/acc/sistemas').subscribe(
             data => {
                 this.sistemas = data.Table || [];
                 if (this.esMini) { return; }
+                if (this.esVertical) { this.cambiarSistema(this.grupo); return; }
                 const primero = this.sistemas.find(s => s.activo) || this.sistemas[0];
                 if (primero) { this.cambiarSistema(primero.id); } else { this.cargado = true; }
             },
             () => this.toaster.error('Error al cargar los sistemas', 'Tejidos')
         );
+    }
+
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes.grupo && !changes.grupo.firstChange && this.esVertical) { this.cambiarSistema(this.grupo); }
+    }
+
+    /* Vertical: una lista por tipo de vertical (en lugar de por sistema) */
+    get esVertical(): boolean {
+        return this.producto === 'ver';
     }
 
     /* Producto con una sola lista, sin sistema (Solar Mini o Cajón ZIP). El nombre se mantiene por la plantilla */
@@ -80,11 +95,14 @@ export class AccTejidosComponent implements OnInit {
 
     /* Nombre de la lista que se edita, para los mensajes */
     get nombreLista(): string {
-        return this.esMini ? this.nombreProducto : (this.sistemaSel ? this.sistemaSel.nombre : '');
+        if (this.esMini) { return this.nombreProducto; }
+        const nombre = this.sistemaSel ? this.sistemaSel.nombre : '';
+        return this.esVertical ? 'la vertical ' + nombre : nombre;
     }
 
     private get url(): string {
-        return this.esMini ? '/sm/acc/' + this.producto + '/tejidos' : '/sm/acc/tejidos/' + this.sistema;
+        return this.esMini ? '/sm/acc/' + this.producto + '/tejidos'
+            : (this.esVertical ? '/sm/acc/ver/tejidos/' : '/sm/acc/tejidos/') + this.sistema;
     }
 
     get sistemaSel(): any {

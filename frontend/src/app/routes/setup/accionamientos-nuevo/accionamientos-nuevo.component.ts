@@ -18,6 +18,10 @@ import { ToastrService } from 'ngx-toastr';
  * El Cajón ZIP (sqlCajonZip/01, zip_* en el backend) tampoco tiene sistemas: la raíz es el modelo de cajón, que
  * marca sus soportes, salidas, colores, tipos de motor y guías; cada guía sus contrapesos y colores, y cada
  * contrapeso sus colores. Tejido (una lista), lacados (aislados) y suplementos aparte.
+ * El Vertical (sqlVertical/01, ver_* en el backend) tampoco tiene sistemas: la raíz es el tipo de vertical (Normal,
+ * Inclinada y Viena, fijos) y CADA TIPO TIENE SUS PROPIAS LISTAS (ancho de lama, posición del mecanismo, color del
+ * riel, accionamiento, soporte y recogida), que se pueden copiar de otro tipo. El tipo marca sus modalidades
+ * (completa, solo mecanismo, solo tejido) y tiene su lista de tejidos.
  */
 @Component({
     selector: 'app-accionamientos-nuevo',
@@ -32,7 +36,8 @@ export class AccionamientosNuevoComponent implements OnInit {
     readonly productos = [
         { id: 'enrollable', label: 'Enrollable' },
         { id: 'mini', label: 'Solar Mini' },
-        { id: 'zip', label: 'Cajón ZIP' }
+        { id: 'zip', label: 'Cajón ZIP' },
+        { id: 'ver', label: 'Vertical' }
     ];
     producto = 'enrollable';
 
@@ -63,6 +68,15 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'zip_lacados', paso: '', label: 'Lacados', ayuda: 'Siempre disponibles, aparte del color', icono: 'fa-paint-brush' },
         { id: 'zip_listas', paso: '', label: 'Listas de opciones', ayuda: 'Soportes, salidas, colores, mandos', icono: 'fa-list' },
         { id: 'zip_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
+    ];
+
+    /* Vertical, en el orden del configurador. Las secciones 2 y 3 son del tipo elegido arriba de ellas */
+    readonly seccionesVer = [
+        { id: 'ver_tipos', paso: '1', label: 'Tipo y modalidades', ayuda: 'Qué se puede pedir de cada tipo', icono: '' },
+        { id: 'ver_opciones', paso: '2', label: 'Opciones del tipo', ayuda: 'Lama, mecanismo, riel, accionamiento, soporte y recogida', icono: '' },
+        { id: 'ver_tejidos', paso: '3', label: 'Tejido', ayuda: 'Los que ofrece cada tipo', icono: '' },
+        { id: 'ver_modalidades', paso: '', label: 'Modalidades', ayuda: 'Nombres y suplementos', icono: 'fa-list' },
+        { id: 'ver_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
 
     secciones = this.seccionesEnrollable;
@@ -113,6 +127,24 @@ export class AccionamientosNuevoComponent implements OnInit {
     pestanaGuia = 'contrapesos';
     contrapesoSel: any = null;
 
+    /* Listas propias de cada tipo de vertical (pestañas de "Opciones del tipo"; claves de CATALOGOS del backend) */
+    readonly listasVer = [
+        { id: 'ver_anchos_lama', label: 'Ancho de lama', singular: 'ancho de lama', conValor: true, unidad: 'mm',
+          ayuda: 'Anchos de lama en mm. Si el tipo solo tiene uno (la Viena, 127), el configurador lo asigna sin preguntar.' },
+        { id: 'ver_posiciones_mecanismo', label: 'Posición del mecanismo', singular: 'posición del mecanismo', ayuda: '' },
+        { id: 'ver_colores_riel', label: 'Color del riel', singular: 'color del riel', ayuda: '' },
+        { id: 'ver_accionamientos', label: 'Accionamiento', singular: 'accionamiento', ayuda: 'El motor es una opción más (sin modelos ni mandos por ahora).' },
+        { id: 'ver_soportes', label: 'Soporte', singular: 'soporte', ayuda: '' },
+        { id: 'ver_recogidas', label: 'Recogida', singular: 'recogida', ayuda: '' }
+    ];
+    pestanaVer: any = this.listasVer[0];
+    /* Tipos de vertical (fijos) y el elegido; otrosTiposVer = origen de "Copiar" (campo, no getter: es un @Input) */
+    tiposVer: any[] = [];
+    tipoVerId: number = null;
+    otrosTiposVer: { id: number, nombre: string }[] = [];
+    tipoVerFila: any = null;
+    recargaVerTipo = 0;
+
     readonly listas = [
         { id: 'sistemas', label: 'Sistemas', singular: 'sistema', ayuda: 'Rhin, Duero, Sena deco... Se asignan a cada accionamiento en el paso 1. Su precio base sale de las tarifas del generador que tengan este sistema.' },
         /* colores: relación pieza → colores que admite (se marcan al elegir la pieza) */
@@ -140,8 +172,10 @@ export class AccionamientosNuevoComponent implements OnInit {
         accionamientos: 'Accionamientos', tipos_cadena: 'Tipos de cadena',
         alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores',
         zip_modelos_cajon: 'Modelos de cajón', zip_tipos_motor: 'Tipos de motor', zip_modelos_motor: 'Motores',
-        zip_guias: 'Guías', zip_contrapesos: 'Contrapesos', zip_lacados: 'Lacados'
-    }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini, <any[]>this.listasZip).map(l => ({ [l.id]: l.label })));
+        zip_guias: 'Guías', zip_contrapesos: 'Contrapesos', zip_lacados: 'Lacados',
+        ver_tipos: 'Tipos de vertical', ver_modalidades: 'Modalidades'
+    }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini, <any[]>this.listasZip, <any[]>this.listasVer)
+        .map(l => ({ [l.id]: l.label })));
 
     /* Los tipos de cadena y de motor cuelgan de los accionamientos fijos CADENA y MOTOR */
     accCadena: any = null;
@@ -185,7 +219,9 @@ export class AccionamientosNuevoComponent implements OnInit {
     cambiarProducto(id: string) {
         if (id === this.producto) { return; }
         this.producto = id;
-        this.secciones = id === 'mini' ? this.seccionesMini : id === 'zip' ? this.seccionesZip : this.seccionesEnrollable;
+        this.secciones = id === 'mini' ? this.seccionesMini : id === 'zip' ? this.seccionesZip
+            : id === 'ver' ? this.seccionesVer : this.seccionesEnrollable;
+        if (id === 'ver') { this.cargarTiposVer(); }
         this.cambiarSeccion(this.secciones[0].id);
     }
 
@@ -203,7 +239,33 @@ export class AccionamientosNuevoComponent implements OnInit {
         this.modeloMotorZipSel = null;
         this.guiaSel = null;
         this.contrapesoSel = null;
+        this.tipoVerFila = null;
         if (id === 'cadena' || id === 'motor') { this.cargarAccionamientos(); }
+        /* Los nombres de los tipos pueden haber cambiado en el paso 1 */
+        if (id === 'ver_opciones' || id === 'ver_tejidos') { this.cargarTiposVer(); }
+    }
+
+    /* Vertical: tipo elegido para las opciones y los tejidos (se conserva al cambiar de sección) */
+    elegirTipoVer(id: number) {
+        this.tipoVerId = id;
+        this.otrosTiposVer = this.tiposVer.filter(t => t.id !== id).map(t => ({ id: t.id, nombre: t.nombre }));
+    }
+
+    /* Paso 1: elegir un tipo en la lista también lo deja elegido para los pasos 2 y 3 */
+    seleccionTipoVer(fila: any) {
+        this.tipoVerFila = fila;
+        if (fila) { this.elegirTipoVer(fila.id); }
+    }
+
+    private cargarTiposVer() {
+        this.service.HTTP_Get('/sm/acc/ver_tipos').subscribe(
+            data => {
+                this.tiposVer = data.Table || [];
+                const actual = this.tiposVer.find(t => t.id === this.tipoVerId) || this.tiposVer[0];
+                if (actual) { this.elegirTipoVer(actual.id); }
+            },
+            () => this.toaster.error('Error al cargar los tipos de vertical', this.title)
+        );
     }
 
     /* Cajón ZIP: al cambiar de tipo de motor, el modelo elegido ya no vale */
