@@ -532,6 +532,8 @@ var FabricacionReglasController = require('../controllers/sm/fabricacion_reglas'
 smapi.get('/fabricacion/productos', NuevoSistema, FabricacionReglasController.productos);
 smapi.get('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistemas);
 smapi.post('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistema_add);
+/* sqlCajonZip/07: código y descripción del producto por defecto del juego */
+smapi.post('/fabricacion/sistemas/defecto', NuevoSistema, FabricacionReglasController.sistema_defecto);
 smapi.post('/fabricacion/sistemas/delete', NuevoSistema, FabricacionReglasController.sistema_delete);
 smapi.get('/fabricacion/clientes', NuevoSistema, FabricacionReglasController.clientes);
 smapi.get('/fabricacion/articulos', NuevoSistema, FabricacionReglasController.articulos);

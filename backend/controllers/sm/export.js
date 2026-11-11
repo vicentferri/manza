@@ -50,6 +50,10 @@ function getDetail_ID(req,res){
         sqlquery += " union ";
         sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol ";
         sqlquery += " from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION where idrow=(select id from SOL_PEDIDOS_COLA_TIPO_7 where idrow="+id+")";
+        /* Cajón ZIP del configurador nuevo (sqlCajonZip/08): fabricación por reglas en SOL_PEDIDOS_COLA_TIPO_6_FABRICACION */
+        sqlquery += " union ";
+        sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol ";
+        sqlquery += " from SOL_PEDIDOS_COLA_TIPO_6_FABRICACION where idrow=(select id from SOL_PEDIDOS_COLA_TIPO_6 where idrow="+id+" and nzip_modelo_cajon_id is not null)";
         sqlquery += " order by orden ";
     }     
 
@@ -108,6 +112,10 @@ function getDetail(req, res) {
                     sqlquery += " union ";
                     sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol from SOL_PEDIDOS_COLA_TIPO_7_FABRICACION where idrow in ( ";
                     sqlquery += "select id from SOL_PEDIDOS_COLA_TIPO_7 where idrow in (select id from sol_pedidos_cola_lineas where idrow="+id+" and tipo=7))";
+                    /* Cajón ZIP del configurador nuevo (sqlCajonZip/08) */
+                    sqlquery += " union ";
+                    sqlquery += "select id,idpedido,articulo,descripcion,cantidad,unidad,orden,ubicacion,consumo,descunidad,isnull(cod_sol,'') as cod_sol,fam_sol from SOL_PEDIDOS_COLA_TIPO_6_FABRICACION where idrow in ( ";
+                    sqlquery += "select id from SOL_PEDIDOS_COLA_TIPO_6 where nzip_modelo_cajon_id is not null and idrow in (select id from sol_pedidos_cola_lineas where idrow="+id+" and tipo=6))";
                 }
 
                

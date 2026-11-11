@@ -61,6 +61,19 @@
       </h6>
     </div>
 
+    <!-- sqlCajonZip/07: código y descripción del producto cuando ninguna regla de código o descripción se cumple -->
+    <div class="ml-3 mr-3 mt-2 fab-defecto" *ngIf="usaReglasProducto && sistema">
+      <div class="form-inline">
+        <span class="mr-2"><i class="fa fa-tag"></i> <b>Producto en el XML</b> por defecto:</span>
+        <label class="small mr-1">Código</label>
+        <input class="form-control form-control-sm mr-3" style="width: 140px" maxlength="50" [(ngModel)]="defecto.codigo" placeholder="API.001" />
+        <label class="small mr-1">Descripción</label>
+        <input class="form-control form-control-sm mr-2" style="width: 220px" maxlength="100" [(ngModel)]="defecto.descripcion" placeholder="CAJON ZIP" />
+        <button class="btn btn-outline-primary btn-sm" [disabled]="guardandoDefecto" (click)="GuardarDefecto()"><i class="fa fa-save"></i>&nbsp;Guardar</button>
+        <small class="text-muted ml-3">Se usan si ninguna regla de <b>Código</b> o <b>Descripción</b> se cumple. Si se cumplen varias, gana la de menor orden.</small>
+      </div>
+    </div>
+
     <div class="ml-2 mr-2 mt-2">
       <tabset>
         <!-- ======================= PARAMETROS ======================= -->
@@ -396,6 +409,24 @@
               </div>
             </div>
 
+            <!-- sqlCajonZip/07: código y descripción del producto que han salido en cada línea -->
+            <div class="row mt-2" *ngIf="simProducto.length > 0">
+              <div class="col-12">
+                <table class="table table-sm table-bordered mb-0 fab-sim-producto">
+                  <thead class="thead-light">
+                    <tr><th style="width: 50px">Pos</th><th>Código (&lt;Articulo&gt;)</th><th>Descripción (&lt;Descripcion&gt;)</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of simProducto">
+                      <td>{{ p.idpedido }}</td>
+                      <td><b>{{ p.codigo }}</b> <small class="text-muted">· {{ p.codigo_regla ? 'regla ' + p.codigo_orden + ' ' + p.codigo_regla : 'por defecto' }}</small></td>
+                      <td><b>{{ p.descripcion }}</b> <small class="text-muted">· {{ p.descripcion_regla ? 'regla ' + p.descripcion_orden + ' ' + p.descripcion_regla : 'por defecto' }}</small></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div class="row mt-2">
               <div class="form-group col-3">
                 <jqxGrid #gridReference4 [auto-create]="false" (onBindingcomplete)="ajustarColumnasSimulacion()"></jqxGrid>
@@ -447,7 +478,16 @@
             <div class="col-md-6">
               <label>Elemento</label>
               <input class="form-control form-control-sm" [(ngModel)]="regla.atributo" maxlength="50"
-                placeholder="PERFIL, TAPAS, VARILLA…" />
+                [placeholder]="regla.tipo_regla ? 'Nombre de la regla (p. ej. CODIGO CAJON 100)' : 'PERFIL, TAPAS, VARILLA…'" />
+            </div>
+          </div>
+          <!-- sqlCajonZip/07: además de componentes, una regla puede decidir el código o la descripción del producto en el XML -->
+          <div class="form-row mt-2" *ngIf="usaReglasProducto || regla.tipo_regla">
+            <div class="col-md-12">
+              <label>Tipo de regla</label>
+              <select class="form-control form-control-sm" [(ngModel)]="regla.tipo_regla">
+                <option *ngFor="let t of tiposRegla" [value]="t.valor">{{ t.texto }}</option>
+              </select>
             </div>
           </div>
         </div>
@@ -504,8 +544,17 @@
           <div class="fab-resumen"><i class="fa fa-info-circle"></i> {{ resumenRegla() }}</div>
         </div>
 
+        <!-- sqlCajonZip/07: lo que decide una regla de código o descripción (texto fijo) -->
+        <div class="fab-seccion" *ngIf="regla.tipo_regla">
+          <div class="fab-seccion-titulo">¿Qué decide?</div>
+          <label>{{ regla.tipo_regla == 'CODIGO' ? 'Código del producto (campo Articulo del XML)' : 'Descripción del producto (campo Descripcion del XML)' }}</label>
+          <input class="form-control form-control-sm" [(ngModel)]="regla.resultado" [maxlength]="regla.tipo_regla == 'CODIGO' ? 50 : 100"
+            [placeholder]="regla.tipo_regla == 'CODIGO' ? 'ZIP.100R' : 'CAJON ZIP LACADO'" />
+          <small class="text-muted">Texto fijo. Gana la primera regla de este tipo que se cumple (por orden); si no se cumple ninguna, el valor por defecto del juego.</small>
+        </div>
+
         <!-- Artículos y consumo -->
-        <div class="fab-seccion">
+        <div class="fab-seccion" *ngIf="!regla.tipo_regla">
           <div class="fab-seccion-titulo">
             ¿Qué añade?
             <button class="btn btn-outline-primary btn-sm float-right" (click)="AbrirBuscador()">
@@ -558,7 +607,7 @@
           </div>
         </div>
 
-        <div class="fab-seccion">
+        <div class="fab-seccion" *ngIf="!regla.tipo_regla">
           <div class="fab-seccion-titulo" style="cursor: pointer" (click)="medidasAbiertas = !medidasAbiertas">
             <i class="fa" [ngClass]="medidasAbiertas ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
             Medidas del componente (fichero de producción)
