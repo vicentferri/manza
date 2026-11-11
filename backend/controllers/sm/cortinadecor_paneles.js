@@ -9,7 +9,7 @@
  *   SOLO PANELES  trae "NÚMERO DE PANELES" y el ancho de cada panel:  precio = tejido
  *
  *   Mecanismo : hoja MECANISMO PANEL, tabla "<vías> VIAS BLANCO", celda por el ancho total (escalón superior).
- *               Vías = nº de paneles; con recogida a ambos lados, la mitad (hacia arriba).
+ *               Vías = nº de paneles, sea cual sea la recogida (también a ambos lados).
  *   Tejido    : hoja TEJIDO PANEL. Ancho de cada panel = ancho total / nº de paneles + 7 cm (COMPLETO) o el ancho
  *               que llega (SOLO PANELES). Celda (ancho del panel x alto), redondeada a céntimos, x nº de paneles.
  *               Tabla: reglas del panel de tarifas -> tejido del diccionario (+ ASIA) -> nombre de la referencia
@@ -172,10 +172,11 @@ function revisarPanel(linea, ref) {
 
   /* Mecanismo (solo panel completo) */
   if (completo) {
-    const ambos = /AMBOS/.test(recogida || '');
-    const vias = ambos ? Math.ceil(paneles / 2) : paneles;
+    /* Vías = nº de paneles, también con recogida a ambos lados (pedido 335548: 4 paneles a ambos lados, tabla de 4 vías;
+       la mitad de las vías era una suposición mía a partir de una sola línea y no cuadra) */
+    const vias = paneles;
     panel.vias = vias;
-    panel.vias_texto = paneles + ' paneles' + (ambos ? ', recogida a ambos lados → ' + vias + ' vías por lado' : ' → ' + vias + ' vías');
+    panel.vias_texto = paneles + ' paneles → ' + vias + ' vías';
     if (colorRiel && colorRiel !== 'BLANCO') avisos.push('Riel ' + colorRiel + ': solo hay tablas de mecanismo en blanco, se usa la de blanco');
     const clave = vias + ' VIAS BLANCO';
     const tm = ref.mecanismos.find(t => t.hoja === HOJA_MECANISMO && t.clave === clave && m.vigente(t, fecha));

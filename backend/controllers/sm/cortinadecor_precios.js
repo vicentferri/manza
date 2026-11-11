@@ -35,9 +35,10 @@ const Paneles = require('./cortinadecor_paneles');
  */
 
 const PRODUCTOS_VALORADOS = [1, 3];
-/* Productos que lleva el XML de producción (sp_fichero_produccion_cd_2_V2 por _producto): las líneas sin producto, como las
-   piezas sueltas, no salen en el XML y no tiene sentido aplicarles nuestro precio */
-const PRODUCTOS_XML = [1, 2, 3, 5];
+/* Productos que lleva el XML de producción: un bloque por _producto en sp_fichero_produccion_cd_2_V2 (1 enrollable,
+   2 panel japonés, 3 vertical, 5 impresión digital, 7 menorca y 9 pieza suelta, que el diccionario asigna a las piezas).
+   Las líneas sin producto (cargadas antes de dar de alta su modelo en el diccionario) no salen en el XML */
+const PRODUCTOS_XML = [1, 2, 3, 5, 7, 9];
 const PRODUCTO_PIEZA = 9;     // "producto" de las reglas de incremento que valoran piezas sueltas (14_piezas_sueltas.sql)
 const TOLERANCIA = 0.02;      // € por unidad: diferencias de redondeo
 const ATRIBUTO_COLOR = 'COLOR DE LA LINEA';   // condición de incremento sobre el color que envían (p. ej. COMBINADAS)
@@ -511,6 +512,7 @@ async function revisar(pool, filtro, opciones) {
     /* Nuestro precio ya aplicado a la línea (va al XML); null si la línea conserva el de CortinaDecor */
     r.precio_aplicado = l.cost_cd == null ? null : Number(l.cost_actual);
     r.en_xml = PRODUCTOS_XML.includes(l._producto);
+    r.producto = l._producto == null ? null : l._producto;   // _producto asignado por el diccionario (diagnóstico de en_xml)
     return r;
   });
   if (!(opciones && opciones.sinGrabar)) await grabar(pool, resultados);
@@ -591,7 +593,8 @@ async function revision_pedido(req, res) {
     const resultados = await revisar(pool, { idrow });
     res.status(200).send({
       Table: resultados, resumen: resumen(resultados),
-      puede_aplicar: await hayCostCd(pool), xml_generado: await xmlGenerado(pool, idrow)
+      puede_aplicar: await hayCostCd(pool), xml_generado: await xmlGenerado(pool, idrow),
+      productos_xml: PRODUCTOS_XML   // lista que usa este código (diagnóstico de en_xml)
     });
   } catch (e) {
     console.log('cd_revision_pedido: ' + e.message);
