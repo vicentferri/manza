@@ -726,14 +726,15 @@ async function simular(req, res) {
       .query(`
         select p.cliente, c.descripcion as cliente_nombre,
                case when exists (select 1 from SOL_ARTICULOS_FABRICACION_RELACION_V2 r
-                                 where r.sistema = @sistema and r.cliente = p.cliente)
+                                 where r.sistema = @sistema and r.cliente = p.cliente and r.tipo_regla is null)
                     then 1 else 0 end as reglas_cliente
         from SOL_PEDIDOS_COLA p
         left join SOL_CLIENTES c on c.idrow = p.cliente
         where p.idrow = @idPedido`);
 
-    /* sqlCajonZip/07-08: código y descripción del producto de cada línea (si el producto los guarda) y la regla que
-       los decidió (NULL = el del juego por defecto) */
+    /* sqlCajonZip/07-08 y sqlReglasProducto: código y descripción del producto de cada línea (si el producto los guarda)
+       y la regla que los decidió (NULL = el del juego por defecto). La línea se numera como en la fabricación (posición
+       entre las líneas de ese tipo del pedido) y, en el enrollable, solo las del sistema elegido */
     let producto = [];
     const conCodigo = await pool.request().input('tabla', sql.NVarChar(128), 'dbo.' + sistema.tabla_origen)
       .query("select col_length(@tabla, 'fab_codigo') as n");
@@ -741,15 +742,17 @@ async function simular(req, res) {
       producto = (await pool.request()
         .input('idPedido', sql.Int, idPedido)
         .input('tipo', sql.Int, sistema.tipo_linea)
+        .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
         .query(`
-          select row_number() over (order by l.id) as idpedido, t.fab_codigo as codigo, t.fab_descripcion as descripcion,
+          select x.idpedido, t.fab_codigo as codigo, t.fab_descripcion as descripcion,
                  rc.orden as codigo_orden, rc.atributo as codigo_regla, rd.orden as descripcion_orden, rd.atributo as descripcion_regla
-          from dbo.[${sistema.tabla_origen}] t
-          join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
+          from (select cast(row_number() over (order by l.id) as int) as idpedido, l.id
+                from SOL_PEDIDOS_COLA_LINEAS l where l.idrow = @idPedido and l.tipo = @tipo) x
+          join dbo.[${sistema.tabla_origen}] t on t.idrow = x.id
           left join SOL_ARTICULOS_FABRICACION_RELACION_V2 rc on rc.idrow = t.fab_codigo_regla
           left join SOL_ARTICULOS_FABRICACION_RELACION_V2 rd on rd.idrow = t.fab_descripcion_regla
-          where l.idrow = @idPedido and t.fab_codigo is not null
-          order by l.id`)).recordset;
+          where (t.fab_codigo is not null or t.fab_descripcion is not null)${filtroSistema}
+          order by x.idpedido`)).recordset;
     }
 
     res.status(200).send({

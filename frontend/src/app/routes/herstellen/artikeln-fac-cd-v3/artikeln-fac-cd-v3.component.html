@@ -68,9 +68,10 @@
         <label class="small mr-1">Código</label>
         <input class="form-control form-control-sm mr-3" style="width: 140px" maxlength="50" [(ngModel)]="defecto.codigo" placeholder="API.001" />
         <label class="small mr-1">Descripción</label>
-        <input class="form-control form-control-sm mr-2" style="width: 220px" maxlength="100" [(ngModel)]="defecto.descripcion" placeholder="CAJON ZIP" />
+        <input class="form-control form-control-sm mr-2" style="width: 220px" maxlength="100" [(ngModel)]="defecto.descripcion" placeholder="ENROLLABLE" />
         <button class="btn btn-outline-primary btn-sm" [disabled]="guardandoDefecto" (click)="GuardarDefecto()"><i class="fa fa-save"></i>&nbsp;Guardar</button>
-        <small class="text-muted ml-3">Se usan si ninguna regla de <b>Código</b> o <b>Descripción</b> se cumple. Si se cumplen varias, gana la de menor orden.</small>
+        <small class="text-muted ml-3">Se usan si ninguna regla de <b>Código</b> o <b>Descripción</b> se cumple. Si se cumplen varias, gana la de menor orden.
+          Con Leroy la descripción del XML es siempre LEROY MERLIN.</small>
       </div>
     </div>
 
@@ -478,7 +479,7 @@
             <div class="col-md-6">
               <label>Elemento</label>
               <input class="form-control form-control-sm" [(ngModel)]="regla.atributo" maxlength="50"
-                [placeholder]="regla.tipo_regla ? 'Nombre de la regla (p. ej. CODIGO CAJON 100)' : 'PERFIL, TAPAS, VARILLA…'" />
+                [placeholder]="regla.tipo_regla ? 'Nombre de la regla (p. ej. CODIGO MOTORIZADO)' : 'PERFIL, TAPAS, VARILLA…'" />
             </div>
           </div>
           <!-- sqlCajonZip/07: además de componentes, una regla puede decidir el código o la descripción del producto en el XML -->
@@ -549,7 +550,7 @@
           <div class="fab-seccion-titulo">¿Qué decide?</div>
           <label>{{ regla.tipo_regla == 'CODIGO' ? 'Código del producto (campo Articulo del XML)' : 'Descripción del producto (campo Descripcion del XML)' }}</label>
           <input class="form-control form-control-sm" [(ngModel)]="regla.resultado" [maxlength]="regla.tipo_regla == 'CODIGO' ? 50 : 100"
-            [placeholder]="regla.tipo_regla == 'CODIGO' ? 'ZIP.100R' : 'CAJON ZIP LACADO'" />
+            [placeholder]="regla.tipo_regla == 'CODIGO' ? 'API.010' : 'ENROLLABLE MOTORIZADO'" />
           <small class="text-muted">Texto fijo. Gana la primera regla de este tipo que se cumple (por orden); si no se cumple ninguna, el valor por defecto del juego.</small>
         </div>
 
