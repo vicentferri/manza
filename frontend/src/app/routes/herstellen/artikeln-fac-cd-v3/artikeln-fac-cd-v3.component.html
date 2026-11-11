@@ -521,7 +521,7 @@
                   <option *ngFor="let v of opcionesValor(c); trackBy: trackValor" [value]="v.valor">{{ etiquetaValor(v) }}</option>
                 </select>
                 <input *ngIf="c.operador != 'entre' && !tieneValores(c)" class="form-control form-control-sm fab-condicion-valor"
-                  [(ngModel)]="c.valor" placeholder="valor" />
+                  [(ngModel)]="c.valor" [placeholder]="c.operador == '==' ? 'valor (* = cualquiera)' : 'valor'" />
                 <ng-container *ngIf="c.operador == 'entre'">
                   <input class="form-control form-control-sm fab-condicion-num" [(ngModel)]="c.desde" placeholder="desde" />
                   <span class="fab-condicion-y">y</span>

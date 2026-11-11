@@ -50,6 +50,8 @@ const CLAVE_COLUMNAS_OCULTAS = 'fab_v3_columnas_ocultas';
    que se fabrican por reglas (enrollable, Solar Mini, Cajón ZIP y HoneyComb). Para un producto nuevo del motor, añadirlo
    aquí cuando su fabricación guarde fab_codigo / fab_descripcion y su bloque del XML los lea */
 const PRODUCTOS_CON_CODIGO = [1, 4, 6, 7];
+/* sqlReglasProducto/04: valor de una condición "igual a" que significa «cualquiera» (la línea tiene algún valor) */
+const VALOR_CUALQUIERA = '*';
 const TIPOS_REGLA = [
   { valor: '', texto: 'Componente: añade artículos con su consumo' },
   { valor: 'CODIGO', texto: 'Código del producto (<Articulo> del XML)' },
@@ -290,6 +292,11 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     let errores = this.erroresCampo(fila, field);
     if (errores.length > 0) {
       return this.celda('<i class="fa fa-exclamation-circle"></i>&nbsp;' + this.escapeHtml(value || '(vacío)'), 'fab-code fab-error', errores.join('\n'));
+    }
+    /* sqlReglasProducto/04: en las condiciones, "== *" es «cualquiera» */
+    if (String(field).indexOf('nombre_parametro') == 0 && /==\s*\*\s*$/.test(String(value || ''))) {
+      return this.celda(this.escapeHtml(value) + ' <small class="text-muted">(cualquiera)</small>', 'fab-code',
+        value + ' (cualquiera: se cumple si la línea tiene algún valor)');
     }
     return this.celda(this.escapeHtml(value), 'fab-code', value);
   };
@@ -836,14 +843,19 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   opcionesValor(c: Condicion): { valor: string, texto: string }[] {
     let lista = this.valoresParametro[String(c.parametro).toUpperCase()] || [];
     let actual = String(c.valor || '').trim();
-    if (actual != '' && !lista.some(v => v.valor.toUpperCase() == actual.toUpperCase())) {
-      return [{ valor: actual, texto: actual + ' (no está en el catálogo)' }].concat(lista);
+    /* sqlReglasProducto/04: la primera opción es «cualquiera» (*): se cumple si la línea tiene algún valor */
+    let cualquiera = [{ valor: VALOR_CUALQUIERA, texto: '— cualquiera (tenga el valor que tenga) —' }];
+    if (actual != '' && actual != VALOR_CUALQUIERA && !lista.some(v => v.valor.toUpperCase() == actual.toUpperCase())) {
+      return cualquiera.concat([{ valor: actual, texto: actual + ' (no está en el catálogo)' }], lista);
     }
-    return lista;
+    return cualquiera.concat(lista);
   }
 
   /* En los parámetros de id se muestra el número y su nombre: "1 · BLANCO RAL 9016" */
   etiquetaValor(v: { valor: string, texto: string }): string {
+    if (v.valor == VALOR_CUALQUIERA) {
+      return v.texto;
+    }
     return v.valor.toUpperCase() == v.texto.toUpperCase() ? v.texto : v.valor + ' · ' + v.texto;
   }
 
@@ -853,7 +865,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   /* Al elegir otro parámetro, se ajusta el valor a como está escrito en el catálogo (o se vacía si no está) */
   CambiarParametroCondicion(c: Condicion) {
-    if (this.tieneValores(c)) {
+    /* «cualquiera» vale para cualquier parámetro: se conserva */
+    if (this.tieneValores(c) && String(c.valor || '').trim() != VALOR_CUALQUIERA) {
       let encontrado = this.valoresParametro[String(c.parametro).toUpperCase()]
         .find(v => v.valor.toUpperCase() == String(c.valor || '').trim().toUpperCase());
       c.valor = encontrado ? encontrado.valor : '';
@@ -861,6 +874,9 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   textoValor(parametro: string, valor: string): string {
+    if (String(valor || '').trim() == VALOR_CUALQUIERA) {
+      return ' (cualquiera: la línea tiene algún valor)';
+    }
     let lista = this.valoresParametro[String(parametro).toUpperCase()] || [];
     let encontrado = lista.find(v => v.valor.toUpperCase() == String(valor || '').trim().toUpperCase());
     return encontrado && encontrado.valor.toUpperCase() != encontrado.texto.toUpperCase() ? ' (' + encontrado.texto + ')' : '';
