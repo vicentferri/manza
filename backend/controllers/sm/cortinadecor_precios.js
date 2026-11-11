@@ -550,6 +550,7 @@ function fechaRejilla(valor) {
  *   rev_estado : DIFERENCIA (alguna línea no cuadra) | REVISAR (alguna línea sin tarifa, fuera de rango o sin tejido)
  *                | OK | NO VALORABLE (ninguna línea se puede valorar) | null (sin revisar)
  *   rev_cd / rev_nuestro / rev_dif : totales de las líneas valoradas; rev_sin_valorar: líneas sin nuestro precio
+ *   rev_aplicados : líneas con nuestro precio ya aplicado (la rejilla resalta el pedido)
  */
 async function prepararRejilla(desde, hasta) {
   const pool = await sql.connect();
@@ -566,8 +567,12 @@ async function prepararRejilla(desde, hasta) {
       console.log('cd_revision rejilla: ' + e.message);
     }
   }
+  /* rev_aplicados: líneas del pedido a las que ya se les ha aplicado nuestro precio (cost_cd con valor; 16_precio_original_lineas.sql) */
+  const aplicados = (await hayCostCd(pool))
+    ? `, (select count(*) from SOL_CORTINADECOR_LINES la where la.idrow = v.idrow and la.cost_cd is not null) as rev_aplicados`
+    : `, cast(0 as int) as rev_aplicados`;
   return {
-    columnas: `, rev.rev_estado, rev.rev_cd, rev.rev_nuestro, rev.rev_dif, rev.rev_sin_valorar`,
+    columnas: `, rev.rev_estado, rev.rev_cd, rev.rev_nuestro, rev.rev_dif, rev.rev_sin_valorar` + aplicados,
     apply: `outer apply (
       select case when count(*) = 0 then null
                   when sum(case when r.estado = 'DIFERENCIA' then 1 else 0 end) > 0 then 'DIFERENCIA'

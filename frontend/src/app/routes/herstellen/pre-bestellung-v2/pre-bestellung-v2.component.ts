@@ -688,6 +688,7 @@ export class PreBestellungV2Component implements OnInit {
       { name: "rev_nuestro", type: "number" },
       { name: "rev_dif", type: "number" },
       { name: "rev_sin_valorar", type: "int" },
+      { name: "rev_aplicados", type: "int" },
     ],
     url: "",
   };
@@ -875,14 +876,23 @@ export class PreBestellungV2Component implements OnInit {
       'REVISAR': ['#ffc107', 'black', 'Revisar'],
       'NO VALORABLE': ['#c8ced3', 'black', 'No valorable']
     };
+    const fmt = (n) => (n === null || n === undefined || n === '') ? '—' : Number(n).toFixed(2);
+    /* Nuestro precio ya aplicado (va al XML): se ve con un color fosforescente (celda con la clase cd-aplicado) */
+    if (rowdata.rev_aplicados > 0) {
+      const titulo = 'Nuestro precio aplicado en ' + rowdata.rev_aplicados + ' línea' + (rowdata.rev_aplicados === 1 ? '' : 's') +
+        ' · CortinaDecor ' + fmt(rowdata.rev_cd) + ' € · nuestro ' + fmt(rowdata.rev_nuestro) + ' €';
+      return '<span title="' + titulo + '" class="cd-aplicado-pill">Aplicado</span>';
+    }
     const e = estilos[value];
     if (!e) return '<span style="margin: 0 6px; line-height: 30px; color: #a0a8b0">—</span>';
-    const fmt = (n) => (n === null || n === undefined || n === '') ? '—' : Number(n).toFixed(2);
     const titulo = 'CortinaDecor ' + fmt(rowdata.rev_cd) + ' € · nuestro ' + fmt(rowdata.rev_nuestro) + ' €' +
       (rowdata.rev_sin_valorar > 0 ? ' · ' + rowdata.rev_sin_valorar + ' línea(s) sin nuestro precio' : '');
     return '<span title="' + titulo + '" style="display: inline-block; margin: 6px; padding: 1px 8px; border-radius: 10px; font-size: 11px; line-height: 16px; background-color: ' +
       e[0] + '; color: ' + e[1] + '">' + e[2] + '</span>';
   };
+
+  /* Celdas de Precio y Dif. €: fondo fosforescente si el pedido tiene nuestro precio aplicado (ver el CSS, cd-aplicado) */
+  aplicadoClase = (row, columnfield, value, rowdata) => (rowdata && rowdata.rev_aplicados > 0) ? 'cd-aplicado' : '';
 
   difRenderer = (row, columnfield, value, defaulthtml, columnproperties, rowdata) => {
     if (value === null || value === undefined || value === '' || rowdata.rev_estado === null || rowdata.rev_estado === undefined) return '';
@@ -1300,8 +1310,8 @@ export class PreBestellungV2Component implements OnInit {
       { text: "Código", datafield: "id", width: 120, filtertype: "input", editable: false, cellsrenderer: this.cdCodigoRenderer },
       { text: "Fecha", datafield: "date", width: 90, filtertype: "input", editable: false, cellsformat: "dd/MM/yyyy", cellsrenderer: this.cdFechaRenderer },
       { text: "Estado", datafield: "descestado", width: 140, filtertype: "checkedlist", editable: false, cellsrenderer: this.cdEstadoRenderer },
-      { text: "Precio", datafield: "rev_estado", width: 100, filtertype: "checkedlist", editable: false, cellsrenderer: this.precioRenderer },
-      { text: "Dif. €", datafield: "rev_dif", width: 70, filtertype: "number", cellsalign: "right", editable: false, cellsrenderer: this.difRenderer },
+      { text: "Precio", datafield: "rev_estado", width: 100, filtertype: "checkedlist", editable: false, cellsrenderer: this.precioRenderer, cellclassname: this.aplicadoClase },
+      { text: "Dif. €", datafield: "rev_dif", width: 70, filtertype: "number", cellsalign: "right", editable: false, cellsrenderer: this.difRenderer, cellclassname: this.aplicadoClase },
       { text: "Contenido", datafield: "referencia", width: 520, filtertype: "input", editable: false, cellsrenderer: this.cdContenidoRenderer },
       { text: "FAB", datafield: "fabricacion", width: 50, filtertype: "number", cellsalign: "center", editable: false, cellsrenderer: this.cdCheckRenderer },
 

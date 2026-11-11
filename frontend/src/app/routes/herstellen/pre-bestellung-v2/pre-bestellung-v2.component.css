@@ -169,3 +169,14 @@
 :host ::ng-deep .cd-dif-neutra { color: #73818f; }
 :host ::ng-deep .jqx-grid-cell-selected .cd-dif,
 :host ::ng-deep .jqx-fill-state-pressed .cd-dif { color: inherit; }
+
+/* CortinaDecor: pedido con nuestro precio aplicado (va al XML). Verde lima fosforescente en las celdas de Precio y Dif. €,
+   también con la fila seleccionada, para que se vea de un vistazo */
+:host ::ng-deep .cd-aplicado,
+:host ::ng-deep .jqx-grid-cell-selected.cd-aplicado,
+:host ::ng-deep .jqx-fill-state-pressed.cd-aplicado { background-color: #c6ff00 !important; background-image: none !important; }
+:host ::ng-deep .cd-aplicado .cd-dif { color: #1f2d00; font-weight: 600; }
+:host ::ng-deep .cd-aplicado-pill {
+  display: inline-block; margin: 6px; padding: 1px 8px; border-radius: 10px; font-size: 11px; line-height: 16px;
+  font-weight: 700; color: #1f2d00; background-color: #eaff7a; border: 1px solid #8fb300; box-shadow: 0 0 6px #b6ff00;
+}

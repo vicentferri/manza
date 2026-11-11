@@ -80,3 +80,22 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+/* Línea con nuestro precio aplicado (va al XML): verde lima fosforescente, igual que en la rejilla de pedidos */
+.linea.aplicada td,
+.linea.aplicada:hover td,
+.linea.aplicada.abierta td { background: #f1ff9e; }
+
+.linea.aplicada td:first-child { box-shadow: inset 5px 0 0 #c6ff00; }
+
+.badge-aplicado {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1f2d00;
+  background-color: #c6ff00;
+  border: 1px solid #8fb300;
+  box-shadow: 0 0 6px #b6ff00;
+}

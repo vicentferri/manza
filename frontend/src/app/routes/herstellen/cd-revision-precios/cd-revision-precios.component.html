@@ -47,7 +47,7 @@
     </thead>
     <tbody>
       <ng-container *ngFor="let l of lineas">
-        <tr class="linea" [class.abierta]="abiertas[l.id]" (click)="alternar(l)">
+        <tr class="linea" [class.abierta]="abiertas[l.id]" [class.aplicada]="estaAplicado(l)" (click)="alternar(l)">
           <td><i class="fa" [ngClass]="abiertas[l.id] ? 'fa-caret-down' : 'fa-caret-right'"></i></td>
           <td>{{ l.detalle.referencia }} <span class="text-muted">· {{ l.detalle.color }}</span></td>
           <td class="text-right">{{ l.detalle.ancho ? (l.detalle.ancho + ' × ' + l.detalle.alto) : '' }}</td>
@@ -59,7 +59,7 @@
           </td>
           <td>
             <span class="badge" [ngClass]="claseEstado(l.estado)">{{ l.estado }}</span>
-            <span class="badge badge-info ml-1" *ngIf="estaAplicado(l)" title="El XML llevará nuestro precio">Precio aplicado</span>
+            <span class="badge-aplicado ml-1" *ngIf="estaAplicado(l)" title="El XML llevará nuestro precio">Precio aplicado</span>
           </td>
         </tr>
 
