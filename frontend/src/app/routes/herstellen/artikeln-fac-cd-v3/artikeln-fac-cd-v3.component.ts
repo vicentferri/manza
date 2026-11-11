@@ -46,6 +46,15 @@ interface ColumnaOcultable {
 
 const CLAVE_COLUMNAS_OCULTAS = 'fab_v3_columnas_ocultas';
 
+/* sqlCajonZip/07: productos cuyo XML usa las reglas de código y descripción del producto (hoy solo el Cajón ZIP).
+   El motor las admite en cualquier juego; para otro producto basta con añadirlo aquí cuando su XML las lea */
+const PRODUCTOS_CON_CODIGO = [6];
+const TIPOS_REGLA = [
+  { valor: '', texto: 'Componente: añade artículos con su consumo' },
+  { valor: 'CODIGO', texto: 'Código del producto (<Articulo> del XML)' },
+  { valor: 'DESCRIPCION', texto: 'Descripción del producto (<Descripcion> del XML)' },
+];
+
 interface ColumnaAjustable {
   campo: string;
   codigo?: boolean;   /* se pinta con letra monoespaciada */
@@ -162,6 +171,12 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   consumoTodos: Consumo = consumoVacio();
   guardandoRegla = false;
 
+  /* sqlCajonZip/07: tipos de regla, código y descripción por defecto del juego y resultado de la simulación */
+  readonly tiposRegla = TIPOS_REGLA;
+  defecto = { codigo: '', descripcion: '' };
+  guardandoDefecto = false;
+  simProducto: any[] = [];
+
   /* ---------------- SIMULACION ---------------- */
   model2 = {
     idrow: -1
@@ -189,6 +204,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       { name: 'consumo', type: 'string' },
       { name: 'param_ancho', type: 'string' },   /* sin declarar aquí, el grid los quita de la fila y al guardar se perderían */
       { name: 'param_alto', type: 'string' },
+      { name: 'tipo_regla', type: 'string' },    /* sqlCajonZip/07: reglas de código y descripción del producto */
+      { name: 'resultado', type: 'string' },
     ],
     localdata: null
   };
@@ -277,6 +294,12 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   };
 
   renderArticulos = (row, field, value, html?, props?, fila?) => {
+    /* sqlCajonZip/07: una regla de código o descripción no añade artículos: se enseña lo que decide */
+    if (fila && fila.tipo_regla) {
+      let etiqueta = fila.tipo_regla == 'CODIGO' ? 'Código' : 'Descripción';
+      return this.celda('<span class="fab-badge fab-cliente">' + etiqueta + '</span>&nbsp;' + this.escapeHtml(fila.resultado), '',
+        etiqueta + ' del producto en el XML: ' + fila.resultado);
+    }
     let errores = this.erroresCampo(fila, 'articulos');
     if (errores.length > 0) {
       return this.celda('<i class="fa fa-exclamation-circle"></i>&nbsp;' + this.escapeHtml(value || '(sin artículos)'), 'fab-error', errores.join('\n'));
@@ -629,6 +652,39 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   /* Nombre del juego elegido para los títulos ("Enrollable · Rhin", "HoneyComb") */
+  /* sqlCajonZip/07: el XML de este producto usa las reglas de código y descripción */
+  get usaReglasProducto(): boolean {
+    return PRODUCTOS_CON_CODIGO.indexOf(Number(this.producto)) >= 0;
+  }
+
+  /* Código y descripción por defecto del juego elegido (cuando ninguna regla de código o descripción se cumple) */
+  cargarDefecto() {
+    const s = this.sistemas.find(x => x.sistema == this.sistema);
+    this.defecto = { codigo: s ? s.codigo_defecto || '' : '', descripcion: s ? s.descripcion_defecto || '' : '' };
+  }
+
+  GuardarDefecto() {
+    if (!this.sistema) {
+      return;
+    }
+    const body = { sistema: this.sistema, codigo_defecto: this.defecto.codigo, descripcion_defecto: this.defecto.descripcion };
+    this.guardandoDefecto = true;
+    this.service.HTTP_Post('/sm/fabricacion/sistemas/defecto', JSON.stringify(body)).subscribe(
+      () => {
+        this.guardandoDefecto = false;
+        const s = this.sistemas.find(x => x.sistema == this.sistema);
+        if (s) {
+          s.codigo_defecto = this.defecto.codigo;
+          s.descripcion_defecto = this.defecto.descripcion;
+        }
+        this.toaster.success('Código y descripción por defecto guardados', this.nombreJuego);
+      },
+      error => {
+        this.guardandoDefecto = false;
+        this.toaster.error(this.errorMessage(error), this.nombreJuego);
+      });
+  }
+
   get nombreJuego(): string {
     const s = this.sistemas.find(x => x.sistema == this.sistema);
     return s ? s.descripcion : this.sistema;
@@ -701,6 +757,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   }
 
   ChangeSistema() {
+    this.cargarDefecto();
+    this.simProducto = [];
     this.loadColumnas();
     this.loadBusquedas();
     this.loadTablas();
@@ -1358,6 +1416,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       articulos: [] as ArticuloRegla[],
       param_ancho: '',   /* medidas propias del componente (XML Cn_P1 / Cn_P2); vacío = las de la línea */
       param_alto: '',
+      tipo_regla: '',    /* sqlCajonZip/07: '' componente; CODIGO o DESCRIPCION del producto, con su texto en resultado */
+      resultado: '',
     };
   }
 
@@ -1403,6 +1463,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       .map(o => String(o || '').toUpperCase() == 'O' ? 'O' : 'Y');
     regla.param_ancho = String(fila.param_ancho || '').toUpperCase();
     regla.param_alto = String(fila.param_alto || '').toUpperCase();
+    regla.tipo_regla = fila.tipo_regla || '';
+    regla.resultado = fila.resultado || '';
     this.medidasAbiertas = regla.param_ancho !== '' || regla.param_alto !== '';
 
     let ids = String(fila.articulos || '').replace(/;/g, ',').split(',').map(a => a.trim()).filter(a => a !== '');
@@ -1583,6 +1645,13 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   erroresVentana(): string[] {
     let errores = [];
     this.regla.condiciones.forEach((c, i) => this.erroresCondicion(i).forEach(e => errores.push('Condición ' + (i + 1) + ': ' + e)));
+    /* sqlCajonZip/07: una regla de código o descripción solo necesita su texto (no lleva artículos, consumo ni medidas) */
+    if (this.regla.tipo_regla) {
+      if (String(this.regla.resultado || '').trim() == '') {
+        errores.push(this.regla.tipo_regla == 'CODIGO' ? 'Indique el código del producto' : 'Indique la descripción del producto');
+      }
+      return errores;
+    }
     if (this.regla.articulos.length == 0) {
       errores.push('Añada al menos un artículo');
     }
@@ -1658,7 +1727,16 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       consumo: this.textoConsumo(),
       param_ancho: this.regla.param_ancho || '',
       param_alto: this.regla.param_alto || '',
+      tipo_regla: this.regla.tipo_regla || '',
+      resultado: this.regla.tipo_regla ? String(this.regla.resultado || '').trim() : '',
     };
+    /* una regla de código o descripción no lleva artículos, consumo ni medidas (el SP también los descarta) */
+    if (this.regla.tipo_regla) {
+      body.articulos = '';
+      body.consumo = '';
+      body.param_ancho = '';
+      body.param_alto = '';
+    }
 
     this.guardandoRegla = true;
     this.service.HTTP_Post('/sm/fabricacion/reglas/save', JSON.stringify(body)).subscribe(
@@ -1873,6 +1951,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
           }
           this.toaster.info('No se muestran ' + partes.join(' ni ') + '.', 'Simulación', { timeOut: 10000 });
         }
+        /* sqlCajonZip/07: código y descripción del producto de cada línea */
+        this.simProducto = data.Producto || [];
         if (data.Parametros.length == 0) {
           this.toaster.warning('El pedido no tiene líneas de ' + this.nombreJuego, 'Simulación');
         }

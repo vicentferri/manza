@@ -24,7 +24,7 @@
                     <th>Lista</th>
                     <th>Elemento</th>
                     <th>Cliente</th>
-                    <th *ngIf="producto !== 'mini'">Sistema</th>
+                    <th *ngIf="producto === 'enrollable'">Sistema</th>
                     <th>Tramo</th>
                     <th class="text-right">Importe</th>
                 </tr>
@@ -36,12 +36,12 @@
                     <td>{{ nombreLista(l.clave) }}</td>
                     <td class="acc-nombre">{{ l.elemento_nombre }}</td>
                     <td>{{ l.cliente_nombre || 'Todos' }}</td>
-                    <td *ngIf="producto !== 'mini'">{{ l.sistema_nombre || 'Todos' }}</td>
+                    <td *ngIf="producto === 'enrollable'">{{ l.sistema_nombre || 'Todos' }}</td>
                     <td>{{ tramo(l) }}</td>
                     <td class="text-right">{{ importe(l.importe) }}</td>
                 </tr>
                 <tr *ngIf="cargado && filtradas.length === 0">
-                    <td [attr.colspan]="producto !== 'mini' ? 6 : 5" class="acc-vacio">
+                    <td [attr.colspan]="producto === 'enrollable' ? 6 : 5" class="acc-vacio">
                         <ng-container *ngIf="lineas.length === 0">Todavía no hay suplementos. Se ponen en la columna <strong>Suplemento</strong> de cada lista.</ng-container>
                         <ng-container *ngIf="lineas.length > 0">Ningún suplemento coincide con el filtro.</ng-container>
                     </td>

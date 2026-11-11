@@ -16,12 +16,22 @@ const sql = require('mssql');
 
 const CAMPOS_REGLA = ['orden', 'cliente', 'atributo', 'articulos', 'consumo',
   'nombre_parametro1', 'nombre_parametro2', 'nombre_parametro3', 'nombre_parametro4',
-  'operacion', 'operacion2', 'operacion3', 'param_ancho', 'param_alto'];
+  'operacion', 'operacion2', 'operacion3', 'param_ancho', 'param_alto', 'resultado'];
+
+/* sqlCajonZip/07: tipo de regla para los SPs: '' o componente = NULL; CODIGO / DESCRIPCION; otro valor se manda tal cual
+   (el SP lo rechaza con -5) */
+function tipoRegla(valor) {
+  const t = String(valor || '').trim().toUpperCase();
+  return t === '' || t === 'COMPONENTE' ? null : t.substring(0, 15);
+}
 
 const ERRORES_REGLA = {
   '-1': 'Sistema no válido',
   '-2': 'Cliente no válido',
-  '-3': 'El parámetro de ancho o alto del componente no existe'
+  '-3': 'El parámetro de ancho o alto del componente no existe',
+  /* sqlCajonZip/07: reglas de código y descripción del producto */
+  '-4': 'Indique el código o la descripción que da la regla',
+  '-5': 'Tipo de regla no válido'
 };
 
 const ERRORES_PARAMETRO = {
@@ -102,7 +112,8 @@ async function sistemas(req, res) {
       filtro = 'and s.producto = @producto';
     }
     const result = await request.query(`
-      select s.sistema, s.descripcion, s.producto, s.acc_sistema_id, a.nombre as sistema_nombre
+      select s.sistema, s.descripcion, s.producto, s.acc_sistema_id, a.nombre as sistema_nombre,
+             isnull(s.codigo_defecto, '') as codigo_defecto, isnull(s.descripcion_defecto, '') as descripcion_defecto
       from SOL_FABRICACION_SISTEMAS s
       left join SOL_ACC_SISTEMA a on a.id = s.acc_sistema_id
       where s.activo = 1 ${filtro}
@@ -194,6 +205,28 @@ async function sistema_add(req, res) {
 /* POST /fabricacion/sistemas/delete { sistema } — borra el juego de fabricación de un sistema y sus
    parámetros. Solo juegos de productos con sistemas (nunca HONEYCOMB) y solo si no tienen reglas,
    búsquedas ni tablas de valores: lo que se pierde son los parámetros, que se vuelven a crear al añadirlo */
+/* POST /fabricacion/sistemas/defecto { sistema, codigo_defecto, descripcion_defecto } — código y descripción del producto
+   cuando ninguna regla de código o descripción se cumple (sqlCajonZip/07). Vacío = sin valor por defecto */
+async function sistema_defecto(req, res) {
+  const body = req.body || {};
+  try {
+    const pool = await sql.connect();
+    const sistema = await sistemaActivo(pool, body.sistema);
+    if (!sistema) {
+      return res.status(400).send({ message: 'Fabricación no válida' });
+    }
+    await pool.request()
+      .input('sistema', sql.VarChar(50), sistema.sistema)
+      .input('codigo', sql.VarChar(50), texto(body.codigo_defecto, 50) || null)
+      .input('descripcion', sql.VarChar(100), texto(body.descripcion_defecto, 100) || null)
+      .query('update SOL_FABRICACION_SISTEMAS set codigo_defecto = @codigo, descripcion_defecto = @descripcion where sistema = @sistema');
+    res.status(200).send({ message: 'OK' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
 async function sistema_delete(req, res) {
   const clave = texto((req.body || {}).sistema, 50);
   if (!clave) return res.status(400).send({ message: 'Indique el sistema' });
@@ -288,7 +321,8 @@ async function reglas(req, res) {
                r.orden, r.atributo, r.articulos, dbo.fn_fabricacion_articulos_detalle(r.articulos) as detalle,
                r.nombre_parametro1, r.operacion, r.nombre_parametro2, r.operacion2,
                r.nombre_parametro3, r.operacion3, r.nombre_parametro4, r.consumo,
-               isnull(r.param_ancho, '') as param_ancho, isnull(r.param_alto, '') as param_alto
+               isnull(r.param_ancho, '') as param_ancho, isnull(r.param_alto, '') as param_alto,
+               isnull(r.tipo_regla, '') as tipo_regla, isnull(r.resultado, '') as resultado
         from SOL_ARTICULOS_FABRICACION_RELACION_V2 r
         join SOL_FABRICACION_SISTEMAS s on s.sistema = r.sistema and s.activo = 1
         left join SOL_CLIENTES c on c.idrow = r.cliente
@@ -321,6 +355,9 @@ async function regla_add(req, res) {
       .input('consumo', sql.VarChar(255), texto(body.consumo, 255))
       .input('param_ancho', sql.VarChar(50), texto(body.param_ancho, 50))
       .input('param_alto', sql.VarChar(50), texto(body.param_alto, 50))
+      /* sqlCajonZip/07: '' = componente; CODIGO o DESCRIPCION con su texto */
+      .input('tipo_regla', sql.VarChar(15), tipoRegla(body.tipo_regla))
+      .input('resultado', sql.VarChar(100), texto(body.resultado, 100))
       .execute('sp_fabricacion_regla_add');
     if (result.returnValue > 0) {
       res.status(200).send({ message: 'OK', idrow: result.returnValue });
@@ -359,6 +396,9 @@ async function regla_save(req, res) {
       .input('consumo', sql.VarChar(255), texto(body.consumo, 255))
       .input('param_ancho', sql.VarChar(50), texto(body.param_ancho, 50))
       .input('param_alto', sql.VarChar(50), texto(body.param_alto, 50))
+      /* sqlCajonZip/07: se manda siempre (componente = NULL) */
+      .input('tipo_regla', sql.VarChar(15), tipoRegla(body.tipo_regla))
+      .input('resultado', sql.VarChar(100), texto(body.resultado, 100))
       .execute('sp_fabricacion_regla_edit');
     if (result.returnValue === 1) {
       res.status(200).send({ message: 'OK', idrow: idrow });
@@ -477,11 +517,11 @@ async function regla_copiar(req, res) {
         insert into SOL_ARTICULOS_FABRICACION_RELACION_V2
           (orden, sistema, cliente, atributo, valor, valor2, articulos,
            nombre_parametro1, operacion, nombre_parametro2, operacion2,
-           nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto)
+           nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto, tipo_regla, resultado)
         select orden, @destino, case @modo when 'mismo' then cliente when 'cliente' then @cliente else null end,
            atributo, valor, valor2, articulos,
            nombre_parametro1, operacion, nombre_parametro2, operacion2,
-           nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto
+           nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto, tipo_regla, resultado
         from SOL_ARTICULOS_FABRICACION_RELACION_V2
         where sistema = @origen and idrow in (${lista})
         order by orden, idrow`);
@@ -692,11 +732,32 @@ async function simular(req, res) {
         left join SOL_CLIENTES c on c.idrow = p.cliente
         where p.idrow = @idPedido`);
 
+    /* sqlCajonZip/07-08: código y descripción del producto de cada línea (si el producto los guarda) y la regla que
+       los decidió (NULL = el del juego por defecto) */
+    let producto = [];
+    const conCodigo = await pool.request().input('tabla', sql.NVarChar(128), 'dbo.' + sistema.tabla_origen)
+      .query("select col_length(@tabla, 'fab_codigo') as n");
+    if (conCodigo.recordset[0].n) {
+      producto = (await pool.request()
+        .input('idPedido', sql.Int, idPedido)
+        .input('tipo', sql.Int, sistema.tipo_linea)
+        .query(`
+          select row_number() over (order by l.id) as idpedido, t.fab_codigo as codigo, t.fab_descripcion as descripcion,
+                 rc.orden as codigo_orden, rc.atributo as codigo_regla, rd.orden as descripcion_orden, rd.atributo as descripcion_regla
+          from dbo.[${sistema.tabla_origen}] t
+          join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
+          left join SOL_ARTICULOS_FABRICACION_RELACION_V2 rc on rc.idrow = t.fab_codigo_regla
+          left join SOL_ARTICULOS_FABRICACION_RELACION_V2 rd on rd.idrow = t.fab_descripcion_regla
+          where l.idrow = @idPedido and t.fab_codigo is not null
+          order by l.id`)).recordset;
+    }
+
     res.status(200).send({
       Fabricacion: fabricacion.recordset,
       Parametros: params.recordset,
       Pedido: info.recordset[0] || null,
-      Omitidas: omitidas
+      Omitidas: omitidas,
+      Producto: producto
     });
   } catch (err) {
     console.error(err);
@@ -829,6 +890,7 @@ module.exports = {
   productos,
   sistemas,
   sistema_add,
+  sistema_defecto,
   sistema_delete,
   clientes,
   articulos,

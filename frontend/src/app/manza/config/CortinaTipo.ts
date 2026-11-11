@@ -278,6 +278,13 @@ export class CortinaTipo {
         T7_Fecha_Entrega: '',
         T7_Transporte: 0,
 
+        /* Cajón ZIP del configurador nuevo (sqlCajonZip): importe por cortina y total de la línea */
+        T6_Cantidad: 1,
+        T6_Tejido: 0,
+        T6_PVP: 0,
+        T6_PVP_C1: '',
+        T6_Fecha_Entrega: '',
+
     }
 
     constructor(codecentro: string) {
@@ -328,6 +335,10 @@ export class CortinaTipo {
 
         if (this.TipoCortina == 7) {
             total = this.precios.T7_PVP == null ? 0 : this.precios.T7_PVP;
+        }
+
+        if (this.TipoCortina == 6) {
+            total = this.precios.T6_PVP == null ? 0 : this.precios.T6_PVP;
         }
 
         return total;

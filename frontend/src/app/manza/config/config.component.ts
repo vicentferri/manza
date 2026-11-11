@@ -15,6 +15,7 @@ import { CompacComponent } from '../compac/compac.component';
 import { HoneycombComponent } from '../honeycomb/honeycomb.component';
 import { EnrollableNuevoComponent } from '../enrollable-nuevo/enrollable-nuevo.component';
 import { CompacNuevoComponent } from '../compac-nuevo/compac-nuevo.component';
+import { ZipNuevoComponent } from '../zip-nuevo/zip-nuevo.component';
 import { AccConfiguradorService } from '../enrollable-nuevo/acc-configurador.service';
 import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
@@ -39,11 +40,14 @@ export class ConfigComponent implements OnInit {
   @ViewChild(HoneycombComponent, { static: false }) public honeycombRef!: HoneycombComponent;
   @ViewChild(EnrollableNuevoComponent, { static: false }) public enrollableNuevoRef!: EnrollableNuevoComponent;
   @ViewChild(CompacNuevoComponent, { static: false }) public compacNuevoRef!: CompacNuevoComponent;
+  @ViewChild(ZipNuevoComponent, { static: false }) public zipNuevoRef!: ZipNuevoComponent;
 
   /* Configurador nuevo de accionamientos (SOL_ACC_CLIENTE). false = el de siempre; Leroy no tiene fila */
   accNuevo: boolean = false;
   /* Solar Mini con las listas de Productos (sqlSolarMini): interruptor propio, SOL_ACC_MINI_CLIENTE */
   miniNuevo: boolean = false;
+  /* Cajón ZIP con las listas de Productos (sqlCajonZip): producto propio (tipo 6), con su interruptor SOL_ACC_ZIP_CLIENTE */
+  zipNuevo: boolean = false;
 
   editingItem: CortinaTipo | null = null;
 
@@ -200,9 +204,11 @@ export class ConfigComponent implements OnInit {
   comprobarAccNuevo(): void {
     this.accNuevo = false;
     this.miniNuevo = false;
+    this.zipNuevo = false;
     if (!(parseInt(this.Cliente, 10) > 0)) { return; }
     this.accConfigurador.activo(this.Cliente).subscribe(activo => this.accNuevo = activo);
     this.accConfigurador.miniActivo(this.Cliente).subscribe(activo => this.miniNuevo = activo);
+    this.accConfigurador.zipActivo(this.Cliente).subscribe(activo => this.zipNuevo = activo);
   }
 
   ChangeUser() {
@@ -433,6 +439,7 @@ export class ConfigComponent implements OnInit {
       if (this.Cesta[pos].TipoCortina == 3) { c1_step = this.Cesta[pos].precios.T3_PVP_C1; }
       if (this.Cesta[pos].TipoCortina == 4) { c1_step = this.Cesta[pos].precios.T4_PVP_C1; }
       if (this.Cesta[pos].TipoCortina == 7) { c1_step = this.Cesta[pos].precios.T7_PVP_C1; }
+      if (this.Cesta[pos].TipoCortina == 6) { c1_step = this.Cesta[pos].precios.T6_PVP_C1; }
 
       if (pos == 0) { c1_sum = c1_step; }
       if (pos == 1) { c2_sum = c1_step; }
@@ -452,13 +459,18 @@ export class ConfigComponent implements OnInit {
     );
   }
 
+  /* El documento va por el configurador nuevo si el cliente tiene alguno de sus interruptores */
+  get flujoNuevo(): boolean {
+    return this.accNuevo || this.miniNuevo || this.zipNuevo;
+  }
+
   ProcesarPedido() {
     if (confirm("¿Desea Transmitir el Pedido?")) {
       this.btnPedido = 1;
       this.btnPresupuesto = 1;
 
-      /* Con cualquiera de los dos interruptores el documento va por el flujo nuevo (enrollables y Solar Mini) */
-      if (this.accNuevo || this.miniNuevo) { this.ProcesarPedidoAcc(); return; }
+      /* Con cualquiera de los interruptores el documento va por el flujo nuevo (enrollables, Solar Mini y Cajón ZIP) */
+      if (this.flujoNuevo) { this.ProcesarPedidoAcc(); return; }
 
       let lineas = JSON.stringify(this.Cesta);
       this.service.altaPedido(lineas, this.ReferenciaTienda, parseInt(this.Cliente)).subscribe(
@@ -546,7 +558,7 @@ export class ConfigComponent implements OnInit {
   }
 
   ProcesarPresupuesto() {
-    if (this.accNuevo || this.miniNuevo) {
+    if (this.flujoNuevo) {
       if (confirm("¿Desea Guardar el documento como Presupuesto?")) {
         this.btnPedido = 1;
         this.btnPresupuesto = 1;
@@ -644,6 +656,7 @@ export class ConfigComponent implements OnInit {
       }
       if (item.TipoCortina == 4) { Suma += item.cantidad; }
       if (item.TipoCortina == 7) { Suma += item.cantidad; }
+      if (item.TipoCortina == 6) { Suma += Number(item.cantidad); }
     });
     return Suma;
   }
@@ -998,6 +1011,22 @@ export class ConfigComponent implements OnInit {
       error => { this.toaster.error(JSON.stringify(error)); }
     );
 
+    /* T6 - CAJÓN ZIP del configurador nuevo (sqlCajonZip): solo las líneas con su selección (nzip_*) */
+    this.service.Budget_herunterladen_T6(event.idrow).subscribe(
+      data => {
+        const len = data.length;
+        if (len > 0) {
+          for (let pos = 0; pos < len; pos++) {
+            this.Cesta.push(this.lineaZipDesdePresupuesto(data[pos]));
+          }
+          this.toaster.success('Cajón ZIP agregado a la cesta', 'Cesta');
+          this.NumeroCortinas = this.TotalSum();
+          this.VerPedido();
+        }
+      },
+      error => { this.toaster.error(JSON.stringify(error)); }
+    );
+
     /* T7 - HONEYCOMB */
     this.service.Budget_herunterladen_T7(event.idrow).subscribe(
       data => {
@@ -1031,6 +1060,46 @@ export class ConfigComponent implements OnInit {
       },
       error => { this.toaster.error(JSON.stringify(error)); }
     );
+  }
+
+  /* Línea de Cajón ZIP de un presupuesto (fila de SOL_PRESUPUESTOS_COLA_TIPO_6 con los nombres de sus opciones)
+     como la deja manza-zip-nuevo en la cesta: selección en nzip, textos en zip e importes en precios.T6_* */
+  private lineaZipDesdePresupuesto(item: any): CortinaTipo {
+    const tipo: CortinaTipo = new CortinaTipo(this.codeCentro);
+    const color = (nombre: string, ral: string, hex: string) => (nombre ? { nombre: nombre, ral: ral || '', hex: hex || '' } : null);
+    tipo.TipoCortina = 6;
+    tipo.ancho = Number(item.ancho);
+    tipo.alto = Number(item.alto);
+    tipo.cantidad = item.cantidad;
+    tipo.tej_tipo_text = item.tej_tipo_text;
+    tipo.tej_color_text = item.tej_color_text;
+    tipo.estancia_id = item.nzip_estancia_id ? String(item.nzip_estancia_id) : '-1';
+    tipo.estancia_obs = item.nzip_estancia || '';
+    tipo.precios.T6_Cantidad = item.T6_Cantidad || item.cantidad;
+    tipo.precios.T6_Tejido = Number(item.T6_Tejido) || 0;
+    tipo.precios.T6_PVP = Number(item.T6_PVP) || 0;
+    tipo.precios.T6_PVP_C1 = '';
+    (tipo as any).zip = {
+      modelo: item.zip_modelo || '', soporte: item.zip_soporte || '', salida: item.zip_salida || '',
+      colorCajon: color(item.zip_color_cajon, item.zip_color_cajon_ral, item.zip_color_cajon_hex),
+      vista: item.cajon_vista === 'INTERIOR' ? 'Visto desde el interior' : item.cajon_vista === 'EXTERIOR' ? 'Visto desde el exterior' : '',
+      tipoMotor: item.zip_tipo_motor || '', motor: item.zip_motor || '', mando: item.zip_mando || '',
+      posicion: item.acc_posicion_text || '', guia: item.zip_guia || '',
+      colorGuia: color(item.zip_color_guia, item.zip_color_guia_ral, item.zip_color_guia_hex),
+      contrapeso: item.zip_contrapeso || '',
+      colorContrapeso: color(item.zip_color_contrapeso, item.zip_color_contrapeso_ral, item.zip_color_contrapeso_hex),
+      lacado: item.zip_lacado || '', criterio: item.zip_criterio || null
+    };
+    (tipo as any).nzip = {
+      modelo_cajon: item.nzip_modelo_cajon_id, soporte: item.nzip_soporte_id, posicion_salida: item.nzip_posicion_salida_id,
+      color_cajon: item.nzip_color_cajon_id, vista: item.cajon_vista, tejido: item.nzip_tejido_id,
+      tipo_motor: item.nzip_tipo_motor_id, modelo_motor: item.nzip_modelo_motor_id, mando: item.nzip_mando_id,
+      posicion: item.acc_posicion_id, guia: item.nzip_guia_id, color_guia: item.nzip_color_guia_id,
+      contrapeso: item.nzip_contrapeso_id, color_contrapeso: item.nzip_color_contrapeso_id, lacado: item.nzip_lacado_id
+    };
+    /* Tarifa (T1/T2) con la que se calculó el precio: el servidor lo recalcula al pedir */
+    (tipo as any).tipo_tarifa = item.nzip_tipo_tarifa;
+    return tipo;
   }
 
   EditLine(item: any): void {
@@ -1069,6 +1138,9 @@ export class ConfigComponent implements OnInit {
         break;
       case 7:
         if (this.honeycombRef) { this.honeycombRef.cargarEdicion(item); }
+        break;
+      case 6:
+        if (item.nzip && this.zipNuevoRef) { this.zipNuevoRef.cargarEdicion(item); }
         break;
     }
   }

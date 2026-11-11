@@ -85,6 +85,8 @@ export class TarifasSimulateComponent implements OnInit {
     acc_tejido_nombre: '',
     /* sqlSolarMini/03: tarifa del Solar Mini en el configurador nuevo ('4'); excluye el sistema. '' = no */
     acc_producto: '',
+    /* sqlCajonZip/03: tarifa de un modelo de cajón del Cajón ZIP (su id); excluye sistema y producto. '' = no */
+    acc_zip_modelo_id: '',
     desactivar_duplicadas: false
   }
 
@@ -94,6 +96,8 @@ export class TarifasSimulateComponent implements OnInit {
 
   /* Configurador nuevo: sistemas a elegir, fecha del mapa guardado y de la última exportación */
   acc_sistemas: any = [];
+  /* sqlCajonZip/03: modelos de cajón del Cajón ZIP (Productos), para la tarifa del configurador nuevo */
+  acc_zip_modelos: any = [];
   mapa_fecha: any = null;
   sync_fecha: any = null;
   duplicadaMensaje = '';
@@ -552,6 +556,7 @@ export class TarifasSimulateComponent implements OnInit {
     this.model.desmultiplicador_value = 1.12;
     this.model.acc_sistema_id = '';
     this.model.acc_producto = '';
+    this.model.acc_zip_modelo_id = '';
     this.model.acc_tejido_nombre = '';
     this.serie_maestro = '';
     this.model.desactivar_duplicadas = false;
@@ -786,6 +791,7 @@ export class TarifasSimulateComponent implements OnInit {
         this.model.grupotejido = data.Table[0].grupotejido ? '1' : '0';
         this.model.acc_sistema_id = data.Table[0].acc_sistema_id === null || data.Table[0].acc_sistema_id === undefined ? '' : String(data.Table[0].acc_sistema_id);
         this.model.acc_producto = data.Table[0].acc_producto === null || data.Table[0].acc_producto === undefined ? '' : String(data.Table[0].acc_producto);
+        this.model.acc_zip_modelo_id = data.Table[0].acc_zip_modelo_id === null || data.Table[0].acc_zip_modelo_id === undefined ? '' : String(data.Table[0].acc_zip_modelo_id);
         this.model.acc_tejido_nombre = data.Table[0].acc_tejido_nombre || '';
         this.serie_maestro = this.model.acc_tejido_nombre ? this.model.acc_tejido_nombre + '|' + this.model.criterio : '';
         this.mapa_fecha = data.Table[0].mapa_fecha || null;
@@ -841,6 +847,16 @@ export class TarifasSimulateComponent implements OnInit {
       },
       error => {
         this.toaster.error('No se pudieron cargar los sistemas del configurador nuevo');
+      }
+    );
+
+    /* sqlCajonZip/03: modelos de cajón del Cajón ZIP (solo los visibles) */
+    this.service.HTTP_Get('/sm/acc/zip_modelos').subscribe(
+      data => {
+        this.acc_zip_modelos = (data.Table || []).filter(m => m.activo);
+      },
+      error => {
+        this.toaster.error('No se pudieron cargar los modelos de cajón del Cajón ZIP');
       }
     );
 
@@ -930,19 +946,23 @@ export class TarifasSimulateComponent implements OnInit {
   /* T2 del configurador nuevo: al elegir un tejido del maestro se toman su criterio y su coste m²
      (si sus colores cuestan distinto, el mayor) y se deja sin tejido de siempre */
   /* Desplegable "Sistema o producto (configurador nuevo)": un sistema del enrollable (su id), el Solar Mini
-     ('P4', sqlSolarMini/03) o ninguno (''). Sistema y producto se excluyen */
+     ('P4', sqlSolarMini/03), un modelo de cajón del Cajón ZIP ('Z' + id, sqlCajonZip/03) o ninguno ('').
+     Una tarifa tiene un solo destino */
   get accDestino(): string {
+    if (this.model.acc_zip_modelo_id) { return 'Z' + this.model.acc_zip_modelo_id; }
     return this.model.acc_producto ? 'P' + this.model.acc_producto : (this.model.acc_sistema_id || '');
   }
 
   get tieneAccDestino(): boolean {
-    return !!this.model.acc_sistema_id || !!this.model.acc_producto;
+    return !!this.model.acc_sistema_id || !!this.model.acc_producto || !!this.model.acc_zip_modelo_id;
   }
 
   cambiarAccDestino(valor: string) {
     const v = valor || '';
-    this.model.acc_producto = v.charAt(0) === 'P' ? v.substring(1) : '';
-    this.model.acc_sistema_id = v.charAt(0) === 'P' ? '' : v;
+    const prefijo = v.charAt(0);
+    this.model.acc_producto = prefijo === 'P' ? v.substring(1) : '';
+    this.model.acc_zip_modelo_id = prefijo === 'Z' ? v.substring(1) : '';
+    this.model.acc_sistema_id = prefijo === 'P' || prefijo === 'Z' ? '' : v;
   }
 
   ChangeSerieMaestro() {

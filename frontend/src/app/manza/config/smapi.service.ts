@@ -62,6 +62,8 @@ export class SMAPIService {
     private urlT3Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T3';
     private urlT4Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T4';
     private urlT7Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T7';
+    /* Cajón ZIP del configurador nuevo (sqlCajonZip) */
+    private urlT6Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T6';
 
     private urlBestellungnachschlagen = this.urlService + '/api/lm/bestellungen_entrega';
     private urlBudgetnachschlagen = this.urlService + '/api/lm/budget_entrega';
@@ -437,6 +439,12 @@ export class SMAPIService {
 
     Budget_herunterladen_T7(idrow: string) {
         var url: string = this.urlT7Herunterladen + '/' + idrow;
+        return this.HTTP_Get(url);
+    }
+
+    /* Líneas de Cajón ZIP del configurador nuevo de un presupuesto (solo las que tienen nzip_*) */
+    Budget_herunterladen_T6(idrow: string) {
+        var url: string = this.urlT6Herunterladen + '/' + idrow;
         return this.HTTP_Get(url);
     }
 

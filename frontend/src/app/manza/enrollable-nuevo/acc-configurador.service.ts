@@ -53,7 +53,25 @@ export class AccConfiguradorService {
         return this.http.post<any>(this.url + '/mini/precio/' + cliente, linea);
     }
 
-    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc y Solar Mini con nmini) */
+    /* ¿El cliente configura el Cajón ZIP con las listas de Productos? (sqlCajonZip) Ante cualquier error, false */
+    zipActivo(cliente: string | number): Observable<boolean> {
+        return this.http.get<any>(this.url + '/zip/activo/' + cliente).pipe(
+            map(r => !!(r && r.activo === true)),
+            catchError(() => of(false))
+        );
+    }
+
+    /* Listas activas del Cajón ZIP con sus relaciones (modelo de cajón → ...), tejidos, posiciones y vistas */
+    zipOpciones(cliente: string | number): Observable<any> {
+        return this.http.get<any>(this.url + '/zip/opciones/' + cliente);
+    }
+
+    /* Precio de una línea de Cajón ZIP (tarifa T1/T2 del modelo de cajón + suplementos), sin grabar nada */
+    zipPrecio(cliente: string | number, linea: any): Observable<any> {
+        return this.http.post<any>(this.url + '/zip/precio/' + cliente, linea);
+    }
+
+    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc, Solar Mini con nmini y Cajón ZIP con nzip) */
     altaPedido(lineas: any[], referencia: string, cliente: string | number): Observable<any> {
         const ref = encodeURIComponent(referencia || '-');
         return this.http.post<any>(this.url + '/pedido/' + cliente + '/' + ref, lineas);

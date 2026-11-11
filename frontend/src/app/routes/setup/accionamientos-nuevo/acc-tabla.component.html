@@ -47,10 +47,13 @@
                     </td>
                     <td>
                         <div class="acc-nombre" [class.text-nowrap]="conValor">
+                            <ng-container *ngFor="let e of extras">
+                                <span *ngIf="e.color && esColor(d[e.campo])" class="acc-muestra" [style.background]="d[e.campo]" [title]="d[e.campo]"></span>
+                            </ng-container>
                             {{ etiqueta(d) }}
                             <i *ngIf="d.protegido" class="fa fa-lock text-muted ml-1" title="Fijo: no se puede borrar"></i>
                         </div>
-                        <div class="acc-codigo">{{ d.codigo }}</div>
+                        <div class="acc-codigo">{{ d.codigo }}<span *ngIf="extrasTexto(d)"> · {{ extrasTexto(d) }}</span></div>
                     </td>
                     <td class="acc-uso">
                         <span *ngIf="d.dependencias > 0" class="badge badge-light" [title]="d.uso_externo || 'Registros que dependen de este'">en uso · {{ d.dependencias }}</span>
@@ -110,6 +113,19 @@
                     <input type="text" class="form-control form-control-sm" maxlength="100"
                         [(ngModel)]="form.nombre" [ngModelOptions]="{ standalone: true }" (keyup.enter)="guardar()" />
                     <small *ngIf="conValor" class="text-muted">Si se deja vacío, el configurador muestra el valor.</small>
+                </div>
+                <!-- Campos propios del catálogo (RAL y hex del color del ZIP), opcionales -->
+                <div class="form-group" *ngFor="let e of extras">
+                    <label>{{ e.label }} <span class="text-muted small">(opcional)</span></label>
+                    <div class="d-flex align-items-center">
+                        <input type="text" class="form-control form-control-sm" [maxlength]="e.max" [placeholder]="e.placeholder || ''"
+                            [class.text-uppercase]="e.color"
+                            [(ngModel)]="form[e.campo]" [ngModelOptions]="{ standalone: true }" (keyup.enter)="guardar()" />
+                        <!-- Selector de color del navegador: rellena el hex -->
+                        <input *ngIf="e.color" type="color" class="acc-color-picker ml-2" title="Elegir el color"
+                            [value]="esColor(form[e.campo]) ? form[e.campo] : '#ffffff'"
+                            (input)="form[e.campo] = $event.target.value.toUpperCase()" />
+                    </div>
                 </div>
 
                 <div class="acc-codigo-linea">

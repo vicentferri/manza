@@ -25,6 +25,9 @@ export class AccTablaComponent implements OnChanges {
     /* Unidad del valor (solo con conValor): se muestra en la cabecera, en el formulario y junto a cada valor */
     @Input() unidad = '';
     @Input() ayuda = '';
+    /* Campos propios del catálogo, opcionales (el color del ZIP: [{ campo: 'ral', ... }, { campo: 'hex', color: true }]).
+       Se editan en el formulario y se enseñan bajo el nombre; con color: true, además una muestra del color */
+    @Input() extras: { campo: string, label: string, max: number, placeholder?: string, color?: boolean }[] = [];
     /* Lo sube el padre cuando cambia algo que afecta a "Uso" (hijos, relaciones) */
     @Input() recarga = 0;
     @Output() seleccion = new EventEmitter<any>();
@@ -58,7 +61,7 @@ export class AccTablaComponent implements OnChanges {
         const b = this.busqueda.trim().toLowerCase();
         if (!b) { return this.datos; }
         return this.datos.filter(d =>
-            [d.codigo, d.nombre, d.valor].some(v => v !== null && v !== undefined && String(v).toLowerCase().includes(b)));
+            [d.codigo, d.nombre, d.valor].concat(this.extras.map(e => d[e.campo])).some(v => v !== null && v !== undefined && String(v).toLowerCase().includes(b)));
     }
 
     /* Mismo criterio que el backend (codigoDesde) para enseñar el código que se va a generar */
@@ -131,6 +134,7 @@ export class AccTablaComponent implements OnChanges {
 
     abrirAlta() {
         this.form = { id: 0, codigo: '', nombre: '', valor: '' };
+        this.extras.forEach(e => this.form[e.campo] = '');
         this.avanzado = false;
         this.modalForm.show();
     }
@@ -140,12 +144,24 @@ export class AccTablaComponent implements OnChanges {
         const f = this.filaSeleccionada;
         this.form = { id: f.id, codigo: f.codigo, nombre: f.nombre || '', valor: f.valor !== undefined && f.valor !== null ? f.valor : '',
                       protegido: f.protegido };
+        this.extras.forEach(e => this.form[e.campo] = f[e.campo] || '');
         this.avanzado = false;
         this.modalForm.show();
     }
 
+    /* Texto de los campos propios bajo el nombre (el RAL; el hex ya se ve en la muestra) */
+    extrasTexto(d: any): string {
+        return this.extras.filter(e => !e.color && d[e.campo]).map(e => d[e.campo]).join(' · ');
+    }
+
+    /* Color válido para la muestra: #RRGGBB */
+    esColor(valor: any): boolean {
+        return /^#[0-9A-Fa-f]{6}$/.test(String(valor || ''));
+    }
+
     guardar() {
         const body: any = { id: this.form.id, nombre: this.form.nombre, valor: this.form.valor };
+        this.extras.forEach(e => body[e.campo] = this.form[e.campo]);
         /* El código solo se manda si se ha tocado en Avanzado; si no, el backend lo genera o lo conserva */
         if (this.avanzado && this.form.codigo) { body.codigo = this.form.codigo; }
         if (this.padreCampo) { body[this.padreCampo] = this.padreId; }

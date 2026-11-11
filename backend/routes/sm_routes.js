@@ -532,6 +532,8 @@ var FabricacionReglasController = require('../controllers/sm/fabricacion_reglas'
 smapi.get('/fabricacion/productos', NuevoSistema, FabricacionReglasController.productos);
 smapi.get('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistemas);
 smapi.post('/fabricacion/sistemas', NuevoSistema, FabricacionReglasController.sistema_add);
+/* sqlCajonZip/07: código y descripción del producto por defecto del juego */
+smapi.post('/fabricacion/sistemas/defecto', NuevoSistema, FabricacionReglasController.sistema_defecto);
 smapi.post('/fabricacion/sistemas/delete', NuevoSistema, FabricacionReglasController.sistema_delete);
 smapi.get('/fabricacion/clientes', NuevoSistema, FabricacionReglasController.clientes);
 smapi.get('/fabricacion/articulos', NuevoSistema, FabricacionReglasController.articulos);
@@ -563,6 +565,10 @@ smapi.post('/acc/tejidos/:sistema/copiar', NuevoSistema, AccionamientosNuevoCont
 smapi.get('/acc/mini/tejidos', NuevoSistema, AccionamientosNuevoController.mini_tejidos);
 smapi.post('/acc/mini/tejidos', NuevoSistema, AccionamientosNuevoController.mini_tejidos_guardar);
 smapi.post('/acc/mini/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.mini_tejidos_copiar);
+/* Tejidos del Cajón ZIP (sqlCajonZip/01): una sola lista para todos los modelos de cajón, como el Solar Mini */
+smapi.get('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos);
+smapi.post('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos_guardar);
+smapi.post('/acc/zip/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.zip_tejidos_copiar);
 smapi.get('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion_guardar);
 smapi.get('/acc/matriz/motores', NuevoSistema, AccionamientosNuevoController.matriz_motores);
@@ -575,6 +581,11 @@ smapi.post('/acc/sup/:catalogo/:id/fijo', NuevoSistema, AccionamientosNuevoContr
 /* Solo la lista de sistemas queda abierta a cualquier usuario con sesión: la usa tarifas-simulate */
 smapi.get('/acc/sistemas', Auth.ensureAuth, function (req, res) {
     req.params.catalogo = 'sistemas';
+    AccionamientosNuevoController.lista(req, res);
+});
+/* Ídem los modelos de cajón del Cajón ZIP (sqlCajonZip/03): el generador de tarifas les asigna su tarifa */
+smapi.get('/acc/zip_modelos', Auth.ensureAuth, function (req, res) {
+    req.params.catalogo = 'zip_modelos_cajon';
     AccionamientosNuevoController.lista(req, res);
 });
 smapi.get('/acc/:catalogo', NuevoSistema, AccionamientosNuevoController.lista);
@@ -595,6 +606,10 @@ smapi.post('/acc_cfg/presupuesto_a_pedido/:id', Auth.ensureAuth, AccConfigurador
 smapi.get('/acc_cfg/mini/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.mini_activo);
 smapi.get('/acc_cfg/mini/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.mini_opciones);
 smapi.post('/acc_cfg/mini/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.mini_precio);
+/* Cajón ZIP (sqlCajonZip; interruptor propio SOL_ACC_ZIP_CLIENTE): el alta va por /acc_cfg/pedido y /acc_cfg/presupuesto */
+smapi.get('/acc_cfg/zip/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.zip_activo);
+smapi.get('/acc_cfg/zip/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.zip_opciones);
+smapi.post('/acc_cfg/zip/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.zip_precio);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);

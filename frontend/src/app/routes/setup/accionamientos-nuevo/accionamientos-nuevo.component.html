@@ -307,6 +307,171 @@
                     <app-acc-suplementos-resumen producto="mini" [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
                 </ng-container>
 
+                <!-- CAJÓN ZIP · 1. MODELO DE CAJÓN (raíz: todo lo demás se ofrece según el modelo) -->
+                <ng-container *ngIf="seccion === 'zip_modelos'">
+                    <div class="acc-intro">
+                        Primer paso del configurador del Cajón ZIP. Elija un modelo de cajón y marque qué soportes, posiciones de salida, colores,
+                        tipos de motor y guías se ofrecen con él. El precio base sale de la tarifa del modelo y del tejido.
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-5">
+                            <app-acc-tabla catalogo="zip_modelos_cajon" titulo="Modelos de cajón" singular="modelo de cajón"
+                                [recarga]="recargaZipModelo" (seleccion)="modeloCajonSel = $event"></app-acc-tabla>
+                        </div>
+                        <div class="col-lg-7">
+                            <ng-container *ngIf="modeloCajonSel; else elijaModeloCajon">
+                                <div class="acc-detalle-titulo">{{ modeloCajonSel.nombre }}</div>
+                                <ul class="nav nav-tabs acc-tabs">
+                                    <li class="nav-item" *ngFor="let p of pestanasModeloZip">
+                                        <a class="nav-link" href="javascript:void(0)" [class.active]="pestanaModeloZip.id === p.id" (click)="pestanaModeloZip = p">{{ p.label }}</a>
+                                    </li>
+                                </ul>
+                                <app-acc-relacion [relacion]="pestanaModeloZip.id" [id]="modeloCajonSel.id"
+                                    [titulo]="pestanaModeloZip.label + ' de ' + modeloCajonSel.nombre" [vacio]="pestanaModeloZip.vacio"
+                                    (cambio)="recargaZipModelo = recargaZipModelo + 1"></app-acc-relacion>
+                            </ng-container>
+                            <ng-template #elijaModeloCajon>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un modelo de cajón para marcar lo que ofrece.</div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- CAJÓN ZIP · 2. TEJIDO -->
+                <ng-container *ngIf="seccion === 'zip_tejidos'">
+                    <div class="acc-intro">
+                        Tejidos del <strong>Maestro de tejidos</strong> que ofrece el Cajón ZIP en el configurador. Una sola lista, la misma para todos
+                        los modelos de cajón y para todos los clientes.
+                    </div>
+                    <app-acc-tejidos producto="zip"></app-acc-tejidos>
+                </ng-container>
+
+                <!-- CAJÓN ZIP · 3. MOTOR (siempre motorizado: tipo → modelo → mandos) -->
+                <ng-container *ngIf="seccion === 'zip_motor'">
+                    <div class="acc-intro">
+                        El Cajón ZIP es siempre motorizado. De izquierda a derecha: elija un tipo de motor, después uno de sus modelos, y marque sus mandos.
+                        Qué tipos de motor ofrece cada modelo de cajón se marca en el paso 1. Son propios del Cajón ZIP (no los del enrollable).
+                    </div>
+                    <div class="row">
+                        <div class="col-xl-4 col-lg-6">
+                            <div class="acc-columna-titulo"><span class="acc-paso">a</span> Tipo de motor</div>
+                            <app-acc-tabla catalogo="zip_tipos_motor" titulo="Tipos de motor" singular="tipo de motor"
+                                [recarga]="recargaZipTipoMotor" (seleccion)="seleccionTipoMotorZip($event)"></app-acc-tabla>
+                        </div>
+                        <div class="col-xl-4 col-lg-6">
+                            <div class="acc-columna-titulo"><span class="acc-paso">b</span> Modelo<span *ngIf="tipoMotorZipSel"> de {{ tipoMotorZipSel.nombre }}</span></div>
+                            <ng-container *ngIf="tipoMotorZipSel; else elijaTipoMotorZip">
+                                <app-acc-tabla catalogo="zip_modelos_motor" titulo="Modelos" singular="modelo"
+                                    padreCampo="tipo_motor_id" [padreId]="tipoMotorZipSel.id"
+                                    [recarga]="recargaZipModeloMotor" (seleccion)="modeloMotorZipSel = $event"
+                                    (cambio)="recargaZipTipoMotor = recargaZipTipoMotor + 1"></app-acc-tabla>
+                            </ng-container>
+                            <ng-template #elijaTipoMotorZip>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un tipo de motor.</div>
+                            </ng-template>
+                        </div>
+                        <div class="col-xl-4 col-lg-12">
+                            <div class="acc-columna-titulo"><span class="acc-paso">c</span> Mandos<span *ngIf="modeloMotorZipSel"> de {{ modeloMotorZipSel.nombre }}</span></div>
+                            <app-acc-relacion *ngIf="modeloMotorZipSel; else elijaModeloMotorZip" relacion="zip_modelo_motor_mando" [id]="modeloMotorZipSel.id"
+                                titulo="Mandos" vacio="No hay mandos. Añádalos en Listas de opciones → Mandos."
+                                (cambio)="recargaZipModeloMotor = recargaZipModeloMotor + 1"></app-acc-relacion>
+                            <ng-template #elijaModeloMotorZip>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> {{ tipoMotorZipSel ? 'Elija un modelo.' : 'Primero elija un tipo de motor.' }}</div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- CAJÓN ZIP · 4. GUÍA (contrapesos y colores de cada guía) -->
+                <ng-container *ngIf="seccion === 'zip_guias'">
+                    <div class="acc-intro">
+                        Elija una guía y marque qué contrapesos y qué colores se ofrecen con ella. Qué guías ofrece cada modelo de cajón se marca en el paso 1.
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-5">
+                            <app-acc-tabla catalogo="zip_guias" titulo="Guías" singular="guía"
+                                [recarga]="recargaZipGuia" (seleccion)="guiaSel = $event"></app-acc-tabla>
+                        </div>
+                        <div class="col-lg-7">
+                            <ng-container *ngIf="guiaSel; else elijaGuia">
+                                <div class="acc-detalle-titulo">{{ guiaSel.nombre }}</div>
+                                <ul class="nav nav-tabs acc-tabs">
+                                    <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaGuia === 'contrapesos'" (click)="pestanaGuia = 'contrapesos'">Contrapesos</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="javascript:void(0)" [class.active]="pestanaGuia === 'colores'" (click)="pestanaGuia = 'colores'">Colores</a></li>
+                                </ul>
+                                <app-acc-relacion *ngIf="pestanaGuia === 'contrapesos'" relacion="zip_guia_contrapeso" [id]="guiaSel.id"
+                                    [titulo]="'Contrapesos de ' + guiaSel.nombre" vacio="No hay contrapesos. Añádalos en el paso 5 (Contrapeso)."
+                                    (cambio)="recargaZipGuia = recargaZipGuia + 1"></app-acc-relacion>
+                                <app-acc-relacion *ngIf="pestanaGuia === 'colores'" relacion="zip_guia_color" [id]="guiaSel.id"
+                                    [titulo]="'Colores de ' + guiaSel.nombre" vacio="No hay colores. Añádalos en Listas de opciones → Colores."
+                                    (cambio)="recargaZipGuia = recargaZipGuia + 1"></app-acc-relacion>
+                            </ng-container>
+                            <ng-template #elijaGuia>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija una guía para marcar sus contrapesos y sus colores.</div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- CAJÓN ZIP · 5. CONTRAPESO (colores de cada contrapeso) -->
+                <ng-container *ngIf="seccion === 'zip_contrapesos'">
+                    <div class="acc-intro">
+                        Contrapesos del Cajón ZIP (propios, no los del enrollable). Elija uno y marque sus colores. Qué contrapesos ofrece cada guía se marca en el paso 4.
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-5">
+                            <app-acc-tabla catalogo="zip_contrapesos" titulo="Contrapesos" singular="contrapeso"
+                                [recarga]="recargaZipContrapeso" (seleccion)="contrapesoSel = $event"></app-acc-tabla>
+                        </div>
+                        <div class="col-lg-7">
+                            <app-acc-relacion *ngIf="contrapesoSel; else elijaContrapeso" relacion="zip_contrapeso_color" [id]="contrapesoSel.id"
+                                [titulo]="'Colores de ' + contrapesoSel.nombre" vacio="No hay colores. Añádalos en Listas de opciones → Colores."
+                                (cambio)="recargaZipContrapeso = recargaZipContrapeso + 1"></app-acc-relacion>
+                            <ng-template #elijaContrapeso>
+                                <div class="acc-aviso"><i class="fa fa-hand-o-left"></i> Elija un contrapeso para marcar sus colores.</div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- CAJÓN ZIP · LACADOS (lista aislada: siempre disponible, va en el pedido en un campo aparte) -->
+                <ng-container *ngIf="seccion === 'zip_lacados'">
+                    <div class="acc-intro">
+                        Lacados que puede elegir el cliente en el Cajón ZIP. Es una lista independiente: no depende del modelo ni de ninguna otra opción
+                        y se guarda en el pedido en un campo aparte del color.
+                    </div>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla catalogo="zip_lacados" titulo="Lacados" singular="lacado"></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- CAJÓN ZIP · LISTAS DE OPCIONES -->
+                <ng-container *ngIf="seccion === 'zip_listas'">
+                    <div class="acc-intro">Opciones del Cajón ZIP que se marcan en los pasos. Aquí se dan de alta; en cada paso se marca cuáles se ofrecen.</div>
+                    <ul class="nav nav-tabs acc-tabs">
+                        <li class="nav-item" *ngFor="let l of listasZip">
+                            <a class="nav-link" href="javascript:void(0)" [class.active]="listaZip.id === l.id" (click)="listaZip = l">{{ l.label }}</a>
+                        </li>
+                    </ul>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla [catalogo]="listaZip.id" [titulo]="listaZip.label" [singular]="listaZip.singular"
+                                [ayuda]="listaZip.ayuda" [extras]="listaZip.extras || []"></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- CAJÓN ZIP · SUPLEMENTOS -->
+                <ng-container *ngIf="seccion === 'zip_suplementos'">
+                    <div class="acc-intro">
+                        Todos los suplementos de precio del Cajón ZIP. Se ponen en la columna <strong>Suplemento</strong> de cada lista;
+                        aquí se revisan y, pulsando una línea, se cambian. El Cajón ZIP no tiene sistemas: los precios van por cliente y medida.
+                    </div>
+                    <app-acc-suplementos-resumen producto="zip" [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
+                </ng-container>
+
                 <!-- LISTAS DE OPCIONES -->
                 <ng-container *ngIf="seccion === 'listas'">
                     <div class="acc-intro">Opciones que se reutilizan en los pasos. Aquí se dan de alta; en cada paso se marca cuáles se ofrecen.</div>

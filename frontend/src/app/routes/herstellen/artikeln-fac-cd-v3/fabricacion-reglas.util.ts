@@ -273,6 +273,16 @@ export function validarRegla(regla: any, parametros: string[], parametrosArticul
   ['nombre_parametro1', 'nombre_parametro2', 'nombre_parametro3', 'nombre_parametro4']
     .forEach(campo => agregar(campo, validarCondicion(regla[campo], parametros)));
 
+  /* sqlCajonZip/07: una regla de código o descripción del producto no lleva artículos, consumo ni medidas: solo su texto */
+  if (regla.tipo_regla) {
+    if (String(regla.resultado || '').trim() === '') {
+      agregar('articulos', ['Falta el ' + (regla.tipo_regla === 'CODIGO' ? 'código' : 'texto de la descripción')]);
+    }
+    let totalResultado = 0;
+    Object.keys(campos).forEach(c => totalResultado += campos[c].length);
+    return { total: totalResultado, campos: campos };
+  }
+
   const articulos = String(regla.articulos || '').replace(/;/g, ',').split(',').map(a => a.trim()).filter(a => a !== '');
   if (articulos.length === 0) {
     agregar('articulos', ['La regla no tiene artículos']);

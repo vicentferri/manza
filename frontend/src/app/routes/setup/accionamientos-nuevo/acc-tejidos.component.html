@@ -1,6 +1,6 @@
 <div class="acc-bloque">
     <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
-        <strong class="mr-2">{{ esMini ? 'Tejidos del Solar Mini' : 'Tejidos del sistema' }}</strong>
+        <strong class="mr-2">{{ esMini ? 'Tejidos del ' + nombreProducto : 'Tejidos del sistema' }}</strong>
         <select *ngIf="!esMini" class="form-control form-control-sm acc-tej-filtro mr-2" [ngModel]="sistema" (ngModelChange)="cambiarSistema($event)" [ngModelOptions]="{ standalone: true }">
             <option *ngFor="let s of sistemas" [ngValue]="s.id">{{ s.nombre }}{{ s.activo ? '' : ' (oculto)' }}</option>
         </select>
@@ -15,12 +15,12 @@
             <option *ngFor="let s of otrosSistemas" [ngValue]="s.id">{{ s.nombre }}</option>
         </select>
         <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!origenCopia || copiando" (click)="copiar()"
-            [title]="(esMini ? 'El Solar Mini' : 'El sistema elegido arriba') + ' pasa a tener exactamente los tejidos de este (se quitan los que tenga ahora)'">
+            [title]="(esMini ? 'El ' + nombreProducto : 'El sistema elegido arriba') + ' pasa a tener exactamente los tejidos de este (se quitan los que tenga ahora)'">
             <i class="fa" [ngClass]="copiando ? 'fa-spinner fa-spin' : 'fa-files-o'"></i> Copiar
         </button>
     </div>
     <div class="acc-ayuda mb-2">
-        Marque los tejidos (cada color por separado) que ofrece {{ esMini ? 'el Solar Mini' : 'este sistema' }} en el configurador. La casilla de cada tejido marca o quita
+        Marque los tejidos (cada color por separado) que ofrece {{ esMini ? 'el ' + nombreProducto : 'este sistema' }} en el configurador. La casilla de cada tejido marca o quita
         todos sus colores. Los tejidos y sus datos se mantienen en el <a [routerLink]="['/routes/master/tejidos-maestro']">Maestro de tejidos</a>.
     </div>
 

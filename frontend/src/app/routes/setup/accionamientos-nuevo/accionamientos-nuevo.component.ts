@@ -15,6 +15,9 @@ import { ToastrService } from 'ngx-toastr';
  *
  * Arriba se elige el producto: Enrollable o Solar Mini (sqlSolarMini/01). El Solar Mini tiene sus propias listas
  * (mini_* en el backend), planas y sin sistemas: perfilería, accionamiento, tejido y sus suplementos.
+ * El Cajón ZIP (sqlCajonZip/01, zip_* en el backend) tampoco tiene sistemas: la raíz es el modelo de cajón, que
+ * marca sus soportes, salidas, colores, tipos de motor y guías; cada guía sus contrapesos y colores, y cada
+ * contrapeso sus colores. Tejido (una lista), lacados (aislados) y suplementos aparte.
  */
 @Component({
     selector: 'app-accionamientos-nuevo',
@@ -28,7 +31,8 @@ export class AccionamientosNuevoComponent implements OnInit {
 
     readonly productos = [
         { id: 'enrollable', label: 'Enrollable' },
-        { id: 'mini', label: 'Solar Mini' }
+        { id: 'mini', label: 'Solar Mini' },
+        { id: 'zip', label: 'Cajón ZIP' }
     ];
     producto = 'enrollable';
 
@@ -49,6 +53,18 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'mini_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
 
+    /* Cajón ZIP, en el orden del configurador */
+    readonly seccionesZip = [
+        { id: 'zip_modelos', paso: '1', label: 'Modelo de cajón', ayuda: 'Soportes, salidas, colores, motores y guías de cada uno', icono: '' },
+        { id: 'zip_tejidos', paso: '2', label: 'Tejido', ayuda: 'Los que ofrece el Cajón ZIP', icono: '' },
+        { id: 'zip_motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos y mandos', icono: '' },
+        { id: 'zip_guias', paso: '4', label: 'Guía', ayuda: 'Contrapesos y colores de cada guía', icono: '' },
+        { id: 'zip_contrapesos', paso: '5', label: 'Contrapeso', ayuda: 'Colores de cada contrapeso', icono: '' },
+        { id: 'zip_lacados', paso: '', label: 'Lacados', ayuda: 'Siempre disponibles, aparte del color', icono: 'fa-paint-brush' },
+        { id: 'zip_listas', paso: '', label: 'Listas de opciones', ayuda: 'Soportes, salidas, colores, mandos', icono: 'fa-list' },
+        { id: 'zip_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
+    ];
+
     secciones = this.seccionesEnrollable;
     seccion = 'accionamientos';
 
@@ -65,6 +81,37 @@ export class AccionamientosNuevoComponent implements OnInit {
     ];
     pestanaPerfileria: any = this.perfileria[0];
     pestanaAccMini: any = this.accionamientoMini[0];
+
+    /* Cajón ZIP: el color lleva RAL y hex (columnas propias de SOL_ACC_ZIP_COLOR) */
+    readonly extrasColorZip = [
+        { campo: 'ral', label: 'Código RAL', max: 20, placeholder: 'RAL 9010' },
+        { campo: 'hex', label: 'Color (hex)', max: 7, placeholder: '#FFFFFF', color: true }
+    ];
+    /* Listas del Cajón ZIP que se marcan en los pasos (se dan de alta aquí) */
+    readonly listasZip = [
+        { id: 'zip_soportes', label: 'Soportes', singular: 'soporte', ayuda: 'Cada modelo de cajón marca los suyos en el paso 1.' },
+        { id: 'zip_posiciones_salida', label: 'Posiciones de salida', singular: 'posición de salida',
+          ayuda: 'Salida del cable (lateral, trasera...). Cada modelo de cajón marca las suyas en el paso 1.' },
+        { id: 'zip_colores', label: 'Colores', singular: 'color', extras: this.extrasColorZip,
+          ayuda: 'Una sola lista de colores para el cajón, la guía y el contrapeso: cada uno marca los suyos. RAL y hex son opcionales.' },
+        { id: 'zip_mandos', label: 'Mandos', singular: 'mando', ayuda: 'Cada modelo de motor marca los suyos en el paso 3.' }
+    ];
+    listaZip: any = this.listasZip[0];
+    /* Pestañas del detalle del modelo de cajón: cada una es una relación del backend */
+    readonly pestanasModeloZip = [
+        { id: 'zip_modelo_cajon_soporte', label: 'Soportes', vacio: 'No hay soportes. Añádalos en Listas de opciones → Soportes.' },
+        { id: 'zip_modelo_cajon_salida', label: 'Posiciones de salida', vacio: 'No hay posiciones de salida. Añádalas en Listas de opciones → Posiciones de salida.' },
+        { id: 'zip_modelo_cajon_color', label: 'Colores', vacio: 'No hay colores. Añádalos en Listas de opciones → Colores.' },
+        { id: 'zip_modelo_cajon_tipo_motor', label: 'Tipos de motor', vacio: 'No hay tipos de motor. Añádalos en el paso 3 (Motor).' },
+        { id: 'zip_modelo_cajon_guia', label: 'Guías', vacio: 'No hay guías. Añádalas en el paso 4 (Guía).' }
+    ];
+    pestanaModeloZip: any = this.pestanasModeloZip[0];
+    modeloCajonSel: any = null;
+    tipoMotorZipSel: any = null;
+    modeloMotorZipSel: any = null;
+    guiaSel: any = null;
+    pestanaGuia = 'contrapesos';
+    contrapesoSel: any = null;
 
     readonly listas = [
         { id: 'sistemas', label: 'Sistemas', singular: 'sistema', ayuda: 'Rhin, Duero, Sena deco... Se asignan a cada accionamiento en el paso 1. Su precio base sale de las tarifas del generador que tengan este sistema.' },
@@ -91,8 +138,10 @@ export class AccionamientosNuevoComponent implements OnInit {
     /* Nombre de cada lista para el resumen de suplementos (claves de CATALOGOS del backend) */
     readonly nombresListas: { [clave: string]: string } = Object.assign({
         accionamientos: 'Accionamientos', tipos_cadena: 'Tipos de cadena',
-        alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores'
-    }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini).map(l => ({ [l.id]: l.label })));
+        alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores',
+        zip_modelos_cajon: 'Modelos de cajón', zip_tipos_motor: 'Tipos de motor', zip_modelos_motor: 'Motores',
+        zip_guias: 'Guías', zip_contrapesos: 'Contrapesos', zip_lacados: 'Lacados'
+    }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini, <any[]>this.listasZip).map(l => ({ [l.id]: l.label })));
 
     /* Los tipos de cadena y de motor cuelgan de los accionamientos fijos CADENA y MOTOR */
     accCadena: any = null;
@@ -120,6 +169,11 @@ export class AccionamientosNuevoComponent implements OnInit {
     recargaModelo = 0;
     recargaSistemas = 0;
     recargaLista = 0;
+    recargaZipModelo = 0;
+    recargaZipTipoMotor = 0;
+    recargaZipModeloMotor = 0;
+    recargaZipGuia = 0;
+    recargaZipContrapeso = 0;
 
     constructor(private service: HaruService, private toaster: ToastrService) { }
 
@@ -131,7 +185,7 @@ export class AccionamientosNuevoComponent implements OnInit {
     cambiarProducto(id: string) {
         if (id === this.producto) { return; }
         this.producto = id;
-        this.secciones = id === 'mini' ? this.seccionesMini : this.seccionesEnrollable;
+        this.secciones = id === 'mini' ? this.seccionesMini : id === 'zip' ? this.seccionesZip : this.seccionesEnrollable;
         this.cambiarSeccion(this.secciones[0].id);
     }
 
@@ -144,7 +198,18 @@ export class AccionamientosNuevoComponent implements OnInit {
         this.modeloMotorSel = null;
         this.sistemaSel = null;
         this.listaSel = null;
+        this.modeloCajonSel = null;
+        this.tipoMotorZipSel = null;
+        this.modeloMotorZipSel = null;
+        this.guiaSel = null;
+        this.contrapesoSel = null;
         if (id === 'cadena' || id === 'motor') { this.cargarAccionamientos(); }
+    }
+
+    /* Cajón ZIP: al cambiar de tipo de motor, el modelo elegido ya no vale */
+    seleccionTipoMotorZip(fila: any) {
+        if (!fila || !this.tipoMotorZipSel || fila.id !== this.tipoMotorZipSel.id) { this.modeloMotorZipSel = null; }
+        this.tipoMotorZipSel = fila;
     }
 
     cambiarLista(id: string) {

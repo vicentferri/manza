@@ -16,8 +16,12 @@ export class AccSuplementosResumenComponent implements OnInit {
 
     /* Nombre de cada lista (clave del backend → texto), lo pasa la pantalla */
     @Input() nombresListas: { [clave: string]: string } = {};
-    /* Producto del que se enseñan los suplementos: 'enrollable' o 'mini' (Solar Mini, listas mini_*, sin sistema) */
+    /* Producto del que se enseñan los suplementos: 'enrollable', 'mini' (Solar Mini, listas mini_*) o 'zip'
+       (Cajón ZIP, listas zip_*); los dos últimos sin sistema */
     @Input() producto = 'enrollable';
+
+    /* Prefijo de las listas de cada producto sin sistema; el enrollable son las que no llevan ninguno */
+    private readonly PREFIJOS = ['mini_', 'zip_'];
 
     lineas: any[] = [];
     filtradas: any[] = [];
@@ -36,8 +40,12 @@ export class AccSuplementosResumenComponent implements OnInit {
     cargar() {
         this.service.HTTP_Get('/sm/acc/suplementos').subscribe(
             data => {
-                const mini = this.producto === 'mini';
-                this.lineas = (data.Table || []).filter(l => String(l.clave).indexOf('mini_') === 0 === mini);
+                const prefijo = this.producto + '_';
+                const propio = this.PREFIJOS.indexOf(prefijo) >= 0;
+                this.lineas = (data.Table || []).filter(l => {
+                    const clave = String(l.clave);
+                    return propio ? clave.indexOf(prefijo) === 0 : !this.PREFIJOS.some(p => clave.indexOf(p) === 0);
+                });
                 this.cargado = true;
                 this.opcionesFiltro();
                 this.filtrar();
