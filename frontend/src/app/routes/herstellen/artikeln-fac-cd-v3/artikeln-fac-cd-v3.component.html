@@ -61,20 +61,6 @@
       </h6>
     </div>
 
-    <!-- sqlCajonZip/07: código y descripción del producto cuando ninguna regla de código o descripción se cumple -->
-    <div class="ml-3 mr-3 mt-2 fab-defecto" *ngIf="usaReglasProducto && sistema">
-      <div class="form-inline">
-        <span class="mr-2"><i class="fa fa-tag"></i> <b>Producto en el XML</b> por defecto:</span>
-        <label class="small mr-1">Código</label>
-        <input class="form-control form-control-sm mr-3" style="width: 140px" maxlength="50" [(ngModel)]="defecto.codigo" placeholder="API.001" />
-        <label class="small mr-1">Descripción</label>
-        <input class="form-control form-control-sm mr-2" style="width: 220px" maxlength="100" [(ngModel)]="defecto.descripcion" placeholder="ENROLLABLE" />
-        <button class="btn btn-outline-primary btn-sm" [disabled]="guardandoDefecto" (click)="GuardarDefecto()"><i class="fa fa-save"></i>&nbsp;Guardar</button>
-        <small class="text-muted ml-3">Se usan si ninguna regla de <b>Código</b> o <b>Descripción</b> se cumple. Si se cumplen varias, gana la de menor orden.
-          Con Leroy la descripción del XML es siempre LEROY MERLIN.</small>
-      </div>
-    </div>
-
     <div class="ml-2 mr-2 mt-2">
       <tabset>
         <!-- ======================= PARAMETROS ======================= -->
@@ -288,6 +274,89 @@
           </div>
         </tab>
 
+        <!-- ======================= CÓDIGO (reglas de código y descripción del producto) ======================= -->
+        <!-- siempre creada (con *ngIf ngx-bootstrap la pondría al final al cambiar de producto); oculta en los productos sin estas reglas -->
+        <tab [customClass]="usaReglasProducto ? '' : 'd-none'">
+          <ng-template tabHeading
+            ><i class="fa fa-tag"></i>&nbsp;Código
+            <span class="badge badge-secondary ml-1" *ngIf="reglasProducto.length > 0">{{ reglasProducto.length }}</span>
+            <span class="badge badge-danger ml-1" *ngIf="reglasProductoConErrores > 0" title="Reglas con errores">{{ reglasProductoConErrores }}</span>
+          </ng-template>
+          <div class="card-body card-block">
+            <!-- código y descripción del producto cuando ninguna regla de código o descripción se cumple -->
+            <div class="fab-defecto" *ngIf="sistema">
+              <div class="form-inline">
+                <span class="mr-2"><i class="fa fa-tag"></i> <b>Producto en el XML</b> por defecto:</span>
+                <label class="small mr-1">Código</label>
+                <input class="form-control form-control-sm mr-3" style="width: 140px" maxlength="50" [(ngModel)]="defecto.codigo" placeholder="API.001" />
+                <label class="small mr-1">Descripción</label>
+                <input class="form-control form-control-sm mr-2" style="width: 220px" maxlength="100" [(ngModel)]="defecto.descripcion" placeholder="ENROLLABLE" />
+                <button class="btn btn-outline-primary btn-sm" [disabled]="guardandoDefecto" (click)="GuardarDefecto()"><i class="fa fa-save"></i>&nbsp;Guardar</button>
+                <small class="text-muted ml-3">Se usan si ninguna regla de <b>Código</b> o <b>Descripción</b> se cumple.
+                  Con Leroy la descripción del XML es siempre LEROY MERLIN.</small>
+              </div>
+            </div>
+
+            <div class="fab-toolbar mt-2">
+              <button class="btn btn-primary btn-sm" (click)="NuevaRegla('CODIGO')">
+                <i class="fa fa-plus"></i>&nbsp;Nueva regla de código
+              </button>
+              <button class="btn btn-primary btn-sm" (click)="NuevaRegla('DESCRIPCION')">
+                <i class="fa fa-plus"></i>&nbsp;Nueva regla de descripción
+              </button>
+              <span class="fab-aviso-error" *ngIf="reglasProductoConErrores > 0">
+                <i class="fa fa-exclamation-triangle"></i>
+                {{ reglasProductoConErrores }} {{ reglasProductoConErrores == 1 ? 'regla tiene' : 'reglas tienen' }} errores
+                (pase el ratón por el icono <i class="fa fa-exclamation-triangle"></i> para ver el detalle)
+              </span>
+              <small class="text-muted fab-toolbar-ayuda">
+                Deciden el <b>código</b> (campo Articulo) y la <b>descripción</b> (campo Descripcion) del producto en el XML.
+                De cada clase gana la primera que se cumple, por orden. Doble clic en una fila para editarla.
+                Si un cliente tiene reglas propias de una clase, se usan solo las suyas; si no, las de <b>Todos</b>.
+              </small>
+            </div>
+
+            <div class="row mt-2">
+              <div class="col-12">
+                <table class="table table-sm table-bordered table-hover mb-0 fab-tabla-codigo">
+                  <thead class="thead-light">
+                    <tr>
+                      <th style="width: 90px"></th>
+                      <th style="width: 110px">Tipo</th>
+                      <th style="width: 70px">Orden</th>
+                      <th>Decide</th>
+                      <th>Cliente</th>
+                      <th>Nombre</th>
+                      <th>Cuándo se aplica</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let r of reglasProducto" (dblclick)="EditarRegla(r)" style="cursor: pointer">
+                      <td class="text-nowrap">
+                        <i class="fa fa-pencil fab-accion" title="Editar" (click)="EditarRegla(r)"></i>
+                        <i class="fa fa-copy fab-accion" title="Duplicar" (click)="DuplicarRegla(r)"></i>
+                        <i class="fa fa-trash fab-accion fab-accion-borrar" title="Borrar" (click)="DelItem(r.idrow)"></i>
+                        <i *ngIf="erroresTextoRegla(r)" class="fa fa-exclamation-triangle text-danger" [title]="erroresTextoRegla(r)"></i>
+                      </td>
+                      <td><span class="fab-badge fab-cliente">{{ r.tipo_regla == 'CODIGO' ? 'Código' : 'Descripción' }}</span></td>
+                      <td>{{ r.orden }}</td>
+                      <td><b>{{ r.resultado }}</b></td>
+                      <td>{{ r.cliente_nombre || 'Todos' }}</td>
+                      <td>{{ r.atributo }}</td>
+                      <td class="fab-code">{{ textoCondicionesRegla(r) }}</td>
+                    </tr>
+                    <tr *ngIf="reglasProducto.length == 0">
+                      <td colspan="7" class="text-muted text-center">
+                        No hay reglas de código ni de descripción: el XML lleva el producto por defecto de arriba.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </tab>
+
         <!-- ======================= TABLAS ======================= -->
         <tab>
           <ng-template tabHeading
@@ -482,12 +551,12 @@
                 [placeholder]="regla.tipo_regla ? 'Nombre de la regla (p. ej. CODIGO MOTORIZADO)' : 'PERFIL, TAPAS, VARILLA…'" />
             </div>
           </div>
-          <!-- sqlCajonZip/07: además de componentes, una regla puede decidir el código o la descripción del producto en el XML -->
-          <div class="form-row mt-2" *ngIf="usaReglasProducto || regla.tipo_regla">
+          <!-- Reglas de la pestaña "Código": decide el código o la descripción del producto en el XML (se puede pasar de una a otra) -->
+          <div class="form-row mt-2" *ngIf="regla.tipo_regla">
             <div class="col-md-12">
               <label>Tipo de regla</label>
               <select class="form-control form-control-sm" [(ngModel)]="regla.tipo_regla">
-                <option *ngFor="let t of tiposRegla" [value]="t.valor">{{ t.texto }}</option>
+                <option *ngFor="let t of tiposReglaVentana" [value]="t.valor">{{ t.texto }}</option>
               </select>
             </div>
           </div>
@@ -744,9 +813,11 @@
                   </td>
                   <td>{{ r.orden }}</td>
                   <td>{{ r.cliente_nombre }}</td>
-                  <td>{{ r.atributo }}</td>
+                  <td>
+                    <span *ngIf="r.tipo_regla" class="fab-badge fab-cliente mr-1">{{ r.tipo_regla == 'CODIGO' ? 'Código' : 'Descripción' }}</span>{{ r.atributo }}
+                  </td>
                   <td class="fab-code">{{ textoCondicionesRegla(r) }}</td>
-                  <td>{{ r.detalle }}</td>
+                  <td>{{ r.tipo_regla ? r.resultado : r.detalle }}</td>
                   <td class="fab-code">{{ r.consumo }}</td>
                 </tr>
               </tbody>

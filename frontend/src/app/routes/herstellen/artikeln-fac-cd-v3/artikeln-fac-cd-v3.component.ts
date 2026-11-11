@@ -176,6 +176,9 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   /* sqlCajonZip/07: tipos de regla, código y descripción por defecto del juego y resultado de la simulación */
   readonly tiposRegla = TIPOS_REGLA;
+  /* Pestaña "Código": las reglas de código y descripción, aparte de las de componente (que van en la rejilla "Reglas") */
+  reglasProducto: any[] = [];
+  reglasProductoConErrores = 0;
   defecto = { codigo: '', descripcion: '' };
   guardandoDefecto = false;
   simProducto: any[] = [];
@@ -1054,16 +1057,27 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     this.leerDelSistema('/sm/fabricacion/reglas', data => {
       this.erroresReglas = {};
       this.reglasConErrores = 0;
+      this.reglasProductoConErrores = 0;
       data.Table.forEach(r => {
         let errores = validarRegla(r, this.nombresParametros, this.parametrosArticulo());
         this.erroresReglas[r.idrow] = errores;
         if (errores.total > 0) {
-          this.reglasConErrores++;
+          if (r.tipo_regla) {
+            this.reglasProductoConErrores++;
+          } else {
+            this.reglasConErrores++;
+          }
         }
       });
 
+      /* Todas (para copiar); la rejilla "Reglas" solo las de componente y la pestaña "Código" las de código y descripción,
+         primero las de código y por orden (gana la primera que se cumple) */
       this.reglas = data.Table;
-      this.fueraDeZona(() => recargarGrid(this.myGrid, this.source, this.dataAdapter, data.Table, opciones));
+      let componentes = data.Table.filter(r => !r.tipo_regla);
+      this.reglasProducto = data.Table.filter(r => r.tipo_regla).sort((a, b) =>
+        (a.tipo_regla == b.tipo_regla ? 0 : a.tipo_regla == 'CODIGO' ? -1 : 1)
+        || (Number(a.orden) || 0) - (Number(b.orden) || 0) || a.idrow - b.idrow);
+      this.fueraDeZona(() => recargarGrid(this.myGrid, this.source, this.dataAdapter, componentes, opciones));
     });
   }
 
@@ -1438,20 +1452,40 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     };
   }
 
-  /* Orden propuesto para una regla nueva: el más alto de las reglas del sistema + 10 (10 si no hay ninguna) */
-  siguienteOrden(): number {
-    let ordenes = (this.source.localdata || []).map(r => Number(r.orden) || 0);
+  /* Orden propuesto para una regla nueva: el más alto de las reglas de esa clase (componente, o código / descripción) + 10
+     (10 si no hay ninguna) */
+  siguienteOrden(tipo: string = ''): number {
+    let lista = tipo ? this.reglasProducto.filter(r => r.tipo_regla == tipo) : (this.source.localdata || []);
+    let ordenes = lista.map(r => Number(r.orden) || 0);
     return (ordenes.length > 0 ? Math.max(...ordenes) : 0) + 10;
   }
 
-  NuevaRegla() {
+  /* tipo: '' regla de componente (pestaña "Reglas"); 'CODIGO' o 'DESCRIPCION' (pestaña "Código") */
+  NuevaRegla(tipo: string = '') {
     this.medidasAbiertas = false;
     this.regla = this.reglaVacia();
-    this.regla.orden = this.siguienteOrden();
+    this.regla.tipo_regla = tipo;
+    this.regla.orden = this.siguienteOrden(tipo);
     this.consumoComun = true;
     this.consumoTodos = consumoVacio();
-    this.tituloRegla = 'Nueva regla';
+    this.tituloRegla = tipo == 'CODIGO' ? 'Nueva regla de código' : tipo == 'DESCRIPCION' ? 'Nueva regla de descripción' : 'Nueva regla';
     this.modalRegla.show();
+  }
+
+  /* En la ventana, una regla de código o descripción puede pasar de una clase a la otra; una de componente no cambia de tipo */
+  get tiposReglaVentana() {
+    return this.tiposRegla.filter(t => t.valor !== '');
+  }
+
+  /* Pestaña "Código": errores de una regla (para el aviso de la fila) */
+  erroresTextoRegla(r: any): string {
+    let errores = this.erroresReglas[r.idrow];
+    if (!errores || !errores.total) {
+      return '';
+    }
+    let textos = [];
+    Object.keys(errores.campos || {}).forEach(campo => textos = textos.concat(errores.campos[campo]));
+    return textos.join('\n');
   }
 
   EditarRegla(fila) {
