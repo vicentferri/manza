@@ -30,6 +30,8 @@ import { EnrollableComponent } from './enrollable/enrollable.component';
 import { EnrollableNuevoComponent } from './enrollable-nuevo/enrollable-nuevo.component';
 import { CompacNuevoComponent } from './compac-nuevo/compac-nuevo.component';
 import { ZipNuevoComponent } from './zip-nuevo/zip-nuevo.component';
+import { VerticalNuevoComponent } from './vertical-nuevo/vertical-nuevo.component';
+import { Preview3NuevoComponent } from './preview-3-nuevo/preview-3-nuevo.component';
 import { JaponesComponent } from './japones/japones.component';
 import { VerticalComponent } from './vertical/vertical.component';
 import { CompacComponent } from './compac/compac.component';
@@ -69,6 +71,8 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
     EnrollableNuevoComponent,
     CompacNuevoComponent,
     ZipNuevoComponent,
+    VerticalNuevoComponent,
+    Preview3NuevoComponent,
     JaponesComponent,
     VerticalComponent,
     CompacComponent,

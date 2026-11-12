@@ -33,7 +33,7 @@
     <button type="button" class="cfg-btn cfg-btn-peligro" (click)="BorrarPedido()">{{ "BORRAR" | translate }}</button>
     <!-- Se finaliza desde el resumen lateral del producto o desde la cesta; aquí solo en el enrollable, el Solar Mini y el Cajón ZIP nuevos -->
     <button type="button" class="cfg-btn cfg-btn-azul" (click)="ShowBtns(); staticModal2.show()"
-      *ngIf="Cesta.length > 0 && bConfigurador == 0 && ((TipoCortina == 1 && accNuevo) || (TipoCortina == 4 && miniNuevo) || (TipoCortina == 6 && zipNuevo))">{{ "FINALIZAR" | translate }}</button>
+      *ngIf="Cesta.length > 0 && bConfigurador == 0 && ((TipoCortina == 1 && accNuevo) || (TipoCortina == 4 && miniNuevo) || (TipoCortina == 6 && zipNuevo) || (TipoCortina == 3 && verNuevo))">{{ "FINALIZAR" | translate }}</button>
 
     <span class="cfg-subbar-empresa">SOLARMANES 205502</span>
 
@@ -118,7 +118,7 @@
     </manza-japones>
 
     <!-- PANEL VERTICAL -->
-    <manza-vertical *ngIf="TipoCortina == 3 && productos.prod_3"
+    <manza-vertical *ngIf="TipoCortina == 3 && productos.prod_3 && !verNuevo"
       [Cliente]="Cliente" [codeCentro]="codeCentro"
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [Global_Visualizar_C1_Parciales]="Global_Visualizar_C1_Parciales"
@@ -127,6 +127,13 @@
       (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-vertical>
+
+    <!-- Vertical con las listas de Productos: solo clientes con su interruptor (SOL_ACC_VER_CLIENTE) -->
+    <manza-vertical-nuevo *ngIf="TipoCortina == 3 && productos.prod_3 && verNuevo"
+      [Cliente]="Cliente" [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+      (onAdd)="AgregarDesdeHijo($event)">
+    </manza-vertical-nuevo>
 
     <manza-compac *ngIf="TipoCortina == 4 && productos.prod_4 && !miniNuevo"
       [Cliente]="Cliente" [codeCentro]="codeCentro"
@@ -207,9 +214,15 @@
           <app-preview-2 *ngSwitchCase="2" [item]="item"
             (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
           </app-preview-2>
-          <app-preview-3 *ngSwitchCase="3" [item]="item"
-            (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
-          </app-preview-3>
+          <ng-container *ngSwitchCase="3">
+            <app-preview-3 *ngIf="!item.nver" [item]="item"
+              (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
+            </app-preview-3>
+            <!-- Vertical del configurador nuevo (sqlVertical) -->
+            <app-preview-3-nuevo *ngIf="item.nver" [item]="item"
+              (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
+            </app-preview-3-nuevo>
+          </ng-container>
           <app-preview-4 *ngSwitchCase="4" [item]="item" [Cliente]="Cliente"
             (onDelete)="DeleteLine($event)" (onEdit)="EditLine($event)">
           </app-preview-4>
@@ -304,7 +317,10 @@
               <ng-container [ngSwitch]="item.TipoCortina">
                 <app-preview-1 *ngSwitchCase="1" [item]="item" [soloLectura]="true"></app-preview-1>
                 <app-preview-2 *ngSwitchCase="2" [item]="item" [soloLectura]="true"></app-preview-2>
-                <app-preview-3 *ngSwitchCase="3" [item]="item" [soloLectura]="true"></app-preview-3>
+                <ng-container *ngSwitchCase="3">
+                  <app-preview-3 *ngIf="!item.nver" [item]="item" [soloLectura]="true"></app-preview-3>
+                  <app-preview-3-nuevo *ngIf="item.nver" [item]="item" [soloLectura]="true"></app-preview-3-nuevo>
+                </ng-container>
                 <app-preview-4 *ngSwitchCase="4" [item]="item" [Cliente]="Cliente" [soloLectura]="true"></app-preview-4>
                 <app-preview-7 *ngSwitchCase="7" [item]="item" [soloLectura]="true"></app-preview-7>
                 <app-preview-6 *ngSwitchCase="6" [item]="item" [soloLectura]="true"></app-preview-6>

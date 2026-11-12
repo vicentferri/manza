@@ -1,0 +1,71 @@
+<div class="cfg-linea">
+
+  <div class="cfg-linea-fila">
+    <span class="cfg-linea-icono">V</span>
+    <div class="cfg-linea-info">
+      <div class="cfg-linea-nombre">
+        <strong>Vertical {{ ver.tipo }}</strong>
+        <span class="cfg-mono">{{ medidas }}</span>
+        <span>· {{ ver.modalidad }}</span>
+        <span *ngIf="item.tej_tipo_text"> · {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}<span *ngIf="ver.color2"> / {{ ver.color2 | frase }}</span></span>
+      </div>
+      <div class="cfg-linea-sub">
+        <span *ngIf="ver.lama">Lama {{ ver.lama }}</span>
+        <span *ngIf="ver.accionamiento"> · {{ ver.accionamiento }}</span>
+        <span *ngIf="ver.riel"> · Riel {{ ver.riel }}</span>
+      </div>
+      <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
+        <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
+        {{ (verDetalle ? "Ocultar detalle" : "Ver detalle") | translate }}
+      </button>
+    </div>
+    <span class="cfg-linea-uds">{{ unidades }}</span>
+    <div class="cfg-linea-importe">
+      <strong>{{ item.precios.T3_PVP | number:'1.2-2' }} €</strong>
+      <small>{{ item.precios.T3_PVP_C1 }}</small>
+    </div>
+    <div class="cfg-linea-botones" *ngIf="!soloLectura">
+      <button type="button" class="cfg-btn" (click)="EditLine(item)">{{ "MODIFICAR" | translate }}</button>
+      <button type="button" class="cfg-btn cfg-btn-peligro" (click)="DeleteLine(item)">{{ "BORRAR" | translate }}</button>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="cfg-linea-cuerpo" *ngIf="verDetalle">
+    <div class="cfg-linea-datos">
+      <div class="cfg-dato"><span>Tipo</span><strong>{{ ver.tipo }}</strong></div>
+      <div class="cfg-dato"><span>Modalidad</span><strong>{{ ver.modalidad }}</strong></div>
+      <div class="cfg-dato" *ngIf="esInclinada"><span>Espacio a cubrir</span><strong>{{ item.ancho }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="esInclinada"><span>Alto máximo</span><strong>{{ ver.altoMax }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="esInclinada"><span>Alto mínimo</span><strong>{{ ver.altoMin }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="!esInclinada && item.ancho > 0"><span>{{ "ANCHO" | translate }}</span><strong>{{ item.ancho }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="!esInclinada && item.alto > 0"><span>{{ "ALTO" | translate }}</span><strong>{{ item.alto }} cm</strong></div>
+      <div class="cfg-dato"><span>{{ "CANTIDAD" | translate }}</span><strong>{{ unidades }}</strong></div>
+      <div class="cfg-dato" *ngIf="ver.lama"><span>Ancho de lama</span><strong>{{ ver.lama }}</strong></div>
+      <div class="cfg-dato" *ngIf="ver.posicion"><span>Posición del mecanismo</span><strong>{{ ver.posicion }}</strong></div>
+      <div class="cfg-dato" *ngIf="ver.riel"><span>Color del riel</span><strong>{{ ver.riel }}</strong></div>
+      <div class="cfg-dato" *ngIf="ver.accionamiento"><span>Accionamiento</span><strong>{{ ver.accionamiento }}</strong></div>
+      <div class="cfg-dato" *ngIf="ver.soporte"><span>{{ "SOPORTES" | translate }}</span><strong>{{ ver.soporte }}</strong></div>
+      <div class="cfg-dato" *ngIf="ver.recogida"><span>Recogida</span><strong>{{ ver.recogida }}</strong></div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.tej_tipo_text">
+        <span>{{ "TEJIDO" | translate }}</span>
+        <strong>{{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}<span *ngIf="ver.color2"> · combinada con {{ ver.color2 | frase }}</span></strong>
+      </div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.estancia_obs"><span>{{ "OBSERVACIONES" | translate }}</span><strong>{{ item.estancia_obs }}</strong></div>
+    </div>
+
+    <div class="cfg-linea-precio">
+      <div>
+        <h5>{{ "Resumen de precio" | translate }}</h5>
+        <div class="cfg-precio-fila" *ngFor="let d of desglose">
+          <span>{{ d.concepto }}<small *ngIf="d.elemento"> · {{ d.elemento }}</small></span>
+          <div>{{ d.importe | number:'1.2-2' }} €</div>
+        </div>
+        <div class="cfg-precio-fila">
+          <span>{{ item.cantidad > 1 ? ('Total (' + unidades + ')') : 'Total' }}</span>
+          <div><strong>{{ item.precios.T3_PVP | number:'1.2-2' }} €</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

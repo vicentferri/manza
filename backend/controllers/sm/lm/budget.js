@@ -919,6 +919,45 @@ function budget_herunterladen_T7(req,res)
  }
 
 
+/* VERTICAL (sqlVertical): líneas tipo 3 del configurador nuevo de un presupuesto, para cargarlo en la cesta.
+   Solo las que tienen la selección nueva (nver_*); las de siempre las sigue cargando budget_herunterladen_T3 */
+function budget_herunterladen_T3_ver(req,res)
+ {
+ 	if (!/^\d+$/.test(String(req.params.idrow))) {
+ 		return res.status(400).send({ message: 'idrow no válido' });
+ 	}
+ 	var idrow = parseInt(req.params.idrow);
+
+ 	new sql.Request()
+ 		.input('idrow', sql.Int, idrow)
+ 		/* con las medidas de la línea y los nombres y códigos de cada opción, para la cesta */
+ 		.query("select t.*, l.ancho, l.alto, l.cantidad, " +
+ 		       "ti.codigo as ver_tipo_codigo, ti.nombre as ver_tipo, mo.codigo as ver_modalidad_codigo, mo.nombre as ver_modalidad, " +
+ 		       "isnull(la.nombre, cast(cast(la.valor as float) as varchar(20)) + ' mm') as ver_lama, po.nombre as ver_posicion, " +
+ 		       "ri.nombre as ver_riel, ac.nombre as ver_accionamiento, so.nombre as ver_soporte, re.nombre as ver_recogida, " +
+ 		       "tj.nombre as ver_tejido, tj.color as ver_color, t2.color as ver_color2 " +
+ 		       "from SOL_PRESUPUESTOS_COLA_TIPO_3 t " +
+ 		       "join SOL_PRESUPUESTOS_COLA_LINEAS l on l.id = t.idrow " +
+ 		       "left join SOL_ACC_VER_TIPO ti on ti.id = t.nver_tipo_id " +
+ 		       "left join SOL_ACC_VER_MODALIDAD mo on mo.id = t.nver_modalidad_id " +
+ 		       "left join SOL_ACC_VER_ANCHO_LAMA la on la.id = t.nver_ancho_lama_id " +
+ 		       "left join SOL_ACC_VER_POSICION_MECANISMO po on po.id = t.nver_posicion_mecanismo_id " +
+ 		       "left join SOL_ACC_VER_COLOR_RIEL ri on ri.id = t.nver_color_riel_id " +
+ 		       "left join SOL_ACC_VER_ACCIONAMIENTO ac on ac.id = t.nver_accionamiento_id " +
+ 		       "left join SOL_ACC_VER_SOPORTE so on so.id = t.nver_soporte_id " +
+ 		       "left join SOL_ACC_VER_RECOGIDA re on re.id = t.nver_recogida_id " +
+ 		       "left join SOL_TEJIDOS_MAESTRO tj on tj.idrow = t.nver_tejido_id " +
+ 		       "left join SOL_TEJIDOS_MAESTRO t2 on t2.idrow = t.nver_tejido2_id " +
+ 		       "where t.nver_tipo_id is not null and l.idrow = @idrow order by t.id",
+ 		(err, result) => {
+ 			if (err == null) {
+ 				res.status(200).send(result.recordset);
+ 			} else {
+ 				res.status(500).send({ message: err });
+ 			}
+ 		});
+ }
+
 /* CAJÓN ZIP (sqlCajonZip): líneas tipo 6 del configurador nuevo de un presupuesto, para cargarlo en la cesta.
    Solo las que tienen la selección nueva (nzip_*): las filas antiguas de TIPO_6 (de 2021) no se pueden volver a grabar */
 function budget_herunterladen_T6(req,res)
@@ -1114,5 +1153,6 @@ module.exports = {
     budget_herunterladen_T4,
     budget_herunterladen_T7,
     budget_herunterladen_T6,
+	budget_herunterladen_T3_ver,
     budget_delete
 }

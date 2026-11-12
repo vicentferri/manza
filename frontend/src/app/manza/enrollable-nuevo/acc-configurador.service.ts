@@ -71,7 +71,25 @@ export class AccConfiguradorService {
         return this.http.post<any>(this.url + '/zip/precio/' + cliente, linea);
     }
 
-    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc, Solar Mini con nmini y Cajón ZIP con nzip) */
+    /* ¿El cliente configura el Vertical con las listas de Productos? (sqlVertical) Ante cualquier error, false */
+    verActivo(cliente: string | number): Observable<boolean> {
+        return this.http.get<any>(this.url + '/ver/activo/' + cliente).pipe(
+            map(r => !!(r && r.activo === true)),
+            catchError(() => of(false))
+        );
+    }
+
+    /* Tipos de vertical activos, cada uno con SUS listas, modalidades e ids de tejidos; los tejidos del maestro una vez */
+    verOpciones(cliente: string | number): Observable<any> {
+        return this.http.get<any>(this.url + '/ver/opciones/' + cliente);
+    }
+
+    /* Precio de una línea de Vertical (tarifa base pendiente de enlazar + suplementos), sin grabar nada */
+    verPrecio(cliente: string | number, linea: any): Observable<any> {
+        return this.http.post<any>(this.url + '/ver/precio/' + cliente, linea);
+    }
+
+    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc, Solar Mini con nmini, Cajón ZIP con nzip y Vertical con nver) */
     altaPedido(lineas: any[], referencia: string, cliente: string | number): Observable<any> {
         const ref = encodeURIComponent(referencia || '-');
         return this.http.post<any>(this.url + '/pedido/' + cliente + '/' + ref, lineas);

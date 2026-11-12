@@ -1,0 +1,227 @@
+<div class="enx">
+   <div class="enx-aviso">
+      <i class="fa fa-flask"></i>
+      Configurador nuevo del Vertical: las opciones salen de Configuración → Productos → Vertical.
+   </div>
+
+   <div *ngIf="cargando" class="text-muted small mb-2"><i class="fa fa-spinner fa-spin"></i> Cargando opciones...</div>
+   <div *ngIf="!cargando && !opc" class="enx-error mb-2">No se han podido cargar las opciones del Vertical.</div>
+
+   <ng-container *ngIf="opc">
+      <!-- 1. TIPO Y MODALIDAD -->
+      <div class="enx-seccion">
+         <div class="enx-titulo">1. Tipo de vertical</div>
+         <div *ngIf="tipos.length === 0" class="enx-error mb-2">
+            No hay tipos de vertical visibles. Revíselos en Configuración → Productos → Vertical.
+         </div>
+         <div class="row">
+            <div class="col-md-3 col-6 form-group">
+               <label>Tipo</label>
+               <select class="form-control form-control-sm" [(ngModel)]="tipo" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipo()">
+                  <option value="">Seleccionar</option>
+                  <option *ngFor="let t of tipos" [value]="t.id">{{ t.nombre }}</option>
+               </select>
+            </div>
+            <div class="col-md-3 col-6 form-group" *ngIf="tipo">
+               <label>¿Qué quiere pedir?</label>
+               <select class="form-control form-control-sm" [(ngModel)]="modalidad" [ngModelOptions]="{ standalone: true }" (change)="ajustar()"
+                  [disabled]="modalidades.length === 0">
+                  <option value="">{{ modalidades.length === 0 ? 'Sin modalidades' : 'Seleccionar' }}</option>
+                  <option *ngFor="let m of modalidades" [value]="m.id">{{ m.nombre }}</option>
+               </select>
+            </div>
+         </div>
+         <div *ngIf="tipo && modalidades.length === 0" class="enx-error mb-2">
+            Este tipo no tiene modalidades. Márquelas en Configuración → Productos → Vertical → Tipo y modalidades.
+         </div>
+      </div>
+
+      <ng-container *ngIf="modalidad">
+         <!-- 2. MEDIDAS -->
+         <div class="enx-seccion">
+            <div class="enx-titulo">2. Medidas</div>
+            <div class="row">
+               <div class="col-md-2 col-6 form-group" *ngIf="conAncho">
+                  <label>{{ esInclinada ? 'Espacio a cubrir' : ("ANCHO" | translate) }} (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" [step]="pasoMedida" [(ngModel)]="ancho" [ngModelOptions]="{ standalone: true }" />
+               </div>
+               <div class="col-md-2 col-6 form-group" *ngIf="conAlto">
+                  <label>{{ esInclinada ? 'Alto máximo' : ("ALTO" | translate) }} (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" [step]="pasoMedida" [(ngModel)]="alto" [ngModelOptions]="{ standalone: true }" />
+               </div>
+               <div class="col-md-2 col-6 form-group" *ngIf="esInclinada">
+                  <label>Alto mínimo (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" [step]="pasoMedida" [(ngModel)]="altoMin" [ngModelOptions]="{ standalone: true }" />
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>{{ etiquetaCantidad }}</label>
+                  <input type="number" class="form-control form-control-sm" min="1" step="1" [(ngModel)]="cantidad" [ngModelOptions]="{ standalone: true }" />
+               </div>
+            </div>
+            <div *ngIf="inclinacion !== null" [class.enx-error]="inclinacion > maxInclinacion" [class.enx-nota]="inclinacion <= maxInclinacion">
+               Inclinación: {{ inclinacion | number:'1.1-1' }}°<span *ngIf="inclinacion > maxInclinacion"> · no se puede fabricar (máximo {{ maxInclinacion }}°)</span>
+            </div>
+         </div>
+
+         <!-- 3. LAMA Y MECANISMO -->
+         <div class="enx-seccion" *ngIf="conTejido || conMecanismo">
+            <div class="enx-titulo">3. {{ conMecanismo ? 'Mecanismo' : 'Lama' }}</div>
+            <div class="row">
+               <div class="col-md-3 col-6 form-group" *ngIf="conTejido && anchosLama.length !== 1">
+                  <label>Ancho de lama</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="anchoLama" [ngModelOptions]="{ standalone: true }" [disabled]="anchosLama.length === 0">
+                     <option value="">{{ anchosLama.length === 0 ? 'Sin anchos de lama' : 'Seleccionar' }}</option>
+                     <option *ngFor="let a of anchosLama" [value]="a.id">{{ a.nombre }}</option>
+                  </select>
+               </div>
+               <!-- una sola opción: se asigna sola y no se pregunta (la Viena, 127 mm) -->
+               <div class="col-md-3 col-6 form-group" *ngIf="conTejido && anchosLama.length === 1">
+                  <label>Ancho de lama</label>
+                  <div class="form-control form-control-sm enx-fijo">{{ anchosLama[0].nombre }}</div>
+               </div>
+               <ng-container *ngIf="conMecanismo">
+                  <div class="col-md-3 col-6 form-group">
+                     <label>Posición del mecanismo</label>
+                     <select class="form-control form-control-sm" [(ngModel)]="posicion" [ngModelOptions]="{ standalone: true }" [disabled]="posiciones.length === 0">
+                        <option value="">{{ posiciones.length === 0 ? 'Sin posiciones' : 'Seleccionar' }}</option>
+                        <option *ngFor="let p of posiciones" [value]="p.id">{{ p.nombre }}</option>
+                     </select>
+                  </div>
+                  <div class="col-md-3 col-6 form-group">
+                     <label>Color del riel</label>
+                     <select class="form-control form-control-sm" [(ngModel)]="colorRiel" [ngModelOptions]="{ standalone: true }" [disabled]="coloresRiel.length === 0">
+                        <option value="">{{ coloresRiel.length === 0 ? 'Sin colores' : 'Seleccionar' }}</option>
+                        <option *ngFor="let c of coloresRiel" [value]="c.id">{{ c.nombre }}</option>
+                     </select>
+                  </div>
+                  <div class="col-md-3 col-6 form-group">
+                     <label>Accionamiento</label>
+                     <select class="form-control form-control-sm" [(ngModel)]="accionamiento" [ngModelOptions]="{ standalone: true }" [disabled]="accionamientos.length === 0">
+                        <option value="">{{ accionamientos.length === 0 ? 'Sin accionamientos' : 'Seleccionar' }}</option>
+                        <option *ngFor="let a of accionamientos" [value]="a.id">{{ a.nombre }}</option>
+                     </select>
+                  </div>
+                  <div class="col-md-3 col-6 form-group">
+                     <label>{{ "SOPORTES" | translate }}</label>
+                     <select class="form-control form-control-sm" [(ngModel)]="soporte" [ngModelOptions]="{ standalone: true }" [disabled]="soportes.length === 0">
+                        <option value="">{{ soportes.length === 0 ? 'Sin soportes' : 'Seleccionar' }}</option>
+                        <option *ngFor="let s of soportes" [value]="s.id">{{ s.nombre }}</option>
+                     </select>
+                  </div>
+                  <div class="col-md-3 col-6 form-group">
+                     <label>Recogida</label>
+                     <select class="form-control form-control-sm" [(ngModel)]="recogida" [ngModelOptions]="{ standalone: true }" [disabled]="recogidas.length === 0">
+                        <option value="">{{ recogidas.length === 0 ? 'Sin recogidas' : 'Seleccionar' }}</option>
+                        <option *ngFor="let r of recogidas" [value]="r.id">{{ r.nombre }}</option>
+                     </select>
+                  </div>
+               </ng-container>
+            </div>
+         </div>
+
+         <!-- 4. TEJIDO -->
+         <div class="enx-seccion" *ngIf="conTejido">
+            <div class="enx-titulo">4. Tejido</div>
+            <div *ngIf="tejidosDisponibles.length === 0" class="enx-error mb-2">
+               No hay tejidos disponibles para este tipo de vertical. Márquelos en Configuración → Productos → Vertical → Tejido.
+            </div>
+            <div class="row">
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ "TIPO DE TEJIDO" | translate }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="tipoTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipoTejido()">
+                     <option value="">Seleccionar</option>
+                     <option *ngFor="let o of tiposTejido" [value]="o">{{ o }}</option>
+                  </select>
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ "SERIE" | translate }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="nombreTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarNombreTejido()" [disabled]="!tipoTejido">
+                     <option value="">Seleccionar</option>
+                     <option *ngFor="let n of nombresTejido" [value]="n">{{ n }}</option>
+                  </select>
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ "COLOR" | translate }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="colorTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarColorTejido()" [disabled]="!nombreTejido">
+                     <option value="">Seleccionar</option>
+                     <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
+                  </select>
+               </div>
+               <!-- combinada: solo en la Normal completa, con otro color del mismo tejido -->
+               <div class="col-md-3 col-6 form-group" *ngIf="admiteCombinada">
+                  <label class="d-flex align-items-center">
+                     <input type="checkbox" class="mr-1" [(ngModel)]="combinada" [ngModelOptions]="{ standalone: true }" (change)="ajustar()"
+                        [disabled]="!colorTejido || coloresTejido2.length === 0" />
+                     Combinada (2.º color)
+                  </label>
+                  <select *ngIf="combinada" class="form-control form-control-sm" [(ngModel)]="colorTejido2" [ngModelOptions]="{ standalone: true }">
+                     <option value="">Seleccionar</option>
+                     <option *ngFor="let c of coloresTejido2" [value]="c">{{ c }}</option>
+                  </select>
+                  <small *ngIf="colorTejido && coloresTejido2.length === 0" class="enx-nota">Este tejido no tiene otros colores</small>
+               </div>
+            </div>
+         </div>
+
+         <!-- OBSERVACIONES -->
+         <div class="enx-seccion">
+            <div class="row align-items-end">
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ "ESTANCIA" | translate }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="estancia" [ngModelOptions]="{ standalone: true }">
+                     <option value="-1">Seleccionar</option>
+                     <option *ngFor="let e of estancias" [value]="e.idrow">{{ e.descripcion }}</option>
+                  </select>
+               </div>
+               <div class="col-md-9 form-group">
+                  <label>{{ "OBSERVACIONES" | translate }}</label>
+                  <input type="text" class="form-control form-control-sm" maxlength="2500" [(ngModel)]="observaciones" [ngModelOptions]="{ standalone: true }" />
+               </div>
+            </div>
+         </div>
+
+         <!-- PRECIO Y AÑADIR -->
+         <div class="enx-seccion">
+            <div class="enx-titulo">Precio</div>
+            <div class="row align-items-end">
+               <div class="col-md-3 col-6 form-group">
+                  <button type="button" class="btn btn-sm btn-primary btn-block" (click)="CalcularPrecio()" [disabled]="calculando">
+                     <i class="fa" [class.fa-calculator]="!calculando" [class.fa-spinner]="calculando" [class.fa-spin]="calculando"></i> Calcular precio
+                  </button>
+               </div>
+               <div class="col-md-6 col-6 form-group text-right enx-total">
+                  <ng-container *ngIf="precioVigente">
+                     <div class="enx-total-importe">{{ precio.total | number:'1.2-2' }} €</div>
+                     <div class="enx-nota">{{ precio.unitario | number:'1.2-2' }} € por {{ etiquetaCantidad === 'Número de lamas' ? 'lama' : etiquetaCantidad === 'Rieles' ? 'riel' : 'cortina' }}</div>
+                  </ng-container>
+                  <span *ngIf="precio && !precioVigente" class="enx-nota">Ha cambiado la configuración: vuelva a calcular el precio</span>
+               </div>
+               <div class="col-md-3 col-6 form-group text-right">
+                  <button type="button" class="btn btn-success" (click)="Agregar()" [disabled]="!precioVigente"
+                     [title]="precioVigente ? '' : 'Calcule el precio antes de añadir'">
+                     <i class="fa fa-plus"></i> {{ "AGREGAR" | translate }}
+                  </button>
+               </div>
+            </div>
+
+            <div *ngIf="precioError" class="enx-error mb-2"><i class="fa fa-times-circle"></i> {{ precioError }}</div>
+            <div *ngIf="precioAviso" class="enx-aviso"><i class="fa fa-exclamation-triangle"></i> {{ precioAviso }}</div>
+
+            <table *ngIf="precioVigente" class="table table-sm enx-desglose mb-2">
+               <tbody>
+                  <tr *ngFor="let d of precio.desglose">
+                     <td>{{ d.concepto }}</td>
+                     <td>{{ d.elemento }}</td>
+                     <td class="enx-nota">{{ d.detalle }}</td>
+                     <td class="text-right">{{ d.importe | number:'1.2-2' }} €</td>
+                  </tr>
+                  <tr *ngIf="cantidad > 1" class="enx-desglose-total">
+                     <td colspan="3">Por unidad x {{ cantidad }}</td>
+                     <td class="text-right">{{ precio.total | number:'1.2-2' }} €</td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </ng-container>
+   </ng-container>
+</div>

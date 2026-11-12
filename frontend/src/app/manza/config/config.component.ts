@@ -16,6 +16,7 @@ import { HoneycombComponent } from '../honeycomb/honeycomb.component';
 import { EnrollableNuevoComponent } from '../enrollable-nuevo/enrollable-nuevo.component';
 import { CompacNuevoComponent } from '../compac-nuevo/compac-nuevo.component';
 import { ZipNuevoComponent } from '../zip-nuevo/zip-nuevo.component';
+import { VerticalNuevoComponent } from '../vertical-nuevo/vertical-nuevo.component';
 import { AccConfiguradorService } from '../enrollable-nuevo/acc-configurador.service';
 import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
@@ -41,6 +42,7 @@ export class ConfigComponent implements OnInit {
   @ViewChild(EnrollableNuevoComponent, { static: false }) public enrollableNuevoRef!: EnrollableNuevoComponent;
   @ViewChild(CompacNuevoComponent, { static: false }) public compacNuevoRef!: CompacNuevoComponent;
   @ViewChild(ZipNuevoComponent, { static: false }) public zipNuevoRef!: ZipNuevoComponent;
+  @ViewChild(VerticalNuevoComponent, { static: false }) public verticalNuevoRef!: VerticalNuevoComponent;
 
   /* Configurador nuevo de accionamientos (SOL_ACC_CLIENTE). false = el de siempre; Leroy no tiene fila */
   accNuevo: boolean = false;
@@ -48,6 +50,8 @@ export class ConfigComponent implements OnInit {
   miniNuevo: boolean = false;
   /* Cajón ZIP con las listas de Productos (sqlCajonZip): producto propio (tipo 6), con su interruptor SOL_ACC_ZIP_CLIENTE */
   zipNuevo: boolean = false;
+  /* Vertical con las listas de Productos (sqlVertical): tipo 3 con su interruptor SOL_ACC_VER_CLIENTE; Leroy sigue con manza-vertical */
+  verNuevo: boolean = false;
 
   editingItem: CortinaTipo | null = null;
 
@@ -205,10 +209,12 @@ export class ConfigComponent implements OnInit {
     this.accNuevo = false;
     this.miniNuevo = false;
     this.zipNuevo = false;
+    this.verNuevo = false;
     if (!(parseInt(this.Cliente, 10) > 0)) { return; }
     this.accConfigurador.activo(this.Cliente).subscribe(activo => this.accNuevo = activo);
     this.accConfigurador.miniActivo(this.Cliente).subscribe(activo => this.miniNuevo = activo);
     this.accConfigurador.zipActivo(this.Cliente).subscribe(activo => this.zipNuevo = activo);
+    this.accConfigurador.verActivo(this.Cliente).subscribe(activo => this.verNuevo = activo);
   }
 
   ChangeUser() {
@@ -461,7 +467,7 @@ export class ConfigComponent implements OnInit {
 
   /* El documento va por el configurador nuevo si el cliente tiene alguno de sus interruptores */
   get flujoNuevo(): boolean {
-    return this.accNuevo || this.miniNuevo || this.zipNuevo;
+    return this.accNuevo || this.miniNuevo || this.zipNuevo || this.verNuevo;
   }
 
   ProcesarPedido() {
@@ -469,7 +475,7 @@ export class ConfigComponent implements OnInit {
       this.btnPedido = 1;
       this.btnPresupuesto = 1;
 
-      /* Con cualquiera de los interruptores el documento va por el flujo nuevo (enrollables, Solar Mini y Cajón ZIP) */
+      /* Con cualquiera de los interruptores el documento va por el flujo nuevo (enrollables, Solar Mini, Cajón ZIP y Vertical) */
       if (this.flujoNuevo) { this.ProcesarPedidoAcc(); return; }
 
       let lineas = JSON.stringify(this.Cesta);
@@ -651,8 +657,14 @@ export class ConfigComponent implements OnInit {
       if (item.TipoCortina == 1) { Suma += item.cantidad; }
       if (item.TipoCortina == 2) { if (item.PJ_Cantidad_1) { Suma += Number(item.PJ_Cantidad_1); } }
       if (item.TipoCortina == 3) {
-        if (item.PV_Cantidad_1) { Suma += Number(item.PV_Cantidad_1); }
-        if (item.PV_Cantidad_2) { Suma += Number(item.PV_Cantidad_2); }
+        const ver = (item as any).ver;
+        if ((item as any).nver) {
+          /* Vertical nuevo: la cantidad son cortinas o rieles; en solo tejido son lamas sueltas y la línea cuenta como una */
+          Suma += ver && ver.modalidadCodigo === 'SOLO_TEJIDO' ? 1 : Number(item.cantidad);
+        } else {
+          if (item.PV_Cantidad_1) { Suma += Number(item.PV_Cantidad_1); }
+          if (item.PV_Cantidad_2) { Suma += Number(item.PV_Cantidad_2); }
+        }
       }
       if (item.TipoCortina == 4) { Suma += item.cantidad; }
       if (item.TipoCortina == 7) { Suma += item.cantidad; }
@@ -843,13 +855,16 @@ export class ConfigComponent implements OnInit {
       error => { this.toaster.error(JSON.stringify(error)); }
     );
 
-    /* T3 - VERTICAL */
+    /* T3 - VERTICAL (el de siempre). Las líneas del Vertical nuevo (nver_*) se cargan aparte, más abajo */
     this.service.Budget_herunterladen_T3(event.idrow).subscribe(
       data => {
         const len = data.length;
+        let cargadas = 0;
         if (len > 0) {
           for (let pos = 0; pos < len; pos++) {
             const item = data[pos];
+            if (item.nver_tipo_id) { continue; }
+            cargadas++;
             const tipo: CortinaTipo = new CortinaTipo(this.codeCentro);
 
             const precios = {
@@ -917,14 +932,34 @@ export class ConfigComponent implements OnInit {
 
             this.Cesta.push(tipo);
           }
-          const message = this.translation.get('AGREGADO VERTICAL A CESTA');
-          this.toaster.success(message, 'Cesta');
-          this.NumeroCortinas = this.TotalSum();
-          this.VerPedido();
+          if (cargadas > 0) {
+            const message = this.translation.get('AGREGADO VERTICAL A CESTA');
+            this.toaster.success(message, 'Cesta');
+            this.NumeroCortinas = this.TotalSum();
+            this.VerPedido();
+          }
         }
       },
       error => { this.toaster.error(JSON.stringify(error)); }
     );
+
+    /* T3 - VERTICAL del configurador nuevo (sqlVertical): solo con su interruptor y solo las líneas con su selección (nver_*) */
+    if (this.verNuevo) {
+      this.service.Budget_herunterladen_T3_ver(event.idrow).subscribe(
+        data => {
+          const len = data.length;
+          if (len > 0) {
+            for (let pos = 0; pos < len; pos++) {
+              this.Cesta.push(this.lineaVerDesdePresupuesto(data[pos]));
+            }
+            this.toaster.success('Vertical agregado a la cesta', 'Cesta');
+            this.NumeroCortinas = this.TotalSum();
+            this.VerPedido();
+          }
+        },
+        error => { this.toaster.error(JSON.stringify(error)); }
+      );
+    }
 
     /* T4 - COMPAC */
     this.service.Budget_herunterladen_T4(event.idrow).subscribe(
@@ -1102,6 +1137,42 @@ export class ConfigComponent implements OnInit {
     return tipo;
   }
 
+  /* Línea de Vertical nuevo de un presupuesto (fila de SOL_PRESUPUESTOS_COLA_TIPO_3 con las medidas de la línea y los
+     nombres de sus opciones) como la deja manza-vertical-nuevo en la cesta: selección en nver, textos en ver e importes en precios.T3_* */
+  private lineaVerDesdePresupuesto(item: any): CortinaTipo {
+    const tipo: CortinaTipo = new CortinaTipo(this.codeCentro);
+    const inclinada = item.ver_tipo_codigo === 'INCLINADA';
+    tipo.TipoCortina = 3;
+    tipo.ancho = Number(item.ancho) > 0 ? Number(item.ancho) : null;
+    /* en la inclinada el alto de la línea es el máximo y viaja aparte (alto_max) */
+    tipo.alto = !inclinada && Number(item.alto) > 0 ? Number(item.alto) : null;
+    tipo.cantidad = item.cantidad;
+    tipo.tej_tipo_text = item.ver_tejido || '';
+    tipo.tej_color_text = item.ver_color || '';
+    tipo.estancia_id = item.nver_estancia_id ? String(item.nver_estancia_id) : '-1';
+    tipo.estancia_obs = item.nver_estancia || '';
+    tipo.precios.T3_Cantidad = item.T3_Cantidad || item.cantidad;
+    tipo.precios.T3_Tejido = Number(item.T3_Tejido) || 0;
+    tipo.precios.T3_PVP = Number(item.T3_PVP) || 0;
+    tipo.precios.T3_PVP_C1 = '';
+    (tipo as any).ver = {
+      tipo: item.ver_tipo || '', tipoCodigo: item.ver_tipo_codigo || '',
+      modalidad: item.ver_modalidad || '', modalidadCodigo: item.ver_modalidad_codigo || '',
+      altoMax: inclinada ? Number(item.nver_alto_max) : null, altoMin: inclinada ? Number(item.nver_alto_min) : null,
+      lama: item.nver_ancho_lama_id ? item.ver_lama : '', posicion: item.ver_posicion || '', riel: item.ver_riel || '',
+      accionamiento: item.ver_accionamiento || '', soporte: item.ver_soporte || '', recogida: item.ver_recogida || '',
+      color2: item.ver_color2 || ''
+    };
+    (tipo as any).nver = {
+      tipo: item.nver_tipo_id, modalidad: item.nver_modalidad_id,
+      alto_min: inclinada ? item.nver_alto_min : null, alto_max: inclinada ? item.nver_alto_max : null,
+      ancho_lama: item.nver_ancho_lama_id, posicion_mecanismo: item.nver_posicion_mecanismo_id, color_riel: item.nver_color_riel_id,
+      accionamiento: item.nver_accionamiento_id, soporte: item.nver_soporte_id, recogida: item.nver_recogida_id,
+      tejido: item.nver_tejido_id, tejido2: item.nver_tejido2_id
+    };
+    return tipo;
+  }
+
   EditLine(item: any): void {
     this.cestaAbierta = false;
     this.editingItem = item;
@@ -1127,7 +1198,11 @@ export class ConfigComponent implements OnInit {
         if (this.japonesRef) { this.japonesRef.cargarEdicion(item); }
         break;
       case 3:
-        if (this.verticalRef) { this.verticalRef.cargarEdicion(item); }
+        if (item.nver && this.verticalNuevoRef) {
+          this.verticalNuevoRef.cargarEdicion(item);
+        } else if (this.verticalRef) {
+          this.verticalRef.cargarEdicion(item);
+        }
         break;
       case 4:
         if (item.nmini && this.compacNuevoRef) {
