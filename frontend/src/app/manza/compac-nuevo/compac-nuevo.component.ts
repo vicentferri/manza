@@ -190,6 +190,11 @@ export class CompacNuevoComponent implements OnChanges {
       return this.impresion ? todos.filter(t => t.impresion_digital) : todos;
    }
 
+   /* La impresión digital solo se ofrece si el Solar Mini tiene algún tejido apto (sqlImpresion) */
+   get hayImpresion(): boolean {
+      return !!(this.opc && this.opc.tejidos && this.opc.tejidos.some(t => t.impresion_digital));
+   }
+
    /* Con impresión digital solo salen los tejidos que la admiten: si el elegido no, se vacía */
    cambiarImpresion(): void {
       if (!this.impresion) { this.impresionTexto = ''; }

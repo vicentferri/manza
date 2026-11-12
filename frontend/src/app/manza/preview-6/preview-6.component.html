@@ -52,6 +52,7 @@
       <div class="cfg-dato" *ngIf="zip.colorGuia"><span>Color de la guía</span><strong>{{ color(zip.colorGuia) }}</strong></div>
       <div class="cfg-dato" *ngIf="zip.contrapeso"><span>{{ "CONTRAPESO" | translate }}</span><strong>{{ zip.contrapeso }}</strong></div>
       <div class="cfg-dato" *ngIf="zip.colorContrapeso"><span>Color del contrapeso</span><strong>{{ color(zip.colorContrapeso) }}</strong></div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.impresion"><span>{{ "IMPRESION DIGITAL" | translate }}</span><strong>{{ item.impresion_imagen }}</strong></div>
       <div class="cfg-dato cfg-dato-ancho" *ngIf="item.estancia_obs"><span>{{ "OBSERVACIONES" | translate }}</span><strong>{{ item.estancia_obs }}</strong></div>
     </div>
 

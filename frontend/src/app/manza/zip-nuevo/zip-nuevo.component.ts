@@ -58,6 +58,9 @@ export class ZipNuevoComponent implements OnChanges {
    posicion = '';
    guia = '';
    colorGuia = '';
+   /* impresión digital (sqlImpresion): solo si el Cajón ZIP tiene tejidos aptos */
+   impresion = false;
+   impresionTexto = '';
    contrapeso = '';
    colorContrapeso = '';
    lacado = '';
@@ -197,7 +200,24 @@ export class ZipNuevoComponent implements OnChanges {
       return valores.filter((v, i) => valores.indexOf(v) === i).sort();
    }
 
-   get tejidosDisponibles(): any[] { return this.opc && this.opc.tejidos ? this.opc.tejidos : []; }
+   /* Los tejidos del Cajón ZIP; con impresión digital, solo los aptos */
+   get tejidosDisponibles(): any[] {
+      const todos = this.opc && this.opc.tejidos ? this.opc.tejidos : [];
+      return this.impresion ? todos.filter(t => t.impresion_digital) : todos;
+   }
+   /* La impresión digital solo se ofrece si el Cajón ZIP tiene algún tejido apto */
+   get hayImpresion(): boolean {
+      return !!(this.opc && this.opc.tejidos && this.opc.tejidos.some(t => t.impresion_digital));
+   }
+
+   /* Con impresión digital solo salen los tejidos que la admiten: si el elegido no, se vacía */
+   cambiarImpresion(): void {
+      if (!this.impresion) { this.impresionTexto = ''; }
+      if (this.tiposTejido.indexOf(this.tipoTejido) < 0) { this.tipoTejido = ''; }
+      if (this.nombresTejido.indexOf(this.nombreTejido) < 0) { this.nombreTejido = ''; }
+      if (this.coloresTejido.indexOf(this.colorTejido) < 0) { this.colorTejido = ''; }
+      this.autoElegirTejido();
+   }
    etiquetaTipo(t: any): string { return t.tipo || 'Sin tipo'; }
    get tiposTejido(): string[] { return this.distintos(this.tejidosDisponibles.map(t => this.etiquetaTipo(t))); }
    get nombresTejido(): string[] {
@@ -246,6 +266,7 @@ export class ZipNuevoComponent implements OnChanges {
       if (this.coloresCajon.length > 0 && !this.colorCajon) { return 'Seleccione el color del cajón'; }
       if (!this.vista) { return 'Seleccione la vista del cajón'; }
       if (!this.tipoTejido || !this.nombreTejido || !this.colorTejido) { return 'Seleccione el tejido y su color'; }
+      if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
       if (this.tiposMotor.length === 0) { return 'Este modelo de cajón no tiene motores: márquelos en Configuración → Productos → Cajón ZIP'; }
       if (!this.tipoMotor) { return 'Seleccione el tipo de motor'; }
       if (!this.modeloMotor) { return 'Seleccione el motor'; }
@@ -337,6 +358,8 @@ export class ZipNuevoComponent implements OnChanges {
       t.tej_color_text = fila ? fila.color : '';
       t.estancia_id = this.estancia;
       t.estancia_obs = this.observaciones || '';
+      t.impresion = this.impresion;
+      t.impresion_imagen = this.impresion ? this.impresionTexto.trim() : '';
 
       /* textos para la cesta y el resumen */
       (t as any).zip = {
@@ -405,6 +428,9 @@ export class ZipNuevoComponent implements OnChanges {
       this.cantidad = item.cantidad;
       this.estancia = item.estancia_id && String(item.estancia_id) !== '-1' ? String(item.estancia_id) : '-1';
       this.observaciones = item.estancia_obs || '';
+      /* impresión antes que el tejido: con ella, la lista solo trae los aptos */
+      this.impresion = !!item.impresion;
+      this.impresionTexto = item.impresion_imagen || '';
       /* tejido del maestro de la línea: tipo, nombre y color; el criterio sale del ancho */
       const tejido = this.tejidosDisponibles.find(x => x.id === n.tejido);
       this.tipoTejido = tejido ? this.etiquetaTipo(tejido) : '';

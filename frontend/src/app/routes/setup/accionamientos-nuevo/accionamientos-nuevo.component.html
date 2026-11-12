@@ -541,6 +541,15 @@
                     <app-acc-tejidos *ngIf="tipoVerId" producto="ver" [grupo]="tipoVerId"></app-acc-tejidos>
                 </ng-container>
 
+                <!-- IMPRESIÓN DIGITAL (todos los productos; sqlImpresion/01): importe fijo por cortina y tejidos aptos -->
+                <ng-container *ngIf="seccion === 'impresion'">
+                    <div class="row">
+                        <div class="col-xl-8 col-lg-10">
+                            <app-acc-impresion [producto]="producto"></app-acc-impresion>
+                        </div>
+                    </div>
+                </ng-container>
+
                 <!-- VERTICAL · TARIFA (sqlVertical/10): tipo + ancho de lama + tejido -->
                 <ng-container *ngIf="seccion === 'ver_tarifa'">
                     <div class="acc-intro">

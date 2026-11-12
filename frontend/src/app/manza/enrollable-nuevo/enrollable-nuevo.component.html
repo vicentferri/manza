@@ -168,7 +168,8 @@
             </select>
          </div>
       </div>
-      <div class="row">
+      <!-- solo si el sistema tiene tejidos aptos (o ya estaba marcada, para poder quitarla) -->
+      <div class="row" *ngIf="hayImpresion || impresion">
          <div class="col-md-6 form-group">
             <label>{{ "IMPRESION DIGITAL" | translate }}</label>
             <div class="input-group input-group-sm">

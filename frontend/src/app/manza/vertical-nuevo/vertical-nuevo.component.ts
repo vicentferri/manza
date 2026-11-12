@@ -63,6 +63,9 @@ export class VerticalNuevoComponent implements OnChanges {
    colorTejido = '';
    combinada = false;
    colorTejido2 = '';
+   /* impresión digital (sqlImpresion): solo en la completa, sin combinada y si el tipo tiene tejidos aptos */
+   impresion = false;
+   impresionTexto = '';
 
    /* medidas: ancho (en la inclinada, espacio a cubrir), alto (en la inclinada, alto máximo) y alto mínimo */
    ancho: number = null;
@@ -142,7 +145,13 @@ export class VerticalNuevoComponent implements OnChanges {
    get conTejido(): boolean { return this.codModalidad === 'COMPLETA' || this.codModalidad === 'SOLO_TEJIDO'; }
    get conAncho(): boolean { return this.codModalidad === 'COMPLETA' || this.codModalidad === 'SOLO_MECANISMO'; }
    get conAlto(): boolean { return this.codModalidad === 'COMPLETA' || this.codModalidad === 'SOLO_TEJIDO'; }
-   get admiteCombinada(): boolean { return this.codTipo === 'NORMAL' && this.codModalidad === 'COMPLETA'; }
+   get admiteCombinada(): boolean { return this.codTipo === 'NORMAL' && this.codModalidad === 'COMPLETA' && !this.impresion; }
+   /* La impresión digital sale solo en la completa y si el tipo tiene algún tejido apto */
+   get hayImpresion(): boolean {
+      if (this.codModalidad !== 'COMPLETA' || !this.opc || !this.tipoSel) { return false; }
+      const ids = new Set((this.tipoSel.tejidos || []).map(String));
+      return (this.opc.tejidos || []).some(t => t.impresion_digital && ids.has(String(t.id)));
+   }
 
    /* Qué cuenta la cantidad en cada modalidad */
    get etiquetaCantidad(): string {
@@ -180,6 +189,8 @@ export class VerticalNuevoComponent implements OnChanges {
          this.nombreTejido = '';
          this.colorTejido = '';
       }
+      if (!this.hayImpresion) { this.impresion = false; this.impresionTexto = ''; }
+      if (this.impresion) { this.revisarTejidoImpresion(); }
       if (!this.admiteCombinada) { this.combinada = false; }
       if (!this.combinada || !this.coloresTejido2.includes(this.colorTejido2)) { this.colorTejido2 = ''; }
       if (!this.esInclinada) { this.altoMin = null; }
@@ -201,11 +212,23 @@ export class VerticalNuevoComponent implements OnChanges {
       return valores.filter((v, i) => valores.indexOf(v) === i).sort();
    }
 
-   /* Los tejidos del maestro del tipo elegido */
+   /* Los tejidos del maestro del tipo elegido; con impresión digital, solo los aptos */
    get tejidosDisponibles(): any[] {
       if (!this.opc || !this.tipoSel) { return []; }
       const ids = new Set((this.tipoSel.tejidos || []).map(String));
-      return (this.opc.tejidos || []).filter(t => ids.has(String(t.id)));
+      return (this.opc.tejidos || []).filter(t => ids.has(String(t.id)) && (!this.impresion || t.impresion_digital));
+   }
+
+   /* Al marcar la impresión: fuera la combinada y el tejido elegido, si no es apto */
+   cambiarImpresion(): void {
+      if (!this.impresion) { this.impresionTexto = ''; }
+      this.ajustar();
+   }
+
+   private revisarTejidoImpresion(): void {
+      if (this.tipoTejido && !this.tiposTejido.includes(this.tipoTejido)) { this.tipoTejido = ''; }
+      if (this.nombreTejido && !this.nombresTejido.includes(this.nombreTejido)) { this.nombreTejido = ''; }
+      if (this.colorTejido && !this.coloresTejido.includes(this.colorTejido)) { this.colorTejido = ''; }
    }
    etiquetaTipo(t: any): string { return t.tipo || 'Sin tipo'; }
    get tiposTejido(): string[] { return this.distintos(this.tejidosDisponibles.map(t => this.etiquetaTipo(t))); }
@@ -275,6 +298,7 @@ export class VerticalNuevoComponent implements OnChanges {
       if (this.recogidas.length > 0 && !this.recogida) { return 'Seleccione la recogida'; }
       if (this.conTejido && (!this.tipoTejido || !this.nombreTejido || !this.colorTejido)) { return 'Seleccione el tejido y su color'; }
       if (this.combinada && !this.colorTejido2) { return 'Seleccione el segundo color de la combinada'; }
+      if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
       if (this.esInclinada) {
          if (!(this.ancho > 0)) { return 'Indique el espacio a cubrir'; }
          if (!(this.alto > 0) || !(this.altoMin > 0)) { return 'Indique el alto máximo y el alto mínimo'; }
@@ -365,6 +389,8 @@ export class VerticalNuevoComponent implements OnChanges {
       t.tej_color_text = fila ? fila.color : '';
       t.estancia_id = this.estancia;
       t.estancia_obs = this.observaciones || '';
+      t.impresion = this.impresion;
+      t.impresion_imagen = this.impresion ? this.impresionTexto.trim() : '';
 
       /* textos para la cesta y el resumen */
       (t as any).ver = {
@@ -428,6 +454,8 @@ export class VerticalNuevoComponent implements OnChanges {
       this.colorTejido = tejido ? tejido.color : '';
       this.combinada = !!n.tejido2;
       this.colorTejido2 = tejido2 ? tejido2.color : '';
+      this.impresion = !!item.impresion;
+      this.impresionTexto = item.impresion_imagen || '';
       if (n.tejido && !tejido) { this.toaster.warning('El tejido de esta línea ya no está disponible: elija otro', 'Configurador'); }
       /* opciones que ya no existen, están ocultas o ya no son del tipo: se avisa y ajustar() las quita */
       const falta = [[this.tipos, this.tipo], [this.modalidades, this.modalidad], [this.anchosLama, this.anchoLama],

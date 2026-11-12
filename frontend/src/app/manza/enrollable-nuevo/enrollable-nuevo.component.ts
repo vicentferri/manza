@@ -162,6 +162,12 @@ export class EnrollableNuevoComponent implements OnInit, OnChanges {
       const todos = this.opc && this.opc.tejidos && sistema ? this.opc.tejidos.filter(t => (t.sistemas || []).indexOf(sistema) >= 0) : [];
       return this.impresion ? todos.filter(t => t.impresion_digital) : todos;
    }
+   /* La impresión digital solo se ofrece si el sistema elegido tiene algún tejido apto (sqlImpresion) */
+   get hayImpresion(): boolean {
+      const sistema = parseInt(this.sel.sistema, 10);
+      return !!(this.opc && this.opc.tejidos && sistema
+         && this.opc.tejidos.some(t => t.impresion_digital && (t.sistemas || []).indexOf(sistema) >= 0));
+   }
    etiquetaTipo(t: any): string { return t.tipo || 'Sin tipo'; }
    get tiposTejido(): string[] { return this.distintos(this.tejidosDisponibles.map(t => this.etiquetaTipo(t))); }
    get nombresTejido(): string[] {

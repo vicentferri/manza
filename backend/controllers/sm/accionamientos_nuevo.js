@@ -1293,7 +1293,75 @@ async function ver_tarifa_copiar(req, res) {
   }
 }
 
+/* ---------------- IMPRESIÓN DIGITAL: importe fijo por producto (sqlImpresion/01) ----------------
+   Una fila por producto en SOL_ACC_IMPRESION_DIGITAL. La opción sale en el configurador solo si el producto tiene
+   incluido algún tejido apto (impresion_digital del maestro): aquí se enseñan esos tejidos y dónde están */
+const IMPRESION = {
+  enrollable: { producto: 1, tejidos: `select m.nombre, m.color, m.cod_solupyme, s.nombre as donde
+                 from dbo.SOL_ACC_SISTEMA_TEJIDO x join dbo.SOL_ACC_SISTEMA s on s.id = x.sistema_id and s.activo = 1
+                 join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` },
+  mini: { producto: 4, tejidos: `select m.nombre, m.color, m.cod_solupyme, null as donde
+           from dbo.SOL_ACC_MINI_TEJIDO x join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` },
+  zip: { producto: 6, tejidos: `select m.nombre, m.color, m.cod_solupyme, null as donde
+          from dbo.SOL_ACC_ZIP_TEJIDO x join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` },
+  ver: { producto: 3, tejidos: `select m.nombre, m.color, m.cod_solupyme, t.nombre as donde
+          from dbo.SOL_ACC_VER_TIPO_TEJIDO x join dbo.SOL_ACC_VER_TIPO t on t.id = x.tipo_id and t.activo = 1
+          join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` }
+};
+
+/* GET /acc/impresion/:producto — importe y tejidos aptos incluidos (con dónde: sistema o tipo) */
+async function impresion(req, res) {
+  const cfg = IMPRESION[req.params.producto];
+  if (!cfg) return res.status(400).send({ message: 'Producto no válido' });
+  try {
+    const pool = await sql.connect();
+    const fila = await pool.request().input('producto', sql.Int, cfg.producto)
+      .query('select producto, nombre, importe, modified, usuario from dbo.SOL_ACC_IMPRESION_DIGITAL where producto = @producto');
+    if (!fila.recordset.length) return res.status(400).send({ message: 'Falta sqlImpresion/01 en la base de datos' });
+    const tejidos = await pool.request().query(`${cfg.tejidos}
+      where m.activo = 1 and isnull(m.impresion_digital, 0) = 1 order by m.nombre, m.color`);
+    const aptos = await pool.request()
+      .query('select count(*) as n from dbo.SOL_TEJIDOS_MAESTRO where activo = 1 and isnull(impresion_digital, 0) = 1');
+    /* un tejido con color una vez, con todos los sitios donde está */
+    const porClave = {};
+    const lista = [];
+    tejidos.recordset.forEach(t => {
+      const k = t.nombre + '|' + t.color;
+      if (!porClave[k]) { porClave[k] = { nombre: t.nombre, color: t.color, cod_solupyme: t.cod_solupyme, donde: [] }; lista.push(porClave[k]); }
+      if (t.donde && !porClave[k].donde.includes(t.donde)) porClave[k].donde.push(t.donde);
+    });
+    res.status(200).send(Object.assign(fila.recordset[0], { tejidos: lista, aptosMaestro: aptos.recordset[0].n }));
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/impresion/:producto { importe } — vacío = sin importe (la impresión vale 0 y el configurador avisa) */
+async function impresion_guardar(req, res) {
+  const cfg = IMPRESION[req.params.producto];
+  if (!cfg) return res.status(400).send({ message: 'Producto no válido' });
+  const valor = (req.body || {}).importe;
+  const importe = decimal(valor);
+  if (valor !== null && valor !== undefined && valor !== '' && (importe === null || importe < 0 || importe > 100000)) {
+    return res.status(400).send({ message: 'El importe no es válido' });
+  }
+  const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+  try {
+    const pool = await sql.connect();
+    const r = await pool.request().input('producto', sql.Int, cfg.producto).input('importe', sql.Decimal(10, 2), importe)
+      .input('usuario', sql.VarChar(100), usuario)
+      .query(`update dbo.SOL_ACC_IMPRESION_DIGITAL set importe = @importe, modified = getdate(), usuario = @usuario
+              where producto = @producto; select @@rowcount as n`);
+    if (!r.recordset[0].n) return res.status(400).send({ message: 'Falta sqlImpresion/01 en la base de datos' });
+    res.status(200).send({ message: 'OK', importe });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
 module.exports = {
+  impresion,
+  impresion_guardar,
   ver_tarifa,
   ver_tarifa_mecanismo,
   ver_tarifa_tejido,

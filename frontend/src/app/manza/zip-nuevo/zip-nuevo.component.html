@@ -67,7 +67,7 @@
       <div class="enx-seccion">
          <div class="enx-titulo">2. Tejido</div>
          <div *ngIf="tejidosDisponibles.length === 0" class="enx-error mb-2">
-            No hay tejidos disponibles para el Cajón ZIP. Márquelos en Configuración → Productos → Cajón ZIP → Tejido.
+            No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }} para el Cajón ZIP. Márquelos en Configuración → Productos → Cajón ZIP → Tejido.
          </div>
          <div class="row">
             <div class="col-md-3 col-6 form-group">
@@ -92,6 +92,22 @@
                </select>
                <small *ngIf="tejidoFila" class="enx-nota">Rollo de {{ tejidoFila.criterio }} cm<span *ngIf="tejidoFila.grupo"> · grupo {{ tejidoFila.grupo }}</span></small>
                <small *ngIf="colorTejido && ancho > 0 && !tejidoFila && anchoMaximo" class="enx-error">Supera el ancho máximo ({{ anchoMaximo }} cm)</small>
+            </div>
+         </div>
+         <!-- impresión digital: solo si el Cajón ZIP tiene tejidos aptos (o ya estaba marcada, para poder quitarla) -->
+         <div class="row" *ngIf="hayImpresion || impresion">
+            <div class="col-md-6 form-group">
+               <label>{{ "IMPRESION DIGITAL" | translate }}</label>
+               <div class="input-group input-group-sm">
+                  <div class="input-group-prepend">
+                     <span class="input-group-text">
+                        <input type="checkbox" [(ngModel)]="impresion" [ngModelOptions]="{ standalone: true }" (change)="cambiarImpresion()" />
+                     </span>
+                  </div>
+                  <input type="text" class="form-control" maxlength="250" placeholder="Texto de la impresión"
+                     [(ngModel)]="impresionTexto" [ngModelOptions]="{ standalone: true }" [disabled]="!impresion" />
+               </div>
+               <small *ngIf="impresion" class="enx-nota">Solo se muestran los tejidos aptos para impresión digital.</small>
             </div>
          </div>
       </div>

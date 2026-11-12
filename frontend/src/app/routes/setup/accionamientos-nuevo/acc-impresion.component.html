@@ -1,0 +1,48 @@
+<div class="acc-bloque" *ngIf="datos; else cargandoImp">
+    <div class="acc-bloque-titulo"><strong>Impresión digital · {{ datos.nombre }}</strong></div>
+    <div class="acc-ayuda mb-2">
+        Incremento <strong>fijo por cortina</strong> que se suma al precio cuando en el configurador se marca la impresión digital
+        (no depende de las medidas ni de las lamas).
+        <span *ngIf="producto === 'ver'">En el Vertical solo se puede pedir en la completa y sin combinada.</span>
+        Sin importe, la impresión vale 0 y el configurador lo avisa.
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap mb-3">
+        <label class="mr-2 mb-0"><strong>Importe por cortina (€):</strong></label>
+        <input type="text" class="form-control form-control-sm mr-2" style="max-width: 140px" [(ngModel)]="importe"
+            [ngModelOptions]="{ standalone: true }" placeholder="sin importe" (keyup.enter)="guardar()" />
+        <button type="button" class="btn btn-primary btn-sm mr-3" [disabled]="!cambiado || guardando" (click)="guardar()">
+            <i class="fa" [ngClass]="guardando ? 'fa-spinner fa-spin' : 'fa-save'"></i> Guardar
+        </button>
+        <span class="small text-muted" *ngIf="datos.usuario && datos.modified">Último cambio: {{ datos.modified | date:'dd/MM/yyyy HH:mm' }} · {{ datos.usuario }}</span>
+    </div>
+
+    <div class="acc-bloque-titulo d-flex align-items-center">
+        <strong class="mr-2">Tejidos aptos incluidos</strong>
+        <span class="small text-muted">{{ datos.tejidos.length }} de {{ datos.aptosMaestro }} aptos en el maestro</span>
+    </div>
+    <div class="acc-aviso mb-2" *ngIf="datos.tejidos.length === 0">
+        <i class="fa fa-exclamation-triangle"></i> Este producto no tiene ningún tejido apto para impresión digital:
+        la opción <strong>no saldrá</strong> en el configurador. Inclúyalos en la sección {{ seccionTejidos }}
+        (los aptos se marcan en el <a [routerLink]="['/routes/master/tejidos-maestro']">Maestro de tejidos</a>).
+    </div>
+    <div class="acc-matriz-container" *ngIf="datos.tejidos.length > 0">
+        <table class="table table-sm acc-matriz mb-0">
+            <thead>
+                <tr><th>Tejido</th><th>Color</th><th>Código</th><th *ngIf="queDonde">{{ queDonde }}</th></tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let t of datos.tejidos">
+                    <td class="acc-nombre">{{ t.nombre }}</td>
+                    <td>{{ t.color }}</td>
+                    <td><span class="acc-codigo">{{ t.cod_solupyme }}</span></td>
+                    <td *ngIf="queDonde" class="small">{{ t.donde.join(', ') }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="small text-muted mt-1" *ngIf="queDonde && datos.tejidos.length > 0">
+        La opción sale en el configurador cuando el {{ producto === 'ver' ? 'tipo' : 'sistema' }} elegido tiene alguno de estos tejidos.
+    </div>
+</div>
+<ng-template #cargandoImp><div class="acc-vacio"><i class="fa fa-spinner fa-spin"></i> Cargando...</div></ng-template>

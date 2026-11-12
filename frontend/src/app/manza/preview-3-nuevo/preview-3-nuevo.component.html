@@ -51,6 +51,7 @@
         <span>{{ "TEJIDO" | translate }}</span>
         <strong>{{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}<span *ngIf="ver.color2"> · combinada con {{ ver.color2 | frase }}</span></strong>
       </div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.impresion"><span>{{ "IMPRESION DIGITAL" | translate }}</span><strong>{{ item.impresion_imagen }}</strong></div>
       <div class="cfg-dato cfg-dato-ancho" *ngIf="item.estancia_obs"><span>{{ "OBSERVACIONES" | translate }}</span><strong>{{ item.estancia_obs }}</strong></div>
     </div>
 

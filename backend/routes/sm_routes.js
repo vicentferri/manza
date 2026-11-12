@@ -573,6 +573,9 @@ smapi.post('/acc/zip/tejidos/copiar', NuevoSistema, AccionamientosNuevoControlle
 smapi.get('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos);
 smapi.post('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos_guardar);
 smapi.post('/acc/ver/tejidos/:tipo/copiar', NuevoSistema, AccionamientosNuevoController.ver_tejidos_copiar);
+/* Impresión digital: importe fijo por producto (sqlImpresion/01) */
+smapi.get('/acc/impresion/:producto', NuevoSistema, AccionamientosNuevoController.impresion);
+smapi.post('/acc/impresion/:producto', NuevoSistema, AccionamientosNuevoController.impresion_guardar);
 /* Tarifa base del Vertical: tipo + ancho de lama + tejido (sqlVertical/10) */
 smapi.get('/acc/ver/tarifa/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tarifa);
 smapi.post('/acc/ver/tarifa/:tipo/mecanismo', NuevoSistema, AccionamientosNuevoController.ver_tarifa_mecanismo);

@@ -544,7 +544,8 @@ const ERRORES_ZIP = {
   '-42': 'Lacado no válido',
   '-43': 'Vista del cajón no válida (exterior o interior)',
   '-44': 'Posición del mando no válida',
-  '-45': 'Faltan las medidas o la cantidad'
+  '-45': 'Faltan las medidas o la cantidad',
+  '-46': 'La impresión digital necesita un tejido que la admita'
 };
 
 /* Interruptor del Cajón ZIP (sqlCajonZip/02), independiente de los del enrollable y del Solar Mini */
@@ -601,7 +602,7 @@ async function zip_opciones(req, res) {
       q('select guia_id, color_id from dbo.SOL_ACC_ZIP_GUIA_COLOR'),
       q('select contrapeso_id, color_id from dbo.SOL_ACC_ZIP_CONTRAPESO_COLOR'),
       /* una fila por tejido + color + criterio; el configurador elige el criterio según el ancho */
-      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, t.descripcion as tipo
+      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, isnull(m.impresion_digital, 0) as impresion_digital, t.descripcion as tipo
          from dbo.SOL_ACC_ZIP_TEJIDO zt
          join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = zt.tejido and m.activo = 1
          left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
@@ -676,10 +677,12 @@ async function precioLineaZip(pool, cliente, l) {
     .input('color_contrapeso', sql.Int, entero(n.color_contrapeso))
     .input('lacado', sql.Int, entero(n.lacado))
     .input('desglose', sql.Bit, 1)
+    /* impresión digital: importe fijo por cortina del producto (sqlImpresion/02) */
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
     .output('tarifa', sql.Int)
     .output('mensaje', sql.VarChar(250))
     .output('aviso', sql.VarChar(250));
-  [d('base'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
+  [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
   const r = await request.execute('sp_acc_zip_precio_linea');
   const o = r.output;
   if (r.returnValue !== 0) {
@@ -690,7 +693,7 @@ async function precioLineaZip(pool, cliente, l) {
     aviso: o.aviso || null,
     tipo_tarifa: l.tipo_tarifa,
     tarifa: o.tarifa,
-    base: o.base, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
+    base: o.base, impresion: o.importe_impresion, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
     desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
   };
 }
@@ -746,6 +749,9 @@ async function altaLineaZip(transaction, doc, idDocumento, l, p) {
     .input('pvp_unitario', sql.Decimal(12, 2), p.unitario)
     .input('desglose', sql.Xml, desgloseXml(p.desglose))
     .input('tipo_tarifa', sql.VarChar(2), p.tipo_tarifa)
+    /* sqlImpresion/03 */
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
+    .input('impresion_imagen', sql.VarChar(250), texto(l.impresion_imagen, 250))
     .execute(doc.lineaZip);
 }
 
@@ -768,7 +774,8 @@ const ERRORES_VER = {
   '-58': 'El tejido no está disponible para ese tipo de vertical (o la modalidad no lleva tejido)',
   '-59': 'Combinada no válida: solo en la Normal completa y con otro color del mismo tejido',
   '-60': 'Medidas o cantidad no válidas para esa modalidad',
-  '-61': 'Inclinada: indique el espacio a cubrir y el alto mínimo y máximo (mínimo menor que máximo, 30° como mucho)'
+  '-61': 'Inclinada: indique el espacio a cubrir y el alto mínimo y máximo (mínimo menor que máximo, 30° como mucho)',
+  '-62': 'La impresión digital solo se puede pedir en la completa, sin combinar colores y con un tejido que la admita'
 };
 
 /* Interruptor del Vertical (sqlVertical/02), independiente de los demás productos */
@@ -840,7 +847,7 @@ async function ver_opciones(req, res) {
       porTipo('SOL_ACC_VER_RECOGIDA'),
       q('select vt.tipo_id, vt.tejido from dbo.SOL_ACC_VER_TIPO_TEJIDO vt join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = vt.tejido and m.activo = 1'),
       /* una fila por tejido + color + criterio, solo los que tiene algún tipo */
-      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, t.descripcion as tipo
+      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, isnull(m.impresion_digital, 0) as impresion_digital, t.descripcion as tipo
          from dbo.SOL_TEJIDOS_MAESTRO m
          left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
          where m.activo = 1 and exists (select 1 from dbo.SOL_ACC_VER_TIPO_TEJIDO vt where vt.tejido = m.idrow)
@@ -898,10 +905,12 @@ async function precioLineaVer(pool, cliente, l) {
     .input('tejido', sql.Int, entero(n.tejido))
     .input('tejido2', sql.Int, entero(n.tejido2))
     .input('desglose', sql.Bit, 1)
+    /* impresión digital: importe fijo por cortina del producto, solo completa sin combinada (sqlImpresion/02) */
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
     .output('tarifa', sql.Int)
     .output('mensaje', sql.VarChar(250))
     .output('aviso', sql.VarChar(250));
-  [d('base'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
+  [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
   const r = await request.execute('sp_acc_ver_precio_linea');
   const o = r.output;
   if (r.returnValue !== 0) {
@@ -912,7 +921,7 @@ async function precioLineaVer(pool, cliente, l) {
     aviso: o.aviso || null,
     tipo_tarifa: null,
     tarifa: o.tarifa,
-    base: o.base, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
+    base: o.base, impresion: o.importe_impresion, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
     desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
   };
 }
@@ -965,6 +974,9 @@ async function altaLineaVer(transaction, doc, idDocumento, l, p) {
     .input('estancia', sql.VarChar(2500), texto(l.estancia_obs, 2500))
     .input('pvp_unitario', sql.Decimal(12, 2), p.unitario)
     .input('desglose', sql.Xml, desgloseXml(p.desglose))
+    /* sqlImpresion/03 */
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
+    .input('impresion_imagen', sql.VarChar(250), texto(l.impresion_imagen, 250))
     .execute(doc.lineaVer);
 }
 

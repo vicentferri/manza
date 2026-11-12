@@ -38,6 +38,7 @@ import { AccSuplementosComponent } from './accionamientos-nuevo/acc-suplementos.
 import { AccSuplementosResumenComponent } from './accionamientos-nuevo/acc-suplementos-resumen.component';
 import { AccTejidosComponent } from './accionamientos-nuevo/acc-tejidos.component';
 import { AccVerTarifaComponent } from './accionamientos-nuevo/acc-ver-tarifa.component';
+import { AccImpresionComponent } from './accionamientos-nuevo/acc-impresion.component';
 
 
 const routes: Routes = [
@@ -87,7 +88,7 @@ const routes: Routes = [
         PromocionesMonitorComponent, IncrementosGenericosComponent,
         TejidosColoresComponent, TejidosComponent, TejidosMaestroComponent, TejidosImagenesComponent, ImpresionDigitalComponent,
         AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent,
-        AccSuplementosComponent, AccSuplementosResumenComponent, AccTejidosComponent, AccVerTarifaComponent
+        AccSuplementosComponent, AccSuplementosResumenComponent, AccTejidosComponent, AccVerTarifaComponent, AccImpresionComponent
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]

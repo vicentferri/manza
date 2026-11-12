@@ -47,6 +47,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos, accesorios y sistemas', icono: 'fa-cog' },
         { id: 'soportes', paso: '4', label: 'Soportes, tapas y contrapesos', ayuda: 'Qué soportes, tapas y contrapesos tiene cada sistema', icono: 'fa-th-large' },
         { id: 'tejidos', paso: '', label: 'Tejidos', ayuda: 'Los que ofrece cada sistema', icono: 'fa-th' },
+        { id: 'impresion', paso: '', label: 'Impresión digital', ayuda: 'Importe fijo por cortina y tejidos aptos', icono: 'fa-picture-o' },
         { id: 'listas', paso: '', label: 'Listas de opciones', ayuda: 'Sistemas, piezas, colores, mandos...', icono: 'fa-list' },
         { id: 'suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
@@ -55,6 +56,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'mini_perfileria', paso: '1', label: 'Perfilería', ayuda: 'Tipos de junquillo, colores y colores RAL', icono: '' },
         { id: 'mini_accionamiento', paso: '2', label: 'Accionamiento', ayuda: 'Colores de cadena y de tapas', icono: '' },
         { id: 'mini_tejidos', paso: '3', label: 'Tejido', ayuda: 'Los que ofrece el Solar Mini', icono: '' },
+        { id: 'impresion', paso: '', label: 'Impresión digital', ayuda: 'Importe fijo por cortina y tejidos aptos', icono: 'fa-picture-o' },
         { id: 'mini_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
 
@@ -66,6 +68,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'zip_guias', paso: '4', label: 'Guía', ayuda: 'Contrapesos y colores de cada guía', icono: '' },
         { id: 'zip_contrapesos', paso: '5', label: 'Contrapeso', ayuda: 'Colores de cada contrapeso', icono: '' },
         { id: 'zip_lacados', paso: '', label: 'Lacados', ayuda: 'Siempre disponibles, aparte del color', icono: 'fa-paint-brush' },
+        { id: 'impresion', paso: '', label: 'Impresión digital', ayuda: 'Importe fijo por cortina y tejidos aptos', icono: 'fa-picture-o' },
         { id: 'zip_listas', paso: '', label: 'Listas de opciones', ayuda: 'Soportes, salidas, colores, mandos', icono: 'fa-list' },
         { id: 'zip_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
@@ -75,6 +78,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'ver_tipos', paso: '1', label: 'Tipo y modalidades', ayuda: 'Qué se puede pedir de cada tipo', icono: '' },
         { id: 'ver_opciones', paso: '2', label: 'Opciones del tipo', ayuda: 'Lama, mecanismo, riel, accionamiento, soporte y recogida', icono: '' },
         { id: 'ver_tejidos', paso: '3', label: 'Tejido', ayuda: 'Los que ofrece cada tipo', icono: '' },
+        { id: 'impresion', paso: '', label: 'Impresión digital', ayuda: 'Importe fijo por cortina y tejidos aptos', icono: 'fa-picture-o' },
         { id: 'ver_tarifa', paso: '', label: 'Tarifa', ayuda: 'Mecanismo por ancho y tejido por metro de lama', icono: 'fa-table' },
         { id: 'ver_modalidades', paso: '', label: 'Modalidades', ayuda: 'Nombres y suplementos', icono: 'fa-list' },
         { id: 'ver_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }

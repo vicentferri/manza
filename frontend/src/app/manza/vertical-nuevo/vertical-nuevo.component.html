@@ -123,7 +123,7 @@
          <div class="enx-seccion" *ngIf="conTejido">
             <div class="enx-titulo">4. Tejido</div>
             <div *ngIf="tejidosDisponibles.length === 0" class="enx-error mb-2">
-               No hay tejidos disponibles para este tipo de vertical. Márquelos en Configuración → Productos → Vertical → Tejido.
+               No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }} para este tipo de vertical. Márquelos en Configuración → Productos → Vertical → Tejido.
             </div>
             <div class="row">
                <div class="col-md-3 col-6 form-group">
@@ -159,6 +159,23 @@
                      <option *ngFor="let c of coloresTejido2" [value]="c">{{ c }}</option>
                   </select>
                   <small *ngIf="colorTejido && coloresTejido2.length === 0" class="enx-nota">Este tejido no tiene otros colores</small>
+               </div>
+            </div>
+            <!-- impresión digital: solo en la completa, sin combinada, si el tipo tiene tejidos aptos (o ya estaba marcada) -->
+            <div class="row" *ngIf="hayImpresion || impresion">
+               <div class="col-md-6 form-group">
+                  <label>{{ "IMPRESION DIGITAL" | translate }}</label>
+                  <div class="input-group input-group-sm">
+                     <div class="input-group-prepend">
+                        <span class="input-group-text">
+                           <input type="checkbox" [(ngModel)]="impresion" [ngModelOptions]="{ standalone: true }" (change)="cambiarImpresion()" [disabled]="combinada" />
+                        </span>
+                     </div>
+                     <input type="text" class="form-control" maxlength="250" placeholder="Texto de la impresión"
+                        [(ngModel)]="impresionTexto" [ngModelOptions]="{ standalone: true }" [disabled]="!impresion" />
+                  </div>
+                  <small *ngIf="impresion" class="enx-nota">Solo se muestran los tejidos aptos para impresión digital (sin combinada).</small>
+                  <small *ngIf="combinada" class="enx-nota">La combinada no admite impresión digital.</small>
                </div>
             </div>
          </div>
