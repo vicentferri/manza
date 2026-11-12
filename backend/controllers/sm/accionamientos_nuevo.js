@@ -177,7 +177,10 @@ async function referencias(pool, tabla) {
     const result = await pool.request().input('tabla', sql.NVarChar(128), 'dbo.' + tabla).query(`
       select object_name(fkc.parent_object_id) as tabla, col_name(fkc.parent_object_id, fkc.parent_column_id) as columna
       from sys.foreign_key_columns fkc
-      where fkc.referenced_object_id = object_id(@tabla)`);
+      where fkc.referenced_object_id = object_id(@tabla)
+        /* solo la columna que apunta al id (en una FK compuesta, como la de la tarifa del Vertical a
+           (tipo_id, id) del ancho de lama, la de tipo_id no es una dependencia del registro) */
+        and col_name(fkc.referenced_object_id, fkc.referenced_column_id) = 'id'`);
     const validas = result.recordset.filter(r => COLUMNA.test(r.columna));
     referenciasCache[tabla] = {
       internas: validas.filter(r => TABLA_ACC.test(r.tabla)),
@@ -1095,7 +1098,206 @@ async function copiar(req, res) {
   }
 }
 
+/* ---------------- VERTICAL: TARIFA BASE (sqlVertical/10) ----------------
+   Por tipo + ancho de lama + tejido. Cada "juego" de la tarifa es un ancho de lama (o ninguno: líneas sin lama y
+   anchos de lama sin filas propias) y un cliente (o ninguno: general):
+   - mecanismo: tramos de ancho (hasta cm → precio de una cortina o un riel)
+   - tejido: € por metro lineal de lama de cada tejido (por nombre: todos sus colores)
+   Al guardar se sustituye el juego entero. Lo calcula fn_acc_ver_precio_base */
+
+/* Ancho de lama del tipo (null = sin ancho de lama). Devuelve undefined si no es del tipo */
+async function lamaDelTipo(pool, tipo, valor) {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const id = entero(valor);
+  if (id === null) return undefined;
+  const r = await pool.request().input('id', sql.Int, id).input('tipo', sql.Int, tipo)
+    .query('select id from dbo.SOL_ACC_VER_ANCHO_LAMA where id = @id and tipo_id = @tipo');
+  return r.recordset.length ? id : undefined;
+}
+
+/* Cliente de la tarifa (null = general). Devuelve undefined si no existe */
+async function clienteTarifa(pool, valor) {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const id = entero(valor);
+  if (id === null) return undefined;
+  const r = await pool.request().input('id', sql.Int, id).query('select idrow from dbo.SOL_CLIENTES where idrow = @id');
+  return r.recordset.length ? id : undefined;
+}
+
+/* Condición del juego de la tarifa (ancho de lama y cliente pueden ser null) */
+const JUEGO_TARIFA = `tipo_id = @tipo
+  and ((ancho_lama_id is null and @lama is null) or ancho_lama_id = @lama)
+  and ((cliente is null and @cliente is null) or cliente = @cliente)`;
+
+/* GET /acc/ver/tarifa/:tipo — los anchos de lama y los tejidos del tipo y todas sus filas de tarifa */
+async function ver_tarifa(req, res) {
+  const tipo = entero(req.params.tipo);
+  try {
+    const pool = await sql.connect();
+    if (!await tipoVerticalValido(pool, tipo)) return res.status(400).send({ message: 'Tipo de vertical no válido' });
+    const q = (texto) => pool.request().input('tipo', sql.Int, tipo).query(texto).then(r => r.recordset);
+    const [anchosLama, tejidos, mecanismo, tejido] = await Promise.all([
+      q(`select id, codigo, valor, nombre, activo from dbo.SOL_ACC_VER_ANCHO_LAMA where tipo_id = @tipo order by orden, valor`),
+      /* tejidos del tipo agrupados por nombre (la tarifa es la misma para todos sus colores) */
+      q(`select m.nombre, count(*) as colores from dbo.SOL_ACC_VER_TIPO_TEJIDO vt
+         join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = vt.tejido
+         where vt.tipo_id = @tipo group by m.nombre order by m.nombre`),
+      q(`select ancho_lama_id, cliente, hasta, precio from dbo.SOL_ACC_VER_TARIFA_MECANISMO where tipo_id = @tipo
+         order by ancho_lama_id, cliente, hasta`),
+      q(`select ancho_lama_id, cliente, tejido_nombre, precio from dbo.SOL_ACC_VER_TARIFA_TEJIDO where tipo_id = @tipo
+         order by ancho_lama_id, cliente, tejido_nombre`)
+    ]);
+    res.status(200).send({ anchosLama, tejidos, mecanismo, tejido });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* Comprueba tipo, ancho de lama y cliente del cuerpo; devuelve { tipo, lama, cliente } o envía el error */
+async function juegoTarifa(req, res, pool) {
+  const tipo = entero(req.params.tipo);
+  const body = req.body || {};
+  if (!await tipoVerticalValido(pool, tipo)) { res.status(400).send({ message: 'Tipo de vertical no válido' }); return null; }
+  const lama = await lamaDelTipo(pool, tipo, body.ancho_lama_id);
+  if (lama === undefined) { res.status(400).send({ message: 'El ancho de lama no es de este tipo' }); return null; }
+  const cliente = await clienteTarifa(pool, body.cliente);
+  if (cliente === undefined) { res.status(400).send({ message: 'Cliente no válido' }); return null; }
+  return { tipo, lama, cliente };
+}
+
+/* Sustituye las filas de un juego de la tarifa en una transacción */
+async function sustituirJuego(req, res, pool, juego, tabla, filas, insertar) {
+  const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+  let transaction;
+  try {
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const conJuego = (r) => r.input('tipo', sql.Int, juego.tipo).input('lama', sql.Int, juego.lama)
+      .input('cliente', sql.Int, juego.cliente).input('usuario', sql.VarChar(100), usuario);
+    await conJuego(new sql.Request(transaction)).query(`delete from dbo.${tabla} where ${JUEGO_TARIFA}`);
+    for (const f of filas) await insertar(conJuego(new sql.Request(transaction)), f);
+    await transaction.commit();
+    res.status(200).send({ message: 'OK', filas: filas.length });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/ver/tarifa/:tipo/mecanismo { ancho_lama_id, cliente, tramos: [{ hasta, precio }] } (tramos vacío = borrar) */
+async function ver_tarifa_mecanismo(req, res) {
+  const tramos = (req.body || {}).tramos;
+  if (!Array.isArray(tramos)) return res.status(400).send({ message: 'Faltan los tramos' });
+  const filas = tramos.map(t => ({ hasta: decimal(t.hasta), precio: decimal(t.precio) }));
+  if (filas.some(f => f.hasta === null || f.hasta <= 0 || f.hasta > 10000)) {
+    return res.status(400).send({ message: 'Cada tramo necesita un ancho "hasta" mayor que 0 (en cm)' });
+  }
+  if (filas.some(f => f.precio === null || f.precio < 0)) return res.status(400).send({ message: 'Cada tramo necesita un precio (0 o más)' });
+  if (new Set(filas.map(f => f.hasta)).size !== filas.length) return res.status(400).send({ message: 'Hay dos tramos con el mismo ancho' });
+  try {
+    const pool = await sql.connect();
+    const juego = await juegoTarifa(req, res, pool);
+    if (!juego) return;
+    return sustituirJuego(req, res, pool, juego, 'SOL_ACC_VER_TARIFA_MECANISMO', filas, (r, f) => r
+      .input('hasta', sql.Decimal(10, 2), f.hasta).input('precio', sql.Decimal(10, 2), f.precio)
+      .query(`insert into dbo.SOL_ACC_VER_TARIFA_MECANISMO (tipo_id, ancho_lama_id, cliente, hasta, precio, usuario)
+              values (@tipo, @lama, @cliente, @hasta, @precio, @usuario)`));
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/ver/tarifa/:tipo/tejido { ancho_lama_id, cliente, precios: [{ tejido_nombre, precio }] }
+   Un tejido sin precio no se guarda (no tiene tarifa) */
+async function ver_tarifa_tejido(req, res) {
+  const precios = (req.body || {}).precios;
+  if (!Array.isArray(precios)) return res.status(400).send({ message: 'Faltan los precios' });
+  const filas = precios.map(p => ({ nombre: texto(p.tejido_nombre, 100), precio: decimal(p.precio) }))
+    .filter(f => f.precio !== null);
+  if (filas.some(f => !f.nombre)) return res.status(400).send({ message: 'Falta el nombre de un tejido' });
+  if (filas.some(f => f.precio < 0 || f.precio > 100000)) return res.status(400).send({ message: 'El precio por metro no es válido' });
+  if (new Set(filas.map(f => f.nombre)).size !== filas.length) return res.status(400).send({ message: 'Hay un tejido repetido' });
+  try {
+    const pool = await sql.connect();
+    const juego = await juegoTarifa(req, res, pool);
+    if (!juego) return;
+    return sustituirJuego(req, res, pool, juego, 'SOL_ACC_VER_TARIFA_TEJIDO', filas, (r, f) => r
+      .input('nombre', sql.VarChar(100), f.nombre).input('precio', sql.Decimal(10, 4), f.precio)
+      .query(`insert into dbo.SOL_ACC_VER_TARIFA_TEJIDO (tipo_id, ancho_lama_id, cliente, tejido_nombre, precio, usuario)
+              values (@tipo, @lama, @cliente, @nombre, @precio, @usuario)`));
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/ver/tarifa/:tipo/copiar { origen } — trae la tarifa de otro tipo: cada ancho de lama va al del mismo
+   valor (en mm) de este tipo y las filas sin ancho de lama, a las sin ancho de lama. Solo añade los juegos (ancho
+   de lama + cliente) que este tipo aún no tenga, y en el tejido, los tejidos que falten: no cambia nada de lo que ya hay */
+async function ver_tarifa_copiar(req, res) {
+  const tipo = entero(req.params.tipo);
+  const origen = entero((req.body || {}).origen);
+  if (origen === tipo) return res.status(400).send({ message: 'Elija otro tipo del que copiar' });
+  const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    if (!await tipoVerticalValido(pool, tipo) || !await tipoVerticalValido(pool, origen)) {
+      return res.status(400).send({ message: 'Tipo de vertical no válido' });
+    }
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const r = await new sql.Request(transaction)
+      .input('tipo', sql.Int, tipo).input('origen', sql.Int, origen).input('usuario', sql.VarChar(100), usuario).query(`
+        /* lama del origen → lama del destino (mismo valor); null → null; las que no tienen pareja no se copian */
+        declare @mapa table (o int null, d int null)
+        insert @mapa values (null, null)
+        insert @mapa select lo.id, ld.id from dbo.SOL_ACC_VER_ANCHO_LAMA lo
+          join dbo.SOL_ACC_VER_ANCHO_LAMA ld on ld.tipo_id = @tipo and ld.valor = lo.valor where lo.tipo_id = @origen
+
+        insert into dbo.SOL_ACC_VER_TARIFA_MECANISMO (tipo_id, ancho_lama_id, cliente, hasta, precio, usuario)
+        select @tipo, m.d, t.cliente, t.hasta, t.precio, @usuario
+        from dbo.SOL_ACC_VER_TARIFA_MECANISMO t
+        join @mapa m on (m.o = t.ancho_lama_id or (m.o is null and t.ancho_lama_id is null))
+        where t.tipo_id = @origen
+          and not exists (select 1 from dbo.SOL_ACC_VER_TARIFA_MECANISMO x where x.tipo_id = @tipo
+                          and (x.ancho_lama_id = m.d or (x.ancho_lama_id is null and m.d is null))
+                          and (x.cliente = t.cliente or (x.cliente is null and t.cliente is null)))
+        declare @nm int = @@rowcount
+
+        insert into dbo.SOL_ACC_VER_TARIFA_TEJIDO (tipo_id, ancho_lama_id, cliente, tejido_nombre, precio, usuario)
+        select @tipo, m.d, t.cliente, t.tejido_nombre, t.precio, @usuario
+        from dbo.SOL_ACC_VER_TARIFA_TEJIDO t
+        join @mapa m on (m.o = t.ancho_lama_id or (m.o is null and t.ancho_lama_id is null))
+        where t.tipo_id = @origen
+          and not exists (select 1 from dbo.SOL_ACC_VER_TARIFA_TEJIDO x where x.tipo_id = @tipo
+                          and (x.ancho_lama_id = m.d or (x.ancho_lama_id is null and m.d is null))
+                          and (x.cliente = t.cliente or (x.cliente is null and t.cliente is null))
+                          and x.tejido_nombre = t.tejido_nombre)
+        declare @nt int = @@rowcount
+
+        /* filas del origen que no se han podido copiar porque su ancho de lama no está en este tipo */
+        select @nm as mecanismo, @nt as tejido,
+          (select count(*) from dbo.SOL_ACC_VER_TARIFA_MECANISMO t where t.tipo_id = @origen and t.ancho_lama_id is not null
+             and not exists (select 1 from @mapa m where m.o = t.ancho_lama_id and m.d is not null))
+          + (select count(*) from dbo.SOL_ACC_VER_TARIFA_TEJIDO t where t.tipo_id = @origen and t.ancho_lama_id is not null
+             and not exists (select 1 from @mapa m where m.o = t.ancho_lama_id and m.d is not null)) as sinLama`);
+    await transaction.commit();
+    res.status(200).send(Object.assign({ message: 'OK' }, r.recordset[0]));
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
 module.exports = {
+  ver_tarifa,
+  ver_tarifa_mecanismo,
+  ver_tarifa_tejido,
+  ver_tarifa_copiar,
   ver_tejidos,
   ver_tejidos_guardar,
   ver_tejidos_copiar,

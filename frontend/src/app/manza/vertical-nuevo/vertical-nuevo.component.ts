@@ -20,7 +20,7 @@ import { errorPasoMedidas, PASO_MEDIDA } from '../config/medidas';
  *   solo en la Normal completa
  * Cada tipo tiene SUS listas: al cambiar de tipo se vuelve a elegir todo. Una lista con una sola opción se elige
  * sola (la Viena con su único ancho de lama de 127 no lo pregunta); una lista vacía no se pide.
- * Precio: tarifa base pendiente de enlazar (0 con aviso) + suplementos (backend /acc_cfg/ver/precio). Solo se añade a
+ * Precio: tarifa base por tipo + ancho de lama + tejido (sqlVertical/10; sin tarifa, 0 con aviso) + suplementos (backend /acc_cfg/ver/precio). Solo se añade a
  * la cesta con el precio calculado para la configuración actual; al grabar, el servidor lo vuelve a calcular.
  *
  * La línea viaja en la cesta como un CortinaTipo de tipo 3: la selección en `nver` (lo que graba el backend), los

@@ -541,6 +541,16 @@
                     <app-acc-tejidos *ngIf="tipoVerId" producto="ver" [grupo]="tipoVerId"></app-acc-tejidos>
                 </ng-container>
 
+                <!-- VERTICAL · TARIFA (sqlVertical/10): tipo + ancho de lama + tejido -->
+                <ng-container *ngIf="seccion === 'ver_tarifa'">
+                    <div class="acc-intro">
+                        Tarifa base del tipo elegido: el <strong>mecanismo</strong> por tramos de ancho y el <strong>tejido</strong> por metro lineal de lama,
+                        para cada ancho de lama y, si hace falta, para cada cliente. Los suplementos de las opciones se suman aparte.
+                    </div>
+                    <ng-container *ngTemplateOutlet="selectorTipoVer"></ng-container>
+                    <app-acc-ver-tarifa *ngIf="tipoVerId" [tipo]="tipoVerId" [tipos]="tiposVer"></app-acc-ver-tarifa>
+                </ng-container>
+
                 <!-- VERTICAL · MODALIDADES (lista fija) -->
                 <ng-container *ngIf="seccion === 'ver_modalidades'">
                     <div class="acc-intro">

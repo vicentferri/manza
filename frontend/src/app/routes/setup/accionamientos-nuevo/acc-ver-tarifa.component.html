@@ -1,0 +1,136 @@
+<div class="acc-bloque">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong class="mr-2">Tarifa de {{ nombreTipo }}</strong>
+        <span class="small text-muted mr-3" *ngIf="cargado">{{ filasMecanismo.length }} tramos de mecanismo y {{ filasTejido.length }} precios de tejido en total</span>
+        <span class="ml-auto d-flex align-items-center" *ngIf="otrosTipos.length">
+            <span class="small text-muted mr-2">Copiar de otro tipo:</span>
+            <select class="form-control form-control-sm acc-tej-filtro mr-2" [(ngModel)]="origenCopia" [ngModelOptions]="{ standalone: true }">
+                <option [ngValue]="null">Elegir tipo...</option>
+                <option *ngFor="let t of otrosTipos" [ngValue]="t.id">{{ t.nombre }}</option>
+            </select>
+            <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="!origenCopia || copiando" (click)="copiar()"
+                title="Añade lo que falte: cada ancho de lama va al del mismo valor en mm; no cambia lo que ya hay">
+                <i class="fa" [ngClass]="copiando ? 'fa-spinner fa-spin' : 'fa-files-o'"></i> Copiar
+            </button>
+        </span>
+    </div>
+
+    <div class="acc-ayuda mb-2">
+        Precio base de una unidad: <strong>completa</strong> = mecanismo según el ancho + nº de lamas × metros de cada lama (alto + 5,5 cm) × precio del tejido por metro;
+        <strong>solo mecanismo</strong> = mecanismo; <strong>solo tejido</strong> = una lama. Las lamas salen con la fórmula de siempre (solo 89 y 127 mm).
+        En la Inclinada, el ancho es el espacio a cubrir y el alto, el máximo. A esto se suman los suplementos de las opciones.
+        <br>Las filas <strong>sin ancho de lama</strong> valen para las líneas sin lama (solo mecanismo) y para los anchos de lama que no tengan filas propias.
+        Las de un <strong>cliente</strong> mandan sobre las generales. Sin tarifa, esa parte vale 0 y el configurador lo avisa.
+    </div>
+
+    <div *ngIf="!cargado" class="acc-vacio"><i class="fa fa-spinner fa-spin"></i> Cargando...</div>
+
+    <ng-container *ngIf="cargado">
+        <!-- juego: ancho de lama + cliente -->
+        <div class="d-flex align-items-center flex-wrap mb-2">
+            <span class="mr-2"><strong>Ancho de lama:</strong></span>
+            <div class="btn-group btn-group-sm mr-3" role="group">
+                <button *ngFor="let l of anchosLama" type="button" class="btn"
+                    [class.btn-primary]="lama === l.id" [class.btn-outline-primary]="lama !== l.id" (click)="elegir(l.id, cliente)">
+                    {{ nombreLama(l) }}<span *ngIf="!l.activo"> (oculto)</span>
+                    <span *ngIf="filasDe(l.id)" title="Filas de tarifa"> · {{ filasDe(l.id) }}</span>
+                </button>
+                <button type="button" class="btn" [class.btn-primary]="lama === ''" [class.btn-outline-primary]="lama !== ''" (click)="elegir('', cliente)">
+                    Sin ancho de lama<span *ngIf="filasDe('')" title="Filas de tarifa"> · {{ filasDe('') }}</span>
+                </button>
+            </div>
+            <span class="mr-2"><strong>Cliente:</strong></span>
+            <select class="form-control form-control-sm acc-tej-filtro" [ngModel]="cliente" (ngModelChange)="elegir(lama, $event)" [ngModelOptions]="{ standalone: true }">
+                <option [ngValue]="''">General (todos los clientes)</option>
+                <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }}{{ clientesConTarifa.has(c.id) ? ' · con tarifa propia' : '' }}</option>
+            </select>
+        </div>
+        <div class="acc-aviso mb-2" *ngIf="anchosLama.length === 0">
+            Este tipo no tiene anchos de lama (Opciones del tipo → Ancho de lama): solo se pueden poner filas sin ancho de lama.
+        </div>
+
+        <div class="row">
+            <!-- MECANISMO -->
+            <div class="col-xl-5 col-lg-6">
+                <div class="acc-bloque">
+                    <div class="acc-bloque-titulo d-flex align-items-center">
+                        <strong class="mr-2">Mecanismo</strong><span class="small text-muted">precio de una cortina o un riel, por ancho</span>
+                        <span class="ml-auto">
+                            <button type="button" class="btn btn-outline-secondary btn-sm mr-1" (click)="pegando = pegando === 'mecanismo' ? '' : 'mecanismo'; textoPegado = ''"
+                                title="Pegar dos columnas copiadas de Excel: ancho (cm) y precio"><i class="fa fa-clipboard"></i> Pegar</button>
+                            <button type="button" class="btn btn-primary btn-sm" [disabled]="!cambiadoMecanismo || guardando" (click)="guardarMecanismo()">
+                                <i class="fa" [ngClass]="guardando === 'mecanismo' ? 'fa-spinner fa-spin' : 'fa-save'"></i> Guardar
+                            </button>
+                        </span>
+                    </div>
+                    <div *ngIf="pegando === 'mecanismo'" class="mb-2">
+                        <textarea class="form-control form-control-sm" rows="6" [(ngModel)]="textoPegado" [ngModelOptions]="{ standalone: true }"
+                            placeholder="Una fila por tramo: ancho hasta (cm) y precio. Ej.:&#10;100	54,46&#10;110	55,76"></textarea>
+                        <div class="mt-1 small text-muted">Sustituye los tramos de la tabla (falta guardar después).
+                            <button type="button" class="btn btn-outline-primary btn-sm ml-2" [disabled]="!textoPegado" (click)="aplicarPegado()">Aplicar</button></div>
+                    </div>
+                    <div class="acc-table-container">
+                        <table class="table table-sm acc-matriz mb-1">
+                            <thead>
+                                <tr><th>Ancho hasta (cm)</th><th class="text-right">Precio (€)</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let t of tramos; let i = index">
+                                    <td><input type="text" class="form-control form-control-sm" [(ngModel)]="t.hasta" (ngModelChange)="cambiadoMecanismo = true" [ngModelOptions]="{ standalone: true }" /></td>
+                                    <td><input type="text" class="form-control form-control-sm text-right" [(ngModel)]="t.precio" (ngModelChange)="cambiadoMecanismo = true" [ngModelOptions]="{ standalone: true }" /></td>
+                                    <td class="text-center"><button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="quitarTramo(i)" title="Quitar el tramo"><i class="fa fa-times"></i></button></td>
+                                </tr>
+                                <tr *ngIf="tramos.length === 0"><td colspan="3" class="acc-vacio">Sin tramos: el mecanismo vale 0{{ lama !== '' ? ' (o el de las filas sin ancho de lama, si las hay)' : '' }}.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-outline-success btn-sm" (click)="anadirTramo()"><i class="fa fa-plus"></i> Añadir tramo</button>
+                    <div class="small text-muted mt-1">Se usa el primer tramo que llega al ancho; si el ancho pasa del último, la línea no se puede valorar.</div>
+                </div>
+            </div>
+
+            <!-- TEJIDO -->
+            <div class="col-xl-7 col-lg-6">
+                <div class="acc-bloque">
+                    <div class="acc-bloque-titulo d-flex align-items-center">
+                        <strong class="mr-2">Tejido</strong><span class="small text-muted">€ por metro lineal de lama (todos los colores del tejido)</span>
+                        <span class="ml-auto">
+                            <button type="button" class="btn btn-outline-secondary btn-sm mr-1" (click)="pegando = pegando === 'tejido' ? '' : 'tejido'; textoPegado = ''"
+                                title="Pegar dos columnas copiadas de Excel: tejido y precio por metro"><i class="fa fa-clipboard"></i> Pegar</button>
+                            <button type="button" class="btn btn-primary btn-sm" [disabled]="!cambiadoTejido || guardando" (click)="guardarTejido()">
+                                <i class="fa" [ngClass]="guardando === 'tejido' ? 'fa-spinner fa-spin' : 'fa-save'"></i> Guardar
+                            </button>
+                        </span>
+                    </div>
+                    <div *ngIf="pegando === 'tejido'" class="mb-2">
+                        <textarea class="form-control form-control-sm" rows="6" [(ngModel)]="textoPegado" [ngModelOptions]="{ standalone: true }"
+                            placeholder="Una fila por tejido: nombre y precio por metro. Ej.:&#10;ACUSTIC	1,30"></textarea>
+                        <div class="mt-1 small text-muted">Pone el precio de los tejidos que encuentre por nombre (falta guardar después).
+                            <button type="button" class="btn btn-outline-primary btn-sm ml-2" [disabled]="!textoPegado" (click)="aplicarPegado()">Aplicar</button></div>
+                    </div>
+                    <div class="acc-vacio" *ngIf="precios.length === 0">El tipo no tiene tejidos: márquelos en el paso 3 (Tejido).</div>
+                    <div class="acc-table-container" *ngIf="precios.length > 0">
+                        <table class="table table-sm acc-matriz mb-1">
+                            <thead>
+                                <tr><th>Tejido</th><th class="text-right">€ / metro</th><th class="text-right small">Lama de 1 m de alto</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let p of precios">
+                                    <td>
+                                        <span class="acc-nombre">{{ p.nombre }}</span>
+                                        <span class="text-muted small" *ngIf="!p.fuera"> · {{ p.colores }} {{ p.colores === 1 ? 'color' : 'colores' }}</span>
+                                        <span class="badge badge-warning ml-1" *ngIf="p.fuera" title="Tiene precio pero ya no está marcado en el tipo">ya no está en el tipo</span>
+                                    </td>
+                                    <td style="width: 130px"><input type="text" class="form-control form-control-sm text-right" [(ngModel)]="p.precio" (ngModelChange)="cambiadoTejido = true"
+                                        [ngModelOptions]="{ standalone: true }" placeholder="sin tarifa" /></td>
+                                    <td class="text-right small text-muted">{{ porEjemplo(p.precio) !== null ? (porEjemplo(p.precio) | number:'1.2-2') + ' €' : '' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="small text-muted mt-1">Un tejido sin precio no tiene tarifa en este ancho de lama: se usa el de las filas sin ancho de lama o vale 0.</div>
+                </div>
+            </div>
+        </div>
+    </ng-container>
+</div>

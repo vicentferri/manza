@@ -573,6 +573,11 @@ smapi.post('/acc/zip/tejidos/copiar', NuevoSistema, AccionamientosNuevoControlle
 smapi.get('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos);
 smapi.post('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos_guardar);
 smapi.post('/acc/ver/tejidos/:tipo/copiar', NuevoSistema, AccionamientosNuevoController.ver_tejidos_copiar);
+/* Tarifa base del Vertical: tipo + ancho de lama + tejido (sqlVertical/10) */
+smapi.get('/acc/ver/tarifa/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tarifa);
+smapi.post('/acc/ver/tarifa/:tipo/mecanismo', NuevoSistema, AccionamientosNuevoController.ver_tarifa_mecanismo);
+smapi.post('/acc/ver/tarifa/:tipo/tejido', NuevoSistema, AccionamientosNuevoController.ver_tarifa_tejido);
+smapi.post('/acc/ver/tarifa/:tipo/copiar', NuevoSistema, AccionamientosNuevoController.ver_tarifa_copiar);
 smapi.get('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion);
 smapi.post('/acc/rel/:relacion/:id', NuevoSistema, AccionamientosNuevoController.relacion_guardar);
 smapi.get('/acc/matriz/motores', NuevoSistema, AccionamientosNuevoController.matriz_motores);

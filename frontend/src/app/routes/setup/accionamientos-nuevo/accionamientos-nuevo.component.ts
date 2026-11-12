@@ -75,6 +75,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'ver_tipos', paso: '1', label: 'Tipo y modalidades', ayuda: 'Qué se puede pedir de cada tipo', icono: '' },
         { id: 'ver_opciones', paso: '2', label: 'Opciones del tipo', ayuda: 'Lama, mecanismo, riel, accionamiento, soporte y recogida', icono: '' },
         { id: 'ver_tejidos', paso: '3', label: 'Tejido', ayuda: 'Los que ofrece cada tipo', icono: '' },
+        { id: 'ver_tarifa', paso: '', label: 'Tarifa', ayuda: 'Mecanismo por ancho y tejido por metro de lama', icono: 'fa-table' },
         { id: 'ver_modalidades', paso: '', label: 'Modalidades', ayuda: 'Nombres y suplementos', icono: 'fa-list' },
         { id: 'ver_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
@@ -242,7 +243,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         this.tipoVerFila = null;
         if (id === 'cadena' || id === 'motor') { this.cargarAccionamientos(); }
         /* Los nombres de los tipos pueden haber cambiado en el paso 1 */
-        if (id === 'ver_opciones' || id === 'ver_tejidos') { this.cargarTiposVer(); }
+        if (id === 'ver_opciones' || id === 'ver_tejidos' || id === 'ver_tarifa') { this.cargarTiposVer(); }
     }
 
     /* Vertical: tipo elegido para las opciones y los tejidos (se conserva al cambiar de sección) */

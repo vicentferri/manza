@@ -876,8 +876,8 @@ async function ver_opciones(req, res) {
   }
 }
 
-/* Precio de una línea de Vertical con sp_acc_ver_precio_linea (sqlVertical/03): base (pendiente de enlazar: 0 y aviso)
-   + suplementos de sus listas. Misma respuesta que precioLineaMini. En la inclinada el alto es el máximo */
+/* Precio de una línea de Vertical con sp_acc_ver_precio_linea (sqlVertical/03 y 10): base por tipo + ancho de lama +
+   tejido (mecanismo y tejido, cada uno una línea del desglose; sin tarifa, 0 y aviso) + suplementos de sus listas. Misma respuesta que precioLineaMini. En la inclinada el alto es el máximo */
 async function precioLineaVer(pool, cliente, l) {
   const n = l.nver || {};
   const alto = medidaVer(l.alto) !== null ? medidaVer(l.alto) : medidaVer(n.alto_max);
@@ -896,6 +896,7 @@ async function precioLineaVer(pool, cliente, l) {
     .input('soporte', sql.Int, entero(n.soporte))
     .input('recogida', sql.Int, entero(n.recogida))
     .input('tejido', sql.Int, entero(n.tejido))
+    .input('tejido2', sql.Int, entero(n.tejido2))
     .input('desglose', sql.Bit, 1)
     .output('tarifa', sql.Int)
     .output('mensaje', sql.VarChar(250))
