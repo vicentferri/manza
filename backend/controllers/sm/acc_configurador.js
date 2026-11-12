@@ -31,6 +31,15 @@ const sql = require('mssql');
  *   GET  /api/sm/acc_cfg/zip/opciones/:cliente   listas activas del Cajón ZIP con sus relaciones y tejidos
  *   POST /api/sm/acc_cfg/zip/precio/:cliente     precio de una línea de Cajón ZIP con su desglose
  *   El pedido, el presupuesto y la conversión son los mismos de arriba: admiten también líneas de Cajón ZIP.
+ *
+ * Vertical (C:\dev\prod\sqlVertical 01-05; interruptor propio SOL_ACC_VER_CLIENTE; tipo 3). Leroy no pasa por aquí:
+ *   GET  /api/sm/acc_cfg/ver/activo/:cliente     ¿usa el configurador nuevo del Vertical?
+ *   GET  /api/sm/acc_cfg/ver/opciones/:cliente   tipos de vertical con sus propias listas, modalidades y tejidos
+ *   POST /api/sm/acc_cfg/ver/precio/:cliente     precio de una línea de Vertical con su desglose (base pendiente de enlazar)
+ *   Línea: { TipoCortina: 3, ancho, alto, cantidad, codeCentro, instrucciones, estancia_id, estancia_obs,
+ *            nver: { tipo, modalidad, alto_min, alto_max, ancho_lama, posicion_mecanismo, color_riel, accionamiento,
+ *                    soporte, recogida, tejido, tejido2 } }
+ *   El pedido, el presupuesto y la conversión son los mismos de arriba: admiten también líneas de Vertical.
  */
 
 /* Mensajes de los códigos de sp_acc_pedido_tipo_1_add */
@@ -740,19 +749,240 @@ async function altaLineaZip(transaction, doc, idDocumento, l, p) {
     .execute(doc.lineaZip);
 }
 
+/* ---------------- VERTICAL (sqlVertical 01-05; interruptor propio SOL_ACC_VER_CLIENTE; tipo 3) ---------------- */
+
+/* Mensajes de los códigos de sp_acc_ver_pedido_tipo_3_add / sp_acc_ver_presupuesto_tipo_3_add (sqlVertical/04) */
+const ERRORES_VER = {
+  '-1': 'El documento no existe',
+  '-2': 'El cliente no tiene activado el configurador nuevo del Vertical',
+  '-21': 'Precio de la línea incoherente',
+  '-22': 'Desglose del precio no válido',
+  '-50': 'Tipo de vertical no válido',
+  '-51': 'Esa modalidad no está disponible para el tipo de vertical',
+  '-52': 'Ancho de lama no válido para ese tipo y esa modalidad',
+  '-53': 'Posición del mecanismo no válida para ese tipo y esa modalidad',
+  '-54': 'Color del riel no válido para ese tipo y esa modalidad',
+  '-55': 'Accionamiento no válido para ese tipo y esa modalidad',
+  '-56': 'Soporte no válido para ese tipo y esa modalidad',
+  '-57': 'Recogida no válida para ese tipo y esa modalidad',
+  '-58': 'El tejido no está disponible para ese tipo de vertical (o la modalidad no lleva tejido)',
+  '-59': 'Combinada no válida: solo en la Normal completa y con otro color del mismo tejido',
+  '-60': 'Medidas o cantidad no válidas para esa modalidad',
+  '-61': 'Inclinada: indique el espacio a cubrir y el alto mínimo y máximo (mínimo menor que máximo, 30° como mucho)'
+};
+
+/* Interruptor del Vertical (sqlVertical/02), independiente de los demás productos */
+async function verActivo(pool, cliente) {
+  const result = await pool.request().input('cliente', sql.Int, cliente)
+    .query('select 1 as ok from dbo.SOL_ACC_VER_CLIENTE where cliente = @cliente and activo = 1');
+  return result.recordset.length > 0;
+}
+
+/* Medidas del Vertical: cada modalidad lleva las suyas (solo tejido sin ancho, solo mecanismo sin alto, la
+   inclinada con alto mínimo y máximo); qué toca a cada una lo comprueba el SP (-60/-61). Aquí solo que las que
+   lleguen sean números > 0 en pasos de 0,5 y que la cantidad sea un entero > 0 */
+function errorMedidasVer(l) {
+  const n = l.nver || {};
+  const vacio = (v) => v === null || v === undefined || v === '';
+  const nombres = { ancho: l.ancho, alto: l.alto, 'alto mínimo': n.alto_min, 'alto máximo': n.alto_max };
+  for (const nombre of Object.keys(nombres)) {
+    if (!vacio(nombres[nombre]) && medida(nombres[nombre]) === null) {
+      return `El ${nombre} tiene que ser mayor que 0 y en múltiplos de 0,5 cm`;
+    }
+  }
+  const cantidad = Number(l.cantidad);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) return 'La cantidad tiene que ser un número entero mayor que 0';
+  return '';
+}
+
+/* Medida opcional: null si no llega */
+function medidaVer(value) {
+  return value === null || value === undefined || value === '' ? null : medida(value);
+}
+
+/* GET /acc_cfg/ver/activo/:cliente — ante cualquier duda, false */
+async function ver_activo(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(200).send({ activo: false });
+  try {
+    const pool = await sql.connect();
+    res.status(200).send({ activo: await verActivo(pool, cliente) });
+  } catch (err) {
+    console.error(err);
+    res.status(200).send({ activo: false });
+  }
+}
+
+/* GET /acc_cfg/ver/opciones/:cliente — los tipos de vertical activos, cada uno con SUS listas (solo lo activo),
+   sus modalidades y los ids de sus tejidos; los tejidos del maestro van una sola vez */
+async function ver_opciones(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  try {
+    const pool = await sql.connect();
+    if (!await verActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Vertical' });
+    }
+    const q = async (consulta) => (await pool.request().query(consulta)).recordset;
+    const porTipo = (tabla, extra = '') =>
+      q(`select id, tipo_id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, ${extra ? 'valor' : 'nombre'}`);
+    const [tipos, modalidades, tipoMod, lamas, posiciones, rieles, accionamientos, soportes, recogidas, tipoTej, tejidos] = await Promise.all([
+      q('select id, codigo, nombre from dbo.SOL_ACC_VER_TIPO where activo = 1 order by orden, nombre'),
+      q('select id, codigo, nombre from dbo.SOL_ACC_VER_MODALIDAD where activo = 1 order by orden, nombre'),
+      q('select tipo_id, modalidad_id from dbo.SOL_ACC_VER_TIPO_MODALIDAD'),
+      /* ancho de lama: el nombre es opcional; si no lo hay se enseña el valor en mm */
+      q(`select id, tipo_id, codigo, isnull(nombre, cast(cast(valor as float) as varchar(20)) + ' mm') as nombre, valor
+         from dbo.SOL_ACC_VER_ANCHO_LAMA where activo = 1 order by orden, valor`),
+      porTipo('SOL_ACC_VER_POSICION_MECANISMO'),
+      porTipo('SOL_ACC_VER_COLOR_RIEL'),
+      porTipo('SOL_ACC_VER_ACCIONAMIENTO'),
+      porTipo('SOL_ACC_VER_SOPORTE'),
+      porTipo('SOL_ACC_VER_RECOGIDA'),
+      q('select vt.tipo_id, vt.tejido from dbo.SOL_ACC_VER_TIPO_TEJIDO vt join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = vt.tejido and m.activo = 1'),
+      /* una fila por tejido + color + criterio, solo los que tiene algún tipo */
+      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, t.descripcion as tipo
+         from dbo.SOL_TEJIDOS_MAESTRO m
+         left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+         where m.activo = 1 and exists (select 1 from dbo.SOL_ACC_VER_TIPO_TEJIDO vt where vt.tejido = m.idrow)
+         order by t.descripcion, m.nombre, m.color, m.criterio`)
+    ]);
+
+    /* Solo se enlazan modalidades activas */
+    const modA = new Set(modalidades.map(m => m.id));
+    const modPorTipo = agrupar(tipoMod, 'tipo_id', 'modalidad_id');
+    const tejPorTipo = agrupar(tipoTej, 'tipo_id', 'tejido');
+    const de = (filas, tipo) => filas.filter(f => f.tipo_id === tipo).map(f => {
+      const { tipo_id, ...resto } = f;
+      return resto;
+    });
+
+    res.status(200).send({
+      tipos: tipos.map(t => Object.assign(t, {
+        modalidades: (modPorTipo[t.id] || []).filter(id => modA.has(id)),
+        anchosLama: de(lamas, t.id),
+        posiciones: de(posiciones, t.id),
+        coloresRiel: de(rieles, t.id),
+        accionamientos: de(accionamientos, t.id),
+        soportes: de(soportes, t.id),
+        recogidas: de(recogidas, t.id),
+        tejidos: tejPorTipo[t.id] || []
+      })),
+      modalidades,
+      tejidos
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Precio de una línea de Vertical con sp_acc_ver_precio_linea (sqlVertical/03): base (pendiente de enlazar: 0 y aviso)
+   + suplementos de sus listas. Misma respuesta que precioLineaMini. En la inclinada el alto es el máximo */
+async function precioLineaVer(pool, cliente, l) {
+  const n = l.nver || {};
+  const alto = medidaVer(l.alto) !== null ? medidaVer(l.alto) : medidaVer(n.alto_max);
+  const d = (nombre) => [nombre, sql.Decimal(12, 2)];
+  const request = pool.request()
+    .input('cliente', sql.Int, cliente)
+    .input('tipo', sql.Int, entero(n.tipo))
+    .input('modalidad', sql.Int, entero(n.modalidad))
+    .input('ancho', sql.Decimal(12, 2), medidaVer(l.ancho))
+    .input('alto', sql.Decimal(12, 2), alto)
+    .input('cantidad', sql.Int, entero(l.cantidad) || 1)
+    .input('ancho_lama', sql.Int, entero(n.ancho_lama))
+    .input('posicion_mecanismo', sql.Int, entero(n.posicion_mecanismo))
+    .input('color_riel', sql.Int, entero(n.color_riel))
+    .input('accionamiento', sql.Int, entero(n.accionamiento))
+    .input('soporte', sql.Int, entero(n.soporte))
+    .input('recogida', sql.Int, entero(n.recogida))
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('desglose', sql.Bit, 1)
+    .output('tarifa', sql.Int)
+    .output('mensaje', sql.VarChar(250))
+    .output('aviso', sql.VarChar(250));
+  [d('base'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
+  const r = await request.execute('sp_acc_ver_precio_linea');
+  const o = r.output;
+  if (r.returnValue !== 0) {
+    return { codigo: r.returnValue, mensaje: o.mensaje || 'No se puede calcular el precio', aviso: o.aviso || null };
+  }
+  return {
+    codigo: 0,
+    aviso: o.aviso || null,
+    tipo_tarifa: null,
+    tarifa: o.tarifa,
+    base: o.base, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
+    desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
+  };
+}
+
+/* POST /acc_cfg/ver/precio/:cliente   body: una línea de Vertical. No graba nada */
+async function ver_precio(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  const l = req.body || {};
+  if (!l.nver) return res.status(400).send({ message: 'Falta la selección del Vertical' });
+  const errorM = errorMedidasVer(l);
+  if (errorM) return res.status(400).send({ message: errorM });
+  try {
+    const pool = await sql.connect();
+    if (!await verActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Vertical' });
+    }
+    const p = await precioLineaVer(pool, cliente, l);
+    if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
+    res.status(200).send(p);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Alta de una línea de Vertical dentro de la transacción del documento */
+async function altaLineaVer(transaction, doc, idDocumento, l, p) {
+  const n = l.nver || {};
+  return new sql.Request(transaction)
+    .input(doc.id, sql.Int, idDocumento)
+    .input('centro', sql.Int, entero(l.codeCentro) || 1)
+    .input('tipo', sql.Int, entero(n.tipo))
+    .input('modalidad', sql.Int, entero(n.modalidad))
+    .input('ancho', sql.Decimal(12, 2), medidaVer(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medidaVer(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad))
+    .input('alto_min', sql.Decimal(12, 2), medidaVer(n.alto_min))
+    .input('alto_max', sql.Decimal(12, 2), medidaVer(n.alto_max))
+    .input('ancho_lama', sql.Int, entero(n.ancho_lama))
+    .input('posicion_mecanismo', sql.Int, entero(n.posicion_mecanismo))
+    .input('color_riel', sql.Int, entero(n.color_riel))
+    .input('accionamiento', sql.Int, entero(n.accionamiento))
+    .input('soporte', sql.Int, entero(n.soporte))
+    .input('recogida', sql.Int, entero(n.recogida))
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('tejido2', sql.Int, entero(n.tejido2))
+    .input('instrucciones', sql.VarChar(250), texto(l.instrucciones, 250))
+    .input('estancia_id', sql.Int, enteroAntiguo(l.estancia_id))
+    .input('estancia', sql.VarChar(2500), texto(l.estancia_obs, 2500))
+    .input('pvp_unitario', sql.Decimal(12, 2), p.unitario)
+    .input('desglose', sql.Xml, desgloseXml(p.desglose))
+    .execute(doc.lineaVer);
+}
+
 /* Pedido y presupuesto se graban igual; solo cambian los SPs y el nombre de sus parámetros */
 const DOCUMENTOS = {
   pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add',
                  lineaMini: 'sp_acc_mini_pedido_tipo_4_add', lineaZip: 'sp_acc_zip_pedido_tipo_6_add',
+                 lineaVer: 'sp_acc_ver_pedido_tipo_3_add',
                  id: 'idPedido', nombre: 'pedido' },
   presupuesto: { cabecera: 'sp_acc_presupuesto_add', ref: 'refPresupuesto', linea: 'sp_acc_presupuesto_tipo_1_add',
                  lineaMini: 'sp_acc_mini_presupuesto_tipo_4_add', lineaZip: 'sp_acc_zip_presupuesto_tipo_6_add',
+                 lineaVer: 'sp_acc_ver_presupuesto_tipo_3_add',
                  id: 'idPresupuesto', nombre: 'presupuesto' }
 };
 
 const esEnrollableNuevo = (l) => entero(l.TipoCortina) === 1 && !!l.nacc;
 const esMiniNuevo = (l) => entero(l.TipoCortina) === 4 && !!l.nmini;
 const esZipNuevo = (l) => entero(l.TipoCortina) === 6 && !!l.nzip;
+const esVerNuevo = (l) => entero(l.TipoCortina) === 3 && !!l.nver;
 
 /* Alta de una línea de Solar Mini dentro de la transacción del documento */
 async function altaLineaMini(transaction, doc, idDocumento, l, p) {
@@ -805,14 +1035,15 @@ async function alta(doc, req, res) {
   if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
   if (lineas.length === 0) return res.status(400).send({ message: `El ${doc.nombre} no tiene líneas` });
 
-  /* sqlSolarMini/05 y sqlCajonZip/05: enrollables (nacc), Solar Mini (nmini) y Cajón ZIP (nzip) nuevos pueden ir
-     en el mismo documento */
-  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l) && !esZipNuevo(l));
+  /* sqlSolarMini/05, sqlCajonZip/05 y sqlVertical/04: enrollables (nacc), Solar Mini (nmini), Cajón ZIP (nzip) y
+     Vertical (nver) nuevos pueden ir en el mismo documento */
+  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l) && !esZipNuevo(l) && !esVerNuevo(l));
   if (otras >= 0) {
-    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables, Solar Mini y Cajón ZIP` });
+    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables, Solar Mini, Cajón ZIP y Vertical` });
   }
   for (let i = 0; i < lineas.length; i++) {
-    const errorM = errorMedidas(lineas[i]);
+    /* el Vertical tiene sus propias medidas (solo tejido sin ancho, solo mecanismo sin alto, la inclinada con altos) */
+    const errorM = esVerNuevo(lineas[i]) ? errorMedidasVer(lineas[i]) : errorMedidas(lineas[i]);
     if (errorM) return res.status(400).send({ message: `Línea ${i + 1}: ${errorM}` });
   }
 
@@ -830,13 +1061,17 @@ async function alta(doc, req, res) {
     if (lineas.some(esZipNuevo) && !await zipActivo(pool, cliente)) {
       return res.status(400).send({ message: ERRORES_ZIP['-2'] });
     }
+    if (lineas.some(esVerNuevo) && !await verActivo(pool, cliente)) {
+      return res.status(400).send({ message: ERRORES_VER['-2'] });
+    }
 
     /* Precio de cada línea, fuera de la transacción */
     const precios = [];
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
       const p = esMiniNuevo(l) ? await precioLineaMini(pool, cliente, l)
-        : esZipNuevo(l) ? await precioLineaZip(pool, cliente, l) : await precioLinea(pool, cliente, l);
+        : esZipNuevo(l) ? await precioLineaZip(pool, cliente, l)
+        : esVerNuevo(l) ? await precioLineaVer(pool, cliente, l) : await precioLinea(pool, cliente, l);
       if (p.codigo !== 0) return res.status(400).send({ message: `Línea ${i + 1}: ${p.mensaje}` });
       precios.push(p);
     }
@@ -862,6 +1097,15 @@ async function alta(doc, req, res) {
         if (!(rm.returnValue > 0)) {
           await transaction.rollback();
           const motivo = ERRORES_MINI[String(rm.returnValue)] || 'Línea no válida';
+          return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
+        }
+        continue;
+      }
+      if (esVerNuevo(l)) {
+        const rv = await altaLineaVer(transaction, doc, idDocumento, l, precios[i]);
+        if (!(rv.returnValue > 0)) {
+          await transaction.rollback();
+          const motivo = ERRORES_VER[String(rv.returnValue)] || 'Línea no válida';
           return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
         }
         continue;
@@ -979,6 +1223,9 @@ module.exports = {
   zip_activo,
   zip_opciones,
   zip_precio,
+  ver_activo,
+  ver_opciones,
+  ver_precio,
   pedido,
   presupuesto,
   presupuesto_a_pedido

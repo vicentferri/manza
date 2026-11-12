@@ -616,6 +616,10 @@ smapi.post('/acc_cfg/mini/precio/:cliente', Auth.ensureAuth, AccConfiguradorCont
 smapi.get('/acc_cfg/zip/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.zip_activo);
 smapi.get('/acc_cfg/zip/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.zip_opciones);
 smapi.post('/acc_cfg/zip/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.zip_precio);
+/* Vertical (sqlVertical; interruptor propio SOL_ACC_VER_CLIENTE): el alta va por /acc_cfg/pedido y /acc_cfg/presupuesto */
+smapi.get('/acc_cfg/ver/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.ver_activo);
+smapi.get('/acc_cfg/ver/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.ver_opciones);
+smapi.post('/acc_cfg/ver/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.ver_precio);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);
