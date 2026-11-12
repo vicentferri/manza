@@ -19,9 +19,9 @@
             </select>
           </div>
           <!-- Solo los productos que se dividen por sistemas (el enrollable); HoneyComb tiene un único juego -->
-          <div *ngIf="productoConSistema" class="input-group input-group-sm fab-sistema">
+          <div *ngIf="productoConSistema || productoConJuegos" class="input-group input-group-sm fab-sistema">
             <div class="input-group-prepend">
-              <span class="input-group-text">Sistema</span>
+              <span class="input-group-text">{{ productoConSistema ? 'Sistema' : 'Tipo' }}</span>
             </div>
             <select
               class="form-control form-control-sm"
@@ -33,7 +33,7 @@
               <option *ngIf="sistemas.length === 0" value="">Sin sistemas: añada uno</option>
               <option *ngFor="let s of sistemas" [value]="s.sistema">{{ s.sistema_nombre || s.descripcion }}</option>
             </select>
-            <div class="input-group-append">
+            <div class="input-group-append" *ngIf="productoConSistema">
               <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="!sistema" (click)="BorrarSistema()"
                 title="Borra el juego de fabricación de este sistema y sus parámetros. Solo si no tiene reglas, búsquedas ni tablas">
                 <i class="fa fa-trash"></i>

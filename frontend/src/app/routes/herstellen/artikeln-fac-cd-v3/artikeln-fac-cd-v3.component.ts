@@ -49,7 +49,7 @@ const CLAVE_COLUMNAS_OCULTAS = 'fab_v3_columnas_ocultas';
 /* sqlCajonZip/07 y sqlReglasProducto: productos cuyo XML usa las reglas de código y descripción del producto: todos los
    que se fabrican por reglas (enrollable, Solar Mini, Cajón ZIP y HoneyComb). Para un producto nuevo del motor, añadirlo
    aquí cuando su fabricación guarde fab_codigo / fab_descripcion y su bloque del XML los lea */
-const PRODUCTOS_CON_CODIGO = [1, 4, 6, 7];
+const PRODUCTOS_CON_CODIGO = [1, 3, 4, 6, 7];
 /* sqlReglasProducto/04: valor de una condición "igual a" que significa «cualquiera» (la línea tiene algún valor) */
 const VALOR_CUALQUIERA = '*';
 const TIPOS_REGLA = [
@@ -660,6 +660,12 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   get productoConSistema(): boolean {
     const p = this.productos.find(x => x.producto == this.producto);
     return !!(p && p.con_sistema);
+  }
+
+  /* Producto con varios juegos que no son por sistema (el Vertical: uno por tipo, sqlVertical/06): selector de juego,
+     sin añadir ni borrar (los juegos son fijos) */
+  get productoConJuegos(): boolean {
+    return !this.productoConSistema && this.sistemas.length > 1;
   }
 
   /* Nombre del juego elegido para los títulos ("Enrollable · Rhin", "HoneyComb") */

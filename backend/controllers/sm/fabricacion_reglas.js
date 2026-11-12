@@ -676,12 +676,16 @@ async function simular(req, res) {
     /* Juego de un sistema del enrollable (sqlEnrrollable): el procedimiento fabrica todas las líneas
        del modelo nuevo del pedido, pero solo se muestran las del sistema elegido */
     const porSistema = sistema.acc_sistema_id !== null && sistema.acc_sistema_id !== undefined;
-    const filtroSistema = porSistema ? ' and t.nacc_accionamiento_id is not null and t.nacc_sistema_id = @acc' : '';
+    /* Juego de un tipo de vertical (sqlVertical/06): se muestran solo las líneas nuevas de ese tipo */
+    const porTipoVer = sistema.acc_ver_tipo_id !== null && sistema.acc_ver_tipo_id !== undefined;
+    const filtroSistema = porSistema ? ' and t.nacc_accionamiento_id is not null and t.nacc_sistema_id = @acc'
+      : (porTipoVer ? ' and t.nver_tipo_id = @ver' : '');
 
     const fabricacion = await pool.request()
       .input('idPedido', sql.Int, idPedido)
       .input('tipo', sql.Int, sistema.tipo_linea)
       .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
+      .input('ver', sql.Int, porTipoVer ? sistema.acc_ver_tipo_id : null)
       .query(`
         select f.id, f.idpedido, f.orden, f.articulo, f.descripcion, f.cantidad, f.unidad, f.descUnidad,
                f.consumo, isnull(f.cod_sol,'') as cod_sol, f.fam_sol
@@ -695,6 +699,7 @@ async function simular(req, res) {
       .input('idPedido', sql.Int, idPedido)
       .input('tipo', sql.Int, sistema.tipo_linea)
       .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
+      .input('ver', sql.Int, porTipoVer ? sistema.acc_ver_tipo_id : null)
       .query(`
         select p.idpedido, p.parametro, p.valor
         from dbo.[${sistema.tabla_parametros}] p
@@ -713,6 +718,19 @@ async function simular(req, res) {
         .query(`
           select sum(case when t.nacc_accionamiento_id is not null and isnull(t.nacc_sistema_id, -1) <> @acc then 1 else 0 end) as otros_sistemas,
                  sum(case when t.nacc_accionamiento_id is null then 1 else 0 end) as modelo_antiguo
+          from dbo.[${sistema.tabla_origen}] t
+          join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
+          where l.idrow = @idPedido`);
+      omitidas = { otros_sistemas: r.recordset[0].otros_sistemas || 0, modelo_antiguo: r.recordset[0].modelo_antiguo || 0 };
+    } else if (porTipoVer) {
+      /* Vertical: las líneas de otros tipos de vertical y las de siempre (Leroy, sin fabricación por reglas) */
+      const r = await pool.request()
+        .input('idPedido', sql.Int, idPedido)
+        .input('tipo', sql.Int, sistema.tipo_linea)
+        .input('ver', sql.Int, sistema.acc_ver_tipo_id)
+        .query(`
+          select sum(case when t.nver_tipo_id is not null and t.nver_tipo_id <> @ver then 1 else 0 end) as otros_sistemas,
+                 sum(case when t.nver_tipo_id is null then 1 else 0 end) as modelo_antiguo
           from dbo.[${sistema.tabla_origen}] t
           join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
           where l.idrow = @idPedido`);
@@ -743,6 +761,7 @@ async function simular(req, res) {
         .input('idPedido', sql.Int, idPedido)
         .input('tipo', sql.Int, sistema.tipo_linea)
         .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
+        .input('ver', sql.Int, porTipoVer ? sistema.acc_ver_tipo_id : null)
         .query(`
           select x.idpedido, t.fab_codigo as codigo, t.fab_descripcion as descripcion,
                  rc.orden as codigo_orden, rc.atributo as codigo_regla, rd.orden as descripcion_orden, rd.atributo as descripcion_regla
