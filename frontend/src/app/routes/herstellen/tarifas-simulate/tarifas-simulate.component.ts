@@ -913,6 +913,13 @@ export class TarifasSimulateComponent implements OnInit {
   ChangeProducto(event) {
 
     this.AssignCriterios();
+    /* sqlPanelJapones/03: el destino del configurador nuevo depende del tipo de producto (panel japonés solo con
+       tarifas de panel; sistemas, Solar Mini y Cajón ZIP solo con las de enrollable): si ya no vale, se quita */
+    const destino = this.accDestino;
+    const panel = this.model.tipoproducto == 2;
+    if (destino && (panel ? destino !== 'P2' : destino === 'P2' || this.model.tipoproducto != 1)) {
+      this.cambiarAccDestino('');
+    }
   }
 
   ChangeTipoTejido(event) {
@@ -946,7 +953,8 @@ export class TarifasSimulateComponent implements OnInit {
   /* T2 del configurador nuevo: al elegir un tejido del maestro se toman su criterio y su coste m²
      (si sus colores cuestan distinto, el mayor) y se deja sin tejido de siempre */
   /* Desplegable "Sistema o producto (configurador nuevo)": un sistema del enrollable (su id), el Solar Mini
-     ('P4', sqlSolarMini/03), un modelo de cajón del Cajón ZIP ('Z' + id, sqlCajonZip/03) o ninguno ('').
+     ('P4', sqlSolarMini/03), un modelo de cajón del Cajón ZIP ('Z' + id, sqlCajonZip/03), el panel japonés
+     ('P2', sqlPanelJapones/03, solo en tarifas de panel) o ninguno ('').
      Una tarifa tiene un solo destino */
   get accDestino(): string {
     if (this.model.acc_zip_modelo_id) { return 'Z' + this.model.acc_zip_modelo_id; }

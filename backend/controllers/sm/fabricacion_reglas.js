@@ -678,8 +678,9 @@ async function simular(req, res) {
     const porSistema = sistema.acc_sistema_id !== null && sistema.acc_sistema_id !== undefined;
     /* Juego de un tipo de vertical (sqlVertical/06): se muestran solo las líneas nuevas de ese tipo */
     const porTipoVer = sistema.acc_ver_tipo_id !== null && sistema.acc_ver_tipo_id !== undefined;
+    /* Panel japonés (sqlPanelJapones/07): solo las líneas del configurador nuevo (las de siempre no se fabrican por reglas) */
     const filtroSistema = porSistema ? ' and t.nacc_accionamiento_id is not null and t.nacc_sistema_id = @acc'
-      : (porTipoVer ? ' and t.nver_tipo_id = @ver' : '');
+      : (porTipoVer ? ' and t.nver_tipo_id = @ver' : (Number(sistema.producto) === 2 ? ' and t.npj_modalidad_id is not null' : ''));
 
     const fabricacion = await pool.request()
       .input('idPedido', sql.Int, idPedido)

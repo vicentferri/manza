@@ -47,9 +47,9 @@ interface ColumnaOcultable {
 const CLAVE_COLUMNAS_OCULTAS = 'fab_v3_columnas_ocultas';
 
 /* sqlCajonZip/07 y sqlReglasProducto: productos cuyo XML usa las reglas de código y descripción del producto: todos los
-   que se fabrican por reglas (enrollable, Solar Mini, Cajón ZIP y HoneyComb). Para un producto nuevo del motor, añadirlo
-   aquí cuando su fabricación guarde fab_codigo / fab_descripcion y su bloque del XML los lea */
-const PRODUCTOS_CON_CODIGO = [1, 3, 4, 6, 7];
+   que se fabrican por reglas (enrollable, panel japonés, Vertical, Solar Mini, Cajón ZIP y HoneyComb). Para un producto
+   nuevo del motor, añadirlo aquí cuando su fabricación guarde fab_codigo / fab_descripcion y su bloque del XML los lea */
+const PRODUCTOS_CON_CODIGO = [1, 2, 3, 4, 6, 7];
 /* sqlReglasProducto/04: valor de una condición "igual a" que significa «cualquiera» (la línea tiene algún valor) */
 const VALOR_CUALQUIERA = '*';
 const TIPOS_REGLA = [

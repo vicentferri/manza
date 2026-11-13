@@ -1568,7 +1568,10 @@ function Simulation(req,res){
                 }
                 else if (recordsets.returnValue == -10)
                 {
-                    res.status(400).send({message: 'Para el configurador nuevo la tarifa tiene que ser de enrollable y tener el grupo (T1) o el tejido (T2) elegido'});
+                    res.status(400).send({message: accProducto === 2
+                        /* sqlPanelJapones/03: el panel japonés va con tarifas de panel */
+                        ? 'Para el panel japonés la tarifa tiene que ser de panel japonés (tipo de producto) y tener el grupo (T1) o el tejido (T2) elegido'
+                        : 'Para el configurador nuevo la tarifa tiene que ser de enrollable y tener el grupo (T1) o el tejido (T2) elegido'});
                 }
                 else if (recordsets.returnValue == -13)
                 {
@@ -1587,13 +1590,15 @@ function Simulation(req,res){
                         .input('zip',sql.Int,accZip !== null && accZip > 0 ? accZip : null)
                         .input('grupotejido',sql.Int,body.grupotejido).input('grupo',sql.Int,body.grupo).input('tejido',sql.Int,body.tejido)
                         .input('tejnombre',sql.VarChar(100),accTejido).input('criterio',sql.Int,body.criterio)
+                        /* sqlPanelJapones/03: el panel japonés va con tarifas de panel (tipoproducto 2) */
+                        .input('tipoproducto',sql.Int,parseInt(body.tipoproducto, 10) || 1)
                         /* misma regla que sp_tarifas_simulate (scripts 27 y 32): en T2, por tejido de siempre o por tejido del maestro + criterio */
                         .query("declare @n varchar(100) = case when @tejnombre = '-' then (select acc_tejido_nombre from SOL_TARIFAS_SIMULATE where idrow = @idrow) else nullif(@tejnombre, '') end; " +
                                "select idrow, nombre from SOL_TARIFAS_SIMULATE where idrow <> @idrow and activa = 1 " +
                                /* sqlSolarMini/03 y sqlCajonZip/03: con modelo de cajón, las del modelo; con producto (Solar Mini),
                                   las del producto; si no, las del sistema */
                                "and ((@zip is not null and acc_zip_modelo_id = @zip) or (@zip is null and @producto is not null and acc_producto = @producto) " +
-                               "or (@zip is null and @producto is null and acc_sistema_id = @sistema)) and tipoproducto = 1 " +
+                               "or (@zip is null and @producto is null and acc_sistema_id = @sistema)) and tipoproducto = @tipoproducto " +
                                "and isnull(grupotejido,0) = isnull(@grupotejido,0) and ((isnull(@grupotejido,0) = 1 and grupo = @grupo) " +
                                "or (isnull(@grupotejido,0) = 0 and @n is null and acc_tejido_nombre is null and tejido = @tejido) " +
                                "or (isnull(@grupotejido,0) = 0 and @n is not null and acc_tejido_nombre = @n and criterio = @criterio))",
@@ -1602,7 +1607,8 @@ function Simulation(req,res){
                             var tipo = parseInt(body.grupotejido, 10) === 1 ? 'T1' : 'T2';
                             res.status(409).send({
                                 message: 'Ya existe una tarifa ' + tipo + ' activa para ' +
-                                         (accZip !== null && accZip > 0 ? 'este modelo de cajón' : accProducto !== null && accProducto > 0 ? 'el Solar Mini' : 'este sistema') +
+                                         (accZip !== null && accZip > 0 ? 'este modelo de cajón' : accProducto === 2 ? 'el panel japonés'
+                                          : accProducto !== null && accProducto > 0 ? 'el Solar Mini' : 'este sistema') +
                                          ' y ' + (tipo === 'T1' ? 'grupo' : 'tejido') +
                                          (duplicadas.length ? ': ' + duplicadas.map(d => d.idrow + ' ' + d.nombre).join(', ') : '') +
                                          '. Si guarda, esa tarifa quedará desactivada.',
