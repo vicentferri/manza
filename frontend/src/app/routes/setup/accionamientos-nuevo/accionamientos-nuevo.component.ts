@@ -22,6 +22,9 @@ import { ToastrService } from 'ngx-toastr';
  * Inclinada y Viena, fijos) y CADA TIPO TIENE SUS PROPIAS LISTAS (ancho de lama, posición del mecanismo, color del
  * riel, accionamiento, soporte y recogida), que se pueden copiar de otro tipo. El tipo marca sus modalidades
  * (completa, solo mecanismo, solo tejido) y tiene su lista de tejidos.
+ * El Panel japonés (sqlPanelJapones/01, pj_* en el backend) tampoco tiene sistemas ni tipos: modalidades fijas (completa,
+ * solo riel, solo tejido), listas planas y propias del mecanismo (vías, color, mando, recogida, contrapeso, soporte) y
+ * una lista de tejidos.
  */
 @Component({
     selector: 'app-accionamientos-nuevo',
@@ -37,7 +40,8 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'enrollable', label: 'Enrollable' },
         { id: 'mini', label: 'Solar Mini' },
         { id: 'zip', label: 'Cajón ZIP' },
-        { id: 'ver', label: 'Vertical' }
+        { id: 'ver', label: 'Vertical' },
+        { id: 'pj', label: 'Panel japonés' }
     ];
     producto = 'enrollable';
 
@@ -82,6 +86,16 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'ver_tarifa', paso: '', label: 'Tarifa', ayuda: 'Mecanismo por ancho y tejido por metro de lama', icono: 'fa-table' },
         { id: 'ver_modalidades', paso: '', label: 'Modalidades', ayuda: 'Nombres y suplementos', icono: 'fa-list' },
         { id: 'ver_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
+    ];
+
+    /* Panel japonés, en el orden del configurador */
+    readonly seccionesPj = [
+        { id: 'pj_modalidades', paso: '1', label: 'Tipo de pedido', ayuda: 'Completa, solo riel o solo tejido', icono: '' },
+        { id: 'pj_mecanismo', paso: '2', label: 'Mecanismo', ayuda: 'Vías, color, mando, recogida, contrapeso y soporte', icono: '' },
+        { id: 'pj_tejidos', paso: '3', label: 'Tejido', ayuda: 'Los que ofrece el panel japonés', icono: '' },
+        { id: 'impresion', paso: '', label: 'Impresión digital', ayuda: 'Importe fijo por cortina y tejidos aptos', icono: 'fa-picture-o' },
+        { id: 'pj_tarifa_riel', paso: '', label: 'Tarifa del riel', ayuda: 'Solo riel: por vías y ancho', icono: 'fa-table' },
+        { id: 'pj_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
 
     secciones = this.seccionesEnrollable;
@@ -143,6 +157,18 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'ver_recogidas', label: 'Recogida', singular: 'recogida', ayuda: '' }
     ];
     pestanaVer: any = this.listasVer[0];
+
+    /* Listas del mecanismo del Panel japonés (pestañas del paso 2; claves de CATALOGOS del backend) */
+    readonly listasPj = [
+        { id: 'pj_vias', label: 'Número de vías', singular: 'número de vías', conValor: true, unidad: 'vías',
+          ayuda: 'Número entero. Al elegirlo, el configurador propone tantas portatelas como vías (se pueden subir hasta el doble).' },
+        { id: 'pj_colores_mecanismo', label: 'Color del mecanismo', singular: 'color del mecanismo', ayuda: '' },
+        { id: 'pj_posiciones_mando', label: 'Posición del mando', singular: 'posición del mando', ayuda: '' },
+        { id: 'pj_recogidas', label: 'Tipo de recogida', singular: 'tipo de recogida', ayuda: '' },
+        { id: 'pj_contrapesos', label: 'Contrapeso', singular: 'contrapeso', ayuda: '' },
+        { id: 'pj_soportes', label: 'Tipo de soporte', singular: 'tipo de soporte', ayuda: '' }
+    ];
+    pestanaPj: any = this.listasPj[0];
     /* Tipos de vertical (fijos) y el elegido; otrosTiposVer = origen de "Copiar" (campo, no getter: es un @Input) */
     tiposVer: any[] = [];
     tipoVerId: number = null;
@@ -178,8 +204,9 @@ export class AccionamientosNuevoComponent implements OnInit {
         alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores',
         zip_modelos_cajon: 'Modelos de cajón', zip_tipos_motor: 'Tipos de motor', zip_modelos_motor: 'Motores',
         zip_guias: 'Guías', zip_contrapesos: 'Contrapesos', zip_lacados: 'Lacados',
-        ver_tipos: 'Tipos de vertical', ver_modalidades: 'Modalidades'
-    }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini, <any[]>this.listasZip, <any[]>this.listasVer)
+        ver_tipos: 'Tipos de vertical', ver_modalidades: 'Modalidades', pj_modalidades: 'Tipos de pedido'
+    }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini, <any[]>this.listasZip, <any[]>this.listasVer,
+        <any[]>this.listasPj)
         .map(l => ({ [l.id]: l.label })));
 
     /* Los tipos de cadena y de motor cuelgan de los accionamientos fijos CADENA y MOTOR */
@@ -225,7 +252,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         if (id === this.producto) { return; }
         this.producto = id;
         this.secciones = id === 'mini' ? this.seccionesMini : id === 'zip' ? this.seccionesZip
-            : id === 'ver' ? this.seccionesVer : this.seccionesEnrollable;
+            : id === 'ver' ? this.seccionesVer : id === 'pj' ? this.seccionesPj : this.seccionesEnrollable;
         if (id === 'ver') { this.cargarTiposVer(); }
         this.cambiarSeccion(this.secciones[0].id);
     }

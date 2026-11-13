@@ -22,7 +22,7 @@ export class AccSuplementosResumenComponent implements OnInit {
     @Input() producto = 'enrollable';
 
     /* Prefijo de las listas de cada producto sin sistema; el enrollable son las que no llevan ninguno */
-    private readonly PREFIJOS = ['mini_', 'zip_', 'ver_'];
+    private readonly PREFIJOS = ['mini_', 'zip_', 'ver_', 'pj_'];
 
     lineas: any[] = [];
     filtradas: any[] = [];

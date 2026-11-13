@@ -1,0 +1,80 @@
+<div class="acc-bloque">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong class="mr-2">Tarifa del solo riel</strong>
+        <span class="small text-muted" *ngIf="cargado">{{ filas.length }} tramos en total</span>
+    </div>
+
+    <div class="acc-ayuda mb-2">
+        Precio de <strong>un riel</strong> en el tipo de pedido <strong>Solo riel</strong>, por número de vías y ancho del mecanismo.
+        La <strong>completa</strong> y el <strong>solo tejido</strong> no salen de aquí: van con la tarifa del generador (producto «Panel japonés»).
+        Las filas de un <strong>cliente</strong> mandan sobre las generales (si el cliente tiene tramos para esas vías, se usan solo los suyos).
+        Sin tarifa, el riel vale 0 y el configurador lo avisa. A esto se suman los suplementos de las opciones.
+    </div>
+
+    <div *ngIf="!cargado" class="acc-vacio"><i class="fa fa-spinner fa-spin"></i> Cargando...</div>
+
+    <ng-container *ngIf="cargado">
+        <div class="acc-aviso" *ngIf="vias.length === 0">
+            No hay números de vías. Añádalos en Mecanismo → Número de vías.
+        </div>
+
+        <ng-container *ngIf="vias.length">
+            <!-- juego: vías + cliente -->
+            <div class="d-flex align-items-center flex-wrap mb-2">
+                <span class="mr-2"><strong>Vías:</strong></span>
+                <div class="btn-group btn-group-sm mr-3" role="group">
+                    <button *ngFor="let v of vias" type="button" class="btn"
+                        [class.btn-primary]="viasId === v.id" [class.btn-outline-primary]="viasId !== v.id" (click)="elegir(v.id, cliente)">
+                        {{ v.nombre }}<span *ngIf="!v.activo"> (oculto)</span>
+                        <span *ngIf="filasDe(v.id)" title="Tramos de tarifa"> · {{ filasDe(v.id) }}</span>
+                    </button>
+                </div>
+                <span class="mr-2"><strong>Cliente:</strong></span>
+                <select class="form-control form-control-sm acc-tej-filtro" [ngModel]="cliente" (ngModelChange)="elegir(viasId, $event)" [ngModelOptions]="{ standalone: true }">
+                    <option [ngValue]="''">General (todos los clientes)</option>
+                    <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }}{{ clientesConTarifa.has(c.id) ? ' · con tarifa propia' : '' }}</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="col-xl-5 col-lg-7">
+                    <div class="acc-bloque">
+                        <div class="acc-bloque-titulo d-flex align-items-center">
+                            <strong class="mr-2">Tramos</strong><span class="small text-muted">precio de un riel, por ancho</span>
+                            <span class="ml-auto">
+                                <button type="button" class="btn btn-outline-secondary btn-sm mr-1" (click)="pegando = !pegando; textoPegado = ''"
+                                    title="Pegar dos columnas copiadas de Excel: ancho (cm) y precio"><i class="fa fa-clipboard"></i> Pegar</button>
+                                <button type="button" class="btn btn-primary btn-sm" [disabled]="!cambiado || guardando" (click)="guardar()">
+                                    <i class="fa" [ngClass]="guardando ? 'fa-spinner fa-spin' : 'fa-save'"></i> Guardar
+                                </button>
+                            </span>
+                        </div>
+                        <div *ngIf="pegando" class="mb-2">
+                            <textarea class="form-control form-control-sm" rows="6" [(ngModel)]="textoPegado" [ngModelOptions]="{ standalone: true }"
+                                placeholder="Una fila por tramo: ancho hasta (cm) y precio. Ej.:&#10;100	54,46&#10;120	58,10"></textarea>
+                            <div class="mt-1 small text-muted">Sustituye los tramos de la tabla (falta guardar después).
+                                <button type="button" class="btn btn-outline-primary btn-sm ml-2" [disabled]="!textoPegado" (click)="aplicarPegado()">Aplicar</button></div>
+                        </div>
+                        <div class="acc-table-container">
+                            <table class="table table-sm acc-matriz mb-1">
+                                <thead>
+                                    <tr><th>Ancho hasta (cm)</th><th class="text-right">Precio (€)</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let t of tramos; let i = index">
+                                        <td><input type="text" class="form-control form-control-sm" [(ngModel)]="t.hasta" (ngModelChange)="cambiado = true" [ngModelOptions]="{ standalone: true }" /></td>
+                                        <td><input type="text" class="form-control form-control-sm text-right" [(ngModel)]="t.precio" (ngModelChange)="cambiado = true" [ngModelOptions]="{ standalone: true }" /></td>
+                                        <td class="text-center"><button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="quitarTramo(i)" title="Quitar el tramo"><i class="fa fa-times"></i></button></td>
+                                    </tr>
+                                    <tr *ngIf="tramos.length === 0"><td colspan="3" class="acc-vacio">Sin tramos{{ cliente !== '' ? ': este cliente usa la tarifa general' : ': el riel vale 0' }}.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-outline-success btn-sm" (click)="anadirTramo()"><i class="fa fa-plus"></i> Añadir tramo</button>
+                        <div class="small text-muted mt-1">Se usa el primer tramo que llega al ancho; si el ancho pasa del último, la línea no se puede valorar.</div>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+    </ng-container>
+</div>

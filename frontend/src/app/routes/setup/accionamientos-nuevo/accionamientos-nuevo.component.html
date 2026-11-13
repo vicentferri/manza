@@ -541,6 +541,62 @@
                     <app-acc-tejidos *ngIf="tipoVerId" producto="ver" [grupo]="tipoVerId"></app-acc-tejidos>
                 </ng-container>
 
+                <!-- PANEL JAPONÉS · 1. TIPO DE PEDIDO (modalidades fijas) -->
+                <ng-container *ngIf="seccion === 'pj_modalidades'">
+                    <div class="acc-intro">
+                        Primer paso del configurador del Panel japonés. Los tres tipos de pedido son fijos (cada uno decide qué datos pide el configurador:
+                        la completa, mecanismo y lamas; el solo riel, el mecanismo; el solo tejido, las lamas): se pueden renombrar, ordenar, ocultar y llevar suplemento.
+                    </div>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla catalogo="pj_modalidades" titulo="Tipos de pedido" singular="tipo de pedido" [fijo]="true"
+                                ayuda="Si solo deja visible uno, el configurador no pregunta."></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- PANEL JAPONÉS · 2. MECANISMO (listas planas y propias del panel) -->
+                <ng-container *ngIf="seccion === 'pj_mecanismo'">
+                    <div class="acc-intro">
+                        Opciones del mecanismo del Panel japonés (en la completa y en el solo riel). Son listas propias del panel, aparte de las de los demás productos.
+                        Las portatelas, el ancho de portatela y las lamas los calcula el configurador a partir del ancho y de las vías.
+                    </div>
+                    <ul class="nav nav-tabs acc-tabs">
+                        <li class="nav-item" *ngFor="let l of listasPj">
+                            <a class="nav-link" href="javascript:void(0)" [class.active]="pestanaPj.id === l.id" (click)="pestanaPj = l">{{ l.label }}</a>
+                        </li>
+                    </ul>
+                    <div class="row">
+                        <div class="col-xl-6 col-lg-8">
+                            <app-acc-tabla [catalogo]="pestanaPj.id" [titulo]="pestanaPj.label" [singular]="pestanaPj.singular" [ayuda]="pestanaPj.ayuda"
+                                [conValor]="!!pestanaPj.conValor" [unidad]="pestanaPj.unidad || ''"></app-acc-tabla>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- PANEL JAPONÉS · 3. TEJIDO -->
+                <ng-container *ngIf="seccion === 'pj_tejidos'">
+                    <div class="acc-intro">
+                        Tejidos del <strong>Maestro de tejidos</strong> que ofrece el Panel japonés en el configurador (completa y solo tejido). Una sola lista,
+                        la misma para todos los clientes. Cada color marcado es un color que se puede elegir para las lamas.
+                    </div>
+                    <app-acc-tejidos producto="pj"></app-acc-tejidos>
+                </ng-container>
+
+                <!-- PANEL JAPONÉS · TARIFA DEL RIEL (sqlPanelJapones/03): solo riel, por vías y ancho -->
+                <ng-container *ngIf="seccion === 'pj_tarifa_riel'">
+                    <app-acc-pj-tarifa-riel></app-acc-pj-tarifa-riel>
+                </ng-container>
+
+                <!-- PANEL JAPONÉS · SUPLEMENTOS -->
+                <ng-container *ngIf="seccion === 'pj_suplementos'">
+                    <div class="acc-intro">
+                        Todos los suplementos de precio del Panel japonés. Se ponen en la columna <strong>Suplemento</strong> de cada lista;
+                        aquí se revisan y, pulsando una línea, se cambian. El Panel japonés no tiene sistemas: los precios van por cliente y medida.
+                    </div>
+                    <app-acc-suplementos-resumen producto="pj" [nombresListas]="nombresListas"></app-acc-suplementos-resumen>
+                </ng-container>
+
                 <!-- IMPRESIÓN DIGITAL (todos los productos; sqlImpresion/01): importe fijo por cortina y tejidos aptos -->
                 <ng-container *ngIf="seccion === 'impresion'">
                     <div class="row">

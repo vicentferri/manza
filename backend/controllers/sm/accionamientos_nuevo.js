@@ -8,6 +8,7 @@ const sql = require('mssql');
  * Scripts:  C:\dev\sqlAccionamientos\ (01 tablas, 02 accionamientos fijos CADENA y MOTOR),
  *           prod/sqlSolarMini/01 (Solar Mini, catálogos mini_* y tejidos sin sistema)
  *           y prod/sqlCajonZip/01 (Cajón ZIP, catálogos y relaciones zip_*, tejidos sin sistema)
+ *           y prod/sqlPanelJapones/01 (Panel japonés, catálogos pj_*, tejidos sin sistema)
  *
  * Las tablas y columnas salen solo de CATALOGOS y RELACIONES: el cliente manda la
  * clave del catálogo, nunca un nombre de tabla.
@@ -73,7 +74,16 @@ const CATALOGOS = {
   ver_colores_riel:          { tabla: 'SOL_ACC_VER_COLOR_RIEL', sinSistema: true, ...POR_TIPO_VERTICAL },
   ver_accionamientos:        { tabla: 'SOL_ACC_VER_ACCIONAMIENTO', sinSistema: true, ...POR_TIPO_VERTICAL },
   ver_soportes:              { tabla: 'SOL_ACC_VER_SOPORTE', sinSistema: true, ...POR_TIPO_VERTICAL },
-  ver_recogidas:             { tabla: 'SOL_ACC_VER_RECOGIDA', sinSistema: true, ...POR_TIPO_VERTICAL }
+  ver_recogidas:             { tabla: 'SOL_ACC_VER_RECOGIDA', sinSistema: true, ...POR_TIPO_VERTICAL },
+  /* Panel japonés (sqlPanelJapones/01): producto propio, sin sistemas ni tipos; listas planas y propias del panel.
+     Modalidades fijas (COMPLETA, SOLO_RIEL, SOLO_TEJIDO); el número de vías es un valor entero (entero: true) */
+  pj_modalidades:            { tabla: 'SOL_ACC_PJ_MODALIDAD', sinSistema: true, fijo: true, protegidos: ['COMPLETA', 'SOLO_RIEL', 'SOLO_TEJIDO'] },
+  pj_vias:                   { tabla: 'SOL_ACC_PJ_VIAS', sinSistema: true, valor: true, positivo: true, entero: true, unidad: 'vías' },
+  pj_colores_mecanismo:      { tabla: 'SOL_ACC_PJ_COLOR_MECANISMO', sinSistema: true },
+  pj_posiciones_mando:       { tabla: 'SOL_ACC_PJ_POSICION_MANDO', sinSistema: true },
+  pj_recogidas:              { tabla: 'SOL_ACC_PJ_RECOGIDA', sinSistema: true },
+  pj_contrapesos:            { tabla: 'SOL_ACC_PJ_CONTRAPESO', sinSistema: true },
+  pj_soportes:               { tabla: 'SOL_ACC_PJ_SOPORTE', sinSistema: true }
 };
 
 /* Relaciones N:M: origen = registro que se edita, destino = opciones que se marcan */
@@ -290,6 +300,7 @@ async function guardar(req, res) {
   if (cat.fijo && id <= 0) return res.status(400).send({ message: 'Esta lista es fija: no se pueden añadir registros' });
   if (cat.valor && valor === null) return res.status(400).send({ message: 'El valor tiene que ser un número' });
   if (cat.positivo && valor <= 0) return res.status(400).send({ message: 'El valor tiene que ser mayor que 0' });
+  if (cat.entero && valor !== Math.floor(valor)) return res.status(400).send({ message: 'El valor tiene que ser un número entero' });
   if (!cat.valor && !nombre) return res.status(400).send({ message: 'El nombre no puede estar vacío' });
   if (codigo && !CODIGO.test(codigo)) return res.status(400).send({ message: 'Código no válido: use letras, números o _' });
 
@@ -787,6 +798,8 @@ function destinoSistema(sistema) {
 const DESTINO_MINI = { tabla: 'SOL_ACC_MINI_TEJIDO', clave: [] };
 /* Cajón ZIP (sqlCajonZip/01): una sola lista para todos los modelos de cajón */
 const DESTINO_ZIP = { tabla: 'SOL_ACC_ZIP_TEJIDO', clave: [] };
+/* Panel japonés (sqlPanelJapones/01): una sola lista */
+const DESTINO_PJ = { tabla: 'SOL_ACC_PJ_TEJIDO', clave: [] };
 
 function conClave(request, destino) {
   destino.clave.forEach(k => request.input(k.param, sql.Int, k.valor));
@@ -979,6 +992,7 @@ function tejidosSinSistema(destino) {
 
 const TEJIDOS_MINI = tejidosSinSistema(DESTINO_MINI);
 const TEJIDOS_ZIP = tejidosSinSistema(DESTINO_ZIP);
+const TEJIDOS_PJ = tejidosSinSistema(DESTINO_PJ);
 
 /* ---------------- VERTICAL: TEJIDOS POR TIPO (sqlVertical/01) ---------------- */
 
@@ -1293,6 +1307,68 @@ async function ver_tarifa_copiar(req, res) {
   }
 }
 
+/* ---------------- PANEL JAPONÉS: TARIFA DEL SOLO RIEL (sqlPanelJapones/03) ----------------
+   Por número de vías: tramos de ancho del mecanismo (hasta cm → precio de un riel), generales o de un cliente. Si
+   el cliente tiene filas para esas vías manda su juego entero. Lo lee sp_acc_pj_precio_linea */
+
+/* GET /acc/pj/tarifa_riel — las vías y todas las filas de la tarifa */
+async function pj_tarifa_riel(req, res) {
+  try {
+    const pool = await sql.connect();
+    const q = (texto) => pool.request().query(texto).then(r => r.recordset);
+    const [vias, filas] = await Promise.all([
+      q(`select id, codigo, cast(valor as int) as valor, isnull(nombre, cast(cast(valor as int) as varchar(10)) + ' vías') as nombre, activo
+         from dbo.SOL_ACC_PJ_VIAS order by orden, valor`),
+      q(`select t.vias_id, t.cliente, c.descripcion as cliente_nombre, t.hasta, t.precio, t.modified, t.usuario
+         from dbo.SOL_ACC_PJ_TARIFA_RIEL t left join dbo.SOL_CLIENTES c on c.idrow = t.cliente
+         order by t.vias_id, t.cliente, t.hasta`)
+    ]);
+    res.status(200).send({ vias, filas });
+  } catch (err) {
+    errorSql(err, res);
+  }
+}
+
+/* POST /acc/pj/tarifa_riel { vias_id, cliente, tramos: [{ hasta, precio }] } — sustituye el juego (vías + cliente);
+   tramos vacío = borrarlo */
+async function pj_tarifa_riel_guardar(req, res) {
+  const body = req.body || {};
+  const vias = entero(body.vias_id);
+  const tramos = body.tramos;
+  if (!Array.isArray(tramos)) return res.status(400).send({ message: 'Faltan los tramos' });
+  const filas = tramos.map(t => ({ hasta: decimal(t.hasta), precio: decimal(t.precio) }));
+  if (filas.some(f => f.hasta === null || f.hasta <= 0 || f.hasta > 10000)) {
+    return res.status(400).send({ message: 'Cada tramo necesita un ancho "hasta" mayor que 0 (en cm)' });
+  }
+  if (filas.some(f => f.precio === null || f.precio < 0)) return res.status(400).send({ message: 'Cada tramo necesita un precio (0 o más)' });
+  if (new Set(filas.map(f => f.hasta)).size !== filas.length) return res.status(400).send({ message: 'Hay dos tramos con el mismo ancho' });
+  const usuario = texto(req.user && (req.user.email || req.user.name), 100) || null;
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    const v = await pool.request().input('id', sql.Int, vias).query('select id from dbo.SOL_ACC_PJ_VIAS where id = @id');
+    if (!v.recordset.length) return res.status(400).send({ message: 'Número de vías no válido' });
+    const cliente = await clienteTarifa(pool, body.cliente);
+    if (cliente === undefined) return res.status(400).send({ message: 'Cliente no válido' });
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const conJuego = (r) => r.input('vias', sql.Int, vias).input('cliente', sql.Int, cliente).input('usuario', sql.VarChar(100), usuario);
+    await conJuego(new sql.Request(transaction))
+      .query('delete from dbo.SOL_ACC_PJ_TARIFA_RIEL where vias_id = @vias and ((cliente is null and @cliente is null) or cliente = @cliente)');
+    for (const f of filas) {
+      await conJuego(new sql.Request(transaction)).input('hasta', sql.Decimal(10, 2), f.hasta).input('precio', sql.Decimal(12, 2), f.precio)
+        .query('insert into dbo.SOL_ACC_PJ_TARIFA_RIEL (vias_id, cliente, hasta, precio, usuario) values (@vias, @cliente, @hasta, @precio, @usuario)');
+    }
+    await transaction.commit();
+    res.status(200).send({ message: 'OK', filas: filas.length });
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
 /* ---------------- IMPRESIÓN DIGITAL: importe fijo por producto (sqlImpresion/01) ----------------
    Una fila por producto en SOL_ACC_IMPRESION_DIGITAL. La opción sale en el configurador solo si el producto tiene
    incluido algún tejido apto (impresion_digital del maestro): aquí se enseñan esos tejidos y dónde están */
@@ -1304,6 +1380,8 @@ const IMPRESION = {
            from dbo.SOL_ACC_MINI_TEJIDO x join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` },
   zip: { producto: 6, tejidos: `select m.nombre, m.color, m.cod_solupyme, null as donde
           from dbo.SOL_ACC_ZIP_TEJIDO x join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` },
+  pj: { producto: 2, tejidos: `select m.nombre, m.color, m.cod_solupyme, null as donde
+         from dbo.SOL_ACC_PJ_TEJIDO x join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` },
   ver: { producto: 3, tejidos: `select m.nombre, m.color, m.cod_solupyme, t.nombre as donde
           from dbo.SOL_ACC_VER_TIPO_TEJIDO x join dbo.SOL_ACC_VER_TIPO t on t.id = x.tipo_id and t.activo = 1
           join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = x.tejido` }
@@ -1376,6 +1454,11 @@ module.exports = {
   zip_tejidos: TEJIDOS_ZIP.leer,
   zip_tejidos_guardar: TEJIDOS_ZIP.guardar,
   zip_tejidos_copiar: TEJIDOS_ZIP.copiar,
+  pj_tarifa_riel,
+  pj_tarifa_riel_guardar,
+  pj_tejidos: TEJIDOS_PJ.leer,
+  pj_tejidos_guardar: TEJIDOS_PJ.guardar,
+  pj_tejidos_copiar: TEJIDOS_PJ.copiar,
   tejidos,
   tejidos_guardar,
   tejidos_copiar,

@@ -13,6 +13,7 @@ import { ToastrService } from 'ngx-toastr';
  * Cada cambio se guarda al momento; si falla, las casillas vuelven a como estaban.
  * producto = 'mini' (Solar Mini, sqlSolarMini/01) o 'zip' (Cajón ZIP, sqlCajonZip/01): una sola lista sin
  * sistema (SOL_ACC_MINI_TEJIDO / SOL_ACC_ZIP_TEJIDO); "Copiar" la deja con los tejidos de un sistema del enrollable.
+ * producto = 'pj' (Panel japonés, sqlPanelJapones/01): igual, con SOL_ACC_PJ_TEJIDO.
  * producto = 'ver' (Vertical, sqlVertical/01): una lista por tipo de vertical (SOL_ACC_VER_TIPO_TEJIDO). El tipo lo
  * elige la pantalla ([grupo]), sin selector propio; "Copiar" la deja con los tejidos de otro tipo.
  */
@@ -28,7 +29,7 @@ export class AccTejidosComponent implements OnInit, OnChanges {
     /* Vertical: id del tipo de vertical elegido en la pantalla */
     @Input() grupo: number = null;
 
-    private readonly NOMBRES = { mini: 'Solar Mini', zip: 'Cajón ZIP' };
+    private readonly NOMBRES = { mini: 'Solar Mini', zip: 'Cajón ZIP', pj: 'Panel japonés' };
 
     /* Sistemas del modelo nuevo (SOL_ACC_SISTEMA) y el elegido; origen de "Copiar de otro sistema" */
     sistemas: any[] = [];

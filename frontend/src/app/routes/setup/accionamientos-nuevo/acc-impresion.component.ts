@@ -7,7 +7,7 @@ import { ToastrService } from 'ngx-toastr';
  * La opción sale en el configurador solo si el producto tiene incluido algún tejido apto (impresion_digital en el
  * Maestro de tejidos); aquí se enseñan esos tejidos y dónde están (sistema del enrollable, tipo del vertical).
  * Sin importe, la impresión vale 0 y el configurador lo avisa.
- * producto: 'enrollable', 'mini', 'zip' o 'ver'.
+ * producto: 'enrollable', 'mini', 'zip', 'ver' o 'pj'.
  */
 @Component({
     selector: 'app-acc-impresion',
