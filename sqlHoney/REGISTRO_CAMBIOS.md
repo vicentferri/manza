@@ -46,6 +46,31 @@ Copias de las versiones anteriores en `backup/` (DEV 2026-09-29; scripts 04-06 a
 Documentación: `flujoHC.md` (funcionamiento), `diagramaFabricacionV3.md` (diagramas y plantilla para otros
 productos), `GUIA_CONFIGURACION_FABRICACION.md` (uso de la pantalla).
 
+## 2026-11-13 · Gestión de la HoneyComb en Configuración → Productos (rama `honeycomb-productos`, sin SQL)
+
+- **Decisiones del usuario:** reutilizar las pantallas de siempre dentro de Productos (no se migra al modelo nuevo `SOL_ACC_*`:
+  la HoneyComb la usa Leroy y su fabricación sale bien); no dejar renombrar lo que usan las reglas; quitar los botones
+  antiguos de Configuración; `admin-link` se queda fuera.
+- **Frontend:** `honeycomb-admin-data` y `honeycomb-admin-images` (y el pipe `safeUrl`) pasan de `manza/` a
+  `routes/setup/honeycomb/` y se declaran en el módulo de Configuración. Productos tiene el botón «HoneyComb» con Tipos de
+  tejido, Colores de tejido, Colores de perfil, Accionamientos, Tarifa e Imágenes (`admin-data` con `[seccion]`, sin su
+  cabecera ni sus pestañas; `admin-images` con `[incrustado]`). `/manza/admin-data` y `/manza/admin-images` redirigen a
+  Productos (`?producto=hc&seccion=hc_tipostejido` y `&seccion=hc_imagenes`); Productos escucha los parámetros (no solo al
+  entrar), para que funcione también si ya se está en la pantalla. Fuera la tarjeta «Honeycomb» de Configuración.
+- **Backend (`honeycomb.js`):** las cuatro rutas de actualización (tipo de tejido, color de tejido, color de perfil y
+  accionamiento) devuelven **409** sin escribir si el nombre cambia y el nombre actual sale en las condiciones de alguna
+  regla (componente, código o descripción) de los juegos del producto 7: la fabricación compara `@TEJIDO_TIPO`,
+  `@TEJIDO_COLOR`, `@COLOR_PERFIL` y `@ACCIONAMIENTO` por texto. Si solo cambian espacios alrededor se guarda el nombre de
+  antes. `admin-data` enseña el mensaje del backend.
+- **No cambian:** tablas, tarifa, configurador, precio ni fabricación (ningún script SQL).
+- **Pruebas:** `pruebas/prueba_renombrado_productos.js` 13/13 (color de perfil real con 17 reglas, y los cuatro tipos con una
+  regla temporal). Compilación AOT sin errores. La batería `backend/test/fabricacion/run.js` da **33 fallos que ya daba sin este
+  cambio** (misma lista con el `honeycomb.js` de `main`): la batería se ha quedado atrás respecto a cambios posteriores del motor
+  (medidas decimales, operador `//`…). Prueba en el navegador con usuario interno: las seis secciones cargan, el renombrado
+  de BLANCO RAL 9016 se bloquea con el mensaje (17 reglas) sin guardar nada, las rutas antiguas redirigen y el configurador
+  HoneyComb calcula el precio como antes (100×100 manual, Opaco Beige, Blanco RAL 9016: 345,17 €).
+- **Estado:** en `main` (sin push). PROD pendiente: solo hay que desplegar `backend/controllers/sm/honeycomb.js` y el frontend.
+
 ## Código
 
 - `backend/controllers/sm/fabricacion_reglas.js` (nuevo) y rutas `/api/sm/fabricacion/*` en

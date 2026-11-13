@@ -39,6 +39,10 @@ import { AccSuplementosResumenComponent } from './accionamientos-nuevo/acc-suple
 import { AccTejidosComponent } from './accionamientos-nuevo/acc-tejidos.component';
 import { AccVerTarifaComponent } from './accionamientos-nuevo/acc-ver-tarifa.component';
 import { AccPjTarifaRielComponent } from './accionamientos-nuevo/acc-pj-tarifa-riel.component';
+/* Gestión de la HoneyComb, ahora dentro de Productos (antes /manza/admin-data y /manza/admin-images) */
+import { HoneycombAdminDataComponent } from './honeycomb/honeycomb-admin-data/honeycomb-admin-data.component';
+import { HoneycombAdminImagesComponent } from './honeycomb/honeycomb-admin-images/honeycomb-admin-images.component';
+import { SafeUrlPipe } from './honeycomb/safe-url.pipe';
 import { AccImpresionComponent } from './accionamientos-nuevo/acc-impresion.component';
 
 
@@ -90,7 +94,7 @@ const routes: Routes = [
         TejidosColoresComponent, TejidosComponent, TejidosMaestroComponent, TejidosImagenesComponent, ImpresionDigitalComponent,
         AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent,
         AccSuplementosComponent, AccSuplementosResumenComponent, AccTejidosComponent, AccVerTarifaComponent, AccImpresionComponent,
-        AccPjTarifaRielComponent
+        AccPjTarifaRielComponent, HoneycombAdminDataComponent, HoneycombAdminImagesComponent, SafeUrlPipe
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]

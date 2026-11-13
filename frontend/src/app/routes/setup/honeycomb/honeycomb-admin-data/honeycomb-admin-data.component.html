@@ -1,8 +1,8 @@
 <!-- honeycomb-admin-data.component.html -->
 <div class="container mt-4">
 
-  <!-- Header -->
-  <div class="row mb-4">
+  <!-- Header (dentro de Productos no se enseña) -->
+  <div class="row mb-4" *ngIf="!seccion">
     <div class="col-12">
       <h5>Gestión de Datos - Honeycomb</h5>
       <p class="text-muted">Administra tipos de tejido, colores, perfiles y accionamientos</p>
@@ -26,7 +26,8 @@
 
   <!-- Tabs -->
   <div class="card mb-4">
-    <div class="card-header">
+    <!-- pestañas: dentro de Productos las hace el menú de Productos -->
+    <div class="card-header" *ngIf="!seccion">
       <ul class="nav nav-tabs card-header-tabs" role="tablist">
         <li class="nav-item" role="presentation">
           <button

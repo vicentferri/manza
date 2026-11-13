@@ -1,6 +1,6 @@
 // honeycomb-admin-images.component.ts
-import { Component, OnInit } from '@angular/core';
-import { HoneycombService } from '../honeycomb/honeycomb.service';
+import { Component, Input, OnInit } from '@angular/core';
+import { HoneycombService } from '../../../../manza/honeycomb/honeycomb.service';
 
 interface ImageItem {
    id: string | number;
@@ -38,6 +38,9 @@ export class HoneycombAdminImagesComponent implements OnInit {
    mensaje: { tipo: 'success' | 'error' | 'info', texto: string } | null = null;
 
    private loadingItems = new Set<string | number>();
+
+   /* Productos → HoneyComb → Imágenes (2026-11-13): sin la cabecera de la pantalla */
+   @Input() incrustado = false;
 
    constructor(private service: HoneycombService) { }
 

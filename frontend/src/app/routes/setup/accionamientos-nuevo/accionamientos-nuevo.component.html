@@ -588,6 +588,21 @@
                     <app-acc-pj-tarifa-riel></app-acc-pj-tarifa-riel>
                 </ng-container>
 
+                <!-- HONEYCOMB: la pantalla de datos de siempre, una pestaña por sección (sus tablas, su tarifa y su fabricación no cambian) -->
+                <ng-container *ngIf="producto === 'hc' && pestanaHc[seccion]">
+                    <div class="acc-intro">
+                        La HoneyComb tiene sus propias tablas y su propia tarifa (no usa las listas ni los suplementos del resto de productos).
+                        Lo que se cambia aquí lo ve el configurador al momento, también Leroy. Un nombre que usen las reglas de fabricación
+                        no se puede cambiar: la fabricación lo compara por texto (cambie antes las reglas en Gestión de Fabricación).
+                    </div>
+                    <app-honeycomb-admin-data [seccion]="pestanaHc[seccion]"></app-honeycomb-admin-data>
+                </ng-container>
+
+                <!-- HONEYCOMB · IMÁGENES -->
+                <ng-container *ngIf="producto === 'hc' && seccion === 'hc_imagenes'">
+                    <app-honeycomb-admin-images [incrustado]="true"></app-honeycomb-admin-images>
+                </ng-container>
+
                 <!-- PANEL JAPONÉS · SUPLEMENTOS -->
                 <ng-container *ngIf="seccion === 'pj_suplementos'">
                     <div class="acc-intro">

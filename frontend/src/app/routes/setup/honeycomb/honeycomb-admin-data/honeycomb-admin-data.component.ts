@@ -1,8 +1,8 @@
 // honeycomb-admin-data.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 
 import * as XLSX from 'xlsx';
-import { HoneycombService } from '../honeycomb/honeycomb.service';
+import { HoneycombService } from '../../../../manza/honeycomb/honeycomb.service';
 
 interface TipoTejido {
    idTipoTejido?: number;
@@ -129,10 +129,24 @@ export class HoneycombAdminDataComponent implements OnInit {
    guardando = false;
    mensaje: { tipo: 'success' | 'error' | 'info' | 'warning', texto: string } | null = null;
 
+   /* Productos → HoneyComb (2026-11-13): la sección que se enseña. Con ella se esconden la cabecera y las pestañas de
+      esta pantalla (el menú de Productos hace de pestañas). Sin ella, la pantalla de siempre con sus pestañas */
+   @Input() seccion: 'tipostejido' | 'colorestejido' | 'coloresperfil' | 'tarifas' | 'tiposaccionamiento' = null;
+
    constructor(private service: HoneycombService) { }
 
    ngOnInit() {
-      this.cargarTiposTejido();
+      if (this.seccion) {
+         this.cambiarTab(this.seccion);
+      } else {
+         this.cargarTiposTejido();
+      }
+   }
+
+   ngOnChanges(changes: SimpleChanges) {
+      if (changes.seccion && !changes.seccion.firstChange && this.seccion) {
+         this.cambiarTab(this.seccion);
+      }
    }
 
    /**
@@ -245,7 +259,7 @@ export class HoneycombAdminDataComponent implements OnInit {
             },
             error: (err) => {
                this.guardando = false;
-               this.mostrarMensaje('error', 'Error al actualizar tipo de tejido');
+               this.mostrarMensaje('error', this.textoError(err, 'Error al actualizar tipo de tejido'));
             }
          });
       }
@@ -487,7 +501,7 @@ export class HoneycombAdminDataComponent implements OnInit {
             },
             error: (err) => {
                this.guardando = false;
-               this.mostrarMensaje('error', 'Error al actualizar color de tejido');
+               this.mostrarMensaje('error', this.textoError(err, 'Error al actualizar color de tejido'));
             }
          });
       }
@@ -596,7 +610,7 @@ export class HoneycombAdminDataComponent implements OnInit {
             },
             error: (err) => {
                this.guardando = false;
-               this.mostrarMensaje('error', 'Error al actualizar color de perfil');
+               this.mostrarMensaje('error', this.textoError(err, 'Error al actualizar color de perfil'));
             }
          });
       }
@@ -699,7 +713,7 @@ export class HoneycombAdminDataComponent implements OnInit {
             },
             error: (err) => {
                this.guardando = false;
-               this.mostrarMensaje('error', 'Error al actualizar tipo de accionamiento');
+               this.mostrarMensaje('error', this.textoError(err, 'Error al actualizar tipo de accionamiento'));
             }
          });
       }
@@ -879,6 +893,12 @@ export class HoneycombAdminDataComponent implements OnInit {
    // =============================================
    // UTILIDADES
    // =============================================
+
+   /* Mensaje del backend si lo trae (p. ej. el bloqueo de renombrado, 409); si no, el genérico */
+   textoError(err: any, generico: string): string {
+      const e = err && err.error;
+      return (e && (e.message || (typeof e.error === 'string' ? e.error : ''))) || generico;
+   }
 
    mostrarMensaje(tipo: 'success' | 'error' | 'info' | 'warning', texto: string) {
       this.mensaje = { tipo, texto };

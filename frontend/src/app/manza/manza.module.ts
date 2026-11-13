@@ -22,9 +22,6 @@ import { FrasePipe } from './config/frase.pipe';
 import { TwoColumnPipe } from './config/twocolumn.pipe';
 import { DesgloseComponent } from './desglose/desglose.component';
 import { HoneycombComponent } from './honeycomb/honeycomb.component';
-import { HoneycombAdminImagesComponent } from './honeycomb-admin-images/honeycomb-admin-images.component';
-import { HoneycombAdminDataComponent } from './honeycomb-admin-data/honeycomb-admin-data.component';
-import { SafeUrlPipe } from './safe-url.pipe';
 import { HoneycombAdminLinkComponent } from './honeycomb-admin-link/honeycomb-admin-link.component';
 import { EnrollableComponent } from './enrollable/enrollable.component';
 import { EnrollableNuevoComponent } from './enrollable-nuevo/enrollable-nuevo.component';
@@ -66,8 +63,6 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
     TwoColumnPipe,
     DesgloseComponent,
     HoneycombComponent,
-    HoneycombAdminImagesComponent,
-    HoneycombAdminDataComponent,
     HoneycombAdminLinkComponent,
     EnrollableComponent,
     EnrollableNuevoComponent,
@@ -82,8 +77,7 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
     CompacComponent,
     TejidoImagenComponent,
     ContrapesoImagenComponent,
-    CfgResumenComponent,
-    SafeUrlPipe
+    CfgResumenComponent
   ]
 })
 export class ManzaModule { }

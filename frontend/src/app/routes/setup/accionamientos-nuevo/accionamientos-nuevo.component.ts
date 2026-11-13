@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
 
@@ -25,6 +26,10 @@ import { ToastrService } from 'ngx-toastr';
  * El Panel japonés (sqlPanelJapones/01, pj_* en el backend) tampoco tiene sistemas ni tipos: modalidades fijas (completa,
  * solo riel, solo tejido), listas planas y propias del mecanismo (vías, color, mando, recogida, contrapeso, soporte) y
  * una lista de tejidos.
+ * La HoneyComb (2026-11-13) NO usa el modelo nuevo: sus secciones son las pantallas de siempre (antes /manza/admin-data y
+ * /manza/admin-images), sobre sus tablas SOL_ARTICULOS_HONEYCOMB_* y su tarifa. Así no cambian ni su configurador (lo usa
+ * Leroy), ni su precio, ni su fabricación. No deja renombrar lo que usan las reglas de fabricación (backend honeycomb.js).
+ * Se puede abrir directamente con ?producto=hc (y &seccion=...): es adonde llevan las rutas antiguas.
  */
 @Component({
     selector: 'app-accionamientos-nuevo',
@@ -41,7 +46,8 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'mini', label: 'Solar Mini' },
         { id: 'zip', label: 'Cajón ZIP' },
         { id: 'ver', label: 'Vertical' },
-        { id: 'pj', label: 'Panel japonés' }
+        { id: 'pj', label: 'Panel japonés' },
+        { id: 'hc', label: 'HoneyComb' }
     ];
     producto = 'enrollable';
 
@@ -97,6 +103,21 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'pj_tarifa_riel', paso: '', label: 'Tarifa del riel', ayuda: 'Solo riel: por vías y ancho', icono: 'fa-table' },
         { id: 'pj_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
     ];
+
+    /* HoneyComb: cada sección es una pestaña de la pantalla de datos de siempre (app-honeycomb-admin-data), salvo Imágenes */
+    readonly seccionesHc = [
+        { id: 'hc_tipostejido', paso: '1', label: 'Tipos de tejido', ayuda: 'Opaco, traslúcido...', icono: '' },
+        { id: 'hc_colorestejido', paso: '2', label: 'Colores de tejido', ayuda: 'Con su referencia Solupyme (el artículo de fabricación)', icono: '' },
+        { id: 'hc_coloresperfil', paso: '3', label: 'Colores de perfil', ayuda: 'Los que deciden las reglas de fabricación', icono: '' },
+        { id: 'hc_tiposaccionamiento', paso: '4', label: 'Accionamientos', ayuda: 'Manual, con varilla...', icono: '' },
+        { id: 'hc_tarifas', paso: '', label: 'Tarifa', ayuda: 'Precios por medida, con historial', icono: 'fa-table' },
+        { id: 'hc_imagenes', paso: '', label: 'Imágenes', ayuda: 'De tejidos, colores, perfiles y accionamientos', icono: 'fa-picture-o' }
+    ];
+    /* sección de Productos → pestaña de app-honeycomb-admin-data */
+    readonly pestanaHc: { [seccion: string]: any } = {
+        hc_tipostejido: 'tipostejido', hc_colorestejido: 'colorestejido', hc_coloresperfil: 'coloresperfil',
+        hc_tiposaccionamiento: 'tiposaccionamiento', hc_tarifas: 'tarifas'
+    };
 
     secciones = this.seccionesEnrollable;
     seccion = 'accionamientos';
@@ -241,10 +262,21 @@ export class AccionamientosNuevoComponent implements OnInit {
     recargaZipGuia = 0;
     recargaZipContrapeso = 0;
 
-    constructor(private service: HaruService, private toaster: ToastrService) { }
+    constructor(private service: HaruService, private toaster: ToastrService, private route: ActivatedRoute) { }
 
     ngOnInit() {
         this.cargarAccionamientos();
+        /* ?producto=hc&seccion=hc_imagenes: abrir un producto (y una sección) directamente (rutas antiguas de la HoneyComb).
+           Suscrito y no con snapshot: si ya se está en Productos, Angular reutiliza la pantalla y solo cambian los parámetros.
+           La suscripción a ActivatedRoute la cierra Angular al destruir la pantalla */
+        this.route.queryParamMap.subscribe(q => {
+            const producto = q.get('producto');
+            if (producto && this.productos.some(p => p.id === producto)) {
+                if (producto !== this.producto) { this.cambiarProducto(producto); }
+                const seccion = q.get('seccion');
+                if (seccion && seccion !== this.seccion && this.secciones.some(s => s.id === seccion)) { this.cambiarSeccion(seccion); }
+            }
+        });
     }
 
     /* Cada producto tiene su menú; se empieza por su primera sección */
@@ -252,7 +284,7 @@ export class AccionamientosNuevoComponent implements OnInit {
         if (id === this.producto) { return; }
         this.producto = id;
         this.secciones = id === 'mini' ? this.seccionesMini : id === 'zip' ? this.seccionesZip
-            : id === 'ver' ? this.seccionesVer : id === 'pj' ? this.seccionesPj : this.seccionesEnrollable;
+            : id === 'ver' ? this.seccionesVer : id === 'pj' ? this.seccionesPj : id === 'hc' ? this.seccionesHc : this.seccionesEnrollable;
         if (id === 'ver') { this.cargarTiposVer(); }
         this.cambiarSeccion(this.secciones[0].id);
     }

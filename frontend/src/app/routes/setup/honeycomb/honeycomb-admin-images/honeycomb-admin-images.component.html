@@ -1,8 +1,8 @@
 <!-- honeycomb-admin-images.component.html -->
 <div class="container mt-4">
   
-  <!-- Header -->
-  <div class="row mb-4">
+  <!-- Header (dentro de Productos no se enseña) -->
+  <div class="row mb-4" *ngIf="!incrustado">
     <div class="col-12">
       <h5>Gestión de Imágenes Honeycomb</h5>
       <p class="text-muted">Administra las imágenes de tipos de tejido, colores, perfiles y accionamientos</p>
