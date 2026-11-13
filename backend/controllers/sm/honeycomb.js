@@ -743,22 +743,67 @@ async function honeycomb_tipoaccionamiento_insert(req, res) {
   }
 }
 
+/* ---------------- NO RENOMBRAR LO QUE USAN LAS REGLAS (Productos → HoneyComb, 2026-11-13) ----------------
+   La fabricación (motor v3, juego del producto 7) recibe de cada línea el TEXTO del tipo de tejido, del color de tejido,
+   del color de perfil y del accionamiento (@TEJIDO_TIPO, @TEJIDO_COLOR, @COLOR_PERFIL, @ACCIONAMIENTO), y las reglas se
+   condicionan por ese texto (p. ej. '@COLOR_PERFIL == BLANCO RAL 9016'). Si se renombra un elemento que sale en alguna
+   condición, los pedidos NUEVOS dejan de cumplir la regla sin aviso. Por eso, si el nombre cambia y el nombre actual
+   aparece en las condiciones de alguna regla (de componente, de código o de descripción) de los juegos de la HoneyComb,
+   no se guarda. Los pedidos ya hechos guardan su texto y no se ven afectados. */
+const RENOMBRABLES = {
+  tipotejido:       { tabla: 'sol_articulos_honeycomb_tipostejido',        id: 'idTipoTejido',        nombre: 'TipoTejido',        parametro: '@TEJIDO_TIPO',   que: 'tipo de tejido' },
+  colortejido:      { tabla: 'sol_articulos_honeycomb_colorestejido',      id: 'idColorTejido',       nombre: 'ColorTejido',       parametro: '@TEJIDO_COLOR',  que: 'color de tejido' },
+  colorperfil:      { tabla: 'sol_articulos_honeycomb_coloresperfil',      id: 'idColorPerfil',       nombre: 'ColorPerfil',       parametro: '@COLOR_PERFIL',  que: 'color de perfil' },
+  tipoaccionamiento:{ tabla: 'sol_articulos_honeycomb_tiposaccionamiento', id: 'idTipoAccionamiento', nombre: 'TipoAccionamiento', parametro: '@ACCIONAMIENTO', que: 'accionamiento' }
+};
+
+/* Devuelve { error, nombre }: error = mensaje si el cambio de nombre no se puede hacer (si no, null); nombre = el que hay
+   que guardar (si solo cambian espacios al principio o al final, se queda el de antes: con espacios ya no coincidiría
+   con el texto de las reglas) */
+async function renombradoBloqueado(pool, clave, id, nuevoNombre) {
+  const r = RENOMBRABLES[clave];
+  const actual = await pool.request().input('id', sql.Int, id)
+    .query(`select ${r.nombre} as nombre from dbo.${r.tabla} where ${r.id} = @id`);
+  if (!actual.recordset.length) return { error: null, nombre: nuevoNombre };
+  const guardado = actual.recordset[0].nombre;
+  const anterior = String(guardado || '').trim();
+  const nuevo = String(nuevoNombre || '').trim();
+  if (anterior === nuevo) return { error: null, nombre: guardado };
+  if (!anterior) return { error: null, nombre: nuevoNombre };
+  /* charindex en lugar de like: los nombres pueden llevar [ ] % _ */
+  const uso = await pool.request()
+    .input('parametro', sql.NVarChar(50), r.parametro)
+    .input('nombre', sql.NVarChar(200), anterior)
+    .query(`
+      select count(*) as n
+      from dbo.SOL_ARTICULOS_FABRICACION_RELACION_V2 x
+      where x.sistema in (select s.sistema from dbo.SOL_FABRICACION_SISTEMAS s where s.producto = 7)
+        and exists (select 1 from (values (x.nombre_parametro1), (x.nombre_parametro2), (x.nombre_parametro3), (x.nombre_parametro4)) c (cond)
+                    where charindex(@parametro, c.cond) > 0 and charindex(@nombre, c.cond) > 0)`);
+  const n = uso.recordset[0].n;
+  if (!n) return { error: null, nombre: nuevoNombre };
+  return { nombre: nuevoNombre, error: `El ${r.que} «${anterior}» se usa en ${n} ${n === 1 ? 'regla' : 'reglas'} de fabricación: no se puede renombrar. ` +
+         'Cambie antes las reglas en Gestión de Fabricación (producto HONEYCOMB).' };
+}
+
 async function honeycomb_tipoaccionamiento_update(req, res) {
   try {
     const { idTipoAccionamiento, TipoAccionamiento, Incremento } = req.body;
 
     
     const pool = await sql.connect();
+    const chk = await renombradoBloqueado(pool, 'tipoaccionamiento', idTipoAccionamiento, TipoAccionamiento);
+    if (chk.error) return res.status(409).json({ error: chk.error, message: chk.error });
     await pool.request()
       .input('idTipoAccionamiento', sql.Int, idTipoAccionamiento)
-      .input('TipoAccionamiento', sql.NVarChar(100), TipoAccionamiento)
+      .input('TipoAccionamiento', sql.NVarChar(100), chk.nombre)
       .input('Incremento', sql.Decimal(12,2), Incremento)
       .execute('SP_Honeycomb_TipoAccionamiento_Update');
 
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al actualizar tipo de tejido' });
+    res.status(500).json({ error: 'Error al actualizar tipo de accionamiento' });
   }
 }
 
@@ -808,9 +853,11 @@ async function honeycomb_tipotejido_update(req, res) {
     const { idTipoTejido, TipoTejido, Incremento } = req.body;
 
     const pool = await sql.connect();
+    const chk = await renombradoBloqueado(pool, 'tipotejido', idTipoTejido, TipoTejido);
+    if (chk.error) return res.status(409).json({ error: chk.error, message: chk.error });
     await pool.request()
       .input('idTipoTejido', sql.Int, idTipoTejido)
-      .input('TipoTejido', sql.NVarChar(100), TipoTejido)
+      .input('TipoTejido', sql.NVarChar(100), chk.nombre)
       .input('Incremento', sql.Decimal(12,2), Incremento)
       .execute('SP_Honeycomb_TipoTejido_Update');
 
@@ -885,9 +932,11 @@ async function honeycomb_colortejido_update(req, res) {
     const { idColorTejido, ColorTejido, idTipoTejido, Referencia, CodigoColor, Incremento } = req.body;
 
     const pool = await sql.connect();
+    const chk = await renombradoBloqueado(pool, 'colortejido', idColorTejido, ColorTejido);
+    if (chk.error) return res.status(409).json({ error: chk.error, message: chk.error });
     await pool.request()
       .input('idColorTejido', sql.Int, idColorTejido)
-      .input('ColorTejido', sql.NVarChar(100), ColorTejido)
+      .input('ColorTejido', sql.NVarChar(100), chk.nombre)
       .input('idTipoTejido', sql.Int, idTipoTejido)
       .input('Referencia', sql.NVarChar(50), Referencia || null)
       .input('CodigoColor', sql.NVarChar(7), CodigoColor || null)
@@ -949,9 +998,11 @@ async function honeycomb_colorperfil_update(req, res) {
     const { idColorPerfil, ColorPerfil, Referencia, CodigoColor, Incremento } = req.body;
 
     const pool = await sql.connect();
+    const chk = await renombradoBloqueado(pool, 'colorperfil', idColorPerfil, ColorPerfil);
+    if (chk.error) return res.status(409).json({ error: chk.error, message: chk.error });
     await pool.request()
       .input('idColorPerfil', sql.Int, idColorPerfil)
-      .input('ColorPerfil', sql.NVarChar(100), ColorPerfil)
+      .input('ColorPerfil', sql.NVarChar(100), chk.nombre)
       .input('Referencia', sql.NVarChar(50), Referencia || null)
       .input('CodigoColor', sql.NVarChar(7), CodigoColor || null)
       .input('Incremento', sql.Decimal(12,2), Incremento)
