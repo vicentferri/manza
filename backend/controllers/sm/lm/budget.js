@@ -958,6 +958,45 @@ function budget_herunterladen_T3_ver(req,res)
  		});
  }
 
+/* PANEL JAPONÉS (sqlPanelJapones): líneas tipo 2 del configurador nuevo de un presupuesto, para cargarlo en la cesta.
+   Solo las que tienen la selección nueva (npj_*), con las medidas de la línea, los nombres de cada opción y los colores
+   de las lamas en orden (ids separados por comas y nombres separados por |) */
+function budget_herunterladen_T2_pj(req,res)
+ {
+	if (!/^\d+$/.test(String(req.params.idrow))) {
+		return res.status(400).send({ message: 'idrow no válido' });
+	}
+	var idrow = parseInt(req.params.idrow);
+
+	new sql.Request()
+		.input('idrow', sql.Int, idrow)
+		.query("select t.*, l.ancho, l.alto, l.cantidad, " +
+		       "mo.codigo as pj_modalidad_codigo, mo.nombre as pj_modalidad, " +
+		       "isnull(vi.nombre, cast(cast(vi.valor as int) as varchar(10)) + ' vías') as pj_vias, " +
+		       "cm.nombre as pj_color_mecanismo, pm.nombre as pj_posicion_mando, re.nombre as pj_recogida, " +
+		       "co.nombre as pj_contrapeso, so.nombre as pj_soporte, tj.nombre as pj_tejido, tj.color as pj_color, " +
+		       "stuff((select ',' + cast(c.tejido as varchar(10)) from SOL_ACC_PJ_LINEA_COLOR c where c.presupuesto_linea_id = t.ID order by c.lama for xml path('')), 1, 1, '') as pj_colores_ids, " +
+		       "stuff((select '|' + m.color from SOL_ACC_PJ_LINEA_COLOR c join SOL_TEJIDOS_MAESTRO m on m.idrow = c.tejido where c.presupuesto_linea_id = t.ID order by c.lama for xml path(''), type).value('.', 'varchar(max)'), 1, 1, '') as pj_colores " +
+		       "from SOL_PRESUPUESTOS_COLA_TIPO_2 t " +
+		       "join SOL_PRESUPUESTOS_COLA_LINEAS l on l.id = t.IDROW " +
+		       "left join SOL_ACC_PJ_MODALIDAD mo on mo.id = t.npj_modalidad_id " +
+		       "left join SOL_ACC_PJ_VIAS vi on vi.id = t.npj_vias_id " +
+		       "left join SOL_ACC_PJ_COLOR_MECANISMO cm on cm.id = t.npj_color_mecanismo_id " +
+		       "left join SOL_ACC_PJ_POSICION_MANDO pm on pm.id = t.npj_posicion_mando_id " +
+		       "left join SOL_ACC_PJ_RECOGIDA re on re.id = t.npj_recogida_id " +
+		       "left join SOL_ACC_PJ_CONTRAPESO co on co.id = t.npj_contrapeso_id " +
+		       "left join SOL_ACC_PJ_SOPORTE so on so.id = t.npj_soporte_id " +
+		       "left join SOL_TEJIDOS_MAESTRO tj on tj.idrow = t.npj_tejido_id " +
+		       "where t.npj_modalidad_id is not null and l.idrow = @idrow order by t.ID",
+		(err, result) => {
+			if (err == null) {
+				res.status(200).send(result.recordset);
+			} else {
+				res.status(500).send({ message: err });
+			}
+		});
+}
+
 /* CAJÓN ZIP (sqlCajonZip): líneas tipo 6 del configurador nuevo de un presupuesto, para cargarlo en la cesta.
    Solo las que tienen la selección nueva (nzip_*): las filas antiguas de TIPO_6 (de 2021) no se pueden volver a grabar */
 function budget_herunterladen_T6(req,res)
@@ -1154,5 +1193,6 @@ module.exports = {
     budget_herunterladen_T7,
     budget_herunterladen_T6,
 	budget_herunterladen_T3_ver,
+	budget_herunterladen_T2_pj,
     budget_delete
 }

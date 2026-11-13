@@ -17,6 +17,7 @@ import { EnrollableNuevoComponent } from '../enrollable-nuevo/enrollable-nuevo.c
 import { CompacNuevoComponent } from '../compac-nuevo/compac-nuevo.component';
 import { ZipNuevoComponent } from '../zip-nuevo/zip-nuevo.component';
 import { VerticalNuevoComponent } from '../vertical-nuevo/vertical-nuevo.component';
+import { JaponesNuevoComponent } from '../japones-nuevo/japones-nuevo.component';
 import { AccConfiguradorService } from '../enrollable-nuevo/acc-configurador.service';
 import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
@@ -43,6 +44,7 @@ export class ConfigComponent implements OnInit {
   @ViewChild(CompacNuevoComponent, { static: false }) public compacNuevoRef!: CompacNuevoComponent;
   @ViewChild(ZipNuevoComponent, { static: false }) public zipNuevoRef!: ZipNuevoComponent;
   @ViewChild(VerticalNuevoComponent, { static: false }) public verticalNuevoRef!: VerticalNuevoComponent;
+  @ViewChild(JaponesNuevoComponent, { static: false }) public japonesNuevoRef!: JaponesNuevoComponent;
 
   /* Configurador nuevo de accionamientos (SOL_ACC_CLIENTE). false = el de siempre; Leroy no tiene fila */
   accNuevo: boolean = false;
@@ -52,6 +54,8 @@ export class ConfigComponent implements OnInit {
   zipNuevo: boolean = false;
   /* Vertical con las listas de Productos (sqlVertical): tipo 3 con su interruptor SOL_ACC_VER_CLIENTE; Leroy sigue con manza-vertical */
   verNuevo: boolean = false;
+  /* Panel japonés con las listas de Productos (sqlPanelJapones; interruptor SOL_ACC_PJ_CLIENTE) */
+  pjNuevo: boolean = false;
 
   editingItem: CortinaTipo | null = null;
 
@@ -210,11 +214,13 @@ export class ConfigComponent implements OnInit {
     this.miniNuevo = false;
     this.zipNuevo = false;
     this.verNuevo = false;
+    this.pjNuevo = false;
     if (!(parseInt(this.Cliente, 10) > 0)) { return; }
     this.accConfigurador.activo(this.Cliente).subscribe(activo => this.accNuevo = activo);
     this.accConfigurador.miniActivo(this.Cliente).subscribe(activo => this.miniNuevo = activo);
     this.accConfigurador.zipActivo(this.Cliente).subscribe(activo => this.zipNuevo = activo);
     this.accConfigurador.verActivo(this.Cliente).subscribe(activo => this.verNuevo = activo);
+    this.accConfigurador.pjActivo(this.Cliente).subscribe(activo => this.pjNuevo = activo);
   }
 
   ChangeUser() {
@@ -467,7 +473,7 @@ export class ConfigComponent implements OnInit {
 
   /* El documento va por el configurador nuevo si el cliente tiene alguno de sus interruptores */
   get flujoNuevo(): boolean {
-    return this.accNuevo || this.miniNuevo || this.zipNuevo || this.verNuevo;
+    return this.accNuevo || this.miniNuevo || this.zipNuevo || this.verNuevo || this.pjNuevo;
   }
 
   ProcesarPedido() {
@@ -655,7 +661,10 @@ export class ConfigComponent implements OnInit {
     let Suma = 0;
     this.Cesta.forEach(item => {
       if (item.TipoCortina == 1) { Suma += item.cantidad; }
-      if (item.TipoCortina == 2) { if (item.PJ_Cantidad_1) { Suma += Number(item.PJ_Cantidad_1); } }
+      if (item.TipoCortina == 2) {
+        /* panel japonés nuevo (npj): la cantidad son paneles o rieles */
+        if ((item as any).npj) { Suma += Number(item.cantidad); } else if (item.PJ_Cantidad_1) { Suma += Number(item.PJ_Cantidad_1); }
+      }
       if (item.TipoCortina == 3) {
         const ver = (item as any).ver;
         if ((item as any).nver) {
@@ -793,9 +802,12 @@ export class ConfigComponent implements OnInit {
     this.service.Budget_herunterladen_T2(event.idrow).subscribe(
       data => {
         const len = data.length;
+        let anadidas = 0;
         if (len > 0) {
           for (let pos = 0; pos < len; pos++) {
             const item = data[pos];
+            /* las líneas del panel japonés nuevo (npj_*) se cargan aparte, más abajo */
+            if (item.npj_modalidad_id) { continue; }
             const tipo: CortinaTipo = new CortinaTipo(this.codeCentro);
 
             const precios = {
@@ -845,11 +857,15 @@ export class ConfigComponent implements OnInit {
               precios);
 
             this.Cesta.push(tipo);
+            anadidas++;
           }
-          const message = this.translation.get('AGREGADO PANEL JAPONÉS A CESTA');
-          this.toaster.success(message, 'Cesta');
-          this.NumeroCortinas = this.TotalSum();
-          this.VerPedido();
+          /* si todas eran del panel nuevo (se cargan aparte), no se dice nada aquí */
+          if (anadidas > 0) {
+            const message = this.translation.get('AGREGADO PANEL JAPONÉS A CESTA');
+            this.toaster.success(message, 'Cesta');
+            this.NumeroCortinas = this.TotalSum();
+            this.VerPedido();
+          }
         }
       },
       error => { this.toaster.error(JSON.stringify(error)); }
@@ -953,6 +969,24 @@ export class ConfigComponent implements OnInit {
               this.Cesta.push(this.lineaVerDesdePresupuesto(data[pos]));
             }
             this.toaster.success('Vertical agregado a la cesta', 'Cesta');
+            this.NumeroCortinas = this.TotalSum();
+            this.VerPedido();
+          }
+        },
+        error => { this.toaster.error(JSON.stringify(error)); }
+      );
+    }
+
+    /* T2 - PANEL JAPONÉS del configurador nuevo (sqlPanelJapones): solo con su interruptor y solo las líneas con npj_* */
+    if (this.pjNuevo) {
+      this.service.Budget_herunterladen_T2_pj(event.idrow).subscribe(
+        data => {
+          const len = data.length;
+          if (len > 0) {
+            for (let pos = 0; pos < len; pos++) {
+              this.Cesta.push(this.lineaPjDesdePresupuesto(data[pos]));
+            }
+            this.toaster.success('Panel japonés agregado a la cesta', 'Cesta');
             this.NumeroCortinas = this.TotalSum();
             this.VerPedido();
           }
@@ -1173,6 +1207,49 @@ export class ConfigComponent implements OnInit {
     return tipo;
   }
 
+  /* Línea de panel japonés nuevo de un presupuesto (fila de SOL_PRESUPUESTOS_COLA_TIPO_2 con las medidas de la línea, los
+     nombres de sus opciones y los colores de las lamas) como la deja manza-japones-nuevo en la cesta: selección en npj,
+     textos en pj e importes en precios.T2_* */
+  private lineaPjDesdePresupuesto(item: any): CortinaTipo {
+    const tipo: CortinaTipo = new CortinaTipo(this.codeCentro);
+    const cod = item.pj_modalidad_codigo || '';
+    const ids = String(item.pj_colores_ids || '').split(',').filter(x => x !== '').map(Number);
+    const nombres = item.pj_colores ? String(item.pj_colores).split('|') : [];
+    const num = (v: any) => (v === null || v === undefined ? null : Number(v));
+    tipo.TipoCortina = 2;
+    /* el solo tejido lleva en la línea el ancho y el alto de la lama: en la cesta van en npj */
+    tipo.ancho = cod !== 'SOLO_TEJIDO' && Number(item.ancho) > 0 ? Number(item.ancho) : null;
+    tipo.alto = cod === 'COMPLETA' && Number(item.alto) > 0 ? Number(item.alto) : null;
+    tipo.cantidad = item.cantidad;
+    tipo.tej_tipo_text = item.pj_tejido || '';
+    tipo.tej_color_text = item.pj_color || '';
+    tipo.estancia_id = item.npj_estancia_id ? String(item.npj_estancia_id) : '-1';
+    tipo.estancia_obs = item.npj_estancia || '';
+    tipo.impresion = !!item.impresion;
+    tipo.impresion_imagen = item.impresion_imagen || '';
+    tipo.precios.T2_Cantidad = item.T2_Cantidad || item.cantidad;
+    tipo.precios.T2_Tejido = Number(item.T2_Tejido) || 0;
+    tipo.precios.T2_PVP = Number(item.T2_PVP) || 0;
+    tipo.precios.T2_PVP_C1 = '';
+    (tipo as any).tipo_tarifa = item.npj_tipo_tarifa || null;
+    (tipo as any).pj = {
+      modalidad: item.pj_modalidad || '', modalidadCodigo: cod,
+      vias: item.pj_vias || '', colorMecanismo: item.pj_color_mecanismo || '', posicionMando: item.pj_posicion_mando || '',
+      recogida: item.pj_recogida || '', contrapeso: item.pj_contrapeso || '', soporte: item.pj_soporte || '',
+      portatelas: num(item.npj_portatelas), anchoPortatela: num(item.npj_ancho_portatela), numLamas: num(item.npj_num_lamas),
+      altoLama: num(item.npj_alto_lama), alturaMando: num(item.npj_altura_mando),
+      combinacion: !!item.npj_combinacion, colores: item.npj_combinacion ? nombres : []
+    };
+    (tipo as any).npj = {
+      modalidad: item.npj_modalidad_id, vias: item.npj_vias_id, portatelas: num(item.npj_portatelas),
+      ancho_portatela: num(item.npj_ancho_portatela), num_lamas: num(item.npj_num_lamas), alto_lama: num(item.npj_alto_lama),
+      altura_mando: num(item.npj_altura_mando), color_mecanismo: item.npj_color_mecanismo_id, posicion_mando: item.npj_posicion_mando_id,
+      recogida: item.npj_recogida_id, contrapeso: item.npj_contrapeso_id, soporte: item.npj_soporte_id,
+      tejido: item.npj_tejido_id, combinacion: !!item.npj_combinacion, colores: ids
+    };
+    return tipo;
+  }
+
   EditLine(item: any): void {
     this.cestaAbierta = false;
     this.editingItem = item;
@@ -1195,7 +1272,11 @@ export class ConfigComponent implements OnInit {
         }
         break;
       case 2:
-        if (this.japonesRef) { this.japonesRef.cargarEdicion(item); }
+        if (item.npj && this.japonesNuevoRef) {
+          this.japonesNuevoRef.cargarEdicion(item);
+        } else if (this.japonesRef) {
+          this.japonesRef.cargarEdicion(item);
+        }
         break;
       case 3:
         if (item.nver && this.verticalNuevoRef) {

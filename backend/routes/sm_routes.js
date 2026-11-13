@@ -569,6 +569,13 @@ smapi.post('/acc/mini/tejidos/copiar', NuevoSistema, AccionamientosNuevoControll
 smapi.get('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos);
 smapi.post('/acc/zip/tejidos', NuevoSistema, AccionamientosNuevoController.zip_tejidos_guardar);
 smapi.post('/acc/zip/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.zip_tejidos_copiar);
+/* Tejidos del panel japonés (sqlPanelJapones/01): una sola lista */
+smapi.get('/acc/pj/tejidos', NuevoSistema, AccionamientosNuevoController.pj_tejidos);
+smapi.post('/acc/pj/tejidos', NuevoSistema, AccionamientosNuevoController.pj_tejidos_guardar);
+smapi.post('/acc/pj/tejidos/copiar', NuevoSistema, AccionamientosNuevoController.pj_tejidos_copiar);
+/* Tarifa del solo riel del panel japonés (sqlPanelJapones/03) */
+smapi.get('/acc/pj/tarifa_riel', NuevoSistema, AccionamientosNuevoController.pj_tarifa_riel);
+smapi.post('/acc/pj/tarifa_riel', NuevoSistema, AccionamientosNuevoController.pj_tarifa_riel_guardar);
 /* Tejidos del Vertical (sqlVertical/01): una lista por tipo de vertical; se puede copiar de otro tipo */
 smapi.get('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos);
 smapi.post('/acc/ver/tejidos/:tipo', NuevoSistema, AccionamientosNuevoController.ver_tejidos_guardar);
@@ -628,6 +635,10 @@ smapi.post('/acc_cfg/zip/precio/:cliente', Auth.ensureAuth, AccConfiguradorContr
 smapi.get('/acc_cfg/ver/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.ver_activo);
 smapi.get('/acc_cfg/ver/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.ver_opciones);
 smapi.post('/acc_cfg/ver/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.ver_precio);
+/* Panel japonés (sqlPanelJapones; interruptor propio SOL_ACC_PJ_CLIENTE): el alta va por /acc_cfg/pedido y /acc_cfg/presupuesto */
+smapi.get('/acc_cfg/pj/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.pj_activo);
+smapi.get('/acc_cfg/pj/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.pj_opciones);
+smapi.post('/acc_cfg/pj/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.pj_precio);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);

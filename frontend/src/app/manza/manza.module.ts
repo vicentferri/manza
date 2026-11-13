@@ -32,6 +32,8 @@ import { CompacNuevoComponent } from './compac-nuevo/compac-nuevo.component';
 import { ZipNuevoComponent } from './zip-nuevo/zip-nuevo.component';
 import { VerticalNuevoComponent } from './vertical-nuevo/vertical-nuevo.component';
 import { Preview3NuevoComponent } from './preview-3-nuevo/preview-3-nuevo.component';
+import { JaponesNuevoComponent } from './japones-nuevo/japones-nuevo.component';
+import { Preview2NuevoComponent } from './preview-2-nuevo/preview-2-nuevo.component';
 import { JaponesComponent } from './japones/japones.component';
 import { VerticalComponent } from './vertical/vertical.component';
 import { CompacComponent } from './compac/compac.component';
@@ -73,6 +75,8 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
     ZipNuevoComponent,
     VerticalNuevoComponent,
     Preview3NuevoComponent,
+    JaponesNuevoComponent,
+    Preview2NuevoComponent,
     JaponesComponent,
     VerticalComponent,
     CompacComponent,

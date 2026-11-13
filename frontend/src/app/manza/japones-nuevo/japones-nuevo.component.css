@@ -1,0 +1,6 @@
+/* Dato calculado que no se edita aquí (nº de lamas de la completa = portatelas) */
+.enx-fijo { background: #f4f6f8; color: #333; cursor: default; }
+/* Tipo de pedido: botones en lugar de desplegable */
+.pj-modalidades .btn { min-width: 9rem; }
+/* Colores de las lamas */
+.pj-lamas { background: #fafbfc; border: 1px solid #e6e9ec; border-radius: 4px; padding: .5rem .75rem 0; }

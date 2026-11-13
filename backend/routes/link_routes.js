@@ -123,6 +123,8 @@ lmapi.get('/budget_herunterladen_T7/:idrow',Budget.budget_herunterladen_T7);
 lmapi.get('/budget_herunterladen_T6/:idrow',Budget.budget_herunterladen_T6);
 /* Vertical del configurador nuevo (sqlVertical): solo sus líneas (nver_*) */
 lmapi.get('/budget_herunterladen_T3_ver/:idrow',Budget.budget_herunterladen_T3_ver);
+/* Panel japonés del configurador nuevo (sqlPanelJapones): solo sus líneas (npj_*) */
+lmapi.get('/budget_herunterladen_T2_pj/:idrow',Budget.budget_herunterladen_T2_pj);
 
 
 lmapi.get('/pdf_image/:idrow',Best.bestellung_image);

@@ -40,6 +40,16 @@ const sql = require('mssql');
  *            nver: { tipo, modalidad, alto_min, alto_max, ancho_lama, posicion_mecanismo, color_riel, accionamiento,
  *                    soporte, recogida, tejido, tejido2 } }
  *   El pedido, el presupuesto y la conversión son los mismos de arriba: admiten también líneas de Vertical.
+ *
+ * Panel japonés (C:\dev\prod\sqlPanelJapones 01-06; interruptor propio SOL_ACC_PJ_CLIENTE; tipo 2). Leroy no pasa por aquí:
+ *   GET  /api/sm/acc_cfg/pj/activo/:cliente      ¿usa el configurador nuevo del panel japonés?
+ *   GET  /api/sm/acc_cfg/pj/opciones/:cliente    tipos de pedido, listas del mecanismo y tejidos (filas tejido + color)
+ *   POST /api/sm/acc_cfg/pj/precio/:cliente      precio de una línea del panel con su desglose
+ *   Línea: { TipoCortina: 2, ancho (mecanismo), alto (total; solo la completa), cantidad, codeCentro, tipo_tarifa ('T1'/'T2'),
+ *            instrucciones, estancia_id, estancia_obs, impresion, impresion_imagen,
+ *            npj: { modalidad, vias, portatelas, ancho_portatela (= ancho de lama), num_lamas, alto_lama, altura_mando (solo riel),
+ *                   color_mecanismo, posicion_mando, recogida, contrapeso, soporte, tejido, combinacion, colores: [id por lama] } }
+ *   En el solo tejido la línea no lleva ancho ni alto (van en npj). El pedido, el presupuesto y la conversión son los mismos.
  */
 
 /* Mensajes de los códigos de sp_acc_pedido_tipo_1_add */
@@ -980,15 +990,226 @@ async function altaLineaVer(transaction, doc, idDocumento, l, p) {
     .execute(doc.lineaVer);
 }
 
+/* ---------------- PANEL JAPONÉS (sqlPanelJapones 01-06; interruptor propio SOL_ACC_PJ_CLIENTE; tipo 2) ---------------- */
+
+/* Mensajes de los códigos de sp_acc_pj_pedido_tipo_2_add / sp_acc_pj_presupuesto_tipo_2_add (sqlPanelJapones/05) */
+const ERRORES_PJ = {
+  '-1': 'El documento no existe',
+  '-2': 'El cliente no tiene activado el configurador nuevo del panel japonés',
+  '-21': 'Precio de la línea incoherente',
+  '-22': 'Desglose del precio no válido',
+  '-70': 'Tipo de pedido no válido',
+  '-71': 'Número de vías no válido (la completa y el solo riel lo necesitan; el solo tejido no lo lleva)',
+  '-72': 'Portatelas o lamas no válidas: las portatelas van de las vías al doble y, en la completa, hay tantas lamas como portatelas',
+  '-73': 'Color del mecanismo no válido para ese tipo de pedido',
+  '-74': 'Posición del mando no válida para ese tipo de pedido',
+  '-75': 'Tipo de recogida no válido para ese tipo de pedido',
+  '-76': 'Contrapeso no válido para ese tipo de pedido',
+  '-77': 'Tipo de soporte no válido para ese tipo de pedido',
+  '-78': 'El tejido no está disponible para el panel japonés (o el tipo de pedido no lleva tejido)',
+  '-79': 'Colores de las lamas no válidos: uno por lama y del mismo tejido (sin combinación, todos el del tejido)',
+  '-80': 'Medidas no válidas para ese tipo de pedido',
+  '-81': 'La cantidad tiene que ser mayor que 0',
+  '-82': 'La impresión digital solo se puede pedir con tejido y con colores que la admitan'
+};
+
+/* Interruptor del panel japonés (sqlPanelJapones/02), independiente de los demás productos */
+async function pjActivo(pool, cliente) {
+  const result = await pool.request().input('cliente', sql.Int, cliente)
+    .query('select 1 as ok from dbo.SOL_ACC_PJ_CLIENTE where cliente = @cliente and activo = 1');
+  return result.recordset.length > 0;
+}
+
+/* Número > 0 con como mucho dos decimales (ancho de portatela = ancho / vías + 5, alto de lama, altura del mando):
+   null si no llega o no vale */
+function medidaLibre(value) {
+  const n = decimal(value);
+  return n === null || n <= 0 ? null : Math.round(n * 100) / 100;
+}
+
+/* Medidas del panel: el ancho y el alto de la línea en pasos de 0,5 (la completa y el solo riel); las de la lama y la
+   altura del mando, números > 0. Qué lleva cada tipo de pedido lo comprueba el SP (-80). Cantidad: entero > 0 */
+function errorMedidasPj(l) {
+  const n = l.npj || {};
+  const vacio = (v) => v === null || v === undefined || v === '';
+  if (!vacio(l.ancho) && medida(l.ancho) === null) return 'El ancho tiene que ser mayor que 0 y en múltiplos de 0,5 cm';
+  if (!vacio(l.alto) && medida(l.alto) === null) return 'El alto tiene que ser mayor que 0 y en múltiplos de 0,5 cm';
+  const libres = { 'ancho de portatela': n.ancho_portatela, 'alto de lama': n.alto_lama, 'altura del mando': n.altura_mando };
+  for (const nombre of Object.keys(libres)) {
+    if (!vacio(libres[nombre]) && medidaLibre(libres[nombre]) === null) return `El ${nombre} tiene que ser mayor que 0`;
+  }
+  const cantidad = Number(l.cantidad);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) return 'La cantidad tiene que ser un número entero mayor que 0';
+  return '';
+}
+
+/* Colores de las lamas: array de ids del maestro (o "id,id") → "id,id,id"; null si no llega ninguno */
+function coloresPj(valor) {
+  const lista = Array.isArray(valor) ? valor : (valor === null || valor === undefined ? [] : String(valor).split(','));
+  const ids = lista.map(v => entero(v));
+  if (ids.length === 0) return null;
+  return ids.map(v => (v === null ? '' : String(v))).join(',');
+}
+
+/* GET /acc_cfg/pj/activo/:cliente — ante cualquier duda, false */
+async function pj_activo(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(200).send({ activo: false });
+  try {
+    const pool = await sql.connect();
+    res.status(200).send({ activo: await pjActivo(pool, cliente) });
+  } catch (err) {
+    console.error(err);
+    res.status(200).send({ activo: false });
+  }
+}
+
+/* GET /acc_cfg/pj/opciones/:cliente — tipos de pedido, listas del mecanismo y tejidos activos (una fila por tejido +
+   color: los colores de las lamas son las filas del mismo tejido) */
+async function pj_opciones(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  try {
+    const pool = await sql.connect();
+    if (!await pjActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del panel japonés' });
+    }
+    const q = async (consulta) => (await pool.request().query(consulta)).recordset;
+    const lista = (tabla) => q(`select id, codigo, nombre from dbo.${tabla} where activo = 1 order by orden, nombre`);
+    const [modalidades, vias, colores, mandos, recogidas, contrapesos, soportes, tejidos] = await Promise.all([
+      lista('SOL_ACC_PJ_MODALIDAD'),
+      /* vías: el nombre es opcional; si no lo hay, "3 vías" */
+      q(`select id, codigo, cast(valor as int) as valor, isnull(nombre, cast(cast(valor as int) as varchar(10)) + ' vías') as nombre
+         from dbo.SOL_ACC_PJ_VIAS where activo = 1 order by orden, valor`),
+      lista('SOL_ACC_PJ_COLOR_MECANISMO'),
+      lista('SOL_ACC_PJ_POSICION_MANDO'),
+      lista('SOL_ACC_PJ_RECOGIDA'),
+      lista('SOL_ACC_PJ_CONTRAPESO'),
+      lista('SOL_ACC_PJ_SOPORTE'),
+      q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, isnull(m.impresion_digital, 0) as impresion_digital, t.descripcion as tipo
+         from dbo.SOL_ACC_PJ_TEJIDO pt
+         join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = pt.tejido and m.activo = 1
+         left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+         order by t.descripcion, m.nombre, m.color, m.criterio`)
+    ]);
+    res.status(200).send({ modalidades, vias, coloresMecanismo: colores, posicionesMando: mandos, recogidas, contrapesos, soportes, tejidos });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Precio de una línea del panel con sp_acc_pj_precio_linea (sqlPanelJapones/04): completa y solo tejido con la tarifa
+   del generador (T1/T2, l.tipo_tarifa), solo riel con su tarifa propia; más suplementos e impresión. Misma respuesta
+   que precioLineaMini */
+async function precioLineaPj(pool, cliente, l) {
+  const n = l.npj || {};
+  const d = (nombre) => [nombre, sql.Decimal(12, 2)];
+  const request = pool.request()
+    .input('cliente', sql.Int, cliente)
+    .input('modalidad', sql.Int, entero(n.modalidad))
+    .input('ancho', sql.Decimal(12, 2), medidaVer(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medidaVer(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad) || 1)
+    .input('vias', sql.Int, entero(n.vias))
+    .input('num_lamas', sql.Int, entero(n.num_lamas))
+    .input('ancho_lama', sql.Decimal(12, 2), medidaLibre(n.ancho_portatela))
+    .input('alto_lama', sql.Decimal(12, 2), medidaLibre(n.alto_lama))
+    .input('color_mecanismo', sql.Int, entero(n.color_mecanismo))
+    .input('posicion_mando', sql.Int, entero(n.posicion_mando))
+    .input('recogida', sql.Int, entero(n.recogida))
+    .input('contrapeso', sql.Int, entero(n.contrapeso))
+    .input('soporte', sql.Int, entero(n.soporte))
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('tipo_tarifa', sql.VarChar(2), TIPOS_TARIFA.includes(l.tipo_tarifa) ? l.tipo_tarifa : null)
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
+    .input('desglose', sql.Bit, 1)
+    .output('tarifa', sql.Int)
+    .output('mensaje', sql.VarChar(250))
+    .output('aviso', sql.VarChar(250));
+  [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
+  const r = await request.execute('sp_acc_pj_precio_linea');
+  const o = r.output;
+  if (r.returnValue !== 0) {
+    return { codigo: r.returnValue, mensaje: o.mensaje || 'No se puede calcular el precio', aviso: o.aviso || null };
+  }
+  return {
+    codigo: 0,
+    aviso: o.aviso || null,
+    tipo_tarifa: l.tipo_tarifa || null,
+    tarifa: o.tarifa,
+    base: o.base, impresion: o.importe_impresion, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
+    desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
+  };
+}
+
+/* POST /acc_cfg/pj/precio/:cliente   body: una línea del panel japonés. No graba nada */
+async function pj_precio(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  const l = req.body || {};
+  if (!l.npj) return res.status(400).send({ message: 'Falta la selección del panel japonés' });
+  const errorM = errorMedidasPj(l);
+  if (errorM) return res.status(400).send({ message: errorM });
+  try {
+    const pool = await sql.connect();
+    if (!await pjActivo(pool, cliente)) {
+      return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del panel japonés' });
+    }
+    const p = await precioLineaPj(pool, cliente, l);
+    if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
+    res.status(200).send(p);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Alta de una línea del panel japonés dentro de la transacción del documento */
+async function altaLineaPj(transaction, doc, idDocumento, l, p) {
+  const n = l.npj || {};
+  return new sql.Request(transaction)
+    .input(doc.id, sql.Int, idDocumento)
+    .input('centro', sql.Int, entero(l.codeCentro) || 1)
+    .input('modalidad', sql.Int, entero(n.modalidad))
+    .input('ancho', sql.Decimal(12, 2), medidaVer(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medidaVer(l.alto))
+    .input('cantidad', sql.Int, entero(l.cantidad))
+    .input('vias', sql.Int, entero(n.vias))
+    .input('portatelas', sql.Int, entero(n.portatelas))
+    .input('altura_mando', sql.Decimal(12, 2), medidaLibre(n.altura_mando))
+    .input('color_mecanismo', sql.Int, entero(n.color_mecanismo))
+    .input('posicion_mando', sql.Int, entero(n.posicion_mando))
+    .input('recogida', sql.Int, entero(n.recogida))
+    .input('contrapeso', sql.Int, entero(n.contrapeso))
+    .input('soporte', sql.Int, entero(n.soporte))
+    .input('ancho_portatela', sql.Decimal(12, 2), medidaLibre(n.ancho_portatela))
+    .input('num_lamas', sql.Int, entero(n.num_lamas))
+    .input('alto_lama', sql.Decimal(12, 2), medidaLibre(n.alto_lama))
+    .input('tejido', sql.Int, entero(n.tejido))
+    .input('combinacion', sql.Bit, n.combinacion === true || n.combinacion === 1 ? 1 : 0)
+    .input('colores', sql.VarChar(4000), coloresPj(n.colores))
+    .input('instrucciones', sql.VarChar(250), texto(l.instrucciones, 250))
+    .input('estancia_id', sql.Int, enteroAntiguo(l.estancia_id))
+    .input('estancia', sql.VarChar(2500), texto(l.estancia_obs, 2500))
+    .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
+    .input('impresion_imagen', sql.VarChar(250), texto(l.impresion_imagen, 250))
+    .input('pvp_unitario', sql.Decimal(12, 2), p.unitario)
+    .input('desglose', sql.Xml, desgloseXml(p.desglose))
+    /* sqlPanelJapones/02 y 05: tarifa elegida (T1/T2), para recalcular al cargar un presupuesto */
+    .input('tipo_tarifa', sql.VarChar(2), p.tipo_tarifa)
+    .execute(doc.lineaPj);
+}
+
 /* Pedido y presupuesto se graban igual; solo cambian los SPs y el nombre de sus parámetros */
 const DOCUMENTOS = {
   pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add',
                  lineaMini: 'sp_acc_mini_pedido_tipo_4_add', lineaZip: 'sp_acc_zip_pedido_tipo_6_add',
-                 lineaVer: 'sp_acc_ver_pedido_tipo_3_add',
+                 lineaVer: 'sp_acc_ver_pedido_tipo_3_add', lineaPj: 'sp_acc_pj_pedido_tipo_2_add',
                  id: 'idPedido', nombre: 'pedido' },
   presupuesto: { cabecera: 'sp_acc_presupuesto_add', ref: 'refPresupuesto', linea: 'sp_acc_presupuesto_tipo_1_add',
                  lineaMini: 'sp_acc_mini_presupuesto_tipo_4_add', lineaZip: 'sp_acc_zip_presupuesto_tipo_6_add',
-                 lineaVer: 'sp_acc_ver_presupuesto_tipo_3_add',
+                 lineaVer: 'sp_acc_ver_presupuesto_tipo_3_add', lineaPj: 'sp_acc_pj_presupuesto_tipo_2_add',
                  id: 'idPresupuesto', nombre: 'presupuesto' }
 };
 
@@ -996,6 +1217,7 @@ const esEnrollableNuevo = (l) => entero(l.TipoCortina) === 1 && !!l.nacc;
 const esMiniNuevo = (l) => entero(l.TipoCortina) === 4 && !!l.nmini;
 const esZipNuevo = (l) => entero(l.TipoCortina) === 6 && !!l.nzip;
 const esVerNuevo = (l) => entero(l.TipoCortina) === 3 && !!l.nver;
+const esPjNuevo = (l) => entero(l.TipoCortina) === 2 && !!l.npj;
 
 /* Alta de una línea de Solar Mini dentro de la transacción del documento */
 async function altaLineaMini(transaction, doc, idDocumento, l, p) {
@@ -1048,15 +1270,16 @@ async function alta(doc, req, res) {
   if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
   if (lineas.length === 0) return res.status(400).send({ message: `El ${doc.nombre} no tiene líneas` });
 
-  /* sqlSolarMini/05, sqlCajonZip/05 y sqlVertical/04: enrollables (nacc), Solar Mini (nmini), Cajón ZIP (nzip) y
-     Vertical (nver) nuevos pueden ir en el mismo documento */
-  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l) && !esZipNuevo(l) && !esVerNuevo(l));
+  /* sqlSolarMini/05, sqlCajonZip/05, sqlVertical/04 y sqlPanelJapones/05: enrollables (nacc), Solar Mini (nmini),
+     Cajón ZIP (nzip), Vertical (nver) y panel japonés (npj) nuevos pueden ir en el mismo documento */
+  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l) && !esZipNuevo(l) && !esVerNuevo(l) && !esPjNuevo(l));
   if (otras >= 0) {
-    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables, Solar Mini, Cajón ZIP y Vertical` });
+    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables, Solar Mini, Cajón ZIP, Vertical y panel japonés` });
   }
   for (let i = 0; i < lineas.length; i++) {
-    /* el Vertical tiene sus propias medidas (solo tejido sin ancho, solo mecanismo sin alto, la inclinada con altos) */
-    const errorM = esVerNuevo(lineas[i]) ? errorMedidasVer(lineas[i]) : errorMedidas(lineas[i]);
+    /* el Vertical y el panel tienen sus propias medidas (cada modalidad lleva las suyas) */
+    const errorM = esVerNuevo(lineas[i]) ? errorMedidasVer(lineas[i])
+      : esPjNuevo(lineas[i]) ? errorMedidasPj(lineas[i]) : errorMedidas(lineas[i]);
     if (errorM) return res.status(400).send({ message: `Línea ${i + 1}: ${errorM}` });
   }
 
@@ -1077,6 +1300,9 @@ async function alta(doc, req, res) {
     if (lineas.some(esVerNuevo) && !await verActivo(pool, cliente)) {
       return res.status(400).send({ message: ERRORES_VER['-2'] });
     }
+    if (lineas.some(esPjNuevo) && !await pjActivo(pool, cliente)) {
+      return res.status(400).send({ message: ERRORES_PJ['-2'] });
+    }
 
     /* Precio de cada línea, fuera de la transacción */
     const precios = [];
@@ -1084,7 +1310,8 @@ async function alta(doc, req, res) {
       const l = lineas[i];
       const p = esMiniNuevo(l) ? await precioLineaMini(pool, cliente, l)
         : esZipNuevo(l) ? await precioLineaZip(pool, cliente, l)
-        : esVerNuevo(l) ? await precioLineaVer(pool, cliente, l) : await precioLinea(pool, cliente, l);
+        : esVerNuevo(l) ? await precioLineaVer(pool, cliente, l)
+        : esPjNuevo(l) ? await precioLineaPj(pool, cliente, l) : await precioLinea(pool, cliente, l);
       if (p.codigo !== 0) return res.status(400).send({ message: `Línea ${i + 1}: ${p.mensaje}` });
       precios.push(p);
     }
@@ -1119,6 +1346,15 @@ async function alta(doc, req, res) {
         if (!(rv.returnValue > 0)) {
           await transaction.rollback();
           const motivo = ERRORES_VER[String(rv.returnValue)] || 'Línea no válida';
+          return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
+        }
+        continue;
+      }
+      if (esPjNuevo(l)) {
+        const rp = await altaLineaPj(transaction, doc, idDocumento, l, precios[i]);
+        if (!(rp.returnValue > 0)) {
+          await transaction.rollback();
+          const motivo = ERRORES_PJ[String(rp.returnValue)] || 'Línea no válida';
           return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
         }
         continue;
@@ -1239,6 +1475,9 @@ module.exports = {
   ver_activo,
   ver_opciones,
   ver_precio,
+  pj_activo,
+  pj_opciones,
+  pj_precio,
   pedido,
   presupuesto,
   presupuesto_a_pedido

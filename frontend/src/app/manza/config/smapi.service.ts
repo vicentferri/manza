@@ -65,6 +65,7 @@ export class SMAPIService {
     /* Cajón ZIP del configurador nuevo (sqlCajonZip) */
     private urlT6Herunterladen = this.urlService + '/api/lm/budget_herunterladen_T6';
     private urlT3VerHerunterladen = this.urlService + '/api/lm/budget_herunterladen_T3_ver';
+    private urlT2PjHerunterladen = this.urlService + '/api/lm/budget_herunterladen_T2_pj';
 
     private urlBestellungnachschlagen = this.urlService + '/api/lm/bestellungen_entrega';
     private urlBudgetnachschlagen = this.urlService + '/api/lm/budget_entrega';
@@ -452,6 +453,12 @@ export class SMAPIService {
     /* Líneas de Vertical del configurador nuevo de un presupuesto (solo las que tienen nver_*) */
     Budget_herunterladen_T3_ver(idrow: string) {
         var url: string = this.urlT3VerHerunterladen + '/' + idrow;
+        return this.HTTP_Get(url);
+    }
+
+    /* Líneas de panel japonés del configurador nuevo de un presupuesto (solo las que tienen npj_*) */
+    Budget_herunterladen_T2_pj(idrow: string) {
+        var url: string = this.urlT2PjHerunterladen + '/' + idrow;
         return this.HTTP_Get(url);
     }
 

@@ -1,0 +1,74 @@
+<div class="cfg-linea">
+
+  <div class="cfg-linea-fila">
+    <span class="cfg-linea-icono">J</span>
+    <div class="cfg-linea-info">
+      <div class="cfg-linea-nombre">
+        <strong>Panel japonés</strong>
+        <span class="cfg-mono">{{ medidas }}</span>
+        <span>· {{ pj.modalidad }}</span>
+        <span *ngIf="item.tej_tipo_text"> · {{ item.tej_tipo_text | frase }} · <ng-container *ngIf="!pj.combinacion">{{ item.tej_color_text | frase }}</ng-container><ng-container *ngIf="pj.combinacion">combinación</ng-container></span>
+      </div>
+      <div class="cfg-linea-sub">
+        <span *ngIf="pj.vias">{{ pj.vias }}</span>
+        <span *ngIf="pj.portatelas"> · {{ pj.portatelas }} portatelas</span>
+        <span *ngIf="pj.colorMecanismo"> · {{ pj.colorMecanismo }}</span>
+      </div>
+      <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
+        <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
+        {{ (verDetalle ? "Ocultar detalle" : "Ver detalle") | translate }}
+      </button>
+    </div>
+    <span class="cfg-linea-uds">{{ unidades }}</span>
+    <div class="cfg-linea-importe">
+      <strong>{{ item.precios.T2_PVP | number:'1.2-2' }} €</strong>
+      <small>{{ item.precios.T2_PVP_C1 }}</small>
+    </div>
+    <div class="cfg-linea-botones" *ngIf="!soloLectura">
+      <button type="button" class="cfg-btn" (click)="EditLine(item)">{{ "MODIFICAR" | translate }}</button>
+      <button type="button" class="cfg-btn cfg-btn-peligro" (click)="DeleteLine(item)">{{ "BORRAR" | translate }}</button>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="cfg-linea-cuerpo" *ngIf="verDetalle">
+    <div class="cfg-linea-datos">
+      <div class="cfg-dato"><span>Tipo de pedido</span><strong>{{ pj.modalidad }}</strong></div>
+      <div class="cfg-dato" *ngIf="item.ancho > 0"><span>Ancho del mecanismo</span><strong>{{ item.ancho }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="item.alto > 0"><span>Altura total</span><strong>{{ item.alto }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="pj.alturaMando"><span>Altura del mando</span><strong>{{ pj.alturaMando }} cm</strong></div>
+      <div class="cfg-dato"><span>{{ "CANTIDAD" | translate }}</span><strong>{{ unidades }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.vias"><span>Número de vías</span><strong>{{ pj.vias }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.portatelas"><span>Portatelas</span><strong>{{ pj.portatelas }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.anchoPortatela && !esSoloTejido"><span>Ancho de portatela</span><strong>{{ pj.anchoPortatela }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="pj.colorMecanismo"><span>Color del mecanismo</span><strong>{{ pj.colorMecanismo }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.posicionMando"><span>Posición del mando</span><strong>{{ pj.posicionMando }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.recogida"><span>Tipo de recogida</span><strong>{{ pj.recogida }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.contrapeso"><span>Contrapeso</span><strong>{{ pj.contrapeso }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.soporte"><span>Tipo de soporte</span><strong>{{ pj.soporte }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.numLamas"><span>Lamas</span><strong>{{ pj.numLamas }}</strong></div>
+      <div class="cfg-dato" *ngIf="pj.numLamas"><span>Ancho de lama</span><strong>{{ pj.anchoPortatela }} cm</strong></div>
+      <div class="cfg-dato" *ngIf="pj.altoLama"><span>Alto de lama terminada</span><strong>{{ pj.altoLama }} cm</strong></div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.tej_tipo_text">
+        <span>{{ "TEJIDO" | translate }}</span>
+        <strong>{{ item.tej_tipo_text | frase }} · <ng-container *ngIf="!pj.combinacion">{{ item.tej_color_text | frase }}</ng-container><ng-container *ngIf="pj.combinacion">combinación: {{ colores | frase }}</ng-container></strong>
+      </div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.impresion"><span>{{ "IMPRESION DIGITAL" | translate }}</span><strong>{{ item.impresion_imagen }}</strong></div>
+      <div class="cfg-dato cfg-dato-ancho" *ngIf="item.estancia_obs"><span>{{ "OBSERVACIONES" | translate }}</span><strong>{{ item.estancia_obs }}</strong></div>
+    </div>
+
+    <div class="cfg-linea-precio">
+      <div>
+        <h5>{{ "Resumen de precio" | translate }}</h5>
+        <div class="cfg-precio-fila" *ngFor="let d of desglose">
+          <span>{{ d.concepto }}<small *ngIf="d.elemento"> · {{ d.elemento }}</small></span>
+          <div>{{ d.importe | number:'1.2-2' }} €</div>
+        </div>
+        <div class="cfg-precio-fila">
+          <span>{{ item.cantidad > 1 ? ('Total (' + unidades + ')') : 'Total' }}</span>
+          <div><strong>{{ item.precios.T2_PVP | number:'1.2-2' }} €</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

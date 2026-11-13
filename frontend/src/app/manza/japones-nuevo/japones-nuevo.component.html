@@ -1,0 +1,275 @@
+<div class="enx">
+   <div class="enx-aviso">
+      <i class="fa fa-flask"></i>
+      Configurador nuevo del panel japonés: las opciones salen de Configuración → Productos → Panel japonés.
+   </div>
+
+   <div *ngIf="cargando" class="text-muted small mb-2"><i class="fa fa-spinner fa-spin"></i> Cargando opciones...</div>
+   <div *ngIf="!cargando && !opc" class="enx-error mb-2">No se han podido cargar las opciones del panel japonés.</div>
+
+   <ng-container *ngIf="opc">
+      <!-- PASO 1: TIPO DE PEDIDO -->
+      <div class="enx-seccion">
+         <div class="enx-titulo">1. Tipo de pedido</div>
+         <div *ngIf="modalidades.length === 0" class="enx-error mb-2">
+            No hay tipos de pedido visibles. Revíselos en Configuración → Productos → Panel japonés.
+         </div>
+         <div class="btn-group btn-group-sm pj-modalidades" role="group" *ngIf="modalidades.length > 0">
+            <button *ngFor="let m of modalidades" type="button" class="btn"
+               [class.btn-primary]="modalidad == m.id" [class.btn-outline-primary]="modalidad != m.id"
+               (click)="modalidad = '' + m.id; cambiarModalidad()">{{ m.nombre }}</button>
+         </div>
+      </div>
+
+      <ng-container *ngIf="modalidad">
+         <!-- BLOQUE 1: MECANISMO (completa y solo riel) -->
+         <div class="enx-seccion" *ngIf="conMecanismo">
+            <div class="enx-titulo">2. Mecanismo</div>
+            <div class="row">
+               <div class="col-md-2 col-6 form-group">
+                  <label>Ancho del mecanismo (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" [step]="pasoMedida" [(ngModel)]="ancho"
+                     [ngModelOptions]="{ standalone: true }" (ngModelChange)="cambiarAncho()" />
+               </div>
+               <div class="col-md-2 col-6 form-group" *ngIf="esCompleta">
+                  <label>Altura total (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" [step]="pasoMedida" [(ngModel)]="alto"
+                     [ngModelOptions]="{ standalone: true }" (ngModelChange)="cambiarAlto()" />
+               </div>
+               <div class="col-md-2 col-6 form-group" *ngIf="esSoloRiel">
+                  <label>Altura del mando (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" step="any" [(ngModel)]="alturaMando" [ngModelOptions]="{ standalone: true }" />
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Número de vías</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="vias" [ngModelOptions]="{ standalone: true }" (change)="cambiarVias()"
+                     [disabled]="listaVias.length === 0">
+                     <option value="">{{ listaVias.length === 0 ? 'Sin vías' : 'Seleccionar' }}</option>
+                     <option *ngFor="let v of listaVias" [value]="v.id">{{ v.nombre }}</option>
+                  </select>
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Nº de portatelas</label>
+                  <input type="number" class="form-control form-control-sm" [min]="numVias || 1" [max]="numVias ? 2 * numVias : null" step="1"
+                     [(ngModel)]="portatelas" [ngModelOptions]="{ standalone: true }" (change)="cambiarPortatelas()" [disabled]="!vias" />
+                  <small *ngIf="numVias" class="enx-nota">De {{ numVias }} a {{ 2 * numVias }}</small>
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Ancho de portatela (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" step="any" [(ngModel)]="anchoPortatela"
+                     [ngModelOptions]="{ standalone: true }" [disabled]="!vias" />
+                  <small class="enx-nota">Ancho / vías + {{ sumaPortatela }} cm</small>
+               </div>
+            </div>
+            <div class="row">
+               <div class="col-md-3 col-6 form-group">
+                  <label>Color del mecanismo</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="colorMecanismo" [ngModelOptions]="{ standalone: true }" [disabled]="coloresMecanismo.length === 0">
+                     <option value="">{{ coloresMecanismo.length === 0 ? 'Sin colores' : 'Seleccionar' }}</option>
+                     <option *ngFor="let c of coloresMecanismo" [value]="c.id">{{ c.nombre }}</option>
+                  </select>
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <label>Posición del mando</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="posicionMando" [ngModelOptions]="{ standalone: true }" [disabled]="posicionesMando.length === 0">
+                     <option value="">{{ posicionesMando.length === 0 ? 'Sin posiciones' : 'Seleccionar' }}</option>
+                     <option *ngFor="let p of posicionesMando" [value]="p.id">{{ p.nombre }}</option>
+                  </select>
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Tipo de recogida</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="recogida" [ngModelOptions]="{ standalone: true }" [disabled]="recogidas.length === 0">
+                     <option value="">{{ recogidas.length === 0 ? 'Sin recogidas' : 'Seleccionar' }}</option>
+                     <option *ngFor="let r of recogidas" [value]="r.id">{{ r.nombre }}</option>
+                  </select>
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Contrapeso</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="contrapeso" [ngModelOptions]="{ standalone: true }" [disabled]="contrapesos.length === 0">
+                     <option value="">{{ contrapesos.length === 0 ? 'Sin contrapesos' : 'Seleccionar' }}</option>
+                     <option *ngFor="let c of contrapesos" [value]="c.id">{{ c.nombre }}</option>
+                  </select>
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Tipo de soporte</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="soporte" [ngModelOptions]="{ standalone: true }" [disabled]="soportes.length === 0">
+                     <option value="">{{ soportes.length === 0 ? 'Sin soportes' : 'Seleccionar' }}</option>
+                     <option *ngFor="let s of soportes" [value]="s.id">{{ s.nombre }}</option>
+                  </select>
+               </div>
+            </div>
+         </div>
+
+         <!-- BLOQUE 2: LAMAS (completa y solo tejido) -->
+         <div class="enx-seccion" *ngIf="conTejido">
+            <div class="enx-titulo">{{ esCompleta ? '3' : '2' }}. Lamas</div>
+            <div class="row">
+               <div class="col-md-2 col-6 form-group">
+                  <label>Número de lamas</label>
+                  <input *ngIf="esSoloTejido" type="number" class="form-control form-control-sm" min="1" max="50" step="1" [(ngModel)]="numLamas"
+                     [ngModelOptions]="{ standalone: true }" (ngModelChange)="cambiarNumLamas()" />
+                  <!-- en la completa, una lama por portatela: no se cambia aquí -->
+                  <div *ngIf="esCompleta" class="form-control form-control-sm enx-fijo">{{ numLamas || '—' }}</div>
+                  <small *ngIf="esCompleta" class="enx-nota">Una por portatela</small>
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Ancho de lama (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" step="any" [(ngModel)]="anchoPortatela" [ngModelOptions]="{ standalone: true }" />
+                  <small *ngIf="esCompleta" class="enx-nota">Es el ancho de portatela</small>
+               </div>
+               <div class="col-md-2 col-6 form-group">
+                  <label>Alto de lama terminada (cm)</label>
+                  <input type="number" class="form-control form-control-sm" min="1" step="any" [(ngModel)]="altoLama" [ngModelOptions]="{ standalone: true }" />
+                  <small *ngIf="esCompleta" class="enx-nota">Altura − {{ restaAltoLama | number:'1.1-1' }} cm</small>
+               </div>
+            </div>
+         </div>
+
+         <!-- BLOQUE 3: TEJIDO (completa y solo tejido) -->
+         <div class="enx-seccion" *ngIf="conTejido">
+            <div class="enx-titulo">{{ esCompleta ? '4' : '3' }}. Tejido</div>
+            <div *ngIf="tejidosDisponibles.length === 0" class="enx-error mb-2">
+               No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }} para el panel japonés. Márquelos en Configuración → Productos → Panel japonés → Tejido.
+            </div>
+            <div class="row">
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ "TIPO DE TEJIDO" | translate }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="tipoTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipoTejido()">
+                     <option value="">Seleccionar</option>
+                     <option *ngFor="let o of tiposTejido" [value]="o">{{ o }}</option>
+                  </select>
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ "SERIE" | translate }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="nombreTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarNombreTejido()" [disabled]="!tipoTejido">
+                     <option value="">Seleccionar</option>
+                     <option *ngFor="let n of nombresTejido" [value]="n">{{ n }}</option>
+                  </select>
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ combinacion ? 'Color principal' : ("COLOR" | translate) }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="colorTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarColorTejido()" [disabled]="!nombreTejido">
+                     <option value="">Seleccionar</option>
+                     <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
+                  </select>
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <label>¿Combinación de colores?</label>
+                  <div class="btn-group btn-group-sm d-flex" role="group">
+                     <button type="button" class="btn w-100" [class.btn-primary]="!combinacion" [class.btn-outline-primary]="combinacion"
+                        (click)="combinacion = false; cambiarCombinacion()">No</button>
+                     <button type="button" class="btn w-100" [class.btn-primary]="combinacion" [class.btn-outline-primary]="!combinacion"
+                        (click)="combinacion = true; cambiarCombinacion()" [disabled]="!colorTejido || coloresTejido.length < 2">Sí</button>
+                  </div>
+                  <small *ngIf="colorTejido && coloresTejido.length < 2" class="enx-nota">Este tejido no tiene otros colores</small>
+               </div>
+            </div>
+
+            <!-- un color por lama (con combinación) -->
+            <div *ngIf="combinacion && lamas.length > 0" class="pj-lamas mb-2">
+               <div class="enx-nota mb-1">Un color por lama ({{ lamas.length }}), todos del mismo tejido:</div>
+               <div class="row">
+                  <div class="col-md-2 col-4 form-group" *ngFor="let i of lamas; trackBy: trackLama">
+                     <label>Lama {{ i + 1 }}</label>
+                     <select class="form-control form-control-sm" [(ngModel)]="colores[i]" [ngModelOptions]="{ standalone: true }">
+                        <option value="">Seleccionar</option>
+                        <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
+                     </select>
+                  </div>
+               </div>
+            </div>
+            <div *ngIf="combinacion && lamas.length === 0" class="enx-nota mb-2">Indique primero el número de lamas.</div>
+
+            <!-- impresión digital: si el panel tiene tejidos aptos (o ya estaba marcada) -->
+            <div class="row" *ngIf="hayImpresion || impresion">
+               <div class="col-md-6 form-group">
+                  <label>{{ "IMPRESION DIGITAL" | translate }}</label>
+                  <div class="input-group input-group-sm">
+                     <div class="input-group-prepend">
+                        <span class="input-group-text">
+                           <input type="checkbox" [(ngModel)]="impresion" [ngModelOptions]="{ standalone: true }" (change)="cambiarImpresion()" />
+                        </span>
+                     </div>
+                     <input type="text" class="form-control" maxlength="250" placeholder="Texto de la impresión"
+                        [(ngModel)]="impresionTexto" [ngModelOptions]="{ standalone: true }" [disabled]="!impresion" />
+                  </div>
+                  <small *ngIf="impresion" class="enx-nota">Solo se muestran los tejidos aptos para impresión digital.</small>
+               </div>
+            </div>
+         </div>
+
+         <!-- CANTIDAD Y OBSERVACIONES -->
+         <div class="enx-seccion">
+            <div class="row align-items-end">
+               <div class="col-md-2 col-6 form-group">
+                  <label>{{ etiquetaCantidad }}</label>
+                  <input type="number" class="form-control form-control-sm" min="1" step="1" [(ngModel)]="cantidad" [ngModelOptions]="{ standalone: true }" />
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <label>{{ "ESTANCIA" | translate }}</label>
+                  <select class="form-control form-control-sm" [(ngModel)]="estancia" [ngModelOptions]="{ standalone: true }">
+                     <option value="-1">Seleccionar</option>
+                     <option *ngFor="let e of estancias" [value]="e.idrow">{{ e.descripcion }}</option>
+                  </select>
+               </div>
+               <div class="col-md-7 form-group">
+                  <label>{{ "OBSERVACIONES" | translate }}</label>
+                  <input type="text" class="form-control form-control-sm" maxlength="2500" [(ngModel)]="observaciones" [ngModelOptions]="{ standalone: true }" />
+               </div>
+            </div>
+         </div>
+
+         <!-- PRECIO Y AÑADIR -->
+         <div class="enx-seccion">
+            <div class="enx-titulo">Precio</div>
+            <div class="row align-items-end">
+               <div class="col-md-2 col-6 form-group" *ngIf="conTejido">
+                  <label>Tarifa</label>
+                  <div class="btn-group btn-group-sm d-flex" role="group">
+                     <button type="button" class="btn w-100" [class.btn-primary]="tipoTarifa === 'T1'" [class.btn-outline-primary]="tipoTarifa !== 'T1'"
+                        (click)="tipoTarifa = 'T1'" title="Tarifa por grupo de tejido">T1</button>
+                     <button type="button" class="btn w-100" [class.btn-primary]="tipoTarifa === 'T2'" [class.btn-outline-primary]="tipoTarifa !== 'T2'"
+                        (click)="tipoTarifa = 'T2'" title="Tarifa por tejido">T2</button>
+                  </div>
+               </div>
+               <div class="col-md-3 col-6 form-group">
+                  <button type="button" class="btn btn-sm btn-primary btn-block" (click)="CalcularPrecio()" [disabled]="calculando || (conTejido && !tipoTarifa)">
+                     <i class="fa" [class.fa-calculator]="!calculando" [class.fa-spinner]="calculando" [class.fa-spin]="calculando"></i> Calcular precio
+                  </button>
+               </div>
+               <div class="col-md-4 col-6 form-group text-right enx-total">
+                  <ng-container *ngIf="precioVigente">
+                     <div class="enx-total-importe">{{ precio.total | number:'1.2-2' }} €</div>
+                     <div class="enx-nota">{{ precio.unitario | number:'1.2-2' }} € por {{ esSoloRiel ? 'riel' : 'panel' }}</div>
+                  </ng-container>
+                  <span *ngIf="precio && !precioVigente" class="enx-nota">Ha cambiado la configuración: vuelva a calcular el precio</span>
+               </div>
+               <div class="col-md-3 col-6 form-group text-right">
+                  <button type="button" class="btn btn-success" (click)="Agregar()" [disabled]="!precioVigente"
+                     [title]="precioVigente ? '' : 'Calcule el precio antes de añadir'">
+                     <i class="fa fa-plus"></i> {{ "AGREGAR" | translate }}
+                  </button>
+               </div>
+            </div>
+
+            <div *ngIf="precioError" class="enx-error mb-2"><i class="fa fa-times-circle"></i> {{ precioError }}</div>
+            <div *ngIf="precioAviso" class="enx-aviso"><i class="fa fa-exclamation-triangle"></i> {{ precioAviso }}</div>
+
+            <table *ngIf="precioVigente" class="table table-sm enx-desglose mb-2">
+               <tbody>
+                  <tr *ngFor="let d of precio.desglose">
+                     <td>{{ d.concepto }}</td>
+                     <td>{{ d.elemento }}</td>
+                     <td class="enx-nota">{{ d.detalle }}</td>
+                     <td class="text-right">{{ d.importe | number:'1.2-2' }} €</td>
+                  </tr>
+                  <tr *ngIf="cantidad > 1" class="enx-desglose-total">
+                     <td colspan="3">Por unidad x {{ cantidad }}</td>
+                     <td class="text-right">{{ precio.total | number:'1.2-2' }} €</td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </ng-container>
+   </ng-container>
+</div>

@@ -89,7 +89,26 @@ export class AccConfiguradorService {
         return this.http.post<any>(this.url + '/ver/precio/' + cliente, linea);
     }
 
-    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc, Solar Mini con nmini, Cajón ZIP con nzip y Vertical con nver) */
+    /* ¿El cliente configura el panel japonés con las listas de Productos? (sqlPanelJapones) Ante cualquier error, false */
+    pjActivo(cliente: string | number): Observable<boolean> {
+        return this.http.get<any>(this.url + '/pj/activo/' + cliente).pipe(
+            map(r => !!(r && r.activo === true)),
+            catchError(() => of(false))
+        );
+    }
+
+    /* Tipos de pedido, listas del mecanismo y tejidos del panel japonés */
+    pjOpciones(cliente: string | number): Observable<any> {
+        return this.http.get<any>(this.url + '/pj/opciones/' + cliente);
+    }
+
+    /* Precio de una línea de panel japonés (generador o tarifa del riel + suplementos), sin grabar nada */
+    pjPrecio(cliente: string | number, linea: any): Observable<any> {
+        return this.http.post<any>(this.url + '/pj/precio/' + cliente, linea);
+    }
+
+    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc, Solar Mini con nmini, Cajón ZIP con nzip, Vertical con nver
+       y panel japonés con npj) */
     altaPedido(lineas: any[], referencia: string, cliente: string | number): Observable<any> {
         const ref = encodeURIComponent(referencia || '-');
         return this.http.post<any>(this.url + '/pedido/' + cliente + '/' + ref, lineas);
