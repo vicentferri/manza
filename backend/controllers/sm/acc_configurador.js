@@ -3,6 +3,8 @@
 const sql = require('mssql');
 /* Surtido por perfil (Fase 2, sqlPerfiles 10-14): qué opciones y tejidos ve cada cliente, con qué nombre y límites */
 const surtido = require('./cfg_surtido');
+/* Quién da de alta el documento (sqlPerfiles/15) */
+const HechoPor = require('../../services/hecho_por');
 const conPerfil = (s, catalogo) => (filas) => s.filtrarOpciones(catalogo, filas);
 
 /*
@@ -1367,6 +1369,7 @@ async function alta(doc, req, res) {
       await transaction.rollback();
       return res.status(400).send({ message: ERRORES_LINEA[String(idDocumento)] || `No se pudo crear el ${doc.nombre}` });
     }
+    await HechoPor.guardar(doc.nombre === 'pedido' ? 'pedido' : 'presupuesto', idDocumento, req, transaction);
 
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
@@ -1489,6 +1492,7 @@ async function presupuesto_a_pedido(req, res) {
     const pool = await sql.connect();
     const r = await pool.request().input('idPresupuesto', sql.Int, id).execute('sp_acc_presupuesto_a_pedido');
     if (r.returnValue > 0) {
+      await HechoPor.copiarDePresupuesto(id, r.returnValue, pool);
       const p = await pool.request().input('id', sql.Int, r.returnValue)
         .query('select REFERENCIA as referencia from dbo.SOL_PEDIDOS_COLA where IDROW = @id');
       return res.status(200).send({ message: 'OK', idPedido: r.returnValue, referencia: (p.recordset[0] || {}).referencia });

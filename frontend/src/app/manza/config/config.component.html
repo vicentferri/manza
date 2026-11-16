@@ -17,6 +17,13 @@
     </nav>
 
     <div class="cfg-topbar-dcha">
+      <!-- Pedir como cliente: solo internos con permiso -->
+      <div class="cfg-como" *ngIf="puedePedirComo">
+        <button type="button" class="cfg-btn cfg-como-boton" [class.activo]="comoActual" (click)="panelComo = !panelComo">
+          <i class="fas fa-store"></i> Pedir como: {{ comoActual ? comoActual.descripcion : 'Solarmanes' }} ▾
+        </button>
+        <app-pedir-como *ngIf="panelComo" [actual]="comoActual" (elegir)="elegirComo($event)" (cerrar)="panelComo = false"></app-pedir-como>
+      </div>
       <div class="cfg-idioma" role="group" aria-label="Idioma">
         <i class="fas fa-globe"></i>
         <button type="button" [class.activo]="Idioma == 'es'" (click)="Idioma = 'es'; ChangeIdioma()" title="Español">ES</button>
@@ -26,6 +33,13 @@
     </div>
   </div>
 </header>
+<!-- Franja mientras un interno pide como un cliente -->
+<div class="cfg-franja-como" *ngIf="comoActual">
+  <i class="fas fa-store"></i>
+  Pidiendo como <strong>{{ comoActual.tienda ? comoActual.tienda.nombre : comoActual.descripcion + ' (sin tienda)' }}</strong>
+  · {{ comoActual.descripcion }}<span *ngIf="comoActual.tienda"> · centro {{ comoActual.tienda.centro }}</span>
+  <button type="button" class="cfg-btn ml-2" (click)="elegirComo(null)">Volver a Solarmanes</button>
+</div>
 
 <div class="cfg-subbar">
   <div class="cfg-wrap">
@@ -73,6 +87,8 @@
     </div>
     <!-- PROMOCION-->
 
+    <!-- Productos (se vuelven a crear al cambiar de cliente con "pedir como") -->
+    <ng-container *ngIf="mostrarProductos">
     <!-- PANEL ENROLLABLE -->
     <manza-enrollable
       *ngIf="TipoCortina == 1 && productos.prod_1 && !accNuevo"
@@ -164,6 +180,7 @@
       (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-honeycomb>
+    </ng-container>
 
   </div>
 </div>

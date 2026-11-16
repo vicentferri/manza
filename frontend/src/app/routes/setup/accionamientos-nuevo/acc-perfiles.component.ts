@@ -196,6 +196,16 @@ export class AccPerfilesComponent implements OnInit {
         );
     }
 
+    /* "Pedir como cliente": si el cliente se ofrece a los internos en el configurador */
+    cambiarPedirComo(c: any, valor: boolean) {
+        const anterior = c.pedir_como;
+        c.pedir_como = valor;
+        this.service.HTTP_Post('/sm/cfg/admin/cliente_pedir_como', JSON.stringify({ cliente: c.cliente, pedir_como: valor })).subscribe(
+            () => this.toaster.success(c.descripcion + (valor ? ': se ofrece' : ': no se ofrece') + ' en "Pedir como cliente"', this.title),
+            err => { c.pedir_como = anterior; this.error(err, 'No se pudo guardar'); }
+        );
+    }
+
     /* ---------- productos ---------- */
 
     guardarProducto(p: any) {

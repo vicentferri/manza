@@ -1,0 +1,39 @@
+<div class="cfg-pedir-como">
+   <div class="d-flex align-items-center mb-2">
+      <strong class="mr-auto">Pedir como cliente</strong>
+      <button type="button" class="cfg-btn" (click)="cerrar.emit()" aria-label="Cerrar">&times;</button>
+   </div>
+   <div class="enx-error mb-2" *ngIf="error">{{ error }}</div>
+
+   <label class="small mb-1 d-block">Cliente</label>
+   <select class="form-control form-control-sm mb-2" [(ngModel)]="cliente" [ngModelOptions]="{ standalone: true }" (ngModelChange)="cargarTiendas()">
+      <option [ngValue]="null">Elegir cliente...</option>
+      <option *ngFor="let c of clientes" [ngValue]="c.cliente">
+         {{ c.descripcion }} ({{ c.tiendas }} {{ c.tiendas === 1 ? 'tienda' : 'tiendas' }})
+      </option>
+   </select>
+
+   <ng-container *ngIf="cliente">
+      <input type="text" class="form-control form-control-sm mb-2" placeholder="Buscar tienda por nombre, centro, código o población..."
+         [(ngModel)]="buscar" [ngModelOptions]="{ standalone: true }" *ngIf="tiendas.length > 0" />
+      <div class="cfg-pedir-como-lista">
+         <button type="button" class="cfg-pedir-como-tienda" (click)="elegirTienda(null)">
+            <strong>Sin tienda</strong>
+            <small class="d-block text-muted">El cliente en general: su perfil y su tarifa, sin promociones de tienda</small>
+         </button>
+         <div *ngIf="cargando" class="text-muted small p-2">Cargando tiendas...</div>
+         <button type="button" *ngFor="let t of tiendasFiltradas" class="cfg-pedir-como-tienda"
+            [class.activo]="actual?.tienda?.usuario === t.usuario" (click)="elegirTienda(t)">
+            <strong>{{ t.nombre }}</strong>
+            <small class="d-block text-muted">
+               Centro {{ t.centro }}<span *ngIf="t.cod_solupyme"> · Solupyme {{ t.cod_solupyme }}</span><span *ngIf="t.poblacion"> · {{ t.poblacion }}</span>
+            </small>
+         </button>
+         <div *ngIf="!cargando && tiendas.length > 0 && tiendasFiltradas.length === 0" class="text-muted small p-2">Ninguna tienda coincide.</div>
+      </div>
+   </ng-container>
+
+   <div class="mt-2 text-right" *ngIf="actual">
+      <button type="button" class="cfg-btn" (click)="volver()">Volver a Solarmanes</button>
+   </div>
+</div>

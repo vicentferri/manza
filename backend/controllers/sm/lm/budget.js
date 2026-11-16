@@ -1,6 +1,8 @@
 'use strict'
 
 var sql = require('mssql');
+/* Quién da de alta el documento (sqlPerfiles/15) */
+var HechoPor = require('../../../services/hecho_por');
 var fs = require('fs');
 var path = require('path');
  
@@ -836,6 +838,7 @@ function budget_hinzu(req,res)
          if (idPedido > 0)
          {
              var altas = []; // se responde cuando todas las líneas están grabadas (para poder imprimir ya)
+             altas.push(HechoPor.guardar('presupuesto', idPedido, req));
              for (var i=0, len = jsonIN.length; i<len;i++)
              {
                 var tipo = jsonIN[i].TipoCortina;               

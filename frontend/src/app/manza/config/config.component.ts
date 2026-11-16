@@ -23,6 +23,7 @@ import {
   PerfilConfiguradorService, PerfilConfigurador, PERFIL_VACIO, ProductoPerfil, DocumentoPerfil,
   productoDe, motorNuevo
 } from './perfil-configurador.service';
+import { PedirComo } from '../pedir-como/pedir-como.component';
 import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
 declare var $: any;
@@ -53,6 +54,27 @@ export class ConfigComponent implements OnInit {
   /* Perfil del configurador del cliente (sqlPerfiles): productos, motor, nombres, documentos y parámetros.
      Mientras carga (o si falla) es el estándar: motor antiguo y sin documentos */
   perfilCfg: PerfilConfigurador = PERFIL_VACIO;
+
+  /* "Pedir como cliente" (PLAN_PEDIR_COMO_CLIENTE.md): cliente y tienda elegidos por un interno con permiso.
+     null = Solarmanes. Se guarda en sessionStorage (sobrevive a recargar, no a cerrar la pestaña) */
+  comoActual: PedirComo | null = null;
+  panelComo = false;
+  /* Los componentes de producto leen el cliente al arrancar: al cambiar de cliente se vuelven a crear */
+  mostrarProductos = true;
+  private readonly CLAVE_COMO = 'pedirComo';
+
+  /* Solo internos con el permiso config_como_cliente (los administradores, siempre) */
+  get puedePedirComo(): boolean {
+    if (!this.isInterno || !this.currentUser) { return false; }
+    const permisos: string[] = this.currentUser.permisos || [];
+    return this.currentUser.isAdmin === true || permisos.includes('config_como_cliente');
+  }
+
+  /* Usuario para las promociones: el de la tienda elegida; sin tienda, ninguno; si no, el del login */
+  get usuarioPromocion(): any {
+    if (this.comoActual) { return this.comoActual.tienda ? this.comoActual.tienda.usuario : null; }
+    return this.currentUser ? this.currentUser.user : null;
+  }
 
   /* Motor de cada producto según el perfil (motor NUEVO = listas de Productos). false = el de siempre */
   accNuevo: boolean = false;   // enrollable (tipo 1)
@@ -234,7 +256,59 @@ export class ConfigComponent implements OnInit {
     this.hayBorrador = !!localStorage.getItem('pedido_borrador');
     this.GetIdioma();
     this.Logged = this.CheckIfLogged();
+    this.restaurarComo();
     this.cargarPerfil();
+  }
+
+  /* ---------- Pedir como cliente ---------- */
+
+  private restaurarComo(): void {
+    if (!this.puedePedirComo) { sessionStorage.removeItem(this.CLAVE_COMO); return; }
+    const guardado = sessionStorage.getItem(this.CLAVE_COMO);
+    if (!guardado) { return; }
+    try { this.ponerComo(JSON.parse(guardado)); } catch (e) { sessionStorage.removeItem(this.CLAVE_COMO); }
+  }
+
+  /* Elección del panel: cliente + tienda (o sin tienda), o null para volver a Solarmanes */
+  elegirComo(sel: PedirComo | null): void {
+    this.panelComo = false;
+    const igual = JSON.stringify(sel) === JSON.stringify(this.comoActual);
+    if (igual) { return; }
+    if (this.Cesta.length > 0 && !confirm('Al cambiar de cliente o de tienda se vacía la cesta (sus precios son de otra tarifa). ¿Continuar?')) { return; }
+    this.Cesta = [];
+    this.CalculaTotalCesta();
+    if (sel) { sessionStorage.setItem(this.CLAVE_COMO, JSON.stringify(sel)); } else { sessionStorage.removeItem(this.CLAVE_COMO); }
+    this.ponerComo(sel);
+    this.cargarPerfil();
+    this.Promocion = 0;
+    this.Promocion_Banner = '';
+    this.loadPromotionData();
+    /* se vuelven a crear los componentes de producto con el cliente nuevo */
+    this.mostrarProductos = false;
+    setTimeout(() => this.mostrarProductos = true);
+  }
+
+  /* Cambia cliente, centro, usuario, nombre y casillas de producto (sin recargar nada) */
+  private ponerComo(sel: PedirComo | null): void {
+    this.comoActual = sel;
+    const todos = { prod_1: true, prod_2: true, prod_3: true, prod_4: true, prod_6: true, prod_7: true };
+    if (!sel) {
+      this.Cliente = '4';
+      this.codeCentro = '4';
+      this.nombreCentro = 'Solarmanes';
+      this.UserName = this.currentUser.user || this.currentUser.username || '';
+      this.productosUsuario = todos;
+    } else {
+      this.Cliente = String(sel.cliente);
+      this.codeCentro = sel.tienda ? String(sel.tienda.centro) : '-1';
+      this.nombreCentro = sel.tienda ? sel.tienda.nombre : sel.descripcion;
+      this.UserName = sel.tienda ? String(sel.tienda.usuario) : '';
+      const t = sel.tienda;
+      this.productosUsuario = t
+        ? { prod_1: !!t.prod_1, prod_2: !!t.prod_2, prod_3: !!t.prod_3, prod_4: !!t.prod_4, prod_6: !!t.prod_6, prod_7: !!t.prod_7 }
+        : todos;
+    }
+    this.recalcularProductos();
   }
 
   /* Perfil del cliente (sqlPerfiles): decide los productos visibles, el motor de cada uno, los nombres, los
@@ -343,7 +417,7 @@ export class ConfigComponent implements OnInit {
 
   loadPromotion() {
     console.log(this.Cliente, this.currentUser.user);
-    this.service.getdatosPromocion(this.Cliente, this.currentUser.user).subscribe(
+    this.service.getdatosPromocion(this.Cliente, this.usuarioPromocion).subscribe(
       data => {
         console.log(data);
         if (data && data.length > 0) {
@@ -390,8 +464,11 @@ export class ConfigComponent implements OnInit {
   loadPromotionData() {
     if (this.codeCentro == "") {
       alert("NO HAY CODIGO DE CENTRO");
+    } else if (this.usuarioPromocion === null || this.usuarioPromocion === undefined || this.usuarioPromocion === '') {
+      /* "pedir como" sin tienda: no hay promociones de tienda */
+      this.Promocion = 0;
     } else {
-      this.service.getPromocionActiva(this.Cliente, this.currentUser.user).subscribe(
+      this.service.getPromocionActiva(this.Cliente, this.usuarioPromocion).subscribe(
         data => {
           if (!data || data.length === 0 || data[0].existe == 0) {
             this.Promocion = 0;

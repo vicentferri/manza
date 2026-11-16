@@ -37,6 +37,22 @@ exports.ensureAuth = function(req,res,next){
 	next();
 };
 
+/* Usuario del token si la petición lo trae y es válido; null si no. No bloquea nada: lo usan las rutas que todavía
+   no exigen login (/api/lm) para saber quién da de alta un pedido (hecho_por, sqlPerfiles/15) */
+exports.usuarioOpcional = function(req){
+	if (req.user) return req.user;
+	if (!req.headers || !req.headers.authorization) return null;
+	try
+	{
+		var payload = jwt.decode(req.headers.authorization.replace(/['"']+/g,''), secret);
+		return payload && payload.exp > moment().unix() ? payload : null;
+	}
+	catch(err)
+	{
+		return null;
+	}
+};
+
 /* Sección "Nuevo sistema": solo estos usuarios (el login admite username o email, y en USERS son iguales) */
 var USUARIOS_NUEVO_SISTEMA = ['jrumi@solarmanes.es', 'jmartinez@solarmanes.es'];
 

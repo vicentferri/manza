@@ -206,7 +206,8 @@ async function admin_clientes(req, res) {
   try {
     const pool = await sql.connect();
     const r = await pool.request().query(`
-      select c.idrow as cliente, c.descripcion, cp.perfil_id, v.perfil_id as perfil_efectivo
+      select c.idrow as cliente, c.descripcion, cp.perfil_id, v.perfil_id as perfil_efectivo,
+             cast(isnull(cp.pedir_como, 1) as bit) as pedir_como
       from dbo.SOL_CLIENTES c
       left join dbo.CFG_CLIENTE_PERFIL cp on cp.cliente = c.idrow
       left join dbo.vw_cfg_cliente_perfil v on v.cliente = c.idrow
@@ -881,8 +882,77 @@ async function admin_guardar_codigos(req, res) {
   } catch (err) { responderError(res, err); }
 }
 
+/* ======================================================================================================
+ * "Pedir como cliente" (PLAN_PEDIR_COMO_CLIENTE.md; sqlPerfiles/15). Un interno con permiso elige un cliente y una de
+ * sus tiendas (usuarios de CLIENTES_USERS) y el configurador funciona como esa tienda.
+ *   GET  /cfg/como/clientes              clientes que se ofrecen (pedir_como = 1) con su perfil y sus tiendas activas
+ *   GET  /cfg/como/tiendas/:cliente      tiendas activas: usuario, nombre, centro, código Solupyme, población, casillas
+ *   POST /cfg/admin/cliente_pedir_como   { cliente, pedir_como } (solo Nuevo sistema, con auditoría)
+ * El permiso (config_como_cliente) se comprueba en la pantalla: el token aún no lleva los permisos (SEGURIDAD_PENDIENTE.md).
+ * ====================================================================================================== */
+
+/* GET /cfg/como/clientes */
+async function como_clientes(req, res) {
+  try {
+    const pool = await sql.connect();
+    const r = await pool.request().query(`
+      select c.idrow as cliente, c.descripcion, p.codigo as perfil,
+             (select count(*) from dbo.CLIENTES_USERS u where u.EMPRESA = c.idrow and u.ACTIVO = 1) as tiendas
+      from dbo.SOL_CLIENTES c
+      left join dbo.CFG_CLIENTE_PERFIL cp on cp.cliente = c.idrow
+      left join dbo.vw_cfg_cliente_perfil v on v.cliente = c.idrow
+      left join dbo.CFG_PERFIL p on p.id = v.perfil_id
+      where isnull(cp.pedir_como, 1) = 1
+      order by c.descripcion`);
+    res.status(200).send(r.recordset);
+  } catch (err) { responderError(res, err); }
+}
+
+/* GET /cfg/como/tiendas/:cliente */
+async function como_tiendas(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return error400(res, 'Cliente no válido');
+  try {
+    const pool = await sql.connect();
+    const r = await pool.request().input('cliente', sql.Int, cliente).query(`
+      select u.IDROW as usuario, u.NAME as nombre, u.NOMBRE as nombre_corto, u.CODE as centro, u.SUBEMPRESA as subempresa,
+             d.CODSOLUPYME as cod_solupyme, d.POBLACION as poblacion, d.PROVINCIA as provincia,
+             cast(isnull(u.prod_1, 0) as bit) as prod_1, cast(isnull(u.prod_2, 0) as bit) as prod_2,
+             cast(isnull(u.prod_3, 0) as bit) as prod_3, cast(isnull(u.prod_4, 0) as bit) as prod_4,
+             cast(isnull(u.prod_6, 0) as bit) as prod_6, cast(isnull(u.prod_7, 0) as bit) as prod_7
+      from dbo.CLIENTES_USERS u
+      left join dbo.NH_CLIENTES_DOMICILIOS d on d.IDROW = u.SUBEMPRESA
+      where u.EMPRESA = @cliente and u.ACTIVO = 1
+      order by u.NAME`);
+    res.status(200).send(r.recordset);
+  } catch (err) { responderError(res, err); }
+}
+
+/* POST /cfg/admin/cliente_pedir_como */
+async function admin_cliente_pedir_como(req, res) {
+  const b = req.body || {};
+  const cliente = entero(b.cliente);
+  const valor = b.pedir_como === true || b.pedir_como === 1 ? 1 : 0;
+  if (cliente === null) return error400(res, 'Cliente no válido');
+  try {
+    const pool = await sql.connect();
+    await enTransaccion(pool, async (t) => {
+      const fila = (await t.request().input('cliente', sql.Int, cliente)
+        .query('select pedir_como from dbo.CFG_CLIENTE_PERFIL where cliente = @cliente')).recordset[0];
+      if (!fila) throw validacion('El cliente no tiene perfil asignado: asígnele uno antes');
+      await t.request().input('cliente', sql.Int, cliente).input('valor', sql.Bit, valor)
+        .query('update dbo.CFG_CLIENTE_PERFIL set pedir_como = @valor where cliente = @cliente');
+      await auditar(t, usuarioDe(req), 'CFG_CLIENTE_PERFIL', cliente, 'CAMBIO', { pedir_como: fila.pedir_como }, { pedir_como: !!valor });
+    });
+    res.status(200).send({ message: 'OK' });
+  } catch (err) { responderError(res, err); }
+}
+
 module.exports = {
   perfil,
+  como_clientes,
+  como_tiendas,
+  admin_cliente_pedir_como,
   admin_opciones,
   admin_guardar_opciones,
   admin_opciones_todo,

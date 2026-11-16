@@ -74,6 +74,16 @@ export class PerfilConfiguradorService {
         return this.cache.get(clave);
     }
 
+    /* "Pedir como cliente" (PLAN_PEDIR_COMO_CLIENTE.md). Van aquí y no en el componente: este servicio es de la raíz y
+       su HttpClient pasa por el AuthInterceptor (el del módulo manza, que importa HttpClientModule otra vez, no) */
+    comoClientes(): Observable<any[]> {
+        return this.http.get<any[]>(environment.host_ip + '/api/sm/cfg/como/clientes');
+    }
+
+    comoTiendas(cliente: number): Observable<any[]> {
+        return this.http.get<any[]>(environment.host_ip + '/api/sm/cfg/como/tiendas/' + cliente);
+    }
+
     /* Para la pantalla de Perfiles: tras guardar, el configurador vuelve a pedir el perfil */
     olvidar(cliente?: string | number): void {
         if (cliente === undefined) { this.cache.clear(); } else { this.cache.delete(String(cliente)); }

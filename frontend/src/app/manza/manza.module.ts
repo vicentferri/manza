@@ -40,6 +40,8 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
 import { SelectorRalComponent } from './selector-ral/selector-ral.component';
 /* Fase 2: Ref. del cliente y límites del perfil bajo el color de tejido de los configuradores nuevos */
 import { CfgTejidoPerfilComponent } from './cfg-tejido-perfil/cfg-tejido-perfil.component';
+/* "Pedir como cliente": panel de cliente y tienda para los internos con permiso */
+import { PedirComoComponent } from './pedir-como/pedir-como.component';
 
 @NgModule({
   imports: [
@@ -53,6 +55,7 @@ import { CfgTejidoPerfilComponent } from './cfg-tejido-perfil/cfg-tejido-perfil.
   declarations: [
     ConfigComponent,
     CfgTejidoPerfilComponent,
+    PedirComoComponent,
     Preview2Component,
     Preview1Component,
     Preview3Component,

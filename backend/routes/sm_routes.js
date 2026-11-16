@@ -642,6 +642,10 @@ smapi.post('/cfg/admin/perfil/:id/tejidos/:producto/todo', NuevoSistema, CfgPerf
 smapi.post('/cfg/admin/perfil/:id/copiar_surtido', NuevoSistema, CfgPerfilController.admin_copiar_surtido);
 smapi.get('/cfg/admin/perfil/:id/avisos', NuevoSistema, CfgPerfilController.admin_avisos);
 smapi.get('/cfg/admin/cliente/:cliente/codigos', NuevoSistema, CfgPerfilController.admin_codigos);
+/* "Pedir como cliente": clientes y tiendas para los internos (el permiso lo comprueba la pantalla) y la marca por cliente */
+smapi.get('/cfg/como/clientes', Auth.ensureAuth, CfgPerfilController.como_clientes);
+smapi.get('/cfg/como/tiendas/:cliente', Auth.ensureAuth, CfgPerfilController.como_tiendas);
+smapi.post('/cfg/admin/cliente_pedir_como', NuevoSistema, CfgPerfilController.admin_cliente_pedir_como);
 smapi.post('/cfg/admin/cliente/:cliente/codigos', NuevoSistema, CfgPerfilController.admin_guardar_codigos);
 
 /* Configurador nuevo de accionamientos (clientes con el interruptor SOL_ACC_CLIENTE; Leroy no pasa por aquí) */

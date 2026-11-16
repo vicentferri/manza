@@ -116,7 +116,7 @@
             <div class="acc-bloque">
                 <div class="acc-bloque-titulo"><strong>Clientes</strong></div>
                 <table class="table table-sm acc-matriz mb-0">
-                    <thead><tr><th>Cliente</th><th>Perfil</th><th>Efectivo</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Perfil</th><th>Efectivo</th><th class="text-center" title="Se ofrece en &quot;Pedir como cliente&quot; del configurador">Pedir como</th></tr></thead>
                     <tbody>
                         <tr *ngFor="let c of clientes">
                             <td>{{ c.cliente }} · {{ c.descripcion }}</td>
@@ -131,6 +131,9 @@
                                 {{ nombrePerfil(c.perfil_efectivo) }}
                                 <i class="fa fa-exclamation-triangle text-warning" *ngIf="c.perfil_id !== c.perfil_efectivo"
                                     title="Su perfil está desactivado o no tiene: usa ESTANDAR"></i>
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" [checked]="c.pedir_como" [disabled]="!c.perfil_id" (change)="cambiarPedirComo(c, $event.target.checked)" />
                             </td>
                         </tr>
                     </tbody>

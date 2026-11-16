@@ -51,6 +51,7 @@ export class UsuariosComponent implements OnInit {
             { clave: 'config_articulos',         label: 'Artículos' },
             { clave: 'config_pedidos',           label: 'Pedidos' },
             { clave: 'config_presupuestos',      label: 'Presupuestos' },
+            { clave: 'config_como_cliente',      label: 'Pedir como cliente (configurador)' },
         ]},
         { grupo: 'Tarifas', modulos: [
             { clave: 'tarifas_generador', label: 'Generador de Tarifas' },

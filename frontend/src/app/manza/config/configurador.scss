@@ -1261,3 +1261,23 @@ cfg-resumen {
     &:disabled { opacity: 0.45; cursor: not-allowed; }
   }
 }
+
+/* "Pedir como cliente" (PLAN_PEDIR_COMO_CLIENTE.md) */
+.cfg-como { position: relative; margin-right: 12px; }
+.cfg-como-boton.activo { background: #f0ad4e; border-color: #f0ad4e; color: #fff; }
+.cfg-pedir-como {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 1050; width: 380px;
+  background: #fff; color: #212529; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+.cfg-pedir-como-lista { max-height: 340px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px; }
+.cfg-pedir-como-tienda {
+  display: block; width: 100%; text-align: left; background: #fff; border: 0; border-bottom: 1px solid #f0f0f0;
+  padding: 6px 10px; cursor: pointer;
+}
+.cfg-pedir-como-tienda:hover { background: #f5f8fb; }
+.cfg-pedir-como-tienda.activo { background: #fff4e5; }
+.cfg-franja-como {
+  background: #f0ad4e; color: #fff; padding: 6px 16px; text-align: center; font-size: 0.9rem;
+}
+.cfg-franja-como .cfg-btn { background: #fff; color: #8a5a12; border-color: #fff; padding: 2px 10px; }
