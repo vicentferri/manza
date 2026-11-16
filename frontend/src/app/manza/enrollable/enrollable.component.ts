@@ -15,6 +15,9 @@ import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.compone
 import { forkJoin, of, Observable } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
+import {
+   PerfilConfiguradorService, PerfilConfigurador, PERFIL_VACIO, DocumentoPerfil, documentosDe, parametroActivo
+} from '../config/perfil-configurador.service';
 
 
 @Component({
@@ -29,9 +32,17 @@ export class EnrollableComponent implements OnInit, OnChanges {
    @Input() SubCliente: string = '2';
    @Input() ReferenciaTienda: string = '';
 
-   // Fichas en PDF (cotas, instrucciones de montaje): solo para Leroy Merlín (clientes 1 y 5)
-   get esLeroy(): boolean {
-      return this.Cliente == '1' || this.Cliente == '5';
+   /* Perfil del cliente (sqlPerfiles): fichas en PDF del producto (cotas, instrucciones de montaje) y si
+      se ocultan las guías del Cajón ZIP antiguo (parámetro ocultar_guias_zip_antiguo) */
+   perfilCfg: PerfilConfigurador = PERFIL_VACIO;
+
+   /* Fichas del subtipo elegido: enrollable (1) o Cajón ZIP antiguo (2) */
+   get documentos(): DocumentoPerfil[] {
+      return documentosDe(this.perfilCfg, 1, this.SubTipoCortina);
+   }
+
+   get ocultarGuias(): boolean {
+      return parametroActivo(this.perfilCfg, 'ocultar_guias_zip_antiguo');
    }
 
    // Cesta del presupuesto, para el resumen lateral
@@ -198,10 +209,12 @@ export class EnrollableComponent implements OnInit, OnChanges {
    constructor(
       private service: SMAPIService,
       private toaster: ToastrService,
-      private translation: TranslationService
+      private translation: TranslationService,
+      private perfilConfigurador: PerfilConfiguradorService
    ) { }
 
    ngOnInit(): void {
+      this.perfilConfigurador.perfil(this.Cliente).subscribe(p => this.perfilCfg = p);
       this.load_SalidaTejido();
       this.load_PosicionMando();
       this.load_AlturaCadenaM();

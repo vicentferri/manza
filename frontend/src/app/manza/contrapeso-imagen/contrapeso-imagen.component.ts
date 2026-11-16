@@ -1,10 +1,11 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { PerfilConfiguradorService, parametroActivo } from '../config/perfil-configurador.service';
 
 /*
  * Imagen del contrapeso elegido, debajo del desplegable de contrapeso del enrollable.
- * Solo para Leroy Merlín (clientes 1 y 5). Las imágenes van por modelo (IO, LUNA OCULTO...)
+ * Solo si el perfil del cliente lo activa (hoy, LEROY: clientes 1 y 5). Las imágenes van por modelo (IO, LUNA OCULTO...)
  * en SOL_ARTICULOS_CONTRAPESO_IMAGENES (sqlContrapesos/01 y 02). Si no tiene imagen no se ve nada.
  */
 @Component({
@@ -28,12 +29,17 @@ export class ContrapesoImagenComponent implements OnChanges {
    private base = environment.host_ip + '/api/sm/contrapesos_imagenes/';
    private id = 0;
 
-   constructor(private http: HttpClient) { }
+   constructor(private http: HttpClient, private perfilConfigurador: PerfilConfiguradorService) { }
 
    ngOnChanges() {
+      /* Si se ve la imagen lo dice el perfil del cliente (sqlPerfiles/07, parámetro imagenes_contrapeso) */
+      this.perfilConfigurador.perfil(this.cliente)
+         .subscribe(p => this.actualizar(parametroActivo(p, 'imagenes_contrapeso')));
+   }
+
+   private actualizar(activo: boolean) {
       const id = parseInt(this.contrapeso, 10);
-      const leroy = this.cliente == '1' || this.cliente == '5';
-      if (!leroy || !(id > 0)) {
+      if (!activo || !(id > 0)) {
          this.id = 0;
          this.url = null;
          return;

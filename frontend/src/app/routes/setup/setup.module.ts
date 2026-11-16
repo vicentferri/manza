@@ -44,6 +44,8 @@ import { HoneycombAdminDataComponent } from './honeycomb/honeycomb-admin-data/ho
 import { HoneycombAdminImagesComponent } from './honeycomb/honeycomb-admin-images/honeycomb-admin-images.component';
 import { SafeUrlPipe } from './honeycomb/safe-url.pipe';
 import { AccImpresionComponent } from './accionamientos-nuevo/acc-impresion.component';
+/* Perfiles de configurador por cliente (sqlPerfiles), dentro de Productos */
+import { AccPerfilesComponent } from './accionamientos-nuevo/acc-perfiles.component';
 
 
 const routes: Routes = [
@@ -94,7 +96,8 @@ const routes: Routes = [
         TejidosColoresComponent, TejidosComponent, TejidosMaestroComponent, TejidosImagenesComponent, ImpresionDigitalComponent,
         AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent,
         AccSuplementosComponent, AccSuplementosResumenComponent, AccTejidosComponent, AccVerTarifaComponent, AccImpresionComponent,
-        AccPjTarifaRielComponent, HoneycombAdminDataComponent, HoneycombAdminImagesComponent, SafeUrlPipe
+        AccPjTarifaRielComponent, HoneycombAdminDataComponent, HoneycombAdminImagesComponent, SafeUrlPipe,
+        AccPerfilesComponent
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]

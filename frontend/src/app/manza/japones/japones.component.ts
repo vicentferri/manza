@@ -9,6 +9,9 @@ import { Tipo } from '../config/Tipo';
 import { OPCIONES_SOPORTE, tarifaSoporte, textoSoporte } from '../config/soportes';
 import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
+import {
+   PerfilConfiguradorService, PerfilConfigurador, PERFIL_VACIO, DocumentoPerfil, documentosDe
+} from '../config/perfil-configurador.service';
 
 @Component({
    selector: 'manza-japones',
@@ -24,9 +27,11 @@ export class JaponesComponent implements OnInit, OnChanges {
 
    @Input() ReferenciaTienda: string = '';
 
-   // Fichas en PDF (cotas, instrucciones de montaje): solo para Leroy Merlín (clientes 1 y 5)
-   get esLeroy(): boolean {
-      return this.Cliente == '1' || this.Cliente == '5';
+   /* Perfil del cliente (sqlPerfiles): fichas en PDF del producto (cotas...) */
+   perfilCfg: PerfilConfigurador = PERFIL_VACIO;
+
+   get documentos(): DocumentoPerfil[] {
+      return documentosDe(this.perfilCfg, 2);
    }
 
    // Cesta del presupuesto, para el resumen lateral
@@ -148,10 +153,12 @@ export class JaponesComponent implements OnInit, OnChanges {
    constructor(
       private service: SMAPIService,
       private toaster: ToastrService,
-      private translation: TranslationService
+      private translation: TranslationService,
+      private perfilConfigurador: PerfilConfiguradorService
    ) { }
 
    ngOnInit(): void {
+      this.perfilConfigurador.perfil(this.Cliente).subscribe(p => this.perfilCfg = p);
       this.load_Estancias();
       this.NewPage();
    }

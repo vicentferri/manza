@@ -1,10 +1,11 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { PerfilConfiguradorService, parametroActivo } from '../config/perfil-configurador.service';
 
 /*
  * Imágenes del color de tejido elegido (verso y reverso), debajo del desplegable de color
- * de cada producto. Solo para Leroy Merlín (clientes 1 y 5); se mantienen en Nuevo sistema >
+ * de cada producto. Solo si el perfil del cliente lo activa (hoy, LEROY: clientes 1 y 5); se mantienen en Nuevo sistema >
  * Imágenes de Tejidos (SOL_TEJIDOS_COLORES_IMAGENES). Si el color no tiene imagen no se ve nada.
  * Los colores "... R" y "... V" son el mismo tejido por el verso y por el reverso: se marca la cara elegida.
  */
@@ -29,13 +30,18 @@ export class TejidoImagenComponent implements OnChanges {
    private url = environment.host_ip + '/api/sm/tejidos_imagenes/';
    private clave = '';
 
-   constructor(private http: HttpClient) { }
+   constructor(private http: HttpClient, private perfilConfigurador: PerfilConfiguradorService) { }
 
    ngOnChanges() {
+      /* Si se ven las imágenes lo dice el perfil del cliente (sqlPerfiles/07, parámetro imagenes_tejido) */
+      this.perfilConfigurador.perfil(this.cliente)
+         .subscribe(p => this.actualizar(parametroActivo(p, 'imagenes_tejido')));
+   }
+
+   private actualizar(activo: boolean) {
       const tejido = parseInt(this.tejido, 10);
       const color = parseInt(this.color, 10);
-      const leroy = this.cliente == '1' || this.cliente == '5';
-      if (!leroy || !(tejido > 0) || !(color > 0)) {
+      if (!activo || !(tejido > 0) || !(color > 0)) {
          this.clave = '';
          this.imagenes = [];
          return;

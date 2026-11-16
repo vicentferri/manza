@@ -2,7 +2,7 @@
 <header class="cfg-topbar">
   <div class="cfg-wrap">
     <div class="cfg-marca">
-      <span class="cfg-logo">{{ esLeroy ? 'LM' : 'SM' }}</span>
+      <span class="cfg-logo">{{ logo }}</span>
       <span>{{ nombreCentro }}</span>
     </div>
 
@@ -11,8 +11,9 @@
       <a [class.activo]="bConfigurador == 3" (click)="VerPedidos()">{{ "PEDIDOS" | translate }}</a>
       <a [class.activo]="bConfigurador == 0 && !cestaAbierta" (click)="VerConfigurador()">{{ "CONFIGURADOR" | translate }}</a>
       <a [class.activo]="cestaAbierta" (click)="VerPedido()">{{ "Ver cesta" | translate }}</a>
-      <a *ngIf="esLeroy" href="assets/pdf/tarifa_leroy_2025_es.pdf" target="_blank" rel="noopener">{{
-        "TARIFA" | translate }}</a>
+      <!-- Documentos de la barra según el perfil (p. ej. la tarifa en PDF de Leroy) -->
+      <a *ngFor="let d of documentosBarra" [href]="d.url" target="_blank" rel="noopener">{{
+        d.etiqueta | translate }}</a>
     </nav>
 
     <div class="cfg-topbar-dcha">
@@ -52,25 +53,14 @@
 
     <!-- Tipo de producto -->
     <nav class="cfg-productos cfg-productos-grande">
-      <button type="button" [class.activo]="TipoCortina == 1" (click)="Tipo(1)" *ngIf="productos.prod_1">
-        {{ "ENROLLABLES" | translate }}
-      </button>
-      <button type="button" [class.activo]="TipoCortina == 2" (click)="Tipo(2)" *ngIf="productos.prod_2">
-        {{ "PANEL JAPONES" | translate }}
-      </button>
-      <button type="button" [class.activo]="TipoCortina == 3" (click)="Tipo(3)" *ngIf="productos.prod_3">
-        {{ "VERTICAL" | translate }}
-      </button>
-      <button type="button" [class.activo]="TipoCortina == 4" (click)="Tipo(4)" *ngIf="productos.prod_4">
-        {{ (!isInterno && (Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}
-      </button>
-      <button type="button" [class.activo]="TipoCortina == 7" (click)="Tipo(7)" *ngIf="productos.prod_7">
-        {{ "HONEYCOMB" | translate }}
-      </button>
-      <!-- Cajón ZIP como producto propio (sqlCajonZip): solo con su interruptor (SOL_ACC_ZIP_CLIENTE) -->
-      <button type="button" [class.activo]="TipoCortina == 6" (click)="Tipo(6)" *ngIf="zipNuevo">
-        {{ "CAJON ZIP" | translate }}
-      </button>
+      <!-- Los productos del perfil (sqlPerfiles) que tiene el usuario (prod_N), en su orden y con su nombre.
+           El Cajón ZIP propio (tipo 6) solo existe con el motor nuevo -->
+      <ng-container *ngFor="let p of productosVisibles">
+        <button type="button" *ngIf="p.tipo != 6 || zipNuevo"
+          [class.activo]="TipoCortina == p.tipo" (click)="Tipo(p.tipo)">
+          {{ p.nombre | translate }}
+        </button>
+      </ng-container>
     </nav>
 
     <!-- PROMOCION-->
@@ -159,7 +149,7 @@
     </manza-compac-nuevo>
 
     <!-- CAJÓN ZIP con las listas de Productos: solo clientes con su interruptor (SOL_ACC_ZIP_CLIENTE) -->
-    <manza-zip-nuevo *ngIf="TipoCortina == 6 && zipNuevo"
+    <manza-zip-nuevo *ngIf="TipoCortina == 6 && productos.prod_6 && zipNuevo"
       [Cliente]="Cliente" [codeCentro]="codeCentro"
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       (onAdd)="AgregarDesdeHijo($event)">

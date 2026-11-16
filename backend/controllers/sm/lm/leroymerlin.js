@@ -938,14 +938,15 @@ function userInfo(req,res)
      var id = parseInt(cliente) || 0;
      var query = "IF EXISTS (SELECT 1 FROM dbo.CLIENTES_USERS WHERE IDROW=" + id + ") " +
                  "  SELECT ISNULL(prod_1,0) AS prod_1, ISNULL(prod_2,0) AS prod_2, " +
-                 "         ISNULL(prod_3,0) AS prod_3, ISNULL(prod_4,0) AS prod_4, ISNULL(prod_7,0) AS prod_7 " +
+                 "         ISNULL(prod_3,0) AS prod_3, ISNULL(prod_4,0) AS prod_4, ISNULL(prod_7,0) AS prod_7, " +
+                 "         ISNULL(prod_6,0) AS prod_6 " +
                  "  FROM dbo.CLIENTES_USERS WHERE IDROW=" + id + "; " +
                  "ELSE IF EXISTS (SELECT 1 FROM dbo.USERS WHERE IDROW=" + id + " AND (ambito = 'I' OR ambito = 'Interno') AND ISNULL(ACTIVO, 1) = 1) " +
                  "  SELECT CAST(1 AS BIT) AS prod_1, CAST(1 AS BIT) AS prod_2, " +
-                 "         CAST(1 AS BIT) AS prod_3, CAST(1 AS BIT) AS prod_4, CAST(1 AS BIT) AS prod_7; " +
+                 "         CAST(1 AS BIT) AS prod_3, CAST(1 AS BIT) AS prod_4, CAST(1 AS BIT) AS prod_7, CAST(1 AS BIT) AS prod_6; " +
                  "ELSE " +
                  "  SELECT CAST(0 AS BIT) AS prod_1, CAST(0 AS BIT) AS prod_2, " +
-                 "         CAST(0 AS BIT) AS prod_3, CAST(0 AS BIT) AS prod_4, CAST(0 AS BIT) AS prod_7;";
+                 "         CAST(0 AS BIT) AS prod_3, CAST(0 AS BIT) AS prod_4, CAST(0 AS BIT) AS prod_7, CAST(0 AS BIT) AS prod_6;";
      ExecuteSQL(query,res);
     }
 }

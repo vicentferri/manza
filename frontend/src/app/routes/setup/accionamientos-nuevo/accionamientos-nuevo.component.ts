@@ -47,9 +47,19 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'zip', label: 'Cajón ZIP' },
         { id: 'ver', label: 'Vertical' },
         { id: 'pj', label: 'Panel japonés' },
-        { id: 'hc', label: 'HoneyComb' }
+        { id: 'hc', label: 'HoneyComb' },
+        /* No es un producto: qué ve el configurador de cada cliente (sqlPerfiles) */
+        { id: 'pf', label: 'Perfiles de cliente' }
     ];
     producto = 'enrollable';
+
+    /* Perfiles de configurador: una sola pantalla (app-acc-perfiles) con cuatro secciones */
+    readonly seccionesPf = [
+        { id: 'pf_perfiles', paso: '', label: 'Perfiles y clientes', ayuda: 'Qué perfil tiene cada cliente', icono: 'fa-users' },
+        { id: 'pf_productos', paso: '', label: 'Productos', ayuda: 'Visibles, motor, orden y nombre', icono: 'fa-th-large' },
+        { id: 'pf_documentos', paso: '', label: 'Documentos', ayuda: 'PDFs del configurador', icono: 'fa-file-pdf-o' },
+        { id: 'pf_parametros', paso: '', label: 'Parámetros', ayuda: 'Logo, imágenes y otros ajustes', icono: 'fa-sliders' }
+    ];
 
     readonly seccionesEnrollable = [
         { id: 'accionamientos', paso: '1', label: 'Accionamientos', ayuda: 'Qué sistemas tiene cada uno', icono: 'fa-hand-pointer-o' },
@@ -290,7 +300,8 @@ export class AccionamientosNuevoComponent implements OnInit {
         if (id === this.producto) { return; }
         this.producto = id;
         this.secciones = id === 'mini' ? this.seccionesMini : id === 'zip' ? this.seccionesZip
-            : id === 'ver' ? this.seccionesVer : id === 'pj' ? this.seccionesPj : id === 'hc' ? this.seccionesHc : this.seccionesEnrollable;
+            : id === 'ver' ? this.seccionesVer : id === 'pj' ? this.seccionesPj : id === 'hc' ? this.seccionesHc
+            : id === 'pf' ? this.seccionesPf : this.seccionesEnrollable;
         if (id === 'ver') { this.cargarTiposVer(); }
         this.cambiarSeccion(this.secciones[0].id);
     }

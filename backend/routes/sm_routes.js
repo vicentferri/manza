@@ -617,6 +617,22 @@ smapi.post('/acc/:catalogo/copiar', NuevoSistema, AccionamientosNuevoController.
 /* Colores RAL desde el Excel (hex y tipo): vista previa o aplicar (sqlColoresRal) */
 smapi.post('/acc/:catalogo/importar-ral', NuevoSistema, AccionamientosNuevoController.importar_ral);
 
+/* Perfil de configurador del cliente: productos, motor, nombres, documentos y parámetros (sqlPerfiles 01-08) */
+var CfgPerfilController = require('../controllers/sm/cfg_perfil');
+smapi.get('/cfg/perfil/:cliente', Auth.ensureAuth, CfgPerfilController.perfil);
+/* Pantalla Productos -> Perfiles (solo "Nuevo sistema"); cada cambio queda en CFG_AUDITORIA */
+smapi.get('/cfg/admin/perfiles', NuevoSistema, CfgPerfilController.admin_perfiles);
+smapi.get('/cfg/admin/clientes', NuevoSistema, CfgPerfilController.admin_clientes);
+smapi.get('/cfg/admin/perfil/:id', NuevoSistema, CfgPerfilController.admin_perfil);
+smapi.get('/cfg/admin/perfil/:id/vista', NuevoSistema, CfgPerfilController.admin_vista);
+smapi.post('/cfg/admin/perfil', NuevoSistema, CfgPerfilController.admin_guardar_perfil);
+smapi.post('/cfg/admin/perfil/:id/duplicar', NuevoSistema, CfgPerfilController.admin_duplicar);
+smapi.post('/cfg/admin/cliente_perfil', NuevoSistema, CfgPerfilController.admin_cliente_perfil);
+smapi.post('/cfg/admin/perfil/:id/producto', NuevoSistema, CfgPerfilController.admin_producto);
+smapi.post('/cfg/admin/perfil/:id/documento', NuevoSistema, CfgPerfilController.admin_documento);
+smapi.post('/cfg/admin/perfil/:id/documento/:doc/borrar', NuevoSistema, CfgPerfilController.admin_borrar_documento);
+smapi.post('/cfg/admin/perfil/:id/parametro', NuevoSistema, CfgPerfilController.admin_parametro);
+
 /* Configurador nuevo de accionamientos (clientes con el interruptor SOL_ACC_CLIENTE; Leroy no pasa por aquí) */
 var AccConfiguradorController = require('../controllers/sm/acc_configurador');
 smapi.get('/acc_cfg/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.activo);

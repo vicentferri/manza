@@ -3,23 +3,11 @@
   <section class="cfg-panel">
     <div class="cfg-panel-cabecera">
       <h2>{{ (SubTipoCortina == 2 ? "CAJON ZIP" : "ENROLLABLE") | translate }}</h2>
-      <div class="d-flex flex-wrap" style="gap: 8px" *ngIf="esLeroy">
-        <ng-container *ngIf="SubTipoCortina != 2">
-          <a class="cfg-btn cfg-btn-azul" href="assets/pdf/enrollable_cotas_deva.pdf" target="_blank" rel="noopener">
-            <i class="fa-solid fa-ruler-horizontal"></i>{{ "COTAS DEVA" | translate }}
-          </a>
-          <a class="cfg-btn cfg-btn-azul" href="assets/pdf/enrollable_cotas_magic.pdf" target="_blank" rel="noopener">
-            <i class="fa-solid fa-ruler-horizontal"></i>{{ "COTAS MAGIC" | translate }}
-          </a>
-        </ng-container>
-        <ng-container *ngIf="SubTipoCortina == 2">
-          <a class="cfg-btn cfg-btn-azul" href="assets/pdf/cajon_zip_cotas.pdf" target="_blank" rel="noopener">
-            <i class="fa-solid fa-ruler-horizontal"></i>{{ "Ver cotas" | translate }}
-          </a>
-          <a class="cfg-btn cfg-btn-azul" href="assets/pdf/cajon_zip_instrucciones_montaje.pdf" target="_blank" rel="noopener">
-            <i class="fa-solid fa-file-pdf"></i>{{ "INSTRUCCIONES DE MONTAJE" | translate }}
-          </a>
-        </ng-container>
+      <!-- Fichas en PDF del perfil (sqlPerfiles/06), las del subtipo elegido -->
+      <div class="d-flex flex-wrap" style="gap: 8px" *ngIf="documentos.length > 0">
+        <a *ngFor="let d of documentos" class="cfg-btn cfg-btn-azul" [href]="d.url" target="_blank" rel="noopener">
+          <i *ngIf="d.icono" [class]="d.icono"></i>{{ d.etiqueta | translate }}
+        </a>
       </div>
     </div>
 
@@ -616,8 +604,8 @@
               </div>
             </div>
 
-            <!-- Guías: no para Cliente 1 -->
-            <div [hidden]="Cliente == '1'">
+            <!-- Guías: el perfil puede ocultarlas (ocultar_guias_zip_antiguo; Leroy no las elige, es intencionado) -->
+            <div [hidden]="ocultarGuias">
               <h4 class="cfg-subtitulo">{{ "SELECCIONGUIAS" | translate }}</h4>
               <div class="cfg-grid cfg-cols-2">
                 <div class="cfg-field">

@@ -600,6 +600,11 @@
                     <app-honeycomb-admin-data [seccion]="pestanaHc[seccion]"></app-honeycomb-admin-data>
                 </ng-container>
 
+                <!-- PERFILES DE CLIENTE (sqlPerfiles): un solo componente para sus cuatro secciones, así conserva el perfil elegido -->
+                <ng-container *ngIf="producto === 'pf'">
+                    <app-acc-perfiles [seccion]="seccion"></app-acc-perfiles>
+                </ng-container>
+
                 <!-- HONEYCOMB · IMÁGENES -->
                 <ng-container *ngIf="producto === 'hc' && seccion === 'hc_imagenes'">
                     <app-honeycomb-admin-images [incrustado]="true"></app-honeycomb-admin-images>

@@ -1,0 +1,322 @@
+<!-- PERFIL ELEGIDO (común a todas las secciones) -->
+<div class="acc-bloque">
+    <div class="d-flex align-items-center flex-wrap">
+        <label class="mr-2 mb-0"><strong>Perfil:</strong></label>
+        <select class="form-control form-control-sm mr-2" style="max-width: 320px" [ngModel]="perfilId"
+            (ngModelChange)="elegirPerfil($event)" [ngModelOptions]="{ standalone: true }">
+            <option *ngFor="let p of perfiles" [ngValue]="p.id">
+                {{ p.codigo }} · {{ p.nombre }}{{ p.activo ? '' : ' (desactivado)' }}
+            </option>
+        </select>
+        <button type="button" class="btn btn-outline-primary btn-sm mr-2" (click)="nuevoPerfil()">
+            <i class="fa fa-plus"></i> Nuevo
+        </button>
+        <button type="button" class="btn btn-outline-primary btn-sm mr-2" (click)="duplicar()" [disabled]="!perfil">
+            <i class="fa fa-copy"></i> Duplicar
+        </button>
+        <span class="small text-muted" *ngIf="perfil">
+            {{ perfil.clientes }} cliente(s) · idioma {{ perfil.idioma }} ·
+            novedades del catálogo {{ perfil.politica_novedades === 'MOSTRAR' ? 'visibles' : 'ocultas' }}
+        </span>
+    </div>
+
+    <!-- alta / cambio de perfil -->
+    <div class="mt-3" *ngIf="formPerfil">
+        <div class="form-row align-items-end">
+            <div class="col-md-2">
+                <label class="small mb-0">Código</label>
+                <input class="form-control form-control-sm" [(ngModel)]="formPerfil.codigo" [disabled]="!!formPerfil.id"
+                    [ngModelOptions]="{ standalone: true }" placeholder="DISTRIBUIDOR" />
+            </div>
+            <div class="col-md-3">
+                <label class="small mb-0">Nombre</label>
+                <input class="form-control form-control-sm" [(ngModel)]="formPerfil.nombre" [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div class="col-md-1">
+                <label class="small mb-0">Idioma</label>
+                <select class="form-control form-control-sm" [(ngModel)]="formPerfil.idioma" [ngModelOptions]="{ standalone: true }">
+                    <option value="ES">ES</option>
+                    <option value="PT">PT</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="small mb-0">Novedades del catálogo</label>
+                <select class="form-control form-control-sm" [(ngModel)]="formPerfil.politica_novedades" [ngModelOptions]="{ standalone: true }">
+                    <option value="OCULTAR">Ocultas hasta activarlas</option>
+                    <option value="MOSTRAR">Visibles al momento</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="small mb-0 d-block">Activo</label>
+                <input type="checkbox" [(ngModel)]="formPerfil.activo" [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-primary btn-sm mr-1" [disabled]="guardando" (click)="guardarPerfil()">
+                    <i class="fa fa-save"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-default btn-sm" (click)="formPerfil = null">Cancelar</button>
+            </div>
+        </div>
+        <div class="small text-muted mt-1" *ngIf="!formPerfil.id">
+            Un perfil nuevo empieza con todos los productos ocultos. Si se parece a otro, es más rápido duplicarlo.
+        </div>
+    </div>
+
+    <!-- duplicar -->
+    <div class="mt-3" *ngIf="formDuplicar">
+        <div class="form-row align-items-end">
+            <div class="col-md-3">
+                <label class="small mb-0">Código del nuevo perfil</label>
+                <input class="form-control form-control-sm" [(ngModel)]="formDuplicar.codigo" [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div class="col-md-4">
+                <label class="small mb-0">Nombre</label>
+                <input class="form-control form-control-sm" [(ngModel)]="formDuplicar.nombre" [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-primary btn-sm mr-1" [disabled]="guardando" (click)="guardarDuplicado()">
+                    <i class="fa fa-copy"></i> Duplicar
+                </button>
+                <button type="button" class="btn btn-default btn-sm" (click)="formDuplicar = null">Cancelar</button>
+            </div>
+        </div>
+        <div class="small text-muted mt-1">Se copian los productos, los nombres, los documentos y los parámetros. Los clientes no.</div>
+    </div>
+</div>
+
+<!-- ============ PERFILES Y CLIENTES ============ -->
+<ng-container *ngIf="seccion === 'pf_perfiles'">
+    <div class="row">
+        <div class="col-xl-6">
+            <div class="acc-bloque">
+                <div class="acc-bloque-titulo"><strong>Perfiles</strong></div>
+                <table class="table table-sm acc-matriz mb-0">
+                    <thead>
+                        <tr><th>Código</th><th>Nombre</th><th>Idioma</th><th>Novedades</th><th>Clientes</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let p of perfiles" [class.text-muted]="!p.activo">
+                            <td><span class="acc-codigo">{{ p.codigo }}</span></td>
+                            <td>{{ p.nombre }}<span *ngIf="!p.activo"> (desactivado)</span></td>
+                            <td>{{ p.idioma }}</td>
+                            <td>{{ p.politica_novedades === 'MOSTRAR' ? 'Visibles' : 'Ocultas' }}</td>
+                            <td>{{ p.clientes }}</td>
+                            <td class="text-right">
+                                <button type="button" class="btn btn-link btn-sm p-0" (click)="editarPerfil(p)">Editar</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="small text-muted mt-2">
+                    Un cliente sin perfil, o con un perfil desactivado, usa <strong>ESTANDAR</strong>.
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="acc-bloque">
+                <div class="acc-bloque-titulo"><strong>Clientes</strong></div>
+                <table class="table table-sm acc-matriz mb-0">
+                    <thead><tr><th>Cliente</th><th>Perfil</th><th>Efectivo</th></tr></thead>
+                    <tbody>
+                        <tr *ngFor="let c of clientes">
+                            <td>{{ c.cliente }} · {{ c.descripcion }}</td>
+                            <td>
+                                <select class="form-control form-control-sm" [ngModel]="c.perfil_id"
+                                    (ngModelChange)="cambiarPerfilCliente(c, $event)" [ngModelOptions]="{ standalone: true }">
+                                    <option [ngValue]="null" disabled>(sin perfil)</option>
+                                    <option *ngFor="let p of perfiles" [ngValue]="p.id">{{ p.codigo }}</option>
+                                </select>
+                            </td>
+                            <td class="small">
+                                {{ nombrePerfil(c.perfil_efectivo) }}
+                                <i class="fa fa-exclamation-triangle text-warning" *ngIf="c.perfil_id !== c.perfil_efectivo"
+                                    title="Su perfil está desactivado o no tiene: usa ESTANDAR"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</ng-container>
+
+<!-- ============ PRODUCTOS DEL PERFIL ============ -->
+<ng-container *ngIf="seccion === 'pf_productos'">
+    <div class="acc-intro">
+        Qué productos tiene el configurador de los clientes de este perfil, con qué motor y con qué nombre. Cada usuario
+        puede tener menos (casillas de la pantalla Clientes), nunca más. <strong>Motor nuevo</strong> = configurador con las
+        listas de Productos; <strong>antiguo</strong> = el de siempre.
+    </div>
+    <div class="row" *ngIf="detalle; else cargandoPf">
+        <div class="col-xl-8">
+            <div class="acc-bloque">
+                <table class="table table-sm acc-matriz mb-0">
+                    <thead>
+                        <tr><th>Producto</th><th>Visible</th><th>Motor</th><th>Orden</th><th>Nombre en este perfil</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let p of detalle.productos">
+                            <td class="acc-nombre">{{ nombresProducto[p.tipo] }}</td>
+                            <td><input type="checkbox" [(ngModel)]="p.visible" [ngModelOptions]="{ standalone: true }" /></td>
+                            <td>
+                                <select class="form-control form-control-sm" [(ngModel)]="p.motor" [ngModelOptions]="{ standalone: true }">
+                                    <option value="ANTIGUO" [disabled]="p.tipo === 6">Antiguo</option>
+                                    <option value="NUEVO" [disabled]="p.tipo === 7">Nuevo</option>
+                                </select>
+                            </td>
+                            <td style="width: 80px">
+                                <input type="number" class="form-control form-control-sm" [(ngModel)]="p.orden" [ngModelOptions]="{ standalone: true }" />
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm" [(ngModel)]="p.nombre" [ngModelOptions]="{ standalone: true }"
+                                    [placeholder]="p.nombre_base" />
+                            </td>
+                            <td class="text-right">
+                                <button type="button" class="btn btn-primary btn-sm" (click)="guardarProducto(p)"><i class="fa fa-save"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="small text-muted mt-2">
+                    El nombre vacío usa el del catálogo (el que se ve en gris). El texto se traduce en el configurador con las
+                    traducciones de siempre (p. ej. COMPAC en portugués).
+                </div>
+            </div>
+        </div>
+        <!-- vista previa: lo que recibe el configurador -->
+        <div class="col-xl-4" *ngIf="vista">
+            <div class="acc-bloque">
+                <div class="acc-bloque-titulo"><strong>Así lo verá el configurador</strong></div>
+                <div class="mb-2">
+                    <span class="badge badge-dark mr-1">{{ vista.parametros.logo || 'SM' }}</span>
+                    <a *ngFor="let d of vista.documentos" class="small mr-2" [href]="d.url" target="_blank" rel="noopener">{{ d.etiqueta }}</a>
+                </div>
+                <div class="d-flex flex-wrap" style="gap: 6px">
+                    <ng-container *ngFor="let p of vista.productos">
+                        <span *ngIf="p.visible" class="btn btn-sm" [class.btn-outline-primary]="p.motor === 'NUEVO'"
+                            [class.btn-outline-secondary]="p.motor !== 'NUEVO'" [title]="'Motor ' + p.motor.toLowerCase()">
+                            {{ p.nombre }}
+                        </span>
+                    </ng-container>
+                </div>
+                <div class="small text-muted mt-2">Azul: motor nuevo · gris: antiguo. Cada usuario ve solo los que tiene marcados.</div>
+            </div>
+        </div>
+    </div>
+</ng-container>
+
+<!-- ============ DOCUMENTOS DEL PERFIL ============ -->
+<ng-container *ngIf="seccion === 'pf_documentos'">
+    <div class="acc-intro">
+        PDFs que se enlazan en el configurador de este perfil: en la barra superior (sin producto) o en la cabecera de un
+        producto. En el enrollable antiguo, subtipo 1 = enrollable y 2 = Cajón ZIP; vacío vale para los dos.
+    </div>
+    <div class="acc-bloque" *ngIf="detalle; else cargandoPf">
+        <div class="d-flex align-items-center mb-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="nuevoDocumento()"><i class="fa fa-plus"></i> Añadir</button>
+        </div>
+        <div class="mb-3" *ngIf="formDocumento">
+            <div class="form-row align-items-end">
+                <div class="col-md-2">
+                    <label class="small mb-0">Dónde</label>
+                    <select class="form-control form-control-sm" [(ngModel)]="formDocumento.tipo_producto" [ngModelOptions]="{ standalone: true }">
+                        <option value="">Barra superior</option>
+                        <option *ngFor="let t of tiposProducto" [ngValue]="t">{{ nombresProducto[t] }}</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="small mb-0">Subtipo</label>
+                    <input class="form-control form-control-sm" [(ngModel)]="formDocumento.subtipo" [ngModelOptions]="{ standalone: true }" />
+                </div>
+                <div class="col-md-2">
+                    <label class="small mb-0">Etiqueta</label>
+                    <input class="form-control form-control-sm" [(ngModel)]="formDocumento.etiqueta" [ngModelOptions]="{ standalone: true }" />
+                </div>
+                <div class="col-md-3">
+                    <label class="small mb-0">Dirección (url)</label>
+                    <input class="form-control form-control-sm" [(ngModel)]="formDocumento.url" [ngModelOptions]="{ standalone: true }" />
+                </div>
+                <div class="col-md-2">
+                    <label class="small mb-0">Icono</label>
+                    <input class="form-control form-control-sm" [(ngModel)]="formDocumento.icono" [ngModelOptions]="{ standalone: true }" />
+                </div>
+                <div class="col-md-1">
+                    <label class="small mb-0">Orden</label>
+                    <input type="number" class="form-control form-control-sm" [(ngModel)]="formDocumento.orden" [ngModelOptions]="{ standalone: true }" />
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-primary btn-sm" (click)="guardarDocumento()"><i class="fa fa-save"></i></button>
+                    <button type="button" class="btn btn-default btn-sm" (click)="formDocumento = null"><i class="fa fa-times"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="acc-vacio" *ngIf="detalle.documentos.length === 0">Este perfil no tiene documentos.</div>
+        <table class="table table-sm acc-matriz mb-0" *ngIf="detalle.documentos.length > 0">
+            <thead><tr><th>Dónde</th><th>Etiqueta</th><th>Dirección</th><th>Orden</th><th></th></tr></thead>
+            <tbody>
+                <tr *ngFor="let d of detalle.documentos" [class.text-muted]="!d.activo">
+                    <td>{{ dondeDocumento(d) }}</td>
+                    <td><i *ngIf="d.icono" [class]="d.icono"></i> {{ d.etiqueta }}</td>
+                    <td class="small"><a [href]="d.url" target="_blank" rel="noopener">{{ d.url }}</a></td>
+                    <td>{{ d.orden }}</td>
+                    <td class="text-right text-nowrap">
+                        <button type="button" class="btn btn-link btn-sm p-0 mr-2" (click)="editarDocumento(d)">Editar</button>
+                        <button type="button" class="btn btn-link btn-sm p-0 text-danger" (click)="borrarDocumento(d)">Quitar</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</ng-container>
+
+<!-- ============ PARÁMETROS DEL PERFIL ============ -->
+<ng-container *ngIf="seccion === 'pf_parametros'">
+    <div class="acc-intro">Ajustes del configurador de este perfil que no son productos ni documentos.</div>
+    <div class="acc-bloque" *ngIf="detalle; else cargandoPf">
+        <table class="table table-sm acc-matriz mb-0">
+            <thead><tr><th>Parámetro</th><th>Para qué sirve</th><th>Valor</th></tr></thead>
+            <tbody>
+                <tr *ngFor="let p of parametrosConocidos">
+                    <td><span class="acc-codigo">{{ p.clave }}</span></td>
+                    <td class="small">{{ p.ayuda }}</td>
+                    <td style="width: 220px">
+                        <input *ngIf="p.tipo === 'si_no'" type="checkbox" [ngModel]="valorParametro(p.clave) === '1'"
+                            (ngModelChange)="guardarParametro(p.clave, $event)" [ngModelOptions]="{ standalone: true }" />
+                        <div *ngIf="p.tipo === 'texto'" class="d-flex">
+                            <input #valorTexto class="form-control form-control-sm mr-1" [value]="valorParametro(p.clave)" />
+                            <button type="button" class="btn btn-primary btn-sm" (click)="guardarParametro(p.clave, valorTexto.value)">
+                                <i class="fa fa-save"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngFor="let p of parametrosOtros">
+                    <td><span class="acc-codigo">{{ p.clave }}</span></td>
+                    <td class="small text-muted">(otro)</td>
+                    <td class="d-flex">
+                        <input #valorOtro class="form-control form-control-sm mr-1" [value]="p.valor" />
+                        <button type="button" class="btn btn-primary btn-sm" (click)="guardarParametro(p.clave, valorOtro.value)">
+                            <i class="fa fa-save"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="form-row align-items-end mt-3">
+            <div class="col-md-3">
+                <label class="small mb-0">Otro parámetro (clave)</label>
+                <input class="form-control form-control-sm" [(ngModel)]="nuevoParametro.clave" [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div class="col-md-3">
+                <label class="small mb-0">Valor</label>
+                <input class="form-control form-control-sm" [(ngModel)]="nuevoParametro.valor" [ngModelOptions]="{ standalone: true }" />
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="anadirParametro()"><i class="fa fa-plus"></i> Añadir</button>
+            </div>
+        </div>
+        <div class="small text-muted mt-1">Un valor vacío quita el parámetro (el configurador usa su valor por defecto).</div>
+    </div>
+</ng-container>
+
+<ng-template #cargandoPf><div class="acc-vacio"><i class="fa fa-spinner fa-spin"></i> Cargando...</div></ng-template>

@@ -40,10 +40,11 @@ export class ClientesGestionComponent implements OnInit {
         { campo: 'prod_3', label: 'Vertical' },
         { campo: 'prod_4', label: 'Noche y Día' },
         { campo: 'prod_7', label: 'Veneciana Madera' },
+        { campo: 'prod_6', label: 'Cajón ZIP' },
     ];
 
     formBulk: any = {
-        prod_1: '', prod_2: '', prod_3: '', prod_4: '', prod_7: ''
+        prod_1: '', prod_2: '', prod_3: '', prod_4: '', prod_7: '', prod_6: ''
     };
 
     formAdd: any = {
@@ -208,7 +209,7 @@ export class ClientesGestionComponent implements OnInit {
             this.toaster.warning('Selecciona al menos un cliente', this.title);
             return;
         }
-        this.formBulk = { prod_1: '', prod_2: '', prod_3: '', prod_4: '', prod_7: '' };
+        this.formBulk = { prod_1: '', prod_2: '', prod_3: '', prod_4: '', prod_7: '', prod_6: '' };
         this.modalBulk.show();
     }
 

@@ -7,6 +7,9 @@ import { TranslationService } from 'src/app/services/translation.service';
 import { Tipo } from '../config/Tipo';
 import { textoOpcion as texto, medida } from '../cfg-resumen/cfg-resumen.component';
 import { ImpresionDigitalSelectorComponent, ImpresionDigitalSeleccion } from '../../shared/impresion-digital-selector/impresion-digital-selector.component';
+import {
+   PerfilConfiguradorService, PerfilConfigurador, PERFIL_VACIO, DocumentoPerfil, documentosDe, productoDe
+} from '../config/perfil-configurador.service';
 
 @Component({
    selector: 'manza-compac',
@@ -20,9 +23,17 @@ export class CompacComponent implements OnInit, OnChanges {
    @Input() SubCliente: string = '2';
    @Input() ReferenciaTienda: string = '';
 
-   // Fichas en PDF (cotas, instrucciones de montaje): solo para Leroy Merlín (clientes 1 y 5)
-   get esLeroy(): boolean {
-      return this.Cliente == '1' || this.Cliente == '5';
+   /* Perfil del cliente (sqlPerfiles): fichas en PDF del producto (cotas...) y nombre del producto */
+   perfilCfg: PerfilConfigurador = PERFIL_VACIO;
+
+   get documentos(): DocumentoPerfil[] {
+      return documentosDe(this.perfilCfg, 4);
+   }
+
+   /* Solar Mini / Compac según el perfil; es una clave que traduce el pipe translate */
+   get nombreProducto(): string {
+      const p = productoDe(this.perfilCfg, 4);
+      return p ? p.nombre : 'SOLAR MINI';
    }
 
    // Cesta del presupuesto, para el resumen lateral
@@ -133,7 +144,7 @@ export class CompacComponent implements OnInit, OnChanges {
          ? 'RAL ' + texto(this.items90, this.compac.Ral)
          : (this.compac.PC_ColorPerfileria == '-1' ? '—' : this.translation.get(this.compac.PC_ColorPerfileria));
       return [
-         { etiqueta: 'Producto', valor: this.translation.get(this.esLeroy ? 'COMPAC' : 'SOLAR MINI') },
+         { etiqueta: 'Producto', valor: this.translation.get(this.nombreProducto) },
          { etiqueta: 'Medidas', valor: medida(this.Ancho) + ' × ' + medida(this.Alto) + ' cm' },
          { etiqueta: 'Perfilería', valor: perfileria },
          { etiqueta: 'Tejido', valor: texto(this.tejidos_compac, this.Tipo4_Tejido) + ' · ' + texto(this.tejidos_compac_colores, this.Tipo4_TejidoColor) },
@@ -144,10 +155,12 @@ export class CompacComponent implements OnInit, OnChanges {
    constructor(
       private service: SMAPIService,
       private toaster: ToastrService,
-      private translation: TranslationService
+      private translation: TranslationService,
+      private perfilConfigurador: PerfilConfiguradorService
    ) { }
 
    ngOnInit(): void {
+      this.perfilConfigurador.perfil(this.Cliente).subscribe(p => this.perfilCfg = p);
 
       this.K_tapas.push({ id: 1, text: "Tapas Compac" });
       this.K_tapasC.push({ id: 1, text: "Blanco" }, { id: 2, text: "Gris" });
@@ -529,7 +542,7 @@ export class CompacComponent implements OnInit, OnChanges {
       );
 
       this.onAdd.emit(tipo);
-      const message = this.translation.get((this.Cliente == '1' || this.Cliente == '5') ? 'AGREGADA CORTINA COMPAC A CESTA' : 'AGREGADA CORTINA SOLAR MINI A CESTA');
+      const message = this.translation.get('AGREGADA CORTINA ' + this.nombreProducto + ' A CESTA');
       this.toaster.success(message, 'Cesta');
       this.reset();
    }

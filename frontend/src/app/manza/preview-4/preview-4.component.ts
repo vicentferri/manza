@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CortinaTipo } from '../config/CortinaTipo';
+import { PerfilConfiguradorService, productoDe } from '../config/perfil-configurador.service';
 
 @Component({
   selector: 'app-preview-4',
@@ -18,9 +19,16 @@ export class Preview4Component implements OnInit {
   isCopied1 = false;
 
 
-  constructor() { }
+  /* Solar Mini / Compac según el perfil del cliente (sqlPerfiles); es una clave que traduce el pipe translate */
+  nombreProducto = 'SOLAR MINI';
+
+  constructor(private perfilConfigurador: PerfilConfiguradorService) { }
 
   ngOnInit() {
+    this.perfilConfigurador.perfil(this.Cliente).subscribe(p => {
+      const x = productoDe(p, 4);
+      this.nombreProducto = x ? x.nombre : 'SOLAR MINI';
+    });
   }
 
   DeleteLine(item) {

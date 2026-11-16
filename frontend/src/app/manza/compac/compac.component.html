@@ -2,9 +2,10 @@
 
   <section class="cfg-panel">
     <div class="cfg-panel-cabecera">
-      <h2>{{ ((Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}</h2>
-      <a *ngIf="esLeroy" class="cfg-btn cfg-btn-azul" href="assets/pdf/compac_cotas.pdf" target="_blank" rel="noopener">
-        <i class="fa-solid fa-ruler-horizontal"></i>{{ "Ver cotas" | translate }}
+      <h2>{{ nombreProducto | translate }}</h2>
+      <!-- Fichas en PDF del perfil (sqlPerfiles/06) -->
+      <a *ngFor="let d of documentos" class="cfg-btn cfg-btn-azul" [href]="d.url" target="_blank" rel="noopener">
+        <i *ngIf="d.icono" [class]="d.icono"></i>{{ d.etiqueta | translate }}
       </a>
     </div>
 

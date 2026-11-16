@@ -19,6 +19,10 @@ import { ZipNuevoComponent } from '../zip-nuevo/zip-nuevo.component';
 import { VerticalNuevoComponent } from '../vertical-nuevo/vertical-nuevo.component';
 import { JaponesNuevoComponent } from '../japones-nuevo/japones-nuevo.component';
 import { AccConfiguradorService } from '../enrollable-nuevo/acc-configurador.service';
+import {
+  PerfilConfiguradorService, PerfilConfigurador, PERFIL_VACIO, ProductoPerfil, DocumentoPerfil,
+  productoDe, motorNuevo
+} from './perfil-configurador.service';
 import { ImpresionDocumentoComponent } from '../../shared/impresion-documento/impresion-documento.component';
 
 declare var $: any;
@@ -46,16 +50,16 @@ export class ConfigComponent implements OnInit {
   @ViewChild(VerticalNuevoComponent, { static: false }) public verticalNuevoRef!: VerticalNuevoComponent;
   @ViewChild(JaponesNuevoComponent, { static: false }) public japonesNuevoRef!: JaponesNuevoComponent;
 
-  /* Configurador nuevo de accionamientos (SOL_ACC_CLIENTE). false = el de siempre; Leroy no tiene fila */
-  accNuevo: boolean = false;
-  /* Solar Mini con las listas de Productos (sqlSolarMini): interruptor propio, SOL_ACC_MINI_CLIENTE */
-  miniNuevo: boolean = false;
-  /* Cajón ZIP con las listas de Productos (sqlCajonZip): producto propio (tipo 6), con su interruptor SOL_ACC_ZIP_CLIENTE */
-  zipNuevo: boolean = false;
-  /* Vertical con las listas de Productos (sqlVertical): tipo 3 con su interruptor SOL_ACC_VER_CLIENTE; Leroy sigue con manza-vertical */
-  verNuevo: boolean = false;
-  /* Panel japonés con las listas de Productos (sqlPanelJapones; interruptor SOL_ACC_PJ_CLIENTE) */
-  pjNuevo: boolean = false;
+  /* Perfil del configurador del cliente (sqlPerfiles): productos, motor, nombres, documentos y parámetros.
+     Mientras carga (o si falla) es el estándar: motor antiguo y sin documentos */
+  perfilCfg: PerfilConfigurador = PERFIL_VACIO;
+
+  /* Motor de cada producto según el perfil (motor NUEVO = listas de Productos). false = el de siempre */
+  accNuevo: boolean = false;   // enrollable (tipo 1)
+  miniNuevo: boolean = false;  // Solar Mini (tipo 4)
+  zipNuevo: boolean = false;   // Cajón ZIP, producto propio (tipo 6)
+  verNuevo: boolean = false;   // vertical (tipo 3)
+  pjNuevo: boolean = false;    // panel japonés (tipo 2)
 
   editingItem: CortinaTipo | null = null;
 
@@ -71,10 +75,21 @@ export class ConfigComponent implements OnInit {
   Cliente = "-1";
   SubCliente = "2";
 
-  // Tarifa en PDF de la barra superior: solo para Leroy Merlín (clientes 1 y 5)
-  get esLeroy(): boolean {
-    return this.Cliente == "1" || this.Cliente == "5";
+  /* Logo de la cabecera (parámetro "logo" del perfil) */
+  get logo(): string {
+    return (this.perfilCfg.parametros && this.perfilCfg.parametros['logo']) || 'SM';
   }
+
+  /* Documentos de la barra superior (p. ej. la tarifa en PDF de Leroy) */
+  get documentosBarra(): DocumentoPerfil[] {
+    return this.perfilCfg.documentos || [];
+  }
+
+  /* Botones de producto: los visibles del perfil que además tiene el usuario (prod_N), en el orden del perfil */
+  get productosVisibles(): ProductoPerfil[] {
+    return (this.perfilCfg.productos || []).filter(p => this.productos['prod_' + p.tipo]);
+  }
+
 
   UserName = "";
   loading = false;
@@ -166,11 +181,24 @@ export class ConfigComponent implements OnInit {
   CodigoProv2_4 = "";
   CodigoProv2_5 = "";
 
+  /* Productos que se pueden configurar = casillas del usuario (prod_N) Y visibles en el perfil.
+     Lo calcula recalcularProductos() cada vez que llega una de las dos cosas */
   productos = {
     prod_1: false,
     prod_2: false,
     prod_3: false,
     prod_4: false,
+    prod_6: false,
+    prod_7: false
+  };
+
+  /* Casillas del usuario: internos, todas; clientes, las de CLIENTES_USERS (userinfo) */
+  private productosUsuario = {
+    prod_1: false,
+    prod_2: false,
+    prod_3: false,
+    prod_4: false,
+    prod_6: false,
     prod_7: false
   };
 
@@ -183,7 +211,8 @@ export class ConfigComponent implements OnInit {
     private serviceHaru: HaruService,
     private router: Router,
     private translation: TranslationService,
-    private accConfigurador: AccConfiguradorService
+    private accConfigurador: AccConfiguradorService,
+    private perfilConfigurador: PerfilConfiguradorService
   ) {
     this.vRef = vRef;
   }
@@ -205,22 +234,33 @@ export class ConfigComponent implements OnInit {
     this.hayBorrador = !!localStorage.getItem('pedido_borrador');
     this.GetIdioma();
     this.Logged = this.CheckIfLogged();
-    this.comprobarAccNuevo();
+    this.cargarPerfil();
   }
 
-  /* Solo cambia algo si el cliente tiene el interruptor activo; ante cualquier error sigue el configurador de siempre */
-  comprobarAccNuevo(): void {
-    this.accNuevo = false;
-    this.miniNuevo = false;
-    this.zipNuevo = false;
-    this.verNuevo = false;
-    this.pjNuevo = false;
+  /* Perfil del cliente (sqlPerfiles): decide los productos visibles, el motor de cada uno, los nombres, los
+     documentos y los parámetros. Ante cualquier error queda el estándar (motor antiguo, sin extras) */
+  cargarPerfil(): void {
+    this.aplicarPerfil(PERFIL_VACIO);
     if (!(parseInt(this.Cliente, 10) > 0)) { return; }
-    this.accConfigurador.activo(this.Cliente).subscribe(activo => this.accNuevo = activo);
-    this.accConfigurador.miniActivo(this.Cliente).subscribe(activo => this.miniNuevo = activo);
-    this.accConfigurador.zipActivo(this.Cliente).subscribe(activo => this.zipNuevo = activo);
-    this.accConfigurador.verActivo(this.Cliente).subscribe(activo => this.verNuevo = activo);
-    this.accConfigurador.pjActivo(this.Cliente).subscribe(activo => this.pjNuevo = activo);
+    this.perfilConfigurador.perfil(this.Cliente).subscribe(p => this.aplicarPerfil(p));
+  }
+
+  private aplicarPerfil(p: PerfilConfigurador): void {
+    this.perfilCfg = p;
+    this.accNuevo = motorNuevo(p, 1);
+    this.pjNuevo = motorNuevo(p, 2);
+    this.verNuevo = motorNuevo(p, 3);
+    this.miniNuevo = motorNuevo(p, 4);
+    this.zipNuevo = motorNuevo(p, 6);
+    this.recalcularProductos();
+  }
+
+  /* prod_N = casilla del usuario Y producto visible en el perfil */
+  private recalcularProductos(): void {
+    [1, 2, 3, 4, 6, 7].forEach(tipo => {
+      const enPerfil = productoDe(this.perfilCfg, tipo);
+      this.productos['prod_' + tipo] = !!this.productosUsuario['prod_' + tipo] && !!enPerfil && enPerfil.visible;
+    });
   }
 
   ChangeUser() {
@@ -258,14 +298,16 @@ export class ConfigComponent implements OnInit {
           this.Cliente = '4';
           this.nombreCentroEmp = this.currentUser.descsubemp || this.currentUser.nombre || this.currentUser.name || 'Solarmanes';
 
-          // Todos los productos habilitados para usuarios internos (admin y empleados)
-          this.productos = {
+          // Usuarios internos (admin y empleados): todas las casillas; lo que se ve lo limita el perfil
+          this.productosUsuario = {
             prod_1: true,
             prod_2: true,
             prod_3: true,
             prod_4: true,
+            prod_6: true,
             prod_7: true
           };
+          this.recalcularProductos();
           return true;
         }
 
@@ -326,11 +368,13 @@ export class ConfigComponent implements OnInit {
     this.service.getUserInfo(this.UserName).subscribe(
       data => {
         if (data && data.length > 0) {
-          this.productos.prod_1 = !!data[0].prod_1;
-          this.productos.prod_2 = !!data[0].prod_2;
-          this.productos.prod_3 = !!data[0].prod_3;
-          this.productos.prod_4 = !!data[0].prod_4;
-          this.productos.prod_7 = !!data[0].prod_7;
+          this.productosUsuario.prod_1 = !!data[0].prod_1;
+          this.productosUsuario.prod_2 = !!data[0].prod_2;
+          this.productosUsuario.prod_3 = !!data[0].prod_3;
+          this.productosUsuario.prod_4 = !!data[0].prod_4;
+          this.productosUsuario.prod_6 = !!data[0].prod_6;
+          this.productosUsuario.prod_7 = !!data[0].prod_7;
+          this.recalcularProductos();
         }
       },
       error => {
