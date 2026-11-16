@@ -67,10 +67,7 @@
             </div>
             <div class="col-md-3 col-6 form-group" *ngIf="modoPerfil === 'ral'">
                <label>Color RAL</label>
-               <select class="form-control form-control-sm" [(ngModel)]="colorRal" [ngModelOptions]="{ standalone: true }">
-                  <option value="">Seleccionar</option>
-                  <option *ngFor="let c of coloresRal" [value]="c.id">{{ c.nombre }}</option>
-               </select>
+               <app-selector-ral [opciones]="coloresRal" vacio="Seleccionar" [(valor)]="colorRal"></app-selector-ral>
             </div>
          </div>
       </div>

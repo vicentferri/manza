@@ -560,17 +560,13 @@
               </div>
               <div class="cfg-field" [hidden]="Tipo1_CajonC != 'RAL'">
                 <label>{{ Ral_Label | translate }}<span class="cfg-extra" *ngIf="Ral_Extra"> {{ Ral_Extra }}</span></label>
-                <select
-                  name="Tipo1_CajonRAL"
-                  class="form-control form-control-sm"
-                  [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="Tipo1_CajonRAL"
-                  (change)="ChangeRal()"
-                >
-                  <option *ngFor="let pow of items90" [value]="pow.id">
-                    {{ pow.text | frase }}
-                  </option>
-                </select>
+                <app-selector-ral
+                  [opciones]="items90"
+                  campoTexto="text"
+                  [conFrase]="true"
+                  [(valor)]="Tipo1_CajonRAL"
+                  (cambio)="ChangeRal()"
+                ></app-selector-ral>
               </div>
               <div class="cfg-field">
                 <label>{{ "VISTA CAJON" | translate }}</label>

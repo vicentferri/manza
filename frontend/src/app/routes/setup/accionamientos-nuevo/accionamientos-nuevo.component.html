@@ -267,7 +267,8 @@
                     <div class="row">
                         <div class="col-xl-6 col-lg-8">
                             <app-acc-tabla [catalogo]="pestanaPerfileria.id" [titulo]="pestanaPerfileria.label" [singular]="pestanaPerfileria.singular"
-                                [ayuda]="pestanaPerfileria.ayuda"></app-acc-tabla>
+                                [ayuda]="pestanaPerfileria.ayuda" [importarRal]="!!pestanaPerfileria.importarRal"
+                                [extras]="pestanaPerfileria.importarRal ? extrasRal : []"></app-acc-tabla>
                         </div>
                     </div>
                 </ng-container>
@@ -442,7 +443,8 @@
                     </div>
                     <div class="row">
                         <div class="col-xl-6 col-lg-8">
-                            <app-acc-tabla catalogo="zip_lacados" titulo="Lacados" singular="lacado"></app-acc-tabla>
+                            <app-acc-tabla catalogo="zip_lacados" titulo="Lacados" singular="lacado" [importarRal]="true" [extras]="extrasRal"
+                                ayuda="Colores RAL del lacado. Con Cargar Excel se dan de alta los que falten y se les pone el color."></app-acc-tabla>
                         </div>
                     </div>
                 </ng-container>

@@ -17,6 +17,14 @@ const sql = require('mssql');
 /* Listas del Vertical: cuelgan del tipo de vertical y cada tipo tiene las suyas */
 const POR_TIPO_VERTICAL = { padre: 'tipo_id', tablaPadre: 'SOL_ACC_VER_TIPO', codigoPorPadre: true, nombrePadre: true, copiable: true };
 
+/* Colores RAL (sqlColoresRal/01): muestra de color (hex) y tipo (Básico, Básico texturado, No básico), opcionales.
+   ral: true → se pueden cargar desde el Excel de colores RAL (POST /acc/:catalogo/importar-ral) */
+const EXTRAS_RAL = [
+  { columna: 'hex', max: 7, patron: /^#[0-9A-F]{6}$/, mayusculas: true,
+    error: 'El color hex tiene que ser # y 6 cifras hexadecimales (p. ej. #FFFFFF)' },
+  { columna: 'tipo', max: 30 }
+];
+
 /* padre: columna FK; tablaPadre: catálogo del que cuelga;
    codigoPadre: código obligatorio del registro padre (TIPO_CADENA solo bajo CADENA...) */
 const CATALOGOS = {
@@ -44,7 +52,7 @@ const CATALOGOS = {
      por cliente y medida. JR y JC son los códigos del configurador de siempre */
   mini_junquillos:     { tabla: 'SOL_ACC_MINI_JUNQUILLO', sinSistema: true, protegidos: ['JR', 'JC'] },
   mini_colores_perfil: { tabla: 'SOL_ACC_MINI_COLOR_PERFIL', sinSistema: true },
-  mini_colores_ral:    { tabla: 'SOL_ACC_MINI_COLOR_RAL', sinSistema: true },
+  mini_colores_ral:    { tabla: 'SOL_ACC_MINI_COLOR_RAL', sinSistema: true, extras: EXTRAS_RAL, ral: true },
   mini_colores_cadena: { tabla: 'SOL_ACC_MINI_COLOR_CADENA', sinSistema: true },
   mini_colores_tapa:   { tabla: 'SOL_ACC_MINI_COLOR_TAPA', sinSistema: true },
   /* Cajón ZIP (sqlCajonZip/01): producto propio, sin sistemas. La raíz es el modelo de cajón; sus soportes,
@@ -61,7 +69,7 @@ const CATALOGOS = {
   zip_colores:           { tabla: 'SOL_ACC_ZIP_COLOR', sinSistema: true,
                            extras: [{ columna: 'ral', max: 20 }, { columna: 'hex', max: 7, patron: /^#[0-9A-F]{6}$/, mayusculas: true,
                                       error: 'El color hex tiene que ser # y 6 cifras hexadecimales (p. ej. #FFFFFF)' }] },
-  zip_lacados:           { tabla: 'SOL_ACC_ZIP_LACADO', sinSistema: true },
+  zip_lacados:           { tabla: 'SOL_ACC_ZIP_LACADO', sinSistema: true, extras: EXTRAS_RAL, ral: true },
   /* Vertical (sqlVertical/01): producto propio, sin sistemas. La raíz es el tipo de vertical (fijo: NORMAL, INCLINADA,
      VIENA) y cada tipo tiene SUS PROPIAS listas (padre tipo_id; código y nombre únicos dentro del tipo: codigoPorPadre).
      fijo: no se dan de alta ni se borran registros (solo renombrar, ordenar, ocultar y suplementos).
@@ -1112,6 +1120,134 @@ async function copiar(req, res) {
   }
 }
 
+/* ---------------- COLORES RAL DESDE EXCEL (sqlColoresRal) ---------------- */
+
+/* Clave para emparejar un RAL del Excel con uno de la lista: sin "RAL", espacios, guiones ni asteriscos
+   ("7016 M" = "7016M", "1015 TXT" = "1015_TXT", "7024*" = "7024") */
+function claveRal(valor) {
+  return String(valor || '').toUpperCase().replace(/RAL/g, '').replace(/[^A-Z0-9]/g, '');
+}
+
+/* Referencia de muestra entre paréntesis ("6009 M (X158)" y "6009 (X158)" son el mismo color) */
+function referenciaRal(valor) {
+  const m = String(valor || '').toUpperCase().match(/(?:^|[^A-Z0-9])(X\d+)(?=[^A-Z0-9]|$)/);
+  return m ? m[1] : null;
+}
+
+/* POST /acc/:catalogo/importar-ral { filas: [{ ral, hex, tipo }], aplicar }
+   Sin aplicar devuelve lo que haría (vista previa); con aplicar lo hace, todo en una transacción.
+   De los que ya están solo cambia el hex y el tipo (ni el nombre, ni el código, ni la visibilidad, ni los suplementos);
+   los que no están se dan de alta al final de la lista, visibles. Los de la lista que no salen en el Excel no se tocan,
+   salvo con desactivar: true, que los deja inactivos (no se borran: los pedidos guardan su id) y reactiva los que sí salen */
+async function importar_ral(req, res) {
+  const cat = CATALOGOS[req.params.catalogo];
+  if (!cat) return res.status(400).send({ message: 'Catálogo no válido' });
+  if (!cat.ral) return res.status(400).send({ message: 'Esta lista no admite colores RAL desde Excel' });
+  const body = req.body || {};
+  const aplicar = body.aplicar === true;
+  const desactivar = body.desactivar === true;
+
+  /* Filas del Excel: el RAL es obligatorio; un hex que no sea #RRGGBB se descarta (con aviso) */
+  const avisos = [];
+  const filas = [];
+  const vistas = new Set();
+  (Array.isArray(body.filas) ? body.filas : []).forEach((f, i) => {
+    const nombre = texto(f && f.ral, 100).replace(/\*/g, '').replace(/\s+/g, ' ').trim();
+    if (!nombre) return;
+    const clave = claveRal(nombre);
+    if (!clave) return;
+    if (vistas.has(clave)) { avisos.push(`Fila ${i + 2}: ${nombre} está repetido en el Excel`); return; }
+    vistas.add(clave);
+    let hex = texto(f.hex, 7).toUpperCase();
+    if (hex && !/^#[0-9A-F]{6}$/.test(hex)) {
+      if (/^[0-9A-F]{6}$/.test(hex)) hex = '#' + hex;
+      else { avisos.push(`Fila ${i + 2}: ${nombre}, color «${f.hex}» no válido`); hex = ''; }
+    }
+    filas.push({ nombre, clave, ref: referenciaRal(nombre), hex: hex || null, tipo: texto(f.tipo, 30) || null });
+  });
+  if (filas.length === 0) return res.status(400).send({ message: 'El Excel no trae colores RAL (hacen falta las columnas HEX y Equivalencia Sopena)' });
+  if (filas.length > 2000) return res.status(400).send({ message: 'Demasiadas filas' });
+
+  let transaction;
+  try {
+    const pool = await sql.connect();
+    const actuales = (await pool.request().query(`select id, codigo, nombre, hex, tipo, activo from dbo.${cat.tabla}`)).recordset;
+    const porClave = {};
+    const porRef = {};
+    actuales.forEach(a => {
+      [a.nombre, a.codigo].forEach(v => {
+        const k = claveRal(v);
+        if (k && !porClave[k]) porClave[k] = a;
+        const r = referenciaRal(v);
+        if (r && !porRef[r]) porRef[r] = a;
+      });
+    });
+
+    const actualizar = [];
+    const nuevos = [];
+    const reactivar = [];
+    let sinCambios = 0;
+    const emparejados = new Set();
+    filas.forEach(f => {
+      const a = porClave[f.clave] || (f.ref && porRef[f.ref]);
+      if (!a || emparejados.has(a.id)) { nuevos.push(f); return; }
+      emparejados.add(a.id);
+      if (desactivar && !a.activo) reactivar.push({ id: a.id, nombre: a.nombre });
+      if ((a.hex || null) === f.hex && (a.tipo || null) === f.tipo) {
+        if (!(desactivar && !a.activo)) sinCambios++;
+        return;
+      }
+      actualizar.push({ id: a.id, nombre: a.nombre, hex: f.hex, tipo: f.tipo, hexAntes: a.hex || null });
+    });
+    const fuera = actuales.filter(a => !emparejados.has(a.id));
+    const noEnExcel = fuera.map(a => a.nombre);
+    const desactivados = desactivar ? fuera.filter(a => a.activo) : [];
+
+    const resumen = {
+      nuevos: nuevos.map(f => ({ nombre: f.nombre, hex: f.hex, tipo: f.tipo })),
+      actualizados: actualizar.map(a => ({ nombre: a.nombre, hex: a.hex, tipo: a.tipo, hexAntes: a.hexAntes })),
+      sinCambios, noEnExcel, avisos,
+      desactivados: desactivados.map(a => a.nombre),
+      reactivados: reactivar.map(a => a.nombre)
+    };
+    if (!aplicar) return res.status(200).send(Object.assign({ message: 'OK', aplicado: false }, resumen));
+
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    for (const a of actualizar) {
+      await new sql.Request(transaction).input('id', sql.Int, a.id)
+        .input('hex', sql.VarChar(7), a.hex).input('tipo', sql.VarChar(30), a.tipo)
+        .query(`update dbo.${cat.tabla} set hex = @hex, tipo = @tipo where id = @id`);
+    }
+    for (const a of desactivados) {
+      await new sql.Request(transaction).input('id', sql.Int, a.id).query(`update dbo.${cat.tabla} set activo = 0 where id = @id`);
+    }
+    for (const a of reactivar) {
+      await new sql.Request(transaction).input('id', sql.Int, a.id).query(`update dbo.${cat.tabla} set activo = 1 where id = @id`);
+    }
+    /* Códigos de los nuevos: como en el alta a mano, a partir del nombre y sin repetir */
+    const usados = new Set(actuales.map(a => a.codigo));
+    for (const f of nuevos) {
+      const base = codigoDesde(f.nombre) || 'RAL';
+      let codigo = base;
+      for (let n = 2; usados.has(codigo); n++) codigo = `${base}_${n}`;
+      usados.add(codigo);
+      await new sql.Request(transaction)
+        .input('codigo', sql.VarChar(50), codigo).input('nombre', sql.VarChar(100), f.nombre)
+        .input('hex', sql.VarChar(7), f.hex).input('tipo', sql.VarChar(30), f.tipo)
+        .query(`insert into dbo.${cat.tabla} (codigo, nombre, hex, tipo, orden, activo)
+                values (@codigo, @nombre, @hex, @tipo, (select isnull(max(orden), 0) + 1 from dbo.${cat.tabla}), 1)`);
+    }
+    await transaction.commit();
+    res.status(200).send(Object.assign({ message: 'OK', aplicado: true }, resumen));
+  } catch (err) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch (e) { /* ya revertida */ }
+    }
+    errorSql(err, res);
+  }
+}
+
 /* ---------------- VERTICAL: TARIFA BASE (sqlVertical/10) ----------------
    Por tipo + ancho de lama + tejido. Cada "juego" de la tarifa es un ancho de lama (o ninguno: líneas sin lama y
    anchos de lama sin filas propias) y un cliente (o ninguno: general):
@@ -1448,6 +1584,7 @@ module.exports = {
   ver_tejidos_guardar,
   ver_tejidos_copiar,
   copiar,
+  importar_ral,
   mini_tejidos: TEJIDOS_MINI.leer,
   mini_tejidos_guardar: TEJIDOS_MINI.guardar,
   mini_tejidos_copiar: TEJIDOS_MINI.copiar,

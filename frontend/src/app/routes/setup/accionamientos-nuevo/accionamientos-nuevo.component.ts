@@ -127,7 +127,13 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'mini_junquillos', label: 'Tipo de junquillo', singular: 'tipo de junquillo',
           ayuda: 'Redondeado / Biselado y Cuadrado son fijos: se pueden renombrar u ocultar, pero no borrar. Se pueden añadir más.' },
         { id: 'mini_colores_perfil', label: 'Colores', singular: 'color', ayuda: 'Colores de la perfilería.' },
-        { id: 'mini_colores_ral', label: 'Colores RAL', singular: 'color RAL', ayuda: 'Colores RAL de la perfilería, aparte de los colores.' }
+        { id: 'mini_colores_ral', label: 'Colores RAL', singular: 'color RAL', importarRal: true,
+          ayuda: 'Colores RAL de la perfilería, aparte de los colores. Con Cargar Excel se dan de alta los que falten y se les pone el color.' }
+    ];
+    /* Colores RAL (sqlColoresRal/01): muestra del color y tipo, opcionales; se cargan del Excel */
+    readonly extrasRal = [
+        { campo: 'hex', label: 'Color (hex)', max: 7, placeholder: '#FFFFFF', color: true },
+        { campo: 'tipo', label: 'Tipo', max: 30, placeholder: 'Básico, Básico texturado, No básico' }
     ];
     readonly accionamientoMini = [
         { id: 'mini_colores_cadena', label: 'Color cadena', singular: 'color de cadena', ayuda: 'Colores de la cadena del Solar Mini (no son los del enrollable).' },

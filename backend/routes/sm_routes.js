@@ -614,6 +614,8 @@ smapi.post('/acc/:catalogo/orden', NuevoSistema, AccionamientosNuevoController.o
 smapi.post('/acc/:catalogo/delete', NuevoSistema, AccionamientosNuevoController.borrar);
 /* Copia los registros de un padre a otro (listas del Vertical: de un tipo de vertical a otro) */
 smapi.post('/acc/:catalogo/copiar', NuevoSistema, AccionamientosNuevoController.copiar);
+/* Colores RAL desde el Excel (hex y tipo): vista previa o aplicar (sqlColoresRal) */
+smapi.post('/acc/:catalogo/importar-ral', NuevoSistema, AccionamientosNuevoController.importar_ral);
 
 /* Configurador nuevo de accionamientos (clientes con el interruptor SOL_ACC_CLIENTE; Leroy no pasa por aquí) */
 var AccConfiguradorController = require('../controllers/sm/acc_configurador');

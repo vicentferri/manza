@@ -1,0 +1,86 @@
+.sral {
+    position: relative;
+}
+.sral-boton {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    color: #495057;
+    background-color: #fff;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.sral-flecha {
+    margin-left: auto;
+    padding-left: 6px;
+    color: #6c757d;
+}
+.sral-muestra {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    border: 1px solid rgba(0, 0, 0, .3);
+    border-radius: 3px;
+}
+.sral-sin-color {
+    background: repeating-linear-gradient(45deg, #fff, #fff 3px, #e9ecef 3px, #e9ecef 6px);
+}
+.sral-panel {
+    position: absolute;
+    z-index: 1050;
+    top: 100%;
+    left: 0;
+    min-width: 100%;
+    width: 340px;
+    max-width: 90vw;
+    margin-top: 2px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+}
+.sral-buscar {
+    margin-bottom: 6px;
+}
+/* Rejilla de muestras: varias columnas para ver los colores de un vistazo */
+.sral-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 2px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+.sral-opcion {
+    display: flex;
+    align-items: center;
+    padding: 3px 4px;
+    font-size: 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.sral-opcion:hover {
+    background: #e9ecef;
+}
+.sral-opcion-vacia {
+    grid-column: 1 / -1;
+    color: #6c757d;
+}
+.sral-sel {
+    background: #cfe2ff;
+    font-weight: 600;
+}
+.sral-texto {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sral-nada {
+    grid-column: 1 / -1;
+    padding: 4px;
+    color: #6c757d;
+    font-size: 12px;
+}

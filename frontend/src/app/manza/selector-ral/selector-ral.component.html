@@ -1,0 +1,23 @@
+<div class="sral">
+    <button type="button" class="form-control form-control-sm sral-boton" [disabled]="disabled" (click)="alternar()">
+        <ng-container *ngIf="seleccionado; else sinSeleccion">
+            <span class="sral-muestra" *ngIf="esColor(seleccionado[campoHex])" [style.background]="seleccionado[campoHex]"></span>
+            {{ conFrase ? (seleccionado[campoTexto] | frase) : seleccionado[campoTexto] }}
+        </ng-container>
+        <ng-template #sinSeleccion><span class="text-muted">{{ vacio || 'Seleccionar' }}</span></ng-template>
+        <i class="fa fa-caret-down sral-flecha"></i>
+    </button>
+    <div class="sral-panel" *ngIf="abierto">
+        <input *ngIf="(opciones || []).length > 12" type="text" class="form-control form-control-sm sral-buscar" placeholder="Buscar RAL..."
+            [(ngModel)]="busqueda" [ngModelOptions]="{ standalone: true }" />
+        <div class="sral-lista">
+            <div *ngIf="vacio !== null" class="sral-opcion sral-opcion-vacia" (click)="elegir(null)">{{ vacio }}</div>
+            <div *ngFor="let o of filtradas" class="sral-opcion" [class.sral-sel]="seleccionado === o" (click)="elegir(o)"
+                [title]="o.tipo || ''">
+                <span class="sral-muestra" [class.sral-sin-color]="!esColor(o[campoHex])" [style.background]="esColor(o[campoHex]) ? o[campoHex] : null"></span>
+                <span class="sral-texto">{{ conFrase ? (o[campoTexto] | frase) : o[campoTexto] }}</span>
+            </div>
+            <div *ngIf="filtradas.length === 0" class="sral-nada">Nada coincide.</div>
+        </div>
+    </div>
+</div>

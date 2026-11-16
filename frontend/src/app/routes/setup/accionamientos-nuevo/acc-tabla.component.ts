@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewC
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
 import { ModalDirective } from 'ngx-bootstrap/modal';
+import * as XLSX from 'xlsx';
 
 /*
  * Lista editable de un catálogo SOL_ACC_*: alta (solo nombre; el código se genera),
@@ -33,6 +34,9 @@ export class AccTablaComponent implements OnChanges {
     /* Padres de los que se pueden copiar los registros a este (los otros tipos de vertical): [{ id, nombre }].
        Vacío = sin botón Copiar. Solo con padreCampo / padreId */
     @Input() copiarDe: { id: number, nombre: string }[] = [];
+    /* Colores RAL (sqlColoresRal): botón "Cargar Excel" que da de alta o actualiza el hex y el tipo de cada RAL.
+       El Excel: columnas HEX, Tipo y Equivalencia Sopena (el código RAL), con la cabecera en cualquier fila */
+    @Input() importarRal = false;
     /* Lo sube el padre cuando cambia algo que afecta a "Uso" (hijos, relaciones) */
     @Input() recarga = 0;
     @Output() seleccion = new EventEmitter<any>();
@@ -41,6 +45,7 @@ export class AccTablaComponent implements OnChanges {
 
     @ViewChild('modalForm', { static: false }) modalForm: ModalDirective;
     @ViewChild('modalBorrar', { static: false }) modalBorrar: ModalDirective;
+    @ViewChild('modalRal', { static: false }) modalRal: ModalDirective;
 
     datos: any[] = [];
     origenCopia: number = null;
@@ -251,6 +256,83 @@ export class AccTablaComponent implements OnChanges {
                 this.cambio.emit();
             },
             err => { this.modalBorrar.hide(); this.error(err, 'Error al borrar'); }
+        );
+    }
+
+    /* ---------- Colores RAL desde Excel ---------- */
+
+    ralFilas: { ral: string, hex: string, tipo: string }[] = [];
+    ralArchivo = '';
+    ralPrevia: any = null;
+    ralCargando = false;
+    ralDesactivar = true;
+
+    leerExcelRal(input: HTMLInputElement) {
+        const archivo = input.files && input.files[0];
+        input.value = '';
+        if (!archivo) { return; }
+        const lector = new FileReader();
+        lector.onload = (e: any) => {
+            try {
+                const libro = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const filas = this.filasRal(libro);
+                if (filas.length === 0) {
+                    this.toaster.error('No se encuentran las columnas HEX y Equivalencia Sopena (o RAL)', this.titulo);
+                    return;
+                }
+                this.ralFilas = filas;
+                this.ralArchivo = archivo.name;
+                this.previaRal();
+            } catch (err) {
+                this.toaster.error('No se pudo leer el Excel', this.titulo);
+            }
+        };
+        lector.readAsArrayBuffer(archivo);
+    }
+
+    /* Busca la cabecera (HEX + Equivalencia/RAL) en las 20 primeras filas de cada hoja y lee las filas de debajo */
+    private filasRal(libro: XLSX.WorkBook): { ral: string, hex: string, tipo: string }[] {
+        const limpio = (v: any) => String(v === null || v === undefined ? '' : v).trim();
+        const cabecera = (v: any) => limpio(v).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+        for (const nombre of libro.SheetNames) {
+            const filas: any[][] = XLSX.utils.sheet_to_json(libro.Sheets[nombre], { header: 1, defval: '', raw: false });
+            for (let i = 0; i < Math.min(filas.length, 20); i++) {
+                const cab = (filas[i] || []).map(cabecera);
+                const cHex = cab.findIndex(c => c === 'HEX' || c === 'COLOR HEX');
+                let cRal = cab.findIndex(c => c.startsWith('EQUIVALENCIA'));
+                if (cRal < 0) { cRal = cab.findIndex(c => c === 'RAL' || c === 'CODIGO RAL'); }
+                const cTipo = cab.findIndex(c => c === 'TIPO');
+                if (cHex < 0 || cRal < 0) { continue; }
+                return filas.slice(i + 1)
+                    .map(f => ({ ral: limpio(f[cRal]), hex: limpio(f[cHex]), tipo: cTipo >= 0 ? limpio(f[cTipo]) : '' }))
+                    .filter(f => f.ral);
+            }
+        }
+        return [];
+    }
+
+    previaRal() {
+        this.ralCargando = true;
+        this.service.HTTP_Post('/sm/acc/' + this.catalogo + '/importar-ral', JSON.stringify({ filas: this.ralFilas, aplicar: false, desactivar: this.ralDesactivar })).subscribe(
+            data => { this.ralCargando = false; this.ralPrevia = data; this.modalRal.show(); },
+            err => { this.ralCargando = false; this.error(err, 'No se pudo revisar el Excel'); }
+        );
+    }
+
+    aplicarRal() {
+        this.ralCargando = true;
+        this.service.HTTP_Post('/sm/acc/' + this.catalogo + '/importar-ral', JSON.stringify({ filas: this.ralFilas, aplicar: true, desactivar: this.ralDesactivar })).subscribe(
+            data => {
+                this.ralCargando = false;
+                this.modalRal.hide();
+                this.toaster.success(data.nuevos.length + ' nuevo(s), ' + data.actualizados.length + ' actualizado(s), '
+                    + data.desactivados.length + ' desactivado(s)', this.titulo);
+                this.ralFilas = [];
+                this.ralPrevia = null;
+                this.cargar();
+                this.cambio.emit();
+            },
+            err => { this.ralCargando = false; this.error(err, 'No se pudo cargar el Excel'); }
         );
     }
 

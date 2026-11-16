@@ -55,10 +55,8 @@
             </div>
             <div class="col-md-3 col-6 form-group">
                <label>Lacado <span class="enx-nota">(opcional)</span></label>
-               <select class="form-control form-control-sm" [(ngModel)]="lacado" [ngModelOptions]="{ standalone: true }" [disabled]="lacados.length === 0">
-                  <option value="">{{ lacados.length === 0 ? 'Sin lacados' : 'Sin lacado' }}</option>
-                  <option *ngFor="let l of lacados" [value]="l.id">{{ l.nombre }}</option>
-               </select>
+               <app-selector-ral [opciones]="lacados" [vacio]="lacados.length === 0 ? 'Sin lacados' : 'Sin lacado'"
+                  [disabled]="lacados.length === 0" [(valor)]="lacado"></app-selector-ral>
             </div>
          </div>
       </div>

@@ -426,7 +426,8 @@ function lacados(req,res){
   else 
   {
      
-       var query = "select distinct(descripcion) as text,id,pvp as precio,c1 from [solarmanes_dev].[dbo].[SOL_ARTICULOS_INCREMENTOS_LACADOS]";
+       /* hex: muestra del color en el configurador; activo: los que no salen en el Excel quedan fuera (sqlColoresRal/01 y 03) */
+       var query = "select distinct(descripcion) as text,id,pvp as precio,c1,hex from [solarmanes_dev].[dbo].[SOL_ARTICULOS_INCREMENTOS_LACADOS] where activo = 1";
        
      
 

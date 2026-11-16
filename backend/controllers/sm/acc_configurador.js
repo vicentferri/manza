@@ -440,11 +440,12 @@ async function mini_opciones(req, res) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Solar Mini' });
     }
     const q = async (consulta) => (await pool.request().query(consulta)).recordset;
-    const lista = (tabla) => q(`select id, codigo, nombre from dbo.${tabla} where activo = 1 order by orden, nombre`);
+    const lista = (tabla, extra = '') => q(`select id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, nombre`);
     const [junquillos, coloresPerfil, coloresRal, coloresCadena, coloresTapa, tejidos] = await Promise.all([
       lista('SOL_ACC_MINI_JUNQUILLO'),
       lista('SOL_ACC_MINI_COLOR_PERFIL'),
-      lista('SOL_ACC_MINI_COLOR_RAL'),
+      /* hex y tipo: muestra del color en el configurador (sqlColoresRal/01) */
+      lista('SOL_ACC_MINI_COLOR_RAL', ', hex, tipo'),
       lista('SOL_ACC_MINI_COLOR_CADENA'),
       lista('SOL_ACC_MINI_COLOR_TAPA'),
       /* una fila por tejido + color + criterio; el configurador elige el criterio según el ancho */
@@ -601,7 +602,7 @@ async function zip_opciones(req, res) {
       lista('SOL_ACC_ZIP_MANDO'),
       lista('SOL_ACC_ZIP_GUIA'),
       lista('SOL_ACC_ZIP_CONTRAPESO'),
-      lista('SOL_ACC_ZIP_LACADO'),
+      lista('SOL_ACC_ZIP_LACADO', ', hex, tipo'),
       q('select modelo_cajon_id, soporte_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_SOPORTE'),
       q('select modelo_cajon_id, posicion_salida_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_POSICION_SALIDA'),
       q('select modelo_cajon_id, color_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_COLOR'),

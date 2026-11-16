@@ -37,6 +37,7 @@ import { CompacComponent } from './compac/compac.component';
 import { TejidoImagenComponent } from './tejido-imagen/tejido-imagen.component';
 import { ContrapesoImagenComponent } from './contrapeso-imagen/contrapeso-imagen.component';
 import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
+import { SelectorRalComponent } from './selector-ral/selector-ral.component';
 
 @NgModule({
   imports: [
@@ -77,7 +78,8 @@ import { CfgResumenComponent } from './cfg-resumen/cfg-resumen.component';
     CompacComponent,
     TejidoImagenComponent,
     ContrapesoImagenComponent,
-    CfgResumenComponent
+    CfgResumenComponent,
+    SelectorRalComponent
   ]
 })
 export class ManzaModule { }
