@@ -226,6 +226,12 @@ export class ZipNuevoComponent implements OnChanges {
    get coloresTejido(): string[] {
       return this.distintos(this.tejidosDisponibles.filter(t => this.etiquetaTipo(t) === this.tipoTejido && t.nombre === this.nombreTejido).map(t => t.color));
    }
+   /* Fila del tejido para enseñar la Ref. del cliente y los límites del perfil (Fase 2): la que se usa o, si el ancho
+      aún no la decide, la primera del color elegido */
+   get filaPerfil(): any {
+      return this.tejidoFila || this.filasTejido[0] || null;
+   }
+
    private get filasTejido(): any[] {
       return this.tejidosDisponibles.filter(t => this.etiquetaTipo(t) === this.tipoTejido && t.nombre === this.nombreTejido && t.color === this.colorTejido);
    }

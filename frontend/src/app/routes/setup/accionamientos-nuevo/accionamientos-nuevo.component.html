@@ -11,11 +11,26 @@
                         [class.btn-primary]="producto === p.id" [class.btn-outline-primary]="producto !== p.id"
                         (click)="cambiarProducto(p.id)">{{ p.label }}</button>
                 </div>
+                <!-- VER COMO (Fase 2): catálogo maestro o lo que ve un perfil de cliente -->
+                <div class="d-inline-flex align-items-center ml-3" *ngIf="conVerComo">
+                    <label class="mb-0 mr-1 small">Ver como:</label>
+                    <select class="form-control form-control-sm acc-copiar-select" [ngModel]="perfilVistaId"
+                        (ngModelChange)="elegirPerfilVista($event)" [ngModelOptions]="{ standalone: true }"
+                        [class.border-info]="perfilVistaId">
+                        <option [ngValue]="null">Catálogo maestro</option>
+                        <option *ngFor="let p of perfilesVista" [ngValue]="p.id">{{ p.codigo }} · {{ p.nombre }}</option>
+                    </select>
+                </div>
                 <div class="pull-right">
                     <a class="btn btn-default btn-sm" [routerLink]="['/routes/master/setup']">Volver</a>
                 </div>
             </h6>
             <hr />
+            <div class="acc-aviso" *ngIf="conVerComo && perfilVista">
+                <i class="fa fa-eye"></i> Viendo como <strong>{{ perfilVista.codigo }}</strong>: las listas y los tejidos enseñan
+                qué ve este perfil y con qué nombre, y aquí se cambia. El catálogo, las relaciones, los suplementos, las tarifas
+                y la impresión digital son del catálogo maestro (vuelva a "Catálogo maestro" para cambiarlos).
+            </div>
         </div>
 
         <div class="row">

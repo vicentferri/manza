@@ -1,0 +1,59 @@
+<div class="acc-bloque acc-modo-perfil">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong>{{ titulo }}</strong>
+        <span class="badge badge-info ml-2">{{ perfilCodigo }}</span>
+        <span class="text-muted small ml-2" *ngIf="cargado">{{ visibles }} de {{ filasPadre.length }} visibles</span>
+        <span class="acc-estado ml-2" *ngIf="guardando"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
+        <div class="ml-auto" *ngIf="filasPadre.length > 1">
+            <button type="button" class="btn btn-link btn-sm p-0 mr-2" [disabled]="guardando" (click)="marcarTodas(true)">Todas</button>
+            <button type="button" class="btn btn-link btn-sm p-0" [disabled]="guardando" (click)="marcarTodas(false)">Ninguna</button>
+        </div>
+    </div>
+    <div class="acc-ayuda mb-2">
+        Qué ve el perfil <strong>{{ perfilCodigo }}</strong> de esta lista y con qué nombre. El nombre vacío usa el del
+        catálogo. Lo nuevo que se dé de alta en el catálogo
+        {{ politica === 'MOSTRAR' ? 'lo verá al momento' : 'no lo verá hasta marcarlo aquí' }}.
+    </div>
+
+    <input *ngIf="filasPadre.length > 8" type="text" class="form-control form-control-sm mb-2 acc-buscar" placeholder="Buscar..."
+        [(ngModel)]="busqueda" [ngModelOptions]="{ standalone: true }" />
+
+    <div class="table-responsive acc-table-container" *ngIf="cargado; else cargandoPl">
+        <table class="table table-hover table-sm acc-table mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th class="acc-th-visible text-center">Visible</th>
+                    <th>En el catálogo</th>
+                    <th>Nombre para {{ perfilCodigo }}</th>
+                    <th>En portugués</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let f of filasFiltradas; trackBy: porId" class="acc-fila"
+                    [class.acc-fila-sel]="filaSeleccionada?.id === f.id" [class.acc-oculto]="!f.activo || !f.visible"
+                    (click)="seleccionar(f)">
+                    <td class="text-center" (click)="$event.stopPropagation()">
+                        <input type="checkbox" [checked]="f.visible" [disabled]="guardando"
+                            (change)="cambiarVisible(f, $event.target.checked)" />
+                    </td>
+                    <td>
+                        <span class="acc-nombre">{{ nombreMaestro(f) }}</span>
+                        <span *ngIf="!f.activo" class="small text-muted"> (oculto en el catálogo)</span>
+                        <span *ngIf="f.visible_perfil === null" class="small text-muted"
+                            title="Sin marcar: manda la política del perfil"> · por defecto</span>
+                    </td>
+                    <td (click)="$event.stopPropagation()">
+                        <input #nes class="form-control form-control-sm" [value]="f.nombre_es" [placeholder]="nombreMaestro(f)"
+                            (blur)="guardarNombre(f, 'nombre_es', nes)" (keyup.enter)="nes.blur()" />
+                    </td>
+                    <td (click)="$event.stopPropagation()">
+                        <input #npt class="form-control form-control-sm" [value]="f.nombre_pt" placeholder="(traducción de siempre)"
+                            (blur)="guardarNombre(f, 'nombre_pt', npt)" (keyup.enter)="npt.blur()" />
+                    </td>
+                </tr>
+                <tr *ngIf="filasFiltradas.length === 0"><td colspan="4" class="acc-vacio">No hay registros.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <ng-template #cargandoPl><div class="acc-vacio"><i class="fa fa-spinner fa-spin"></i> Cargando...</div></ng-template>
+</div>

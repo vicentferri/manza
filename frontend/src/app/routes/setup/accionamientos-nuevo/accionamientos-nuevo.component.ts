@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
+import { PerfilVistaService } from './perfil-vista.service';
 
 /*
  * Mantenimiento del modelo nuevo de accionamientos (tablas SOL_ACC_*).
@@ -37,7 +38,7 @@ import { ToastrService } from 'ngx-toastr';
     styleUrls: ['./accionamientos-nuevo.component.css'],
     providers: [HaruService]
 })
-export class AccionamientosNuevoComponent implements OnInit {
+export class AccionamientosNuevoComponent implements OnInit, OnDestroy {
 
     title = 'Productos';
 
@@ -58,7 +59,8 @@ export class AccionamientosNuevoComponent implements OnInit {
         { id: 'pf_perfiles', paso: '', label: 'Perfiles y clientes', ayuda: 'Qué perfil tiene cada cliente', icono: 'fa-users' },
         { id: 'pf_productos', paso: '', label: 'Productos', ayuda: 'Visibles, motor, orden y nombre', icono: 'fa-th-large' },
         { id: 'pf_documentos', paso: '', label: 'Documentos', ayuda: 'PDFs del configurador', icono: 'fa-file-pdf-o' },
-        { id: 'pf_parametros', paso: '', label: 'Parámetros', ayuda: 'Logo, imágenes y otros ajustes', icono: 'fa-sliders' }
+        { id: 'pf_parametros', paso: '', label: 'Parámetros', ayuda: 'Logo, imágenes y otros ajustes', icono: 'fa-sliders' },
+        { id: 'pf_codigos', paso: '', label: 'Códigos de cliente', ayuda: 'Su código para cada tejido u opción', icono: 'fa-barcode' }
     ];
 
     readonly seccionesEnrollable = [
@@ -278,9 +280,42 @@ export class AccionamientosNuevoComponent implements OnInit {
     recargaZipGuia = 0;
     recargaZipContrapeso = 0;
 
-    constructor(private service: HaruService, private toaster: ToastrService, private route: ActivatedRoute) { }
+    /* "Ver como" (Fase 2): catálogo maestro (null) o un perfil; las listas y los tejidos pasan a modo perfil */
+    perfilesVista: any[] = [];
+    perfilVistaId: number = null;
+
+    /* Productos donde tiene sentido "Ver como" (los del configurador nuevo) */
+    get conVerComo(): boolean {
+        return ['enrollable', 'mini', 'zip', 'ver', 'pj'].includes(this.producto);
+    }
+
+    get perfilVista(): any {
+        return this.perfilVistaService.perfil;
+    }
+
+    constructor(private service: HaruService, private toaster: ToastrService, private route: ActivatedRoute,
+                private perfilVistaService: PerfilVistaService) { }
+
+    ngOnDestroy() {
+        /* Al salir de Productos se vuelve al catálogo maestro */
+        this.perfilVistaService.elegir(null);
+    }
+
+    cargarPerfilesVista() {
+        this.service.HTTP_Get('/sm/cfg/admin/perfiles').subscribe(
+            data => { this.perfilesVista = (data || []).filter(p => p.activo); },
+            () => { this.perfilesVista = []; }
+        );
+    }
+
+    elegirPerfilVista(id: any) {
+        this.perfilVistaId = id ? Number(id) : null;
+        const p = this.perfilesVista.find(x => x.id === this.perfilVistaId) || null;
+        this.perfilVistaService.elegir(p ? { id: p.id, codigo: p.codigo, nombre: p.nombre, politica_novedades: p.politica_novedades } : null);
+    }
 
     ngOnInit() {
+        this.cargarPerfilesVista();
         this.cargarAccionamientos();
         /* ?producto=hc&seccion=hc_imagenes: abrir un producto (y una sección) directamente (rutas antiguas de la HoneyComb).
            Suscrito y no con snapshot: si ya se está en Productos, Angular reutiliza la pantalla y solo cambian los parámetros.

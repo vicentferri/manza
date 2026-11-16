@@ -133,6 +133,7 @@
                </select>
                <small *ngIf="tejidoFila" class="enx-nota">Rollo de {{ tejidoFila.criterio }} cm<span *ngIf="tejidoFila.grupo"> · grupo {{ tejidoFila.grupo }}</span></small>
                <small *ngIf="colorTejido && ancho > 0 && !tejidoFila && anchoMaximo" class="enx-error">Supera el ancho máximo ({{ anchoMaximo }} cm)</small>
+               <app-cfg-tejido-perfil [fila]="filaPerfil"></app-cfg-tejido-perfil>
             </div>
          </div>
          <!-- solo si el Solar Mini tiene tejidos aptos (o ya estaba marcada, para poder quitarla) -->

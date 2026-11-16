@@ -1,6 +1,8 @@
 'use strict'
 
 const sql = require('mssql');
+/* Fase 2: claves de las listas (CATALOGOS) y productos con tejidos, para el surtido de cada perfil */
+const { CATALOGOS } = require('./accionamientos_nuevo');
 
 /*
  * Perfil de configurador de un cliente (sqlPerfiles 01-08, PLAN_FASE1_PERFILES.md).
@@ -339,6 +341,11 @@ async function admin_duplicar(req, res) {
             select @nuevo, tipo_producto, subtipo, etiqueta, url, icono, orden, activo from dbo.CFG_PERFIL_DOCUMENTO where perfil_id = @origen;
           insert into dbo.CFG_PERFIL_PARAMETRO (perfil_id, clave, valor)
             select @nuevo, clave, valor from dbo.CFG_PERFIL_PARAMETRO where perfil_id = @origen;
+          /* Fase 2: también el surtido (los textos de opciones y tejidos ya van arriba con CFG_TEXTO) */
+          insert into dbo.CFG_PERFIL_OPCION (perfil_id, catalogo, opcion_id, visible)
+            select @nuevo, catalogo, opcion_id, visible from dbo.CFG_PERFIL_OPCION where perfil_id = @origen;
+          insert into dbo.CFG_PERFIL_TEJIDO (perfil_id, producto, tejido, visible, ancho_min, ancho_max, alto_min, alto_max)
+            select @nuevo, producto, tejido, visible, ancho_min, ancho_max, alto_min, alto_max from dbo.CFG_PERFIL_TEJIDO where perfil_id = @origen;
           select @nuevo as id;`);
       const id = r.recordset[0].id;
       await auditar(t, usuarioDe(req), 'CFG_PERFIL', id, 'ALTA', null, { duplicado_de: p.codigo, codigo, nombre });
@@ -516,8 +523,376 @@ async function admin_parametro(req, res) {
   } catch (err) { responderError(res, err); }
 }
 
+/* ======================================================================================================
+ * Fase 2: surtido de cada perfil (sqlPerfiles 10-14; PLAN_FASE2_SURTIDO.md). Solo "Nuevo sistema", con auditoría.
+ *   GET  /cfg/admin/perfil/:id/opciones/:catalogo        filas del maestro con lo del perfil (visible, nombre ES/PT)
+ *   POST /cfg/admin/perfil/:id/opciones/:catalogo        { cambios: [{ id, visible?, nombre?, nombre_pt? }] }
+ *   POST /cfg/admin/perfil/:id/opciones/:catalogo/todo   { visible } todas las filas del maestro
+ *   GET  /cfg/admin/perfil/:id/tejidos/:producto         tejidos incluidos en el producto con lo del perfil
+ *   POST /cfg/admin/perfil/:id/tejidos/:producto         { cambios: [{ tejido, visible?, nombre?, color?, nombre_pt?, color_pt?,
+ *                                                           ancho_min?, ancho_max?, alto_min?, alto_max? }] }
+ *   POST /cfg/admin/perfil/:id/tejidos/:producto/todo    { visible }
+ *   POST /cfg/admin/perfil/:id/copiar_surtido            { origen }: opciones, tejidos y sus textos (reemplaza)
+ *   GET  /cfg/admin/perfil/:id/avisos                    productos con motor nuevo sin ningún tejido visible
+ *   GET  /cfg/admin/cliente/:cliente/codigos             códigos del cliente
+ *   POST /cfg/admin/cliente/:cliente/codigos             { cambios: [{ ambito, catalogo, clave, codigo }] } (codigo vacío = se borra)
+ * Nombre / color vacío = el del maestro. Una propiedad que no llega no se toca.
+ * ====================================================================================================== */
+
+/* Tejidos incluidos en cada producto (la misma inclusión que usan las opciones del configurador) */
+const TEJIDOS_PRODUCTO = {
+  ENR: 'select distinct tejido from dbo.SOL_ACC_SISTEMA_TEJIDO',
+  MINI: 'select tejido from dbo.SOL_ACC_MINI_TEJIDO',
+  ZIP: 'select tejido from dbo.SOL_ACC_ZIP_TEJIDO',
+  VER: 'select distinct tejido from dbo.SOL_ACC_VER_TIPO_TEJIDO',
+  PJ: 'select tejido from dbo.SOL_ACC_PJ_TEJIDO'
+};
+/* Producto de Fase 1 (CFG_PERFIL_PRODUCTO.tipo_producto) de cada producto con tejidos */
+const TIPO_DE_PRODUCTO = { ENR: 1, PJ: 2, VER: 3, MINI: 4, ZIP: 6 };
+
+function medidaNull(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(String(value).replace(',', '.'));
+  if (isNaN(n) || n <= 0) throw validacion('Las medidas tienen que ser números mayores que 0 (o vacías)');
+  return Math.round(n * 100) / 100;
+}
+
+/* Escribe (o borra si viene vacío) un texto del perfil */
+async function guardarTexto(t, perfilId, ambito, catalogo, clave, idioma, valor) {
+  const v = texto(valor, 200);
+  await t.request().input('perfil', sql.Int, perfilId).input('ambito', sql.VarChar(10), ambito)
+    .input('catalogo', sql.VarChar(50), catalogo).input('clave', sql.VarChar(50), String(clave))
+    .input('idioma', sql.VarChar(5), idioma).input('texto', sql.NVarChar(200), v || null).query(`
+      delete from dbo.CFG_TEXTO where perfil_id = @perfil and ambito = @ambito and catalogo = @catalogo and clave = @clave and idioma = @idioma;
+      if @texto is not null
+        insert into dbo.CFG_TEXTO (perfil_id, ambito, catalogo, clave, idioma, texto)
+        values (@perfil, @ambito, @catalogo, @clave, @idioma, @texto);`);
+}
+
+/* Textos del perfil de un ámbito/catálogo: { 'clave|idioma': texto } */
+async function textosPerfil(conexion, perfilId, ambito, catalogos) {
+  const r = await conexion.request().input('perfil', sql.Int, perfilId).input('ambito', sql.VarChar(10), ambito)
+    .query('select catalogo, clave, idioma, texto from dbo.CFG_TEXTO where perfil_id = @perfil and ambito = @ambito');
+  const m = {};
+  r.recordset.filter(x => catalogos.includes(x.catalogo)).forEach(x => { m[x.catalogo + '|' + x.clave + '|' + x.idioma] = x.texto; });
+  return m;
+}
+
+function catalogoValido(clave) {
+  return Object.prototype.hasOwnProperty.call(CATALOGOS, clave) ? CATALOGOS[clave] : null;
+}
+
+/* GET /cfg/admin/perfil/:id/opciones/:catalogo */
+async function admin_opciones(req, res) {
+  const perfilId = entero(req.params.id);
+  const cat = catalogoValido(req.params.catalogo);
+  if (perfilId === null || !cat) return error400(res, 'Perfil o lista no válidos');
+  try {
+    const pool = await sql.connect();
+    const perfil = await perfilPorId(pool, perfilId);
+    if (!perfil) return res.status(404).send({ message: 'El perfil no existe' });
+    const columnas = ['m.id', 'm.codigo', 'm.nombre', 'm.activo', 'm.orden'];
+    if (cat.valor) columnas.push('m.valor');
+    let join = '';
+    if (cat.padre) { columnas.push('m.' + cat.padre + ' as padre_id', 'p.nombre as padre'); join = ` left join dbo.${cat.tablaPadre} p on p.id = m.${cat.padre}`; }
+    const filas = (await pool.request().query(
+      `select ${columnas.join(', ')} from dbo.${cat.tabla} m${join} order by ${cat.padre ? 'p.nombre, ' : ''}m.orden, m.nombre`)).recordset;
+    const vis = (await pool.request().input('perfil', sql.Int, perfilId).input('catalogo', sql.VarChar(50), req.params.catalogo)
+      .query('select opcion_id, visible from dbo.CFG_PERFIL_OPCION where perfil_id = @perfil and catalogo = @catalogo')).recordset;
+    const visMap = new Map(vis.map(v => [v.opcion_id, v.visible === true]));
+    const txt = await textosPerfil(pool, perfilId, 'OPCION', [req.params.catalogo]);
+    const porDefecto = perfil.politica_novedades === 'MOSTRAR';
+    res.status(200).send({
+      politica: perfil.politica_novedades,
+      filas: filas.map(f => ({
+        id: f.id, codigo: f.codigo, nombre: f.nombre, valor: f.valor, activo: f.activo === true,
+        padre_id: f.padre_id, padre: f.padre,
+        visible_perfil: visMap.has(f.id) ? visMap.get(f.id) : null,
+        visible: visMap.has(f.id) ? visMap.get(f.id) : porDefecto,
+        nombre_es: txt[req.params.catalogo + '|' + f.id + '|ES'] || '',
+        nombre_pt: txt[req.params.catalogo + '|' + f.id + '|PT'] || ''
+      }))
+    });
+  } catch (err) { responderError(res, err); }
+}
+
+/* Guarda la visibilidad de un conjunto de opciones (dentro de la transacción) */
+async function guardarVisibleOpcion(t, perfilId, catalogo, id, visible) {
+  await t.request().input('perfil', sql.Int, perfilId).input('catalogo', sql.VarChar(50), catalogo)
+    .input('id', sql.Int, id).input('visible', sql.Bit, visible ? 1 : 0).query(`
+      if exists (select 1 from dbo.CFG_PERFIL_OPCION where perfil_id = @perfil and catalogo = @catalogo and opcion_id = @id)
+        update dbo.CFG_PERFIL_OPCION set visible = @visible where perfil_id = @perfil and catalogo = @catalogo and opcion_id = @id
+      else
+        insert into dbo.CFG_PERFIL_OPCION (perfil_id, catalogo, opcion_id, visible) values (@perfil, @catalogo, @id, @visible)`);
+}
+
+/* POST /cfg/admin/perfil/:id/opciones/:catalogo */
+async function admin_guardar_opciones(req, res) {
+  const perfilId = entero(req.params.id);
+  const catalogo = req.params.catalogo;
+  const cat = catalogoValido(catalogo);
+  const cambios = req.body && Array.isArray(req.body.cambios) ? req.body.cambios : [];
+  if (perfilId === null || !cat) return error400(res, 'Perfil o lista no válidos');
+  if (!cambios.length) return error400(res, 'No hay cambios');
+  try {
+    const pool = await sql.connect();
+    await enTransaccion(pool, async (t) => {
+      if (!await perfilPorId(t, perfilId)) throw validacion('El perfil no existe');
+      for (const c of cambios) {
+        const id = entero(c.id);
+        if (id === null) throw validacion('Opción no válida');
+        const existe = await t.request().input('id', sql.Int, id).query(`select 1 as ok from dbo.${cat.tabla} where id = @id`);
+        if (!existe.recordset.length) throw validacion('La opción ' + id + ' no existe en la lista');
+        if (c.visible !== undefined) await guardarVisibleOpcion(t, perfilId, catalogo, id, c.visible === true || c.visible === 1);
+        if (c.nombre !== undefined) await guardarTexto(t, perfilId, 'OPCION', catalogo, id, 'ES', c.nombre);
+        if (c.nombre_pt !== undefined) await guardarTexto(t, perfilId, 'OPCION', catalogo, id, 'PT', c.nombre_pt);
+      }
+      await auditar(t, usuarioDe(req), 'CFG_PERFIL_OPCION', perfilId + '/' + catalogo, 'CAMBIO', null, cambios);
+    });
+    res.status(200).send({ message: 'OK' });
+  } catch (err) { responderError(res, err); }
+}
+
+/* POST /cfg/admin/perfil/:id/opciones/:catalogo/todo */
+async function admin_opciones_todo(req, res) {
+  const perfilId = entero(req.params.id);
+  const catalogo = req.params.catalogo;
+  const cat = catalogoValido(catalogo);
+  const visible = !!(req.body && (req.body.visible === true || req.body.visible === 1));
+  if (perfilId === null || !cat) return error400(res, 'Perfil o lista no válidos');
+  try {
+    const pool = await sql.connect();
+    await enTransaccion(pool, async (t) => {
+      if (!await perfilPorId(t, perfilId)) throw validacion('El perfil no existe');
+      await t.request().input('perfil', sql.Int, perfilId).input('catalogo', sql.VarChar(50), catalogo)
+        .input('visible', sql.Bit, visible ? 1 : 0).query(`
+          delete from dbo.CFG_PERFIL_OPCION where perfil_id = @perfil and catalogo = @catalogo;
+          insert into dbo.CFG_PERFIL_OPCION (perfil_id, catalogo, opcion_id, visible)
+          select @perfil, @catalogo, id, @visible from dbo.${cat.tabla};`);
+      await auditar(t, usuarioDe(req), 'CFG_PERFIL_OPCION', perfilId + '/' + catalogo, 'CAMBIO', null, { todo: visible });
+    });
+    res.status(200).send({ message: 'OK' });
+  } catch (err) { responderError(res, err); }
+}
+
+/* GET /cfg/admin/perfil/:id/tejidos/:producto */
+async function admin_tejidos(req, res) {
+  const perfilId = entero(req.params.id);
+  const producto = String(req.params.producto || '').toUpperCase();
+  if (perfilId === null || !TEJIDOS_PRODUCTO[producto]) return error400(res, 'Perfil o producto no válidos');
+  try {
+    const pool = await sql.connect();
+    const perfil = await perfilPorId(pool, perfilId);
+    if (!perfil) return res.status(404).send({ message: 'El perfil no existe' });
+    const filas = (await pool.request().query(`
+      select m.idrow as id, m.cod_solupyme, m.nombre, m.color, m.criterio, m.grupo, t.descripcion as tipo
+      from dbo.SOL_TEJIDOS_MAESTRO m
+      left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+      where m.activo = 1 and m.idrow in (${TEJIDOS_PRODUCTO[producto]})
+      order by t.descripcion, m.nombre, m.color, m.criterio`)).recordset;
+    const pt = (await pool.request().input('perfil', sql.Int, perfilId).input('producto', sql.VarChar(5), producto)
+      .query(`select tejido, visible, ancho_min, ancho_max, alto_min, alto_max from dbo.CFG_PERFIL_TEJIDO
+              where perfil_id = @perfil and producto = @producto`)).recordset;
+    const ptMap = new Map(pt.map(x => [x.tejido, x]));
+    const txt = await textosPerfil(pool, perfilId, 'TEJIDO', ['NOMBRE', 'COLOR']);
+    const porDefecto = perfil.politica_novedades === 'MOSTRAR';
+    res.status(200).send({
+      politica: perfil.politica_novedades,
+      filas: filas.map(f => {
+        const p = ptMap.get(f.id);
+        return Object.assign(f, {
+          visible_perfil: p ? p.visible === true : null,
+          visible: p ? p.visible === true : porDefecto,
+          ancho_min: p ? p.ancho_min : null, ancho_max: p ? p.ancho_max : null,
+          alto_min: p ? p.alto_min : null, alto_max: p ? p.alto_max : null,
+          nombre_es: txt['NOMBRE|' + f.id + '|ES'] || '', nombre_pt: txt['NOMBRE|' + f.id + '|PT'] || '',
+          color_es: txt['COLOR|' + f.id + '|ES'] || '', color_pt: txt['COLOR|' + f.id + '|PT'] || ''
+        });
+      })
+    });
+  } catch (err) { responderError(res, err); }
+}
+
+/* POST /cfg/admin/perfil/:id/tejidos/:producto */
+async function admin_guardar_tejidos(req, res) {
+  const perfilId = entero(req.params.id);
+  const producto = String(req.params.producto || '').toUpperCase();
+  const cambios = req.body && Array.isArray(req.body.cambios) ? req.body.cambios : [];
+  if (perfilId === null || !TEJIDOS_PRODUCTO[producto]) return error400(res, 'Perfil o producto no válidos');
+  if (!cambios.length) return error400(res, 'No hay cambios');
+  try {
+    const pool = await sql.connect();
+    await enTransaccion(pool, async (t) => {
+      const perfil = await perfilPorId(t, perfilId);
+      if (!perfil) throw validacion('El perfil no existe');
+      const porDefecto = perfil.politica_novedades === 'MOSTRAR';
+      for (const c of cambios) {
+        const tejido = entero(c.tejido);
+        if (tejido === null) throw validacion('Tejido no válido');
+        const incl = await t.request().input('tejido', sql.Int, tejido)
+          .query(`select 1 as ok where @tejido in (${TEJIDOS_PRODUCTO[producto]})`);
+        if (!incl.recordset.length) throw validacion('El tejido ' + tejido + ' no está incluido en el producto');
+        const medidas = ['ancho_min', 'ancho_max', 'alto_min', 'alto_max'];
+        const tocaFila = c.visible !== undefined || medidas.some(k => c[k] !== undefined);
+        if (tocaFila) {
+          const actual = (await t.request().input('perfil', sql.Int, perfilId).input('producto', sql.VarChar(5), producto)
+            .input('tejido', sql.Int, tejido).query(`select visible, ancho_min, ancho_max, alto_min, alto_max from dbo.CFG_PERFIL_TEJIDO
+              where perfil_id = @perfil and producto = @producto and tejido = @tejido`)).recordset[0];
+          const v = c.visible !== undefined ? (c.visible === true || c.visible === 1) : (actual ? actual.visible === true : porDefecto);
+          const m = {};
+          medidas.forEach(k => { m[k] = c[k] !== undefined ? medidaNull(c[k]) : (actual ? actual[k] : null); });
+          if (m.ancho_min !== null && m.ancho_max !== null && m.ancho_min > m.ancho_max) throw validacion('El ancho mínimo no puede ser mayor que el máximo');
+          if (m.alto_min !== null && m.alto_max !== null && m.alto_min > m.alto_max) throw validacion('El alto mínimo no puede ser mayor que el máximo');
+          const r = t.request().input('perfil', sql.Int, perfilId).input('producto', sql.VarChar(5), producto)
+            .input('tejido', sql.Int, tejido).input('visible', sql.Bit, v ? 1 : 0);
+          medidas.forEach(k => r.input(k, sql.Decimal(10, 2), m[k]));
+          await r.query(`
+            if exists (select 1 from dbo.CFG_PERFIL_TEJIDO where perfil_id = @perfil and producto = @producto and tejido = @tejido)
+              update dbo.CFG_PERFIL_TEJIDO set visible = @visible, ancho_min = @ancho_min, ancho_max = @ancho_max,
+                     alto_min = @alto_min, alto_max = @alto_max
+              where perfil_id = @perfil and producto = @producto and tejido = @tejido
+            else
+              insert into dbo.CFG_PERFIL_TEJIDO (perfil_id, producto, tejido, visible, ancho_min, ancho_max, alto_min, alto_max)
+              values (@perfil, @producto, @tejido, @visible, @ancho_min, @ancho_max, @alto_min, @alto_max)`);
+        }
+        if (c.nombre !== undefined) await guardarTexto(t, perfilId, 'TEJIDO', 'NOMBRE', tejido, 'ES', c.nombre);
+        if (c.nombre_pt !== undefined) await guardarTexto(t, perfilId, 'TEJIDO', 'NOMBRE', tejido, 'PT', c.nombre_pt);
+        if (c.color !== undefined) await guardarTexto(t, perfilId, 'TEJIDO', 'COLOR', tejido, 'ES', c.color);
+        if (c.color_pt !== undefined) await guardarTexto(t, perfilId, 'TEJIDO', 'COLOR', tejido, 'PT', c.color_pt);
+      }
+      await auditar(t, usuarioDe(req), 'CFG_PERFIL_TEJIDO', perfilId + '/' + producto, 'CAMBIO', null, cambios);
+    });
+    res.status(200).send({ message: 'OK' });
+  } catch (err) { responderError(res, err); }
+}
+
+/* POST /cfg/admin/perfil/:id/tejidos/:producto/todo — conserva las medidas de las filas que ya existen */
+async function admin_tejidos_todo(req, res) {
+  const perfilId = entero(req.params.id);
+  const producto = String(req.params.producto || '').toUpperCase();
+  const visible = !!(req.body && (req.body.visible === true || req.body.visible === 1));
+  if (perfilId === null || !TEJIDOS_PRODUCTO[producto]) return error400(res, 'Perfil o producto no válidos');
+  try {
+    const pool = await sql.connect();
+    await enTransaccion(pool, async (t) => {
+      if (!await perfilPorId(t, perfilId)) throw validacion('El perfil no existe');
+      await t.request().input('perfil', sql.Int, perfilId).input('producto', sql.VarChar(5), producto)
+        .input('visible', sql.Bit, visible ? 1 : 0).query(`
+          update dbo.CFG_PERFIL_TEJIDO set visible = @visible where perfil_id = @perfil and producto = @producto;
+          insert into dbo.CFG_PERFIL_TEJIDO (perfil_id, producto, tejido, visible)
+          select @perfil, @producto, i.tejido, @visible from (${TEJIDOS_PRODUCTO[producto]}) i
+          where not exists (select 1 from dbo.CFG_PERFIL_TEJIDO x where x.perfil_id = @perfil and x.producto = @producto and x.tejido = i.tejido);`);
+      await auditar(t, usuarioDe(req), 'CFG_PERFIL_TEJIDO', perfilId + '/' + producto, 'CAMBIO', null, { todo: visible });
+    });
+    res.status(200).send({ message: 'OK' });
+  } catch (err) { responderError(res, err); }
+}
+
+/* POST /cfg/admin/perfil/:id/copiar_surtido — reemplaza el surtido (opciones, tejidos y sus textos) por el de otro perfil */
+async function admin_copiar_surtido(req, res) {
+  const perfilId = entero(req.params.id);
+  const origen = entero(req.body && req.body.origen);
+  if (perfilId === null || origen === null) return error400(res, 'Perfil no válido');
+  if (perfilId === origen) return error400(res, 'El perfil de origen es el mismo');
+  try {
+    const pool = await sql.connect();
+    await enTransaccion(pool, async (t) => {
+      const o = await perfilPorId(t, origen);
+      if (!o || !await perfilPorId(t, perfilId)) throw validacion('El perfil no existe');
+      await t.request().input('perfil', sql.Int, perfilId).input('origen', sql.Int, origen).query(`
+        delete from dbo.CFG_PERFIL_OPCION where perfil_id = @perfil;
+        delete from dbo.CFG_PERFIL_TEJIDO where perfil_id = @perfil;
+        delete from dbo.CFG_TEXTO where perfil_id = @perfil and ambito in ('OPCION', 'TEJIDO');
+        insert into dbo.CFG_PERFIL_OPCION (perfil_id, catalogo, opcion_id, visible)
+          select @perfil, catalogo, opcion_id, visible from dbo.CFG_PERFIL_OPCION where perfil_id = @origen;
+        insert into dbo.CFG_PERFIL_TEJIDO (perfil_id, producto, tejido, visible, ancho_min, ancho_max, alto_min, alto_max)
+          select @perfil, producto, tejido, visible, ancho_min, ancho_max, alto_min, alto_max from dbo.CFG_PERFIL_TEJIDO where perfil_id = @origen;
+        insert into dbo.CFG_TEXTO (perfil_id, ambito, catalogo, clave, idioma, texto)
+          select @perfil, ambito, catalogo, clave, idioma, texto from dbo.CFG_TEXTO where perfil_id = @origen and ambito in ('OPCION', 'TEJIDO');`);
+      await auditar(t, usuarioDe(req), 'CFG_PERFIL_OPCION', perfilId, 'CAMBIO', null, { copiado_de: o.codigo });
+    });
+    res.status(200).send({ message: 'OK' });
+  } catch (err) { responderError(res, err); }
+}
+
+/* GET /cfg/admin/perfil/:id/avisos — productos visibles con motor nuevo que se quedarían sin tejidos */
+async function admin_avisos(req, res) {
+  const perfilId = entero(req.params.id);
+  if (perfilId === null) return error400(res, 'Perfil no válido');
+  try {
+    const pool = await sql.connect();
+    const productos = (await pool.request().input('perfil', sql.Int, perfilId).query(`
+      select tipo_producto from dbo.CFG_PERFIL_PRODUCTO where perfil_id = @perfil and visible = 1 and motor = 'NUEVO'`)).recordset
+      .map(p => p.tipo_producto);
+    const avisos = [];
+    for (const producto of Object.keys(TIPO_DE_PRODUCTO)) {
+      if (!productos.includes(TIPO_DE_PRODUCTO[producto])) continue;
+      const r = await pool.request().input('perfil', sql.Int, perfilId).input('producto', sql.VarChar(5), producto).query(`
+        select count(*) as n from (${TEJIDOS_PRODUCTO[producto]}) i
+        join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = i.tejido and m.activo = 1
+        where dbo.fn_cfg_tejido_visible(@perfil, @producto, i.tejido) = 1`);
+      if (r.recordset[0].n === 0) avisos.push({ producto, tipo: TIPO_DE_PRODUCTO[producto], mensaje: 'No tiene ningún tejido visible' });
+    }
+    res.status(200).send(avisos);
+  } catch (err) { responderError(res, err); }
+}
+
+/* GET /cfg/admin/cliente/:cliente/codigos */
+async function admin_codigos(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return error400(res, 'Cliente no válido');
+  try {
+    const pool = await sql.connect();
+    const r = await pool.request().input('cliente', sql.Int, cliente)
+      .query('select ambito, catalogo, clave, codigo from dbo.CFG_CLIENTE_CODIGO where cliente = @cliente order by ambito, catalogo, clave');
+    res.status(200).send(r.recordset);
+  } catch (err) { responderError(res, err); }
+}
+
+/* POST /cfg/admin/cliente/:cliente/codigos */
+async function admin_guardar_codigos(req, res) {
+  const cliente = entero(req.params.cliente);
+  const cambios = req.body && Array.isArray(req.body.cambios) ? req.body.cambios : [];
+  if (cliente === null) return error400(res, 'Cliente no válido');
+  if (!cambios.length) return error400(res, 'No hay cambios');
+  try {
+    const pool = await sql.connect();
+    await enTransaccion(pool, async (t) => {
+      const c0 = await t.request().input('cliente', sql.Int, cliente).query('select 1 as ok from dbo.SOL_CLIENTES where idrow = @cliente');
+      if (!c0.recordset.length) throw validacion('El cliente no existe');
+      for (const c of cambios) {
+        const ambito = c.ambito === 'OPCION' || c.ambito === 'TEJIDO' ? c.ambito : null;
+        const catalogo = texto(c.catalogo, 50);
+        const clave = entero(c.clave);
+        if (!ambito || !catalogo || clave === null) throw validacion('Código no válido');
+        if (ambito === 'OPCION' && !catalogoValido(catalogo)) throw validacion('Lista no válida: ' + catalogo);
+        if (ambito === 'TEJIDO' && !TEJIDOS_PRODUCTO[catalogo]) throw validacion('Producto no válido: ' + catalogo);
+        const codigo = texto(c.codigo, 50);
+        await t.request().input('cliente', sql.Int, cliente).input('ambito', sql.VarChar(10), ambito)
+          .input('catalogo', sql.VarChar(50), catalogo).input('clave', sql.VarChar(50), String(clave))
+          .input('codigo', sql.VarChar(50), codigo || null).query(`
+            delete from dbo.CFG_CLIENTE_CODIGO where cliente = @cliente and ambito = @ambito and catalogo = @catalogo and clave = @clave;
+            if @codigo is not null
+              insert into dbo.CFG_CLIENTE_CODIGO (cliente, ambito, catalogo, clave, codigo) values (@cliente, @ambito, @catalogo, @clave, @codigo);`);
+      }
+      await auditar(t, usuarioDe(req), 'CFG_CLIENTE_CODIGO', cliente, 'CAMBIO', null, cambios);
+    });
+    res.status(200).send({ message: 'OK' });
+  } catch (err) { responderError(res, err); }
+}
+
 module.exports = {
   perfil,
+  admin_opciones,
+  admin_guardar_opciones,
+  admin_opciones_todo,
+  admin_tejidos,
+  admin_guardar_tejidos,
+  admin_tejidos_todo,
+  admin_copiar_surtido,
+  admin_avisos,
+  admin_codigos,
+  admin_guardar_codigos,
   admin_perfiles,
   admin_clientes,
   admin_perfil,

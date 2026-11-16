@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, OnDestroy, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
+import { PerfilVistaService, PerfilVista } from './perfil-vista.service';
+import { Subscription } from 'rxjs';
 import { ModalDirective } from 'ngx-bootstrap/modal';
 import * as XLSX from 'xlsx';
 
@@ -15,7 +17,7 @@ import * as XLSX from 'xlsx';
     templateUrl: './acc-tabla.component.html',
     styleUrls: ['./accionamientos-nuevo.component.css']
 })
-export class AccTablaComponent implements OnChanges {
+export class AccTablaComponent implements OnDestroy, OnChanges {
 
     @Input() catalogo = '';
     @Input() titulo = '';
@@ -56,7 +58,18 @@ export class AccTablaComponent implements OnChanges {
     avanzado = false;
     guardando = false;
 
-    constructor(private service: HaruService, private toaster: ToastrService) { }
+
+    /* Productos -> "Ver como" (Fase 2): con un perfil elegido, la lista se pinta en modo perfil (app-acc-perfil-lista) */
+    perfilVista: PerfilVista | null = null;
+    private subPerfil: Subscription;
+
+    constructor(private service: HaruService, private toaster: ToastrService, private perfilVistaService: PerfilVistaService) {
+        this.subPerfil = this.perfilVistaService.perfil$.subscribe(p => this.perfilVista = p);
+    }
+
+    ngOnDestroy() {
+        if (this.subPerfil) { this.subPerfil.unsubscribe(); }
+    }
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes.catalogo || changes.padreId) {

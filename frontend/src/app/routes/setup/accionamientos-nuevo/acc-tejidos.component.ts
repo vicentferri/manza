@@ -1,6 +1,8 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, OnDestroy, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
+import { PerfilVistaService, PerfilVista } from './perfil-vista.service';
+import { Subscription } from 'rxjs';
 
 /*
  * Tejidos disponibles en el configurador, por sistema (SOL_ACC_SISTEMA_TEJIDO, script 36): de los tejidos
@@ -22,7 +24,7 @@ import { ToastrService } from 'ngx-toastr';
     templateUrl: './acc-tejidos.component.html',
     styleUrls: ['./accionamientos-nuevo.component.css']
 })
-export class AccTejidosComponent implements OnInit, OnChanges {
+export class AccTejidosComponent implements OnDestroy, OnInit, OnChanges {
 
     /* 'enrollable' (por sistema), 'mini' (Solar Mini) o 'zip' (Cajón ZIP): estos dos, una sola lista */
     @Input() producto = 'enrollable';
@@ -52,7 +54,23 @@ export class AccTejidosComponent implements OnInit, OnChanges {
     visibles: any[] = [];
     abiertos = new Set<string>();
 
-    constructor(private service: HaruService, private toaster: ToastrService) { }
+
+    /* Productos -> "Ver como" (Fase 2): con un perfil elegido, se pintan los tejidos del perfil (app-acc-perfil-tejidos) */
+    perfilVista: PerfilVista | null = null;
+    private subPerfil: Subscription;
+
+    /* Producto para los tejidos del perfil (CFG_PERFIL_TEJIDO.producto) */
+    get productoPerfil(): string {
+        return ({ enrollable: 'ENR', mini: 'MINI', zip: 'ZIP', ver: 'VER', pj: 'PJ' } as any)[this.producto] || 'ENR';
+    }
+
+    constructor(private service: HaruService, private toaster: ToastrService, private perfilVistaService: PerfilVistaService) {
+        this.subPerfil = this.perfilVistaService.perfil$.subscribe(p => this.perfilVista = p);
+    }
+
+    ngOnDestroy() {
+        if (this.subPerfil) { this.subPerfil.unsubscribe(); }
+    }
 
     ngOnInit() {
         /* En el Solar Mini los sistemas solo hacen falta como origen de "Copiar" */

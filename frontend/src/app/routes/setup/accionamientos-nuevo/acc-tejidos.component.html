@@ -1,3 +1,5 @@
+<!-- Catálogo maestro (lo de siempre) -->
+<ng-container *ngIf="!perfilVista; else modoPerfilTejidos">
 <div class="acc-bloque">
     <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
         <strong class="mr-2">{{ esMini ? 'Tejidos del ' + nombreProducto : esVertical ? 'Tejidos de ' + nombreLista : 'Tejidos del sistema' }}</strong>
@@ -101,3 +103,8 @@
         </table>
     </div>
 </div>
+</ng-container>
+<!-- Modo perfil (Productos -> "Ver como"): qué tejidos ve el perfil, con qué nombre y medidas -->
+<ng-template #modoPerfilTejidos>
+    <app-acc-perfil-tejidos [perfilId]="perfilVista.id" [perfilCodigo]="perfilVista.codigo" [producto]="productoPerfil"></app-acc-perfil-tejidos>
+</ng-template>

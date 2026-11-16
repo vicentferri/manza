@@ -4,16 +4,17 @@
         <span class="text-muted small ml-2">{{ marcadas }} de {{ opciones.length }}</span>
         <span class="acc-estado ml-2" *ngIf="estado === 'guardando'"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
         <span class="acc-estado acc-estado-ok ml-2" *ngIf="estado === 'guardado'"><i class="fa fa-check"></i> Guardado</span>
-        <div class="ml-auto" *ngIf="opciones.length > 1">
+        <div class="ml-auto" *ngIf="opciones.length > 1 && !perfilVista">
             <button type="button" class="btn btn-link btn-sm p-0 mr-2" (click)="marcarTodas(true)">Todas</button>
             <button type="button" class="btn btn-link btn-sm p-0" (click)="marcarTodas(false)">Ninguna</button>
         </div>
     </div>
     <div *ngIf="ayuda" class="acc-ayuda mb-2">{{ ayuda }}</div>
+    <div *ngIf="perfilVista" class="acc-ayuda mb-2"><i class="fa fa-lock"></i> Las relaciones son del catálogo maestro: aquí solo se consultan. Lo que el perfil no ve de una lista desaparece también de sus relaciones.</div>
     <div class="acc-casillas">
         <label *ngFor="let o of opciones" class="acc-casilla" [class.acc-oculto]="!o.activo"
             [title]="o.activo ? '' : 'Oculto en el configurador'">
-            <input type="checkbox" [(ngModel)]="o.marcado" [ngModelOptions]="{ standalone: true }" (change)="cambiar(o)" />
+            <input type="checkbox" [(ngModel)]="o.marcado" [ngModelOptions]="{ standalone: true }" [disabled]="!!perfilVista" (change)="cambiar(o)" />
             <!-- Colores del ZIP: muestra del hex -->
             <span *ngIf="o.hex" class="acc-muestra" [style.background]="o.hex" [title]="o.hex"></span>
             {{ o.nombre }}<span *ngIf="o.ral" class="text-muted small"> ({{ o.ral }})</span>

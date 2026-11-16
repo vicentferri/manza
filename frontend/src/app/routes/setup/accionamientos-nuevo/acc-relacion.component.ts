@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, OnDestroy, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { HaruService } from '../../../services/haru.service';
 import { ToastrService } from 'ngx-toastr';
+import { PerfilVistaService, PerfilVista } from './perfil-vista.service';
+import { Subscription } from 'rxjs';
 
 /*
  * Relación N:M de un registro con las opciones de otro catálogo, como lista de casillas.
@@ -12,7 +14,7 @@ import { ToastrService } from 'ngx-toastr';
     templateUrl: './acc-relacion.component.html',
     styleUrls: ['./accionamientos-nuevo.component.css']
 })
-export class AccRelacionComponent implements OnChanges {
+export class AccRelacionComponent implements OnDestroy, OnChanges {
 
     @Input() relacion = '';
     @Input() id: number = null;
@@ -26,7 +28,18 @@ export class AccRelacionComponent implements OnChanges {
     estado: '' | 'guardando' | 'guardado' = '';
     private temporizador: any = null;
 
-    constructor(private service: HaruService, private toaster: ToastrService) { }
+
+    /* Productos -> "Ver como" (Fase 2): con un perfil elegido, las casillas se ven pero no se cambian (las relaciones son del maestro) */
+    perfilVista: PerfilVista | null = null;
+    private subPerfil: Subscription;
+
+    constructor(private service: HaruService, private toaster: ToastrService, private perfilVistaService: PerfilVistaService) {
+        this.subPerfil = this.perfilVistaService.perfil$.subscribe(p => this.perfilVista = p);
+    }
+
+    ngOnDestroy() {
+        if (this.subPerfil) { this.subPerfil.unsubscribe(); }
+    }
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes.relacion || changes.id) { this.cargar(); }

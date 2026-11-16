@@ -319,4 +319,55 @@
     </div>
 </ng-container>
 
+<!-- ============ CÓDIGOS DE CLIENTE (Fase 2) ============ -->
+<ng-container *ngIf="seccion === 'pf_codigos'">
+    <div class="acc-intro">
+        El código propio de un cliente para cada tejido u opción (por ejemplo, el 48... de Leroy). Va por cliente, no por
+        perfil. De momento se enseña como "Ref." en el configurador; se grabará en el pedido cuando Leroy use el configurador nuevo.
+    </div>
+    <div class="acc-bloque">
+        <div class="d-flex align-items-center flex-wrap mb-2">
+            <label class="mb-0 mr-2"><strong>Cliente:</strong></label>
+            <select class="form-control form-control-sm mr-3 acc-copiar-select" [(ngModel)]="codCliente"
+                [ngModelOptions]="{ standalone: true }" (ngModelChange)="cargarCodigos()">
+                <option [ngValue]="null">Elegir...</option>
+                <option *ngFor="let c of clientes" [ngValue]="c.cliente">{{ c.cliente }} · {{ c.descripcion }}</option>
+            </select>
+            <div class="btn-group btn-group-sm mr-2">
+                <button type="button" class="btn" [class.btn-primary]="codAmbito === 'TEJIDO'" [class.btn-outline-primary]="codAmbito !== 'TEJIDO'"
+                    (click)="cambiarAmbitoCodigo('TEJIDO')">Tejidos</button>
+                <button type="button" class="btn" [class.btn-primary]="codAmbito === 'OPCION'" [class.btn-outline-primary]="codAmbito !== 'OPCION'"
+                    (click)="cambiarAmbitoCodigo('OPCION')">Opciones</button>
+            </div>
+            <select class="form-control form-control-sm mr-2 acc-copiar-select" [(ngModel)]="codCatalogo"
+                [ngModelOptions]="{ standalone: true }" (ngModelChange)="cargarCodigos()">
+                <ng-container *ngIf="codAmbito === 'TEJIDO'">
+                    <option *ngFor="let p of productosTejido" [ngValue]="p.id">{{ p.label }}</option>
+                </ng-container>
+                <ng-container *ngIf="codAmbito === 'OPCION'">
+                    <option *ngFor="let l of listasCodigo" [ngValue]="l.id">{{ l.label }}</option>
+                </ng-container>
+            </select>
+            <input type="text" class="form-control form-control-sm acc-buscar" placeholder="Buscar..." [(ngModel)]="codBuscar"
+                [ngModelOptions]="{ standalone: true }" />
+        </div>
+        <div class="acc-vacio" *ngIf="!codCliente">Elija un cliente.</div>
+        <div class="acc-vacio" *ngIf="codCliente && codCargando"><i class="fa fa-spinner fa-spin"></i> Cargando...</div>
+        <table class="table table-sm acc-matriz mb-0" *ngIf="codCliente && !codCargando">
+            <thead><tr><th>{{ codAmbito === 'TEJIDO' ? 'Tejido' : 'Opción' }}</th><th>Lo ve su perfil</th><th style="width: 220px">Código del cliente</th></tr></thead>
+            <tbody>
+                <tr *ngFor="let f of codFilasFiltradas" [class.text-muted]="!f.visible">
+                    <td>{{ f.texto }}</td>
+                    <td>{{ f.visible ? 'Sí' : 'No' }}</td>
+                    <td>
+                        <input #cod class="form-control form-control-sm" [value]="f.codigo" placeholder="—"
+                            (blur)="guardarCodigo(f, cod)" (keyup.enter)="cod.blur()" />
+                    </td>
+                </tr>
+                <tr *ngIf="codFilasFiltradas.length === 0"><td colspan="3" class="acc-vacio">No hay nada en esta lista.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</ng-container>
+
 <ng-template #cargandoPf><div class="acc-vacio"><i class="fa fa-spinner fa-spin"></i> Cargando...</div></ng-template>

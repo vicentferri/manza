@@ -42,6 +42,31 @@ export class AccPerfilesComponent implements OnInit {
     vista: any = null;
     guardando = false;
 
+    /* Códigos de cliente (Fase 2, CFG_CLIENTE_CODIGO): por cliente, para cada tejido de un producto o cada opción de una lista */
+    readonly productosTejido = [
+        { id: 'ENR', label: 'Enrollable' }, { id: 'MINI', label: 'Solar Mini' }, { id: 'ZIP', label: 'Cajón ZIP' },
+        { id: 'VER', label: 'Vertical' }, { id: 'PJ', label: 'Panel japonés' }
+    ];
+    readonly listasCodigo = [
+        { id: 'accionamientos', label: 'Enrollable · Accionamientos' }, { id: 'sistemas', label: 'Enrollable · Sistemas' },
+        { id: 'mandos', label: 'Enrollable · Mandos' }, { id: 'cargadores', label: 'Enrollable · Cargadores' },
+        { id: 'baterias', label: 'Enrollable · Baterías' }, { id: 'modelos_motor', label: 'Enrollable · Modelos de motor' },
+        { id: 'soportes', label: 'Enrollable · Soportes' }, { id: 'tapas', label: 'Enrollable · Tapas' },
+        { id: 'contrapesos', label: 'Enrollable · Contrapesos' },
+        { id: 'mini_junquillos', label: 'Solar Mini · Junquillos' }, { id: 'mini_colores_perfil', label: 'Solar Mini · Colores de perfilería' },
+        { id: 'zip_modelos_cajon', label: 'Cajón ZIP · Modelos de cajón' }, { id: 'zip_guias', label: 'Cajón ZIP · Guías' },
+        { id: 'zip_modelos_motor', label: 'Cajón ZIP · Modelos de motor' }, { id: 'zip_mandos', label: 'Cajón ZIP · Mandos' },
+        { id: 'ver_accionamientos', label: 'Vertical · Accionamientos' }, { id: 'ver_soportes', label: 'Vertical · Soportes' },
+        { id: 'pj_soportes', label: 'Panel japonés · Soportes' }, { id: 'pj_contrapesos', label: 'Panel japonés · Contrapesos' }
+    ];
+    codCliente: number = null;
+    codAmbito: 'TEJIDO' | 'OPCION' = 'TEJIDO';
+    codCatalogo = 'ENR';
+    codFilas: any[] = [];
+    codBuscar = '';
+    codCargando = false;
+    private codigosCliente: { [clave: string]: string } = {};
+
     /* formularios */
     formPerfil: any = null;          // alta o cambio de perfil
     formDuplicar: any = null;        // { codigo, nombre }
@@ -217,6 +242,59 @@ export class AccPerfilesComponent implements OnInit {
         if (d.tipo_producto === null || d.tipo_producto === '') { return 'Barra superior'; }
         const nombre = this.nombresProducto[d.tipo_producto] || ('Producto ' + d.tipo_producto);
         return d.subtipo ? nombre + ' · subtipo ' + d.subtipo : nombre;
+    }
+
+    /* ---------- códigos de cliente ---------- */
+
+    get codFilasFiltradas(): any[] {
+        const b = this.codBuscar.trim().toLowerCase();
+        return b ? this.codFilas.filter(f => [f.texto, f.codigo].some(v => v && String(v).toLowerCase().includes(b))) : this.codFilas;
+    }
+
+    cambiarAmbitoCodigo(ambito: 'TEJIDO' | 'OPCION') {
+        this.codAmbito = ambito;
+        this.codCatalogo = ambito === 'TEJIDO' ? 'ENR' : this.listasCodigo[0].id;
+        this.cargarCodigos();
+    }
+
+    /* Filas del producto / lista con el código del cliente. Se listan con el perfil efectivo del cliente: las filas son
+       las del catálogo y el perfil solo dice si las ve */
+    cargarCodigos() {
+        const cliente = this.clientes.find(c => c.cliente === Number(this.codCliente));
+        this.codFilas = [];
+        if (!cliente || !cliente.perfil_efectivo) { return; }
+        this.codCargando = true;
+        this.service.HTTP_Get('/sm/cfg/admin/cliente/' + cliente.cliente + '/codigos').subscribe(
+            cods => {
+                this.codigosCliente = {};
+                (cods || []).forEach(c => { this.codigosCliente[c.ambito + '|' + c.catalogo + '|' + c.clave] = c.codigo; });
+                const url = '/sm/cfg/admin/perfil/' + cliente.perfil_efectivo + (this.codAmbito === 'TEJIDO' ? '/tejidos/' : '/opciones/') + this.codCatalogo;
+                this.service.HTTP_Get(url).subscribe(
+                    data => {
+                        this.codCargando = false;
+                        this.codFilas = (data.filas || []).map(f => ({
+                            clave: f.id,
+                            texto: this.codAmbito === 'TEJIDO' ? f.nombre + ' · ' + f.color + ' (' + f.criterio + ')'
+                                : (f.padre ? f.padre + ' · ' : '') + (f.nombre || f.valor || f.codigo),
+                            visible: f.visible,
+                            codigo: this.codigosCliente[this.codAmbito + '|' + this.codCatalogo + '|' + f.id] || ''
+                        }));
+                    },
+                    err => { this.codCargando = false; this.error(err, 'Error al cargar la lista'); }
+                );
+            },
+            err => { this.codCargando = false; this.error(err, 'Error al cargar los códigos del cliente'); }
+        );
+    }
+
+    guardarCodigo(f: any, input: HTMLInputElement) {
+        const codigo = String(input.value || '').trim();
+        if (codigo === (f.codigo || '')) { return; }
+        const body = { cambios: [{ ambito: this.codAmbito, catalogo: this.codCatalogo, clave: f.clave, codigo }] };
+        this.service.HTTP_Post('/sm/cfg/admin/cliente/' + this.codCliente + '/codigos', JSON.stringify(body)).subscribe(
+            () => { f.codigo = codigo; this.toaster.success(codigo ? 'Código guardado' : 'Código quitado', this.title); },
+            err => { input.value = f.codigo || ''; this.error(err, 'No se pudo guardar el código'); }
+        );
     }
 
     /* ---------- parámetros ---------- */

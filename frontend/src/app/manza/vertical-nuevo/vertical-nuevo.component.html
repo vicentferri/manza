@@ -146,6 +146,7 @@
                      <option value="">Seleccionar</option>
                      <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
                   </select>
+                  <app-cfg-tejido-perfil [fila]="tejidoFila"></app-cfg-tejido-perfil>
                </div>
                <!-- combinada: solo en la Normal completa, con otro color del mismo tejido -->
                <div class="col-md-3 col-6 form-group" *ngIf="admiteCombinada">

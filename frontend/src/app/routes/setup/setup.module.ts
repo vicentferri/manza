@@ -46,6 +46,8 @@ import { SafeUrlPipe } from './honeycomb/safe-url.pipe';
 import { AccImpresionComponent } from './accionamientos-nuevo/acc-impresion.component';
 /* Perfiles de configurador por cliente (sqlPerfiles), dentro de Productos */
 import { AccPerfilesComponent } from './accionamientos-nuevo/acc-perfiles.component';
+import { AccPerfilListaComponent } from './accionamientos-nuevo/acc-perfil-lista.component';
+import { AccPerfilTejidosComponent } from './accionamientos-nuevo/acc-perfil-tejidos.component';
 
 
 const routes: Routes = [
@@ -97,7 +99,7 @@ const routes: Routes = [
         AccionamientosNuevoComponent, AccTablaComponent, AccRelacionComponent, AccMotoresSistemaComponent,
         AccSuplementosComponent, AccSuplementosResumenComponent, AccTejidosComponent, AccVerTarifaComponent, AccImpresionComponent,
         AccPjTarifaRielComponent, HoneycombAdminDataComponent, HoneycombAdminImagesComponent, SafeUrlPipe,
-        AccPerfilesComponent
+        AccPerfilesComponent, AccPerfilListaComponent, AccPerfilTejidosComponent
     ],
     providers: [PermisosGuard],
     exports: [RouterModule]

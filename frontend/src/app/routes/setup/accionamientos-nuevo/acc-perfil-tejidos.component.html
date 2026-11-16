@@ -1,0 +1,117 @@
+<div class="acc-bloque acc-modo-perfil">
+    <div class="acc-bloque-titulo d-flex align-items-center flex-wrap">
+        <strong>Tejidos</strong>
+        <span class="badge badge-info ml-2">{{ perfilCodigo }}</span>
+        <span class="text-muted small ml-2" *ngIf="cargado">{{ visibles }} de {{ filas.length }} visibles</span>
+        <span class="acc-estado ml-2" *ngIf="guardando"><i class="fa fa-spinner fa-spin"></i> Guardando...</span>
+        <div class="ml-auto" *ngIf="filas.length > 1">
+            <button type="button" class="btn btn-link btn-sm p-0 mr-2" [disabled]="guardando" (click)="marcarTodos(true)">Todos</button>
+            <button type="button" class="btn btn-link btn-sm p-0" [disabled]="guardando" (click)="marcarTodos(false)">Ninguno</button>
+        </div>
+    </div>
+    <div class="acc-ayuda mb-2">
+        Qué tejidos de los incluidos en el producto ve <strong>{{ perfilCodigo }}</strong>, cómo se llaman y sus medidas.
+        Medidas en cm; vacías = las de fabricación (el perfil solo puede estrecharlas). Un tejido que se incluya
+        después en el producto {{ politica === 'MOSTRAR' ? 'lo verá al momento' : 'no lo verá hasta marcarlo aquí' }}.
+    </div>
+    <div class="acc-aviso mb-2" *ngIf="cargado && filas.length > 0 && visibles === 0">
+        <i class="fa fa-exclamation-triangle"></i> Este perfil no ve ningún tejido de este producto: si tiene el configurador
+        nuevo, sus clientes no podrán configurarlo.
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap mb-2">
+        <input type="text" class="form-control form-control-sm mr-2 acc-buscar" placeholder="Buscar tejido, color o código..."
+            [(ngModel)]="buscar" [ngModelOptions]="{ standalone: true }" (ngModelChange)="agrupar()" />
+        <select class="form-control form-control-sm acc-copiar-select" [(ngModel)]="filtroEstado"
+            [ngModelOptions]="{ standalone: true }" (ngModelChange)="agrupar()">
+            <option value="">Todos</option>
+            <option value="si">Visibles</option>
+            <option value="no">No visibles</option>
+        </select>
+    </div>
+
+    <div class="table-responsive acc-table-container" *ngIf="cargado; else cargandoPt">
+        <table class="table table-sm acc-table mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th class="acc-th-visible text-center">Visible</th>
+                    <th>Tejido / color</th>
+                    <th>Nombre para {{ perfilCodigo }}</th>
+                    <th>En portugués</th>
+                    <th class="text-nowrap" title="cm">Ancho mín. / máx.</th>
+                    <th class="text-nowrap" title="cm">Alto mín. / máx.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let g of grupos">
+                    <!-- serie -->
+                    <tr class="acc-fila table-active">
+                        <td class="text-center">
+                            <input type="checkbox" [checked]="g.visibles === g.filas.length" [indeterminate]="g.visibles > 0 && g.visibles < g.filas.length"
+                                [disabled]="guardando" (change)="visibleGrupo(g, $event.target.checked)" />
+                        </td>
+                        <td (click)="alternar(g)" style="cursor: pointer">
+                            <i class="fa" [ngClass]="abiertos.has(g.clave) ? 'fa-caret-down' : 'fa-caret-right'"></i>
+                            <strong>{{ g.nombre }}</strong>
+                            <span class="small text-muted"> · {{ g.tipo }} · {{ g.visibles }}/{{ g.filas.length }}</span>
+                        </td>
+                        <td>
+                            <input #gn class="form-control form-control-sm" [value]="g.nombre_es" [placeholder]="g.nombre"
+                                (blur)="nombreGrupo(g, 'nombre', gn)" (keyup.enter)="gn.blur()" />
+                        </td>
+                        <td>
+                            <input #gp class="form-control form-control-sm" [value]="g.nombre_pt" placeholder="(traducción de siempre)"
+                                (blur)="nombreGrupo(g, 'nombre_pt', gp)" (keyup.enter)="gp.blur()" />
+                        </td>
+                        <td class="text-nowrap">
+                            <input #gamin class="form-control form-control-sm acc-input-medida" placeholder="toda la serie"
+                                (keyup.enter)="medidaGrupo(g, 'ancho_min', gamin)" title="Intro: se aplica a todos los colores" />
+                            <input #gamax class="form-control form-control-sm acc-input-medida" placeholder="toda la serie"
+                                (keyup.enter)="medidaGrupo(g, 'ancho_max', gamax)" title="Intro: se aplica a todos los colores" />
+                        </td>
+                        <td class="text-nowrap">
+                            <input #galmin class="form-control form-control-sm acc-input-medida" placeholder="toda la serie"
+                                (keyup.enter)="medidaGrupo(g, 'alto_min', galmin)" title="Intro: se aplica a todos los colores" />
+                            <input #galmax class="form-control form-control-sm acc-input-medida" placeholder="toda la serie"
+                                (keyup.enter)="medidaGrupo(g, 'alto_max', galmax)" title="Intro: se aplica a todos los colores" />
+                        </td>
+                    </tr>
+                    <!-- colores de la serie -->
+                    <ng-container *ngIf="abiertos.has(g.clave) || buscar">
+                        <tr *ngFor="let f of g.filas" class="acc-fila" [class.acc-oculto]="!f.visible">
+                            <td class="text-center">
+                                <input type="checkbox" [checked]="f.visible" [disabled]="guardando" (change)="visibleFila(f, $event.target.checked)" />
+                            </td>
+                            <td class="pl-4">
+                                {{ f.color }} <span class="small text-muted">· {{ f.criterio }} · {{ f.cod_solupyme }}</span>
+                                <span *ngIf="f.visible_perfil === null" class="small text-muted" title="Sin marcar: manda la política del perfil"> · por defecto</span>
+                            </td>
+                            <td>
+                                <input #fc class="form-control form-control-sm" [value]="f.color_es" [placeholder]="f.color"
+                                    (blur)="colorFila(f, 'color', fc)" (keyup.enter)="fc.blur()" />
+                            </td>
+                            <td>
+                                <input #fcp class="form-control form-control-sm" [value]="f.color_pt" placeholder="(traducción de siempre)"
+                                    (blur)="colorFila(f, 'color_pt', fcp)" (keyup.enter)="fcp.blur()" />
+                            </td>
+                            <td class="text-nowrap">
+                                <input #amin class="form-control form-control-sm acc-input-medida" [value]="medidaTexto(f.ancho_min)" placeholder="—"
+                                    (blur)="medidaFila(f, 'ancho_min', amin)" (keyup.enter)="amin.blur()" />
+                                <input #amax class="form-control form-control-sm acc-input-medida" [value]="medidaTexto(f.ancho_max)" placeholder="—"
+                                    (blur)="medidaFila(f, 'ancho_max', amax)" (keyup.enter)="amax.blur()" />
+                            </td>
+                            <td class="text-nowrap">
+                                <input #almin class="form-control form-control-sm acc-input-medida" [value]="medidaTexto(f.alto_min)" placeholder="—"
+                                    (blur)="medidaFila(f, 'alto_min', almin)" (keyup.enter)="almin.blur()" />
+                                <input #almax class="form-control form-control-sm acc-input-medida" [value]="medidaTexto(f.alto_max)" placeholder="—"
+                                    (blur)="medidaFila(f, 'alto_max', almax)" (keyup.enter)="almax.blur()" />
+                            </td>
+                        </tr>
+                    </ng-container>
+                </ng-container>
+                <tr *ngIf="grupos.length === 0"><td colspan="6" class="acc-vacio">No hay tejidos incluidos en este producto.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <ng-template #cargandoPt><div class="acc-vacio"><i class="fa fa-spinner fa-spin"></i> Cargando...</div></ng-template>
+</div>

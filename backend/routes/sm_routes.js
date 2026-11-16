@@ -632,6 +632,17 @@ smapi.post('/cfg/admin/perfil/:id/producto', NuevoSistema, CfgPerfilController.a
 smapi.post('/cfg/admin/perfil/:id/documento', NuevoSistema, CfgPerfilController.admin_documento);
 smapi.post('/cfg/admin/perfil/:id/documento/:doc/borrar', NuevoSistema, CfgPerfilController.admin_borrar_documento);
 smapi.post('/cfg/admin/perfil/:id/parametro', NuevoSistema, CfgPerfilController.admin_parametro);
+/* Fase 2: surtido de cada perfil (opciones y tejidos visibles, nombres, mín/máx) y códigos de cliente (sqlPerfiles 10-14) */
+smapi.get('/cfg/admin/perfil/:id/opciones/:catalogo', NuevoSistema, CfgPerfilController.admin_opciones);
+smapi.post('/cfg/admin/perfil/:id/opciones/:catalogo', NuevoSistema, CfgPerfilController.admin_guardar_opciones);
+smapi.post('/cfg/admin/perfil/:id/opciones/:catalogo/todo', NuevoSistema, CfgPerfilController.admin_opciones_todo);
+smapi.get('/cfg/admin/perfil/:id/tejidos/:producto', NuevoSistema, CfgPerfilController.admin_tejidos);
+smapi.post('/cfg/admin/perfil/:id/tejidos/:producto', NuevoSistema, CfgPerfilController.admin_guardar_tejidos);
+smapi.post('/cfg/admin/perfil/:id/tejidos/:producto/todo', NuevoSistema, CfgPerfilController.admin_tejidos_todo);
+smapi.post('/cfg/admin/perfil/:id/copiar_surtido', NuevoSistema, CfgPerfilController.admin_copiar_surtido);
+smapi.get('/cfg/admin/perfil/:id/avisos', NuevoSistema, CfgPerfilController.admin_avisos);
+smapi.get('/cfg/admin/cliente/:cliente/codigos', NuevoSistema, CfgPerfilController.admin_codigos);
+smapi.post('/cfg/admin/cliente/:cliente/codigos', NuevoSistema, CfgPerfilController.admin_guardar_codigos);
 
 /* Configurador nuevo de accionamientos (clientes con el interruptor SOL_ACC_CLIENTE; Leroy no pasa por aquí) */
 var AccConfiguradorController = require('../controllers/sm/acc_configurador');

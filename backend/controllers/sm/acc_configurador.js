@@ -1,6 +1,9 @@
 'use strict'
 
 const sql = require('mssql');
+/* Surtido por perfil (Fase 2, sqlPerfiles 10-14): qué opciones y tejidos ve cada cliente, con qué nombre y límites */
+const surtido = require('./cfg_surtido');
+const conPerfil = (s, catalogo) => (filas) => s.filtrarOpciones(catalogo, filas);
 
 /*
  * Configurador nuevo de accionamientos (modelo SOL_ACC_*), para los clientes con el
@@ -191,6 +194,8 @@ async function opciones(req, res) {
     if (!await clienteActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo' });
     }
+    /* Lo que ve el perfil del cliente y con qué nombre (Fase 2) */
+    const s = await surtido.surtidoDeCliente(pool, cliente, surtido.idiomaDe(req));
     const q = async (consulta) => (await pool.request().query(consulta)).recordset;
     const lista = (tabla, extra = '') =>
       q(`select id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, nombre`);
@@ -200,16 +205,16 @@ async function opciones(req, res) {
            accSis, cadCol, altCol, motSis, modMan, modCar, modBat,
            soportes, tapas, contrapesos, coloresSoporte, coloresTapa, coloresContrapeso,
            sopSis, tapSis, conSis, sopCol, tapCol, conCol] = await Promise.all([
-      lista('SOL_ACC_ACCIONAMIENTO'),
-      lista('SOL_ACC_SISTEMA'),
-      q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_CADENA where activo = 1 order by orden, nombre`),
-      q(`select id, codigo, valor, nombre from dbo.SOL_ACC_ALTURA where activo = 1 order by orden, valor`),
-      lista('SOL_ACC_COLOR_CADENA'),
-      q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_MOTOR where activo = 1 order by orden, nombre`),
-      q(`select id, tipo_motor_id, codigo, nombre from dbo.SOL_ACC_MODELO_MOTOR where activo = 1 order by orden, nombre`),
-      lista('SOL_ACC_MANDO'),
-      lista('SOL_ACC_CARGADOR'),
-      lista('SOL_ACC_BATERIA'),
+      lista('SOL_ACC_ACCIONAMIENTO').then(conPerfil(s, 'accionamientos')),
+      lista('SOL_ACC_SISTEMA').then(conPerfil(s, 'sistemas')),
+      q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_CADENA where activo = 1 order by orden, nombre`).then(conPerfil(s, 'tipos_cadena')),
+      q(`select id, codigo, valor, nombre from dbo.SOL_ACC_ALTURA where activo = 1 order by orden, valor`).then(conPerfil(s, 'alturas')),
+      lista('SOL_ACC_COLOR_CADENA').then(conPerfil(s, 'colores_cadena')),
+      q(`select id, accionamiento_id, codigo, nombre from dbo.SOL_ACC_TIPO_MOTOR where activo = 1 order by orden, nombre`).then(conPerfil(s, 'tipos_motor')),
+      q(`select id, tipo_motor_id, codigo, nombre from dbo.SOL_ACC_MODELO_MOTOR where activo = 1 order by orden, nombre`).then(conPerfil(s, 'modelos_motor')),
+      lista('SOL_ACC_MANDO').then(conPerfil(s, 'mandos')),
+      lista('SOL_ACC_CARGADOR').then(conPerfil(s, 'cargadores')),
+      lista('SOL_ACC_BATERIA').then(conPerfil(s, 'baterias')),
       q('select accionamiento_id, sistema_id from dbo.SOL_ACC_ACCIONAMIENTO_SISTEMA'),
       q('select tipo_cadena_id, color_cadena_id from dbo.SOL_ACC_TIPO_CADENA_COLOR'),
       /* script 34: colores de cadena que admite cada altura (Aro cadena) */
@@ -218,12 +223,12 @@ async function opciones(req, res) {
       q('select modelo_motor_id, mando_id from dbo.SOL_ACC_MODELO_MOTOR_MANDO'),
       q('select modelo_motor_id, cargador_id from dbo.SOL_ACC_MODELO_MOTOR_CARGADOR'),
       q('select modelo_motor_id, bateria_id from dbo.SOL_ACC_MODELO_MOTOR_BATERIA'),
-      lista('SOL_ACC_SOPORTE'),
-      lista('SOL_ACC_TAPA'),
-      lista('SOL_ACC_CONTRAPESO'),
-      lista('SOL_ACC_COLOR_SOPORTE'),
-      lista('SOL_ACC_COLOR_TAPA'),
-      lista('SOL_ACC_COLOR_CONTRAPESO'),
+      lista('SOL_ACC_SOPORTE').then(conPerfil(s, 'soportes')),
+      lista('SOL_ACC_TAPA').then(conPerfil(s, 'tapas')),
+      lista('SOL_ACC_CONTRAPESO').then(conPerfil(s, 'contrapesos')),
+      lista('SOL_ACC_COLOR_SOPORTE').then(conPerfil(s, 'colores_soporte')),
+      lista('SOL_ACC_COLOR_TAPA').then(conPerfil(s, 'colores_tapa')),
+      lista('SOL_ACC_COLOR_CONTRAPESO').then(conPerfil(s, 'colores_contrapeso')),
       q('select soporte_id, sistema_id from dbo.SOL_ACC_SOPORTE_SISTEMA'),
       q('select tapa_id, sistema_id from dbo.SOL_ACC_TAPA_SISTEMA'),
       /* script 37: contrapesos de cada sistema */
@@ -245,7 +250,7 @@ async function opciones(req, res) {
       order by t.descripcion, m.nombre, m.color, m.criterio`);
     const tejidos = [];
     const tejidoPorId = {};
-    tejidosFilas.forEach(({ sistema_id, ...t }) => {
+    s.filtrarTejidos('ENR', tejidosFilas).forEach(({ sistema_id, ...t }) => {
       if (!tejidoPorId[t.id]) { tejidoPorId[t.id] = Object.assign(t, { sistemas: [] }); tejidos.push(tejidoPorId[t.id]); }
       tejidoPorId[t.id].sistemas.push(sistema_id);
     });
@@ -400,6 +405,9 @@ async function precio(req, res) {
     if (!await clienteActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo' });
     }
+    /* Fase 2: lo que el perfil del cliente no ve, o medidas fuera de los límites del tejido */
+    const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('ENR', l);
+    if (errorPerfil) return res.status(400).send({ message: errorPerfil });
     const p = await precioLinea(pool, cliente, l);
     if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
     res.status(200).send(p);
@@ -439,15 +447,17 @@ async function mini_opciones(req, res) {
     if (!await miniActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Solar Mini' });
     }
+    /* Lo que ve el perfil del cliente y con qué nombre (Fase 2) */
+    const s = await surtido.surtidoDeCliente(pool, cliente, surtido.idiomaDe(req));
     const q = async (consulta) => (await pool.request().query(consulta)).recordset;
     const lista = (tabla, extra = '') => q(`select id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, nombre`);
     const [junquillos, coloresPerfil, coloresRal, coloresCadena, coloresTapa, tejidos] = await Promise.all([
-      lista('SOL_ACC_MINI_JUNQUILLO'),
-      lista('SOL_ACC_MINI_COLOR_PERFIL'),
+      lista('SOL_ACC_MINI_JUNQUILLO').then(conPerfil(s, 'mini_junquillos')),
+      lista('SOL_ACC_MINI_COLOR_PERFIL').then(conPerfil(s, 'mini_colores_perfil')),
       /* hex y tipo: muestra del color en el configurador (sqlColoresRal/01) */
-      lista('SOL_ACC_MINI_COLOR_RAL', ', hex, tipo'),
-      lista('SOL_ACC_MINI_COLOR_CADENA'),
-      lista('SOL_ACC_MINI_COLOR_TAPA'),
+      lista('SOL_ACC_MINI_COLOR_RAL', ', hex, tipo').then(conPerfil(s, 'mini_colores_ral')),
+      lista('SOL_ACC_MINI_COLOR_CADENA').then(conPerfil(s, 'mini_colores_cadena')),
+      lista('SOL_ACC_MINI_COLOR_TAPA').then(conPerfil(s, 'mini_colores_tapa')),
       /* una fila por tejido + color + criterio; el configurador elige el criterio según el ancho */
       q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, m.impresion_digital, t.descripcion as tipo
          from dbo.SOL_ACC_MINI_TEJIDO mt
@@ -455,7 +465,7 @@ async function mini_opciones(req, res) {
          left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
          order by t.descripcion, m.nombre, m.color, m.criterio`)
     ]);
-    res.status(200).send({ junquillos, coloresPerfil, coloresRal, coloresCadena, coloresTapa, tejidos });
+    res.status(200).send({ junquillos, coloresPerfil, coloresRal, coloresCadena, coloresTapa, tejidos: s.filtrarTejidos('MINI', tejidos) });
   } catch (err) {
     console.error(err);
     res.status(500).send({ message: 'KO' });
@@ -515,6 +525,9 @@ async function mini_precio(req, res) {
     if (!await miniActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Solar Mini' });
     }
+    /* Fase 2: lo que el perfil del cliente no ve, o medidas fuera de los límites del tejido */
+    const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('MINI', l);
+    if (errorPerfil) return res.status(400).send({ message: errorPerfil });
     const p = await precioLineaMini(pool, cliente, l);
     if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
     res.status(200).send(p);
@@ -589,20 +602,22 @@ async function zip_opciones(req, res) {
     if (!await zipActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Cajón ZIP' });
     }
+    /* Lo que ve el perfil del cliente y con qué nombre (Fase 2) */
+    const s = await surtido.surtidoDeCliente(pool, cliente, surtido.idiomaDe(req));
     const q = async (consulta) => (await pool.request().query(consulta)).recordset;
     const lista = (tabla, extra = '') => q(`select id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, nombre`);
     const [modelosCajon, soportes, salidas, colores, tiposMotor, modelosMotor, mandos, guias, contrapesos, lacados,
            mcSop, mcSal, mcCol, mcTm, mcGuia, mmMan, gCon, gCol, cCol, tejidos, posiciones] = await Promise.all([
-      lista('SOL_ACC_ZIP_MODELO_CAJON'),
-      lista('SOL_ACC_ZIP_SOPORTE'),
-      lista('SOL_ACC_ZIP_POSICION_SALIDA'),
-      lista('SOL_ACC_ZIP_COLOR', ', ral, hex'),
-      lista('SOL_ACC_ZIP_TIPO_MOTOR'),
-      lista('SOL_ACC_ZIP_MODELO_MOTOR', ', tipo_motor_id'),
-      lista('SOL_ACC_ZIP_MANDO'),
-      lista('SOL_ACC_ZIP_GUIA'),
-      lista('SOL_ACC_ZIP_CONTRAPESO'),
-      lista('SOL_ACC_ZIP_LACADO', ', hex, tipo'),
+      lista('SOL_ACC_ZIP_MODELO_CAJON').then(conPerfil(s, 'zip_modelos_cajon')),
+      lista('SOL_ACC_ZIP_SOPORTE').then(conPerfil(s, 'zip_soportes')),
+      lista('SOL_ACC_ZIP_POSICION_SALIDA').then(conPerfil(s, 'zip_posiciones_salida')),
+      lista('SOL_ACC_ZIP_COLOR', ', ral, hex').then(conPerfil(s, 'zip_colores')),
+      lista('SOL_ACC_ZIP_TIPO_MOTOR').then(conPerfil(s, 'zip_tipos_motor')),
+      lista('SOL_ACC_ZIP_MODELO_MOTOR', ', tipo_motor_id').then(conPerfil(s, 'zip_modelos_motor')),
+      lista('SOL_ACC_ZIP_MANDO').then(conPerfil(s, 'zip_mandos')),
+      lista('SOL_ACC_ZIP_GUIA').then(conPerfil(s, 'zip_guias')),
+      lista('SOL_ACC_ZIP_CONTRAPESO').then(conPerfil(s, 'zip_contrapesos')),
+      lista('SOL_ACC_ZIP_LACADO', ', hex, tipo').then(conPerfil(s, 'zip_lacados')),
       q('select modelo_cajon_id, soporte_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_SOPORTE'),
       q('select modelo_cajon_id, posicion_salida_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_POSICION_SALIDA'),
       q('select modelo_cajon_id, color_id from dbo.SOL_ACC_ZIP_MODELO_CAJON_COLOR'),
@@ -653,7 +668,7 @@ async function zip_opciones(req, res) {
       guias: guias.map(g => Object.assign(g, { contrapesos: filtrar(conPorGuia[g.id], conA), colores: filtrar(colPorGuia[g.id], colA) })),
       contrapesos: contrapesos.map(c => Object.assign(c, { colores: filtrar(colPorContrapeso[c.id], colA) })),
       lacados,
-      tejidos,
+      tejidos: s.filtrarTejidos('ZIP', tejidos),
       posiciones,
       vistas: [{ id: 'EXTERIOR', nombre: 'Visto desde el exterior' }, { id: 'INTERIOR', nombre: 'Visto desde el interior' }]
     });
@@ -722,6 +737,9 @@ async function zip_precio(req, res) {
     if (!await zipActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Cajón ZIP' });
     }
+    /* Fase 2: lo que el perfil del cliente no ve, o medidas fuera de los límites del tejido */
+    const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('ZIP', l);
+    if (errorPerfil) return res.status(400).send({ message: errorPerfil });
     const p = await precioLineaZip(pool, cliente, l);
     if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
     res.status(200).send(p);
@@ -841,21 +859,23 @@ async function ver_opciones(req, res) {
     if (!await verActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Vertical' });
     }
+    /* Lo que ve el perfil del cliente y con qué nombre (Fase 2) */
+    const s = await surtido.surtidoDeCliente(pool, cliente, surtido.idiomaDe(req));
     const q = async (consulta) => (await pool.request().query(consulta)).recordset;
     const porTipo = (tabla, extra = '') =>
       q(`select id, tipo_id, codigo, nombre${extra} from dbo.${tabla} where activo = 1 order by orden, ${extra ? 'valor' : 'nombre'}`);
     const [tipos, modalidades, tipoMod, lamas, posiciones, rieles, accionamientos, soportes, recogidas, tipoTej, tejidos] = await Promise.all([
-      q('select id, codigo, nombre from dbo.SOL_ACC_VER_TIPO where activo = 1 order by orden, nombre'),
-      q('select id, codigo, nombre from dbo.SOL_ACC_VER_MODALIDAD where activo = 1 order by orden, nombre'),
+      q('select id, codigo, nombre from dbo.SOL_ACC_VER_TIPO where activo = 1 order by orden, nombre').then(conPerfil(s, 'ver_tipos')),
+      q('select id, codigo, nombre from dbo.SOL_ACC_VER_MODALIDAD where activo = 1 order by orden, nombre').then(conPerfil(s, 'ver_modalidades')),
       q('select tipo_id, modalidad_id from dbo.SOL_ACC_VER_TIPO_MODALIDAD'),
       /* ancho de lama: el nombre es opcional; si no lo hay se enseña el valor en mm */
       q(`select id, tipo_id, codigo, isnull(nombre, cast(cast(valor as float) as varchar(20)) + ' mm') as nombre, valor
-         from dbo.SOL_ACC_VER_ANCHO_LAMA where activo = 1 order by orden, valor`),
-      porTipo('SOL_ACC_VER_POSICION_MECANISMO'),
-      porTipo('SOL_ACC_VER_COLOR_RIEL'),
-      porTipo('SOL_ACC_VER_ACCIONAMIENTO'),
-      porTipo('SOL_ACC_VER_SOPORTE'),
-      porTipo('SOL_ACC_VER_RECOGIDA'),
+         from dbo.SOL_ACC_VER_ANCHO_LAMA where activo = 1 order by orden, valor`).then(conPerfil(s, 'ver_anchos_lama')),
+      porTipo('SOL_ACC_VER_POSICION_MECANISMO').then(conPerfil(s, 'ver_posiciones_mecanismo')),
+      porTipo('SOL_ACC_VER_COLOR_RIEL').then(conPerfil(s, 'ver_colores_riel')),
+      porTipo('SOL_ACC_VER_ACCIONAMIENTO').then(conPerfil(s, 'ver_accionamientos')),
+      porTipo('SOL_ACC_VER_SOPORTE').then(conPerfil(s, 'ver_soportes')),
+      porTipo('SOL_ACC_VER_RECOGIDA').then(conPerfil(s, 'ver_recogidas')),
       q('select vt.tipo_id, vt.tejido from dbo.SOL_ACC_VER_TIPO_TEJIDO vt join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = vt.tejido and m.activo = 1'),
       /* una fila por tejido + color + criterio, solo los que tiene algún tipo */
       q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, isnull(m.impresion_digital, 0) as impresion_digital, t.descripcion as tipo
@@ -868,7 +888,7 @@ async function ver_opciones(req, res) {
     /* Solo se enlazan modalidades activas */
     const modA = new Set(modalidades.map(m => m.id));
     const modPorTipo = agrupar(tipoMod, 'tipo_id', 'modalidad_id');
-    const tejPorTipo = agrupar(tipoTej, 'tipo_id', 'tejido');
+    const tejPorTipo = agrupar(tipoTej.filter(r => s.veTejido('VER', r.tejido)), 'tipo_id', 'tejido');
     const de = (filas, tipo) => filas.filter(f => f.tipo_id === tipo).map(f => {
       const { tipo_id, ...resto } = f;
       return resto;
@@ -886,7 +906,7 @@ async function ver_opciones(req, res) {
         tejidos: tejPorTipo[t.id] || []
       })),
       modalidades,
-      tejidos
+      tejidos: s.filtrarTejidos('VER', tejidos)
     });
   } catch (err) {
     console.error(err);
@@ -950,6 +970,9 @@ async function ver_precio(req, res) {
     if (!await verActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del Vertical' });
     }
+    /* Fase 2: lo que el perfil del cliente no ve, o medidas fuera de los límites del tejido */
+    const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('VER', l);
+    if (errorPerfil) return res.status(400).send({ message: errorPerfil });
     const p = await precioLineaVer(pool, cliente, l);
     if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
     res.status(200).send(p);
@@ -1075,25 +1098,27 @@ async function pj_opciones(req, res) {
     if (!await pjActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del panel japonés' });
     }
+    /* Lo que ve el perfil del cliente y con qué nombre (Fase 2) */
+    const s = await surtido.surtidoDeCliente(pool, cliente, surtido.idiomaDe(req));
     const q = async (consulta) => (await pool.request().query(consulta)).recordset;
     const lista = (tabla) => q(`select id, codigo, nombre from dbo.${tabla} where activo = 1 order by orden, nombre`);
     const [modalidades, vias, colores, mandos, recogidas, contrapesos, soportes, tejidos] = await Promise.all([
-      lista('SOL_ACC_PJ_MODALIDAD'),
+      lista('SOL_ACC_PJ_MODALIDAD').then(conPerfil(s, 'pj_modalidades')),
       /* vías: el nombre es opcional; si no lo hay, "3 vías" */
       q(`select id, codigo, cast(valor as int) as valor, isnull(nombre, cast(cast(valor as int) as varchar(10)) + ' vías') as nombre
-         from dbo.SOL_ACC_PJ_VIAS where activo = 1 order by orden, valor`),
-      lista('SOL_ACC_PJ_COLOR_MECANISMO'),
-      lista('SOL_ACC_PJ_POSICION_MANDO'),
-      lista('SOL_ACC_PJ_RECOGIDA'),
-      lista('SOL_ACC_PJ_CONTRAPESO'),
-      lista('SOL_ACC_PJ_SOPORTE'),
+         from dbo.SOL_ACC_PJ_VIAS where activo = 1 order by orden, valor`).then(conPerfil(s, 'pj_vias')),
+      lista('SOL_ACC_PJ_COLOR_MECANISMO').then(conPerfil(s, 'pj_colores_mecanismo')),
+      lista('SOL_ACC_PJ_POSICION_MANDO').then(conPerfil(s, 'pj_posiciones_mando')),
+      lista('SOL_ACC_PJ_RECOGIDA').then(conPerfil(s, 'pj_recogidas')),
+      lista('SOL_ACC_PJ_CONTRAPESO').then(conPerfil(s, 'pj_contrapesos')),
+      lista('SOL_ACC_PJ_SOPORTE').then(conPerfil(s, 'pj_soportes')),
       q(`select m.idrow as id, m.nombre, m.color, m.criterio, m.grupo, isnull(m.impresion_digital, 0) as impresion_digital, t.descripcion as tipo
          from dbo.SOL_ACC_PJ_TEJIDO pt
          join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = pt.tejido and m.activo = 1
          left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
          order by t.descripcion, m.nombre, m.color, m.criterio`)
     ]);
-    res.status(200).send({ modalidades, vias, coloresMecanismo: colores, posicionesMando: mandos, recogidas, contrapesos, soportes, tejidos });
+    res.status(200).send({ modalidades, vias, coloresMecanismo: colores, posicionesMando: mandos, recogidas, contrapesos, soportes, tejidos: s.filtrarTejidos('PJ', tejidos) });
   } catch (err) {
     console.error(err);
     res.status(500).send({ message: 'KO' });
@@ -1157,6 +1182,9 @@ async function pj_precio(req, res) {
     if (!await pjActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo del panel japonés' });
     }
+    /* Fase 2: lo que el perfil del cliente no ve, o medidas fuera de los límites del tejido */
+    const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('PJ', l);
+    if (errorPerfil) return res.status(400).send({ message: errorPerfil });
     const p = await precioLineaPj(pool, cliente, l);
     if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo, aviso: p.aviso });
     res.status(200).send(p);
@@ -1303,6 +1331,15 @@ async function alta(doc, req, res) {
     }
     if (lineas.some(esPjNuevo) && !await pjActivo(pool, cliente)) {
       return res.status(400).send({ message: ERRORES_PJ['-2'] });
+    }
+
+    /* Fase 2: cada línea contra el perfil del cliente (lo que no ve y los límites de medida de cada tejido) */
+    const s = await surtido.surtidoDeCliente(pool, cliente);
+    for (let i = 0; i < lineas.length; i++) {
+      const l = lineas[i];
+      const producto = esMiniNuevo(l) ? 'MINI' : esZipNuevo(l) ? 'ZIP' : esVerNuevo(l) ? 'VER' : esPjNuevo(l) ? 'PJ' : 'ENR';
+      const errorPerfil = s.validarLinea(producto, l);
+      if (errorPerfil) return res.status(400).send({ message: `Línea ${i + 1}: ${errorPerfil}` });
     }
 
     /* Precio de cada línea, fuera de la transacción */

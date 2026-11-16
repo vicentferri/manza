@@ -397,3 +397,13 @@
     background: #fff;
     cursor: pointer;
 }
+
+/* Fase 2: modo perfil (Productos -> "Ver como") */
+.acc-modo-perfil {
+    border-left: 3px solid #17a2b8;
+}
+.acc-input-medida {
+    display: inline-block;
+    width: 70px;
+    margin-right: 4px;
+}

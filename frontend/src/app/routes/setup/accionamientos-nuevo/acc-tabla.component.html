@@ -1,3 +1,5 @@
+<!-- Catálogo maestro (lo de siempre) -->
+<ng-container *ngIf="!perfilVista; else modoPerfilTabla">
 <div class="acc-bloque">
     <div class="acc-bloque-titulo">
         <strong>{{ titulo }}</strong>
@@ -107,6 +109,12 @@
         </table>
     </div>
 </div>
+</ng-container>
+<!-- Modo perfil (Productos -> "Ver como"): qué ve el perfil de esta lista y con qué nombre -->
+<ng-template #modoPerfilTabla>
+    <app-acc-perfil-lista [perfilId]="perfilVista.id" [perfilCodigo]="perfilVista.codigo" [catalogo]="catalogo"
+        [titulo]="titulo" [padreId]="padreCampo ? padreId : null" (seleccion)="seleccion.emit($event)"></app-acc-perfil-lista>
+</ng-template>
 
 <!-- DETALLE DE SUPLEMENTOS -->
 <app-acc-suplementos #suplementos (cambio)="cargar()"></app-acc-suplementos>

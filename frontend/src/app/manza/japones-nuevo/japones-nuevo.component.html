@@ -152,6 +152,7 @@
                      <option value="">Seleccionar</option>
                      <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
                   </select>
+                  <app-cfg-tejido-perfil [fila]="tejidoFila"></app-cfg-tejido-perfil>
                </div>
                <div class="col-md-3 col-6 form-group">
                   <label>¿Combinación de colores?</label>

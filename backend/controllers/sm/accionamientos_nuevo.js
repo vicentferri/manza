@@ -1574,6 +1574,8 @@ async function impresion_guardar(req, res) {
 }
 
 module.exports = {
+  /* Claves y tablas de las listas: las usan los perfiles (cfg_surtido.js, cfg_perfil.js) para validar */
+  CATALOGOS,
   impresion,
   impresion_guardar,
   ver_tarifa,
