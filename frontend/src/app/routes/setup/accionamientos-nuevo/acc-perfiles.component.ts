@@ -16,7 +16,8 @@ export const PARAMETROS_CONOCIDOS = [
     { clave: 'logo', ayuda: 'Texto del logo de la cabecera (LM, SM...)', tipo: 'texto' },
     { clave: 'imagenes_tejido', ayuda: 'Fotos del color de tejido debajo del desplegable', tipo: 'si_no' },
     { clave: 'imagenes_contrapeso', ayuda: 'Foto del contrapeso en el enrollable', tipo: 'si_no' },
-    { clave: 'ocultar_guias_zip_antiguo', ayuda: 'En el Cajón ZIP antiguo (dentro del enrollable) no se eligen guías', tipo: 'si_no' }
+    { clave: 'ocultar_guias_zip_antiguo', ayuda: 'En el Cajón ZIP antiguo (dentro del enrollable) no se eligen guías', tipo: 'si_no' },
+    { clave: 'coeficiente_c1', ayuda: 'C1 del cliente = PVP / este número (Leroy: 1.9). Vacío = sin C1. Hoy lo usa el panel japonés nuevo', tipo: 'texto' }
 ];
 
 @Component({

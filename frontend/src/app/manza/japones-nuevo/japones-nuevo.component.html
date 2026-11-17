@@ -132,7 +132,8 @@
                No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }} para el panel japonés. Márquelos en Configuración → Productos → Panel japonés → Tejido.
             </div>
             <div class="row">
-               <div class="col-md-3 col-6 form-group">
+               <!-- con rejilla del cliente (Leroy) no se elige el tipo: se elige solo -->
+               <div class="col-md-3 col-6 form-group" *ngIf="!conRejilla">
                   <label>{{ "TIPO DE TEJIDO" | translate }}</label>
                   <select class="form-control form-control-sm" [(ngModel)]="tipoTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipoTejido()">
                      <option value="">Seleccionar</option>
@@ -140,7 +141,7 @@
                   </select>
                </div>
                <div class="col-md-3 col-6 form-group">
-                  <label>{{ "SERIE" | translate }}</label>
+                  <label>{{ (conRejilla ? "TEJIDO" : "SERIE") | translate }}</label>
                   <select class="form-control form-control-sm" [(ngModel)]="nombreTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarNombreTejido()" [disabled]="!tipoTejido">
                      <option value="">Seleccionar</option>
                      <option *ngFor="let n of nombresTejido" [value]="n">{{ n }}</option>
@@ -224,7 +225,7 @@
          <div class="enx-seccion">
             <div class="enx-titulo">Precio</div>
             <div class="row align-items-end">
-               <div class="col-md-2 col-6 form-group" *ngIf="conTejido">
+               <div class="col-md-2 col-6 form-group" *ngIf="conTejido && !conRejilla">
                   <label>Tarifa</label>
                   <div class="btn-group btn-group-sm d-flex" role="group">
                      <button type="button" class="btn w-100" [class.btn-primary]="tipoTarifa === 'T1'" [class.btn-outline-primary]="tipoTarifa !== 'T1'"
@@ -234,7 +235,7 @@
                   </div>
                </div>
                <div class="col-md-3 col-6 form-group">
-                  <button type="button" class="btn btn-sm btn-primary btn-block" (click)="CalcularPrecio()" [disabled]="calculando || (conTejido && !tipoTarifa)">
+                  <button type="button" class="btn btn-sm btn-primary btn-block" (click)="CalcularPrecio()" [disabled]="calculando || (conTejido && !tipoTarifa && !conRejilla)">
                      <i class="fa" [class.fa-calculator]="!calculando" [class.fa-spinner]="calculando" [class.fa-spin]="calculando"></i> Calcular precio
                   </button>
                </div>
@@ -242,6 +243,7 @@
                   <ng-container *ngIf="precioVigente">
                      <div class="enx-total-importe">{{ precio.total | number:'1.2-2' }} €</div>
                      <div class="enx-nota">{{ precio.unitario | number:'1.2-2' }} € por {{ esSoloRiel ? 'riel' : 'panel' }}</div>
+                     <div class="enx-nota" *ngIf="precio.c1">{{ precio.c1 }}</div>
                   </ng-container>
                   <span *ngIf="precio && !precioVigente" class="enx-nota">Ha cambiado la configuración: vuelva a calcular el precio</span>
                </div>
@@ -263,10 +265,12 @@
                      <td>{{ d.elemento }}</td>
                      <td class="enx-nota">{{ d.detalle }}</td>
                      <td class="text-right">{{ d.importe | number:'1.2-2' }} €</td>
+                     <td *ngIf="precio.c1" class="text-right enx-nota">{{ c1Texto(d.c1) }}</td>
                   </tr>
                   <tr *ngIf="cantidad > 1" class="enx-desglose-total">
                      <td colspan="3">Por unidad x {{ cantidad }}</td>
                      <td class="text-right">{{ precio.total | number:'1.2-2' }} €</td>
+                     <td *ngIf="precio.c1" class="text-right enx-nota">{{ precio.c1 }}</td>
                   </tr>
                </tbody>
             </table>

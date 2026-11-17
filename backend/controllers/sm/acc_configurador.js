@@ -1120,7 +1120,19 @@ async function pj_opciones(req, res) {
          left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
          order by t.descripcion, m.nombre, m.color, m.criterio`)
     ]);
-    res.status(200).send({ modalidades, vias, coloresMecanismo: colores, posicionesMando: mandos, recogidas, contrapesos, soportes, tejidos: s.filtrarTejidos('PJ', tejidos) });
+    /* sqlLeroy/05-07: un cliente con rejilla propia (Leroy) solo puede imprimir los colores aptos en el maestro que
+       además tienen tarifa "con impresión" en su rejilla (el precio rechaza los demás); para el resto, el dato del
+       maestro, como siempre */
+    const tejidosPerfil = s.filtrarTejidos('PJ', tejidos);
+    const rejilla = await q(`select tejido, impresion from dbo.SOL_ACC_TARIFA_REJILLA where cliente = ${cliente} and producto = 2`)
+      .catch(() => []);   // sin sqlLeroy/05 la tabla no existe
+    if (rejilla.length) {
+      const conImpresion = new Set(rejilla.filter(f => f.impresion === true || f.impresion === 1).map(f => f.tejido));
+      tejidosPerfil.forEach(t => { t.impresion_digital = t.impresion_digital && conImpresion.has(t.id) ? 1 : 0; });
+    }
+    /* rejilla: el cliente valora con su rejilla (Leroy): la pantalla no pide la tarifa T1/T2 ni el tipo de tejido */
+    res.status(200).send({ modalidades, vias, coloresMecanismo: colores, posicionesMando: mandos, recogidas, contrapesos, soportes,
+      tejidos: tejidosPerfil, rejilla: rejilla.length > 0 });
   } catch (err) {
     console.error(err);
     res.status(500).send({ message: 'KO' });
@@ -1152,10 +1164,14 @@ async function precioLineaPj(pool, cliente, l) {
     .input('tipo_tarifa', sql.VarChar(2), TIPOS_TARIFA.includes(l.tipo_tarifa) ? l.tipo_tarifa : null)
     .input('impresion', sql.Int, l.impresion === true || l.impresion === 1 ? 1 : 0)
     .input('desglose', sql.Bit, 1)
+    /* sqlLeroy/07: tienda (promoción de la tienda en la rejilla del cliente) */
+    .input('centro', sql.Int, entero(l.codeCentro) > 0 ? entero(l.codeCentro) : null)
     .output('tarifa', sql.Int)
     .output('mensaje', sql.VarChar(250))
-    .output('aviso', sql.VarChar(250));
-  [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total')].forEach(([nombre, tipo]) => request.output(nombre, tipo));
+    .output('aviso', sql.VarChar(250))
+    .output('c1', sql.VarChar(25));
+  [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total'), d('c1_unitario'), d('c1_total')]
+    .forEach(([nombre, tipo]) => request.output(nombre, tipo));
   const r = await request.execute('sp_acc_pj_precio_linea');
   const o = r.output;
   if (r.returnValue !== 0) {
@@ -1167,8 +1183,52 @@ async function precioLineaPj(pool, cliente, l) {
     tipo_tarifa: l.tipo_tarifa || null,
     tarifa: o.tarifa,
     base: o.base, impresion: o.importe_impresion, suplementos: o.suplementos, unitario: o.unitario, total: o.total,
-    desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
+    /* sqlLeroy/07: C1 (solo perfiles con coeficiente_c1; si no, null) */
+    c1: o.c1 || null, c1_unitario: o.c1_unitario, c1_total: o.c1_total,
+    desglose: await nombresPerfilDesglosePj(pool, cliente, n, (r.recordset || []).map(f => ({
+      concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe,
+      c1: f.c1 === undefined ? null : f.c1
+    })))
   };
+}
+
+/* El desglose sale del SP con los nombres del maestro (IBIZA 380, "Completa (mecanismo y tejido)"): se pasan a los
+   nombres del perfil del cliente (Leroy: SOLAR 5 %, "Mecanismo + tejido"), tanto en pantalla como en lo que se graba.
+   Sin nombre propio en el perfil se queda el del maestro (cliente 4 igual que antes). */
+async function nombresPerfilDesglosePj(pool, cliente, n, desglose) {
+  try {
+    const s = await surtido.surtidoDeCliente(pool, cliente);
+    const opcion = (catalogo, id, nombre) => {
+      if (!id || !nombre) return nombre;
+      const r = s.filtrarOpciones(catalogo, [{ id, nombre }]);
+      return r.length ? r[0].nombre : nombre;
+    };
+    const porConcepto = {
+      'Tipo de pedido': ['pj_modalidades', entero(n.modalidad)],
+      'Número de vías': ['pj_vias', entero(n.vias)],
+      'Riel': ['pj_vias', entero(n.vias)],
+      'Color del mecanismo': ['pj_colores_mecanismo', entero(n.color_mecanismo)],
+      'Posición del mando': ['pj_posiciones_mando', entero(n.posicion_mando)],
+      'Tipo de recogida': ['pj_recogidas', entero(n.recogida)],
+      'Contrapeso': ['pj_contrapesos', entero(n.contrapeso)],
+      'Tipo de soporte': ['pj_soportes', entero(n.soporte)]
+    };
+    const tejido = entero(n.tejido);
+    return desglose.map(f => {
+      if (porConcepto[f.concepto]) {
+        const [catalogo, id] = porConcepto[f.concepto];
+        return Object.assign({}, f, { elemento: opcion(catalogo, id, f.elemento) });
+      }
+      if (f.concepto === 'Base' && tejido && f.elemento) {
+        const t = s.filtrarTejidos('PJ', [{ id: tejido, nombre: f.elemento, color: '' }]);
+        return t.length ? Object.assign({}, f, { elemento: t[0].nombre }) : f;
+      }
+      return f;
+    });
+  } catch (err) {
+    console.error('desglose del panel japonés: no se pudieron aplicar los nombres del perfil', err.message);
+    return desglose;
+  }
 }
 
 /* POST /acc_cfg/pj/precio/:cliente   body: una línea del panel japonés. No graba nada */
@@ -1229,6 +1289,8 @@ async function altaLineaPj(transaction, doc, idDocumento, l, p) {
     .input('desglose', sql.Xml, desgloseXml(p.desglose))
     /* sqlPanelJapones/02 y 05: tarifa elegida (T1/T2), para recalcular al cargar un presupuesto */
     .input('tipo_tarifa', sql.VarChar(2), p.tipo_tarifa)
+    /* sqlLeroy/08: C1 por unidad (T2_Tejido_C1 y T2_PVP_C1); null si el perfil no tiene coeficiente_c1 */
+    .input('c1_unitario', sql.Decimal(12, 2), p.c1_unitario === undefined ? null : p.c1_unitario)
     .execute(doc.lineaPj);
 }
 

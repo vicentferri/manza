@@ -220,9 +220,18 @@ export class JaponesNuevoComponent implements OnChanges {
 
    cambiarAncho(): void { this.recalcularAnchoPortatela(); }
 
+   /* Ancho de portatela = ancho / vías + 5 cm. Con rejilla del cliente (Leroy) como en su pantalla de siempre: se divide
+      entre las portatelas (que por defecto son las vías) y se redondea AL ALZA a múltiplos de 0,05 cm; para el resto,
+      entre las vías y a 2 decimales. */
    private recalcularAnchoPortatela(): void {
       if (this.conMecanismo && this.ancho > 0 && this.numVias > 0) {
-         this.anchoPortatela = this.redondea(this.ancho / this.numVias + this.sumaPortatela);
+         if (this.conRejilla) {
+            const reparto = this.portatelas > 0 ? this.portatelas : this.numVias;
+            /* el 1e-9 evita subir 0,05 cuando el resultado ya es un múltiplo exacto y solo lo estropea el coma flotante */
+            this.anchoPortatela = Math.ceil((this.ancho / reparto + this.sumaPortatela) * 20 - 1e-9) / 20;
+         } else {
+            this.anchoPortatela = this.redondea(this.ancho / this.numVias + this.sumaPortatela);
+         }
       }
    }
 
@@ -239,6 +248,7 @@ export class JaponesNuevoComponent implements OnChanges {
          }
       }
       if (this.esCompleta) { this.numLamas = this.portatelas; }
+      if (this.conRejilla) { this.recalcularAnchoPortatela(); }
       this.ajustarColores();
    }
 
@@ -260,7 +270,18 @@ export class JaponesNuevoComponent implements OnChanges {
       return this.lista('tejidos').filter(t => !this.impresion || t.impresion_digital);
    }
 
-   etiquetaTipo(t: any): string { return t.tipo || 'Sin tipo'; }
+   /* Cliente con rejilla propia (Leroy, sqlLeroy): precio con su tarifa de siempre, sin elegir T1/T2, y el tejido se
+      elige como en su configurador de siempre (tejido y color, sin tipo de tejido) */
+   get conRejilla(): boolean { return !!(this.opc && this.opc.rejilla); }
+
+   /* Con rejilla, todos los tejidos van en un único "tipo" que se elige solo (el desplegable no se ve) */
+   etiquetaTipo(t: any): string { return this.conRejilla ? 'Tejidos' : (t.tipo || 'Sin tipo'); }
+
+   /* C1 de Leroy ('C1 0001234', céntimos) de un importe ya calculado por el servidor */
+   c1Texto(valor: any): string {
+      if (valor === null || valor === undefined || valor === '') { return ''; }
+      return 'C1 ' + ('0000000' + Math.round(Number(valor) * 100)).slice(-7);
+   }
    get tiposTejido(): string[] { return this.distintos(this.tejidosDisponibles.map(t => this.etiquetaTipo(t))); }
    get nombresTejido(): string[] {
       return this.distintos(this.tejidosDisponibles.filter(t => this.etiquetaTipo(t) === this.tipoTejido).map(t => t.nombre));
@@ -365,7 +386,7 @@ export class JaponesNuevoComponent implements OnChanges {
          if (!this.tipoTejido || !this.nombreTejido || !this.colorTejido) { return 'Seleccione el tejido y su color'; }
          if (this.combinacion && this.colores.some(c => !c)) { return 'Elija el color de cada lama'; }
          if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
-         if (!this.tipoTarifa) { return 'Elija la tarifa: T1 o T2'; }
+         if (!this.tipoTarifa && !this.conRejilla) { return 'Elija la tarifa: T1 o T2'; }
       }
       const errorMedida = errorPasoMedidas({ 'Ancho': this.conMecanismo ? this.ancho : null, 'Alto': this.esCompleta ? this.alto : null });
       if (errorMedida) { return errorMedida; }
@@ -418,7 +439,9 @@ export class JaponesNuevoComponent implements OnChanges {
       t.precios.T2_Cantidad = this.cantidad;
       t.precios.T2_Tejido = this.precio.unitario;
       t.precios.T2_PVP = this.precio.total;
-      t.precios.T2_PVP_C1 = '';
+      /* C1 (clientes con coeficiente_c1, Leroy): por unidad con T2_Tejido y del total con T2_PVP */
+      t.precios.T2_Tejido_C1 = this.c1Texto(this.precio.c1_unitario);
+      t.precios.T2_PVP_C1 = this.precio.c1 || '';
       (t as any).desglose = this.precio.desglose;
 
       this.precio = null;
