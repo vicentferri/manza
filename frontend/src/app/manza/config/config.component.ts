@@ -844,6 +844,8 @@ export class ConfigComponent implements OnInit {
               T1_Inc_Impresion_C1: item.T1_Inc_Impresion_C1,
               T1_Inc_Cargador: item.T1_Inc_Cargador || 0,
               T1_Inc_Cargador_C1: item.T1_Inc_Cargador_C1 || '',
+              T1_Inc_SmartHome: Number(item.T1_Inc_SmartHome) || 0,
+              T1_Inc_SmartHome_C1: item.T1_Inc_SmartHome_C1 || '',
               T1_PVP: Number(item.T1_PVP),
               T1_PVP_C1: item.T1_PVP_C1,
               T1_Fecha_Entrega: item.T1_Fecha_Entrega,
@@ -885,7 +887,7 @@ export class ConfigComponent implements OnInit {
               estancia, estanciaobs, precios,
               item.Tipo1_Cajon, item.Tipo1_CajonC, item.Tipo1_CajonRAL,
               item.Tipo1_Guia, item.Tipo1_GuiaC, item.Tipo1_GuiaRAL,
-              item.SubTipoCortina, item.Tipo1_Cargador);
+              item.SubTipoCortina, item.Tipo1_Cargador, item.Tipo1_SmartHome);
 
             /* Línea del configurador nuevo: se recupera su selección (nacc_*) para poder editarla y volver a guardarla */
             if (item.nacc_accionamiento_id) {

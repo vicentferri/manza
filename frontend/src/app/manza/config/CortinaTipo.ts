@@ -56,6 +56,7 @@ export class CortinaTipo {
     SubTipoCortina!: number;
 
     Tipo1_Cargador: string = '-1';
+    Tipo1_SmartHome: string = '-1';
 
 
     /* PANEL JAPONES */
@@ -224,6 +225,9 @@ export class CortinaTipo {
         T1_Inc_Cargador: 0,
         T1_Inc_Cargador_C1: '',
         T1_Inc_Cargador_48: 0,
+        T1_Inc_SmartHome: 0,
+        T1_Inc_SmartHome_C1: '',
+        T1_Inc_SmartHome_48: '',
 
         T2_Cantidad: 1,
         T2_Tejido: 0,
@@ -374,6 +378,7 @@ export class CortinaTipo {
         Tipo1_GuiaRAL: string,
         SubTipoCortina: number,
         Tipo1_Cargador: string,
+        Tipo1_SmartHome: string = '-1',
     ) {
         this.TipoCortina = 1;
         this.ancho = Number(ancho);
@@ -431,6 +436,7 @@ export class CortinaTipo {
         this.Tipo1_GuiaRAL = Tipo1_GuiaRAL;
         this.SubTipoCortina = SubTipoCortina;
         this.Tipo1_Cargador = Tipo1_Cargador;
+        this.Tipo1_SmartHome = Tipo1_SmartHome != null ? String(Tipo1_SmartHome) : '-1';
 
         this.precios = Object.assign({}, values);
 

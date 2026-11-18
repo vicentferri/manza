@@ -105,6 +105,12 @@ export class SMAPIService {
         return this.HTTP_Get(url);
     }
 
+    // Smart Home del enrollable con motor: la opción si el modelo la admite para el cliente, o lista vacía
+    getSmartHome(cliente: number, modelo: number) {
+        var url: string = this.urlService + '/api/lm/smart_home/' + cliente + '/' + modelo;
+        return this.HTTP_Get(url);
+    }
+
     getAccionamientosLacados(cliente: number) {
         var url: string = this.urlAccionamientosL + '/' + cliente;
         return this.HTTP_Get(url);

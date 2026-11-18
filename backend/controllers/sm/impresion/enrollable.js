@@ -15,7 +15,7 @@ const MINIMO_AGRUPAR = 5;
 // acc_tipo_id: 1 Cadena, 3 Motor, 16 Sin cadena. Todo lo que no es motor va con la plantilla de cadena
 const TIPO_MOTOR = 3;
 
-/* Columnas de cada plantilla. 'impresion', 'estancia' y 'cantidad' solo salen si alguna fila las lleva.
+/* Columnas de cada plantilla. 'impresion', 'estancia', 'cantidad' y 'smartHome' solo salen si alguna fila las lleva.
    C1 y PVP van siempre al final (la fila de total cuenta con ello). */
 const COLUMNAS = {
   cadena: [
@@ -52,6 +52,7 @@ const COLUMNAS = {
     { campo: 'bateria', titulo: 'Batería' },
     { campo: 'mando', titulo: 'Mando' },
     { campo: 'cargador', titulo: 'Cargador' },
+    { campo: 'smartHome', titulo: 'Smart Home' },
     { campo: 'terminacion', titulo: 'Terminación' },
     { campo: 'estancia', titulo: 'Estancia' },
     { campo: 'cantidad', titulo: 'Cantidad' },
@@ -60,7 +61,7 @@ const COLUMNAS = {
   ]
 };
 
-const COLUMNAS_OPCIONALES = ['impresion', 'estancia', 'cantidad'];
+const COLUMNAS_OPCIONALES = ['impresion', 'estancia', 'cantidad', 'smartHome'];
 // No cuentan para decidir si dos cortinas son iguales
 const NO_AGRUPAN = ['estancia', 'cantidad', 'c1', 'precio'];
 
@@ -80,7 +81,7 @@ async function leerLineas(pool, doc, id, cliente) {
       'select t.ancho, t.alto, t.cantidad, t.acc_tipo_id, t.acc_marca_text, t.acc_modelo_text, t.acc_posicion_text, ' +
       '  t.sop_tipo_text, t.sop_color_text, t.tej_tipo_text, t.tej_color_text, t.tej_salida_text, ' +
       '  t.con_tipo_text, t.con_color_text, t.cad_color_text, t.cad_Tipo, t.cad_Altura, t.impresion, t.impresion_imagen, ' +
-      '  t.mando_text, t.Estancia, t.T1_PVP, t.T1_PVP_C1, ca.descripcion as cargador_text, ' +
+      '  t.mando_text, t.Estancia, t.T1_PVP, t.T1_PVP_C1, ca.descripcion as cargador_text, t.smart_home, ' +
       '  dbo.AT_Tejido_color_codigoprov_Cliente(t.tej_tipo_id, @cliente, t.tej_color_id) as codigo48 ' +
       'from ' + doc.lineas + ' l ' +
       'inner join ' + doc.tablaTipo + '1 t on t.idrow = l.ID ' +
@@ -130,6 +131,7 @@ function filaDeLinea(l) {
     fila.bateria = c.texto(l.acc_marca_text) || 'SIN BATERÍA';
     fila.mando = c.texto(l.mando_text) || 'SIN MANDO';
     fila.cargador = c.texto(l.cargador_text);
+    fila.smartHome = Number(l.smart_home) === 1 ? 'SÍ' : '';
   } else {
     fila.colorCadena = c.texto(l.cad_color_text);
     fila.alturaCadena = alturaCadena(l);
