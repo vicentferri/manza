@@ -105,9 +105,9 @@ export class SMAPIService {
         return this.HTTP_Get(url);
     }
 
-    // Smart Home del enrollable con motor: la opción si el modelo la admite para el cliente, o lista vacía
-    getSmartHome(cliente: number, modelo: number) {
-        var url: string = this.urlService + '/api/lm/smart_home/' + cliente + '/' + modelo;
+    // Smart Home del enrollable con motor: la opción si el tipo de motor (BATERIA 25 / 35) la admite para el cliente, o lista vacía
+    getSmartHome(cliente: number, tipoMotor: number) {
+        var url: string = this.urlService + '/api/lm/smart_home/' + cliente + '/' + tipoMotor;
         return this.HTTP_Get(url);
     }
 

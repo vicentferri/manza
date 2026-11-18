@@ -413,14 +413,14 @@ function Cargadores(req,res)
   ExecuteSQL(query,res);
 }
 
-/* Smart Home del enrollable con motor (sqlSmartHome/01): la opción si el modelo de motor la admite para el cliente
-   (marcas y clientes en SOL_ARTICULOS_SMART_HOME_*); vacío si no */
+/* Smart Home del enrollable con motor (sqlSmartHome/01): la opción si el tipo de motor (BATERIA 25 / 35) la admite
+   para el cliente (tipos y clientes en SOL_ARTICULOS_SMART_HOME_*); vacío si no */
 function SmartHome(req,res)
 {
   var cliente = parseInt(req.params.cli, 10) || 0;
-  var modelo = parseInt(req.params.modelo, 10) || 0;
+  var tipo = parseInt(req.params.tipo, 10) || 0;
   var query = "select top 1 idrow as id, descripcion as text, pvp as precio, c1 from SOL_ARTICULOS_SMART_HOME " +
-              "where activo = 1 and dbo.fn_smart_home_aplica(" + cliente + "," + modelo + ") = 1 order by idrow";
+              "where activo = 1 and dbo.fn_smart_home_aplica(" + cliente + "," + tipo + ") = 1 order by idrow";
   ExecuteSQL(query,res);
 }
 

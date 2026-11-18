@@ -122,7 +122,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
    cargadores: Tipo2[] = [];
    Tipo1_Cargador: string = '-1';
 
-   // Smart Home (solo motor, según marca del modelo y cliente): lista con la opción SÍ / NO, vacía si no aplica
+   // Smart Home (solo motor BATERIA 25 / 35 y según cliente): lista con la opción SÍ / NO, vacía si no aplica
    smartHome: any[] = [];
    Tipo1_SmartHome: string = '-1';
    SmartHome_Extra: string = '';
@@ -458,10 +458,11 @@ export class EnrollableComponent implements OnInit, OnChanges {
       );
    }
 
-   // Smart Home: solo con motor y si el modelo es de una marca que lo admite para el cliente (SOL_ARTICULOS_SMART_HOME_*)
-   load_SmartHome(modelo: number): void {
-      const motor$: Observable<any> = this.Tipo1_Tipo === '3' && modelo > 0
-         ? this.service.getSmartHome(parseInt(this.Cliente), modelo).pipe(catchError(() => of([])))
+   // Smart Home: solo con motor de un tipo que lo admite para el cliente (BATERIA 25 / 35; SOL_ARTICULOS_SMART_HOME_*)
+   load_SmartHome(): void {
+      const tipoMotor = parseInt(this.Tipo1_Marca);
+      const motor$: Observable<any> = this.Tipo1_Tipo === '3' && tipoMotor > 0
+         ? this.service.getSmartHome(parseInt(this.Cliente), tipoMotor).pipe(catchError(() => of([])))
          : of([]);
       motor$.subscribe(data => {
          const opcion = data && data.length ? data[0] : null;
@@ -835,7 +836,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       }
       if (this.verMando) this.load_RadioMando();
       this.load_Cargadores(parseInt(this.Tipo1_Color));
-      this.load_SmartHome(parseInt(this.Tipo1_Color));
+      this.load_SmartHome();
    }
 
    // Mando elegido en la pantalla: si la línea ya está valorada se recalcula su total
