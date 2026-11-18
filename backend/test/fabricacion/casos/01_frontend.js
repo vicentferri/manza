@@ -40,6 +40,9 @@ module.exports = async function (inf) {
     const casos = [
       ['@ANCHO == 100', '==', '@ANCHO == 100'],
       ['@ACCIONAMIENTO == CON VARILLA', '==', '@ACCIONAMIENTO == CON VARILLA'],
+      ['@ANCHO != 100', '!=', '@ANCHO != 100'],
+      ['@accionamiento!=CON VARILLA', '!=', '@ACCIONAMIENTO != CON VARILLA'],
+      ['@TEJIDO_COLOR != *', '!=', '@TEJIDO_COLOR != *'],
       ['@ancho>>10', '>>', '@ANCHO >> 10'],
       ['@ANCHO >= 10', '>=', '@ANCHO >= 10'],
       ['@ANCHO << 10', '<<', '@ANCHO << 10'],
@@ -64,6 +67,10 @@ module.exports = async function (inf) {
     eq(u.validarCondicion('@ANCHO >> abc', PARAMETROS), ['Con >> el valor tiene que ser un número'], 'no numérico');
     eq(u.validarCondicion('62 <= @ANCHO <= 30', PARAMETROS).length, 1, 'intervalo al revés');
     ok(u.validarCondicion('@ANCHO ==', PARAMETROS).length > 0, '"@ANCHO ==" sin valor tiene que dar error');
+    eq(u.validarCondicion('@TEJIDO_COLOR != BEIGE', PARAMETROS), [], '!= admite texto');
+    eq(u.validarCondicion('@ACCIONAMIENTO != *', PARAMETROS), [], '!= * (ninguno)');
+    ok(u.validarCondicion('@ANCHO !=', PARAMETROS).length > 0, '"@ANCHO !=" sin valor tiene que dar error');
+    eq(u.validarCondicion('@acho != 1', PARAMETROS), ['El parámetro @ACHO no existe'], '!= con parámetro inexistente');
     ok(u.validarCondicion('ANCHO > 3', PARAMETROS).length > 0, 'sintaxis incorrecta tiene que dar error');
   });
 

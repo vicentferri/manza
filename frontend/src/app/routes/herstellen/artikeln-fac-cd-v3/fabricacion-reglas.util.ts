@@ -1,7 +1,7 @@
 /*
  * Sintaxis de condiciones y consumos del motor de fabricación por reglas.
  * Replica lo que aceptan fn_fabricacion_condicion y sp_fabricacion_evaluar (SQL):
- *   Condición: @P == valor | @P >> n | @P >= n | @P << n | @P <= n | a <= @P <= b
+ *   Condición: @P == valor | @P != valor | @P >> n | @P >= n | @P << n | @P <= n | a <= @P <= b
  *   Consumo:   n | @P | @P ++ n | @P -- n | @P ** n | @P // n | @P *R n | @P *T n | a ** @P ** b | a *R @P *R b
  *              y cadenas @P op x op x ... (se calculan de izquierda a derecha), donde x es
  *              un número o un parámetro (@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001)
@@ -10,7 +10,7 @@
  * Los espacios se ignoran; los decimales se escriben con punto (se acepta coma).
  */
 
-export type OperadorCondicion = '==' | '>>' | '>=' | '<<' | '<=' | 'entre';
+export type OperadorCondicion = '==' | '!=' | '>>' | '>=' | '<<' | '<=' | 'entre';
 
 export interface Condicion {
   modo: 'guiado' | 'texto';
@@ -37,6 +37,7 @@ export interface Consumo {
 
 export const OPERADORES_CONDICION = [
   { valor: '==', texto: 'igual a' },
+  { valor: '!=', texto: 'distinto de' },   /* sqlReglasProducto/06 */
   { valor: '>>', texto: 'mayor que' },
   { valor: '>=', texto: 'mayor o igual que' },
   { valor: '<<', texto: 'menor que' },
@@ -58,7 +59,7 @@ const PARAM = '@[A-Za-z0-9_]+';
 const OPERANDO = '(?:' + NUMERO + '|' + PARAM + ')';
 
 const RE_INTERVALO = new RegExp('^(' + NUMERO + ')<=(' + PARAM + ')<=(' + NUMERO + ')$');
-const RE_BINARIA = new RegExp('^(' + PARAM + ')(==|>>|>=|<<|<=)(.+)$');
+const RE_BINARIA = new RegExp('^(' + PARAM + ')(==|!=|>>|>=|<<|<=)(.+)$');
 const RE_NUMERO = new RegExp('^' + NUMERO + '$');
 const RE_PARAM = new RegExp('^' + PARAM + '$');
 const RE_OPERANDO = new RegExp('^' + OPERANDO + '$');
@@ -89,6 +90,11 @@ export function operandoValido(texto: string): boolean {
 
 /* ---------------- CONDICIONES ---------------- */
 
+/* «igual a» y «distinto de» comparan valores (texto o número); el resto, solo números */
+export function esIgualdad(operador: string): boolean {
+  return operador === '==' || operador === '!=';
+}
+
 export function condicionVacia(): Condicion {
   return { modo: 'guiado', parametro: '', operador: '==', valor: '', desde: '', hasta: '', texto: '' };
 }
@@ -113,8 +119,8 @@ export function parseCondicion(texto: string): Condicion {
   if (m) {
     c.parametro = m[1].toUpperCase();
     c.operador = m[2] as OperadorCondicion;
-    /* En '==' el valor puede llevar espacios (CON VARILLA): se toma del texto original */
-    c.valor = m[2] === '==' ? String(texto).split('==').slice(1).join('==').trim() : numero(m[3]);
+    /* En '==' y '!=' el valor puede llevar espacios (CON VARILLA): se toma del texto original */
+    c.valor = esIgualdad(m[2]) ? String(texto).split(m[2]).slice(1).join(m[2]).trim() : numero(m[3]);
     return c;
   }
 
@@ -133,7 +139,7 @@ export function buildCondicion(c: Condicion): string {
   if (c.operador === 'entre') {
     return numero(c.desde) + ' <= ' + c.parametro + ' <= ' + numero(c.hasta);
   }
-  const valor = c.operador === '==' ? String(c.valor || '').trim() : numero(c.valor);
+  const valor = esIgualdad(c.operador) ? String(c.valor || '').trim() : numero(c.valor);
   return c.parametro + ' ' + c.operador + ' ' + valor;
 }
 
@@ -155,10 +161,10 @@ export function validarCondicion(texto: string, parametros: string[]): string[] 
   else {
     m = RE_BINARIA.exec(limpio);
     if (!m) {
-      return ['Condición mal escrita: use @PARAMETRO == valor, >>, >=, <<, <= o a <= @PARAMETRO <= b'];
+      return ['Condición mal escrita: use @PARAMETRO == valor, != valor, >>, >=, <<, <= o a <= @PARAMETRO <= b'];
     }
     parametro = m[1];
-    if (m[2] !== '==' && !RE_NUMERO.test(m[3])) {
+    if (!esIgualdad(m[2]) && !RE_NUMERO.test(m[3])) {
       errores.push('Con ' + m[2] + ' el valor tiene que ser un número');
     }
     if (m[3] === '') {

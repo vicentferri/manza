@@ -166,7 +166,11 @@ module.exports = async function (inf, util) {
     '@NO_EXISTE == 1': 0, '@NO_EXISTE >> 1': 0, '': 0, 'basura': 0, '@VACIO >> 1': 0, '@VACIO ==': 0,
     '@ANCHO >> abc': 0, '@COLOR >> 5': 0, '@COLOR <= 5': 0, '30 <= @COLOR <= 36': 0, '@COMA >> 1': 1,
     '@DOLAR >> 0': 0, '@EXP >> 0': 0, 'abc <= @ANCHO <= 200': 0,
-    '62.1 <= @DEC <= 88.1': 0, '88.2 <= @DEC <= 130': 0
+    '62.1 <= @DEC <= 88.1': 0, '88.2 <= @DEC <= 130': 0,
+    /* sqlReglasProducto/06: != es lo contrario de ==; sin valor se cumple; != * es «ninguno» */
+    '@ANCHO != 150': 0, '@ANCHO != 151': 1, '@ANCHO != 150,00': 0, '@COLOR != beige': 0, '@COLOR!=GRIS': 1,
+    '@ACC != CON VARILLA': 0, '@ACC != MANUAL': 1, '@VACIO != BEIGE': 1, '@NO_EXISTE != 1': 1,
+    '@COLOR != *': 0, '@CERO != *': 0, '@VACIO != *': 1, '@NO_EXISTE != *': 1
   };
   const rc = await condiciones(Object.keys(conds));
 
@@ -179,7 +183,9 @@ module.exports = async function (inf, util) {
   await inf.test('Condiciones válidas: mismo resultado que las funciones antiguas de mrp_cd', () => {
     /* Diferencias buscadas: lo que antes daba error, == numérico (150 == 150.00) y coma decimal */
     const cambiosBuscados = ['@ANCHO == 150.00', '@ANCHO == 150,0', '@DEC == 88.150', '36,1 <= @ANCHO <= 162', '@ANCHO >> 149,5', '@COMA >> 1'];
+    /* mrp_cd no tenía != (sqlReglasProducto/06): esas no se comparan */
     const distintos = Object.keys(conds)
+      .filter(c => c.indexOf('!=') === -1)
       .filter(c => !rc[c].error_antigua && cambiosBuscados.indexOf(c) === -1 && rc[c].nueva !== rc[c].antigua)
       .map(c => c + ': antes ' + rc[c].antigua + ', ahora ' + rc[c].nueva);
     eq(distintos, [], 'diferencias con mrp_cd');
