@@ -122,6 +122,11 @@ export class EnrollableComponent implements OnInit, OnChanges {
    cargadores: Tipo2[] = [];
    Tipo1_Cargador: string = '-1';
 
+   // Smart Home (solo motor, según marca del modelo y cliente): lista con la opción SÍ / NO, vacía si no aplica
+   smartHome: any[] = [];
+   Tipo1_SmartHome: string = '-1';
+   SmartHome_Extra: string = '';
+
    private Accionamientos: Tipo[] | undefined;
    private TipoAccionamientos: TipoMando[] | undefined;
    private TipoColores: Tipo2[] | undefined;
@@ -203,6 +208,9 @@ export class EnrollableComponent implements OnInit, OnChanges {
       T1_Inc_Cargador: 0,
       T1_Inc_Cargador_C1: '',
       T1_Inc_Cargador_48: 0,
+      T1_Inc_SmartHome: 0,
+      T1_Inc_SmartHome_C1: '',
+      T1_Inc_SmartHome_48: '',
    };
 
 
@@ -261,6 +269,9 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Cargador = '-1';
       this.cargadores = [];
       this.Label_Cargador = 'Cargador'; this.Cargador_Extra = '';
+      this.Tipo1_SmartHome = '-1';
+      this.smartHome = [];
+      this.SmartHome_Extra = '';
       this.Tipo1_Posicion = '1';
       this.Tipo1_Tubo = '-1';
       this.Tipo1_AlturaCadena = '-1';
@@ -298,6 +309,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          T1_Inc_Impresion: 0, T1_Inc_Impresion_C1: '',
          T1_PVP: 0, T1_PVP_C1: '', T1_Fecha_Entrega: '', T1_Transporte: '',
          T1_Inc_Cargador: 0, T1_Inc_Cargador_C1: '', T1_Inc_Cargador_48: 0,
+         T1_Inc_SmartHome: 0, T1_Inc_SmartHome_C1: '', T1_Inc_SmartHome_48: '',
       };
    }
 
@@ -443,6 +455,49 @@ export class EnrollableComponent implements OnInit, OnChanges {
          error => {
             this.toaster.error(error.message);
          }
+      );
+   }
+
+   // Smart Home: solo con motor y si el modelo es de una marca que lo admite para el cliente (SOL_ARTICULOS_SMART_HOME_*)
+   load_SmartHome(modelo: number): void {
+      const motor$: Observable<any> = this.Tipo1_Tipo === '3' && modelo > 0
+         ? this.service.getSmartHome(parseInt(this.Cliente), modelo).pipe(catchError(() => of([])))
+         : of([]);
+      motor$.subscribe(data => {
+         const opcion = data && data.length ? data[0] : null;
+         this.smartHome = opcion
+            ? [{ id: 1, text: 'SÍ', precio: opcion.precio, c1: opcion.c1 }, { id: -1, text: 'NO', precio: 0, c1: '' }]
+            : [];
+         this.asignaSmartHome().subscribe();
+      });
+   }
+
+   // Smart Home elegido en la pantalla: si la línea ya está valorada se recalcula su total
+   changeSmartHome(): void {
+      this.asignaSmartHome().subscribe(() => this.recalculaLinea());
+   }
+
+   // Incremento del Smart Home por la cantidad de cortinas, como el cargador. Código 48: el del motor
+   private asignaSmartHome(): Observable<any> {
+      const pos = this.getPos(this.smartHome, this.Tipo1_SmartHome);
+      if (pos < 0 || Number(this.Tipo1_SmartHome) < 0) {
+         this.Tipo1_SmartHome = '-1';
+         this.SmartHome_Extra = '';
+         this.precios.T1_Inc_SmartHome = 0;
+         this.precios.T1_Inc_SmartHome_C1 = '';
+         this.precios.T1_Inc_SmartHome_48 = '';
+         return of(null);
+      }
+      const opcion = this.smartHome[pos];
+      const cantidad = Number(this.Cantidad);
+      const posModelo = this.getPos(this.items3, this.Tipo1_Color);
+      const codigo48 = posModelo >= 0 ? ((this.items3[posModelo] as any).codigo_48 || '') : '';
+      this.SmartHome_Extra = '(' + opcion.precio + '€ ' + opcion.c1 + (codigo48 ? ' ' + codigo48 : '') + ')';
+      this.precios.T1_Inc_SmartHome = cantidad * opcion.precio;
+      this.precios.T1_Inc_SmartHome_C1 = opcion.c1;
+      this.precios.T1_Inc_SmartHome_48 = codigo48;
+      return this.c1PorCantidad(opcion.c1, cantidad).pipe(
+         tap(c1 => { this.precios.T1_Inc_SmartHome_C1 = c1; })
       );
    }
 
@@ -780,6 +835,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       }
       if (this.verMando) this.load_RadioMando();
       this.load_Cargadores(parseInt(this.Tipo1_Color));
+      this.load_SmartHome(parseInt(this.Tipo1_Color));
    }
 
    // Mando elegido en la pantalla: si la línea ya está valorada se recalcula su total
@@ -1026,7 +1082,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.precios.T1_Inc_Contrapeso_C1,
          this.precios.T1_Inc_Mando_C1,
          this.precios.T1_Inc_CadenaMetalica_C1,
-         this.precios.T1_Inc_Cargador_C1, '', '', ''
+         this.precios.T1_Inc_Cargador_C1,
+         this.precios.T1_Inc_SmartHome_C1, '', ''
       ).subscribe(
          data => { this.precios.T1_PVP_C1 = data[0].res; },
          error => {
@@ -1045,7 +1102,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
          + this.precios.T1_Inc_CadenaMetalica
          + this.precios.T1_Inc_Contrapeso
          + this.precios.T1_Inc_Mando
-         + this.precios.T1_Inc_Cargador;
+         + this.precios.T1_Inc_Cargador
+         + this.precios.T1_Inc_SmartHome;
 
       this.precios.T1_PVP = total;
       this.calculando = false;
@@ -1293,7 +1351,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.Tipo1_Estancia, this.Tipo1_Estancia_Obs, preciosCompleto,
          this.Tipo1_Cajon, this.Tipo1_CajonC, this.Tipo1_CajonRAL,
          this.Tipo1_Guia, this.Tipo1_GuiaC, this.Tipo1_GuiaRAL,
-         this.SubTipoCortina, this.Tipo1_Cargador
+         this.SubTipoCortina, this.Tipo1_Cargador, this.Tipo1_SmartHome
       );
 
       this.onAdd.emit(tipo);
@@ -1338,6 +1396,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
       this.Tipo1_Estancia_Obs = item.estancia_obs;
       // Se aplica al cargar los cargadores del modelo (load_Cargadores)
       this.Tipo1_Cargador = item.Tipo1_Cargador != null ? String(item.Tipo1_Cargador) : '-1';
+      // Igual con el Smart Home (load_SmartHome)
+      this.Tipo1_SmartHome = item.Tipo1_SmartHome != null ? String(item.Tipo1_SmartHome) : '-1';
       this.esCadena = (item.acc_tipo_text || '').toUpperCase() === 'CADENA' ? 1 : 0;
 
       const cliente = parseInt(this.Cliente);
@@ -1608,7 +1668,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          var tipo: CortinaTipo = new CortinaTipo(this.codeCentro);
          tipo.Enrollable_Add(ancho, alto, cantidad, it1, it1s, it2, it2s, it13, it13s, it3, it3s, it4, it4s, it5, it5s, it6, it6s, it7, it7s, it8, it8s, it9, it9s, it10, it10s, it11, it11s, it12, it12s,
             alturaCadena, colorCadena, this.esCadenaExt, it28, it28s, this.ID_Quiero, this.ID_Imagen, it31, it31s, this.Tipo1_Estancia, this.Tipo1_Estancia_Obs, this.precios,
-            this.Tipo1_Cajon, this.Tipo1_CajonC, this.Tipo1_CajonRAL, this.Tipo1_Guia, this.Tipo1_GuiaC, this.Tipo1_GuiaRAL, this.SubTipoCortina, this.Tipo1_Cargador);
+            this.Tipo1_Cajon, this.Tipo1_CajonC, this.Tipo1_CajonRAL, this.Tipo1_Guia, this.Tipo1_GuiaC, this.Tipo1_GuiaRAL, this.SubTipoCortina, this.Tipo1_Cargador, this.Tipo1_SmartHome);
 
          this.CestaPrecios = [];
          this.CestaPrecios.push(tipo);
@@ -1623,7 +1683,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.precios.T1_Inc_Contrapeso_C1,
          this.precios.T1_Inc_Mando_C1,
          this.precios.T1_Inc_CadenaMetalica_C1,
-         this.precios.T1_Inc_Cargador_C1, "", "", "").subscribe(
+         this.precios.T1_Inc_Cargador_C1,
+         this.precios.T1_Inc_SmartHome_C1, "", "").subscribe(
             data => {
                this.precios.T1_PVP_C1 = data[0].res;
             },
@@ -1669,8 +1730,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
                this.precios.T1_Inc_Contrapeso_C1 = contrapeso.v2;
             }
          }
-         // El C1 se suma cuando el del mando y el del cargador ya están multiplicados por la cantidad
-         forkJoin([this.asignaMando(), this.asignaCargador()]).subscribe(() => {
+         // El C1 se suma cuando el del mando, el del cargador y el del Smart Home ya están multiplicados por la cantidad
+         forkJoin([this.asignaMando(), this.asignaCargador(), this.asignaSmartHome()]).subscribe(() => {
             this.CalculateC1_Tipo1();
             this.asignaPrecios();
          });

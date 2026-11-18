@@ -81,6 +81,7 @@ function Add_Tipo_1(idrow,values){
     var idcajon             =  Check(values.Tipo1_Cajon,-1);
     var idguia             =  Check(values.Tipo1_Guia,-1);
     var cargador          = Check(values.Tipo1_Cargador, -1);
+    var smart_home        = Check(values.Tipo1_SmartHome, -1);
 
 
     var T1_PVP = c1;
@@ -106,6 +107,8 @@ function Add_Tipo_1(idrow,values){
       var T1_Transporte       =  Check(values.precios.T1_Transporte);
       var T1_Inc_Cargador        =  Check(values.precios.T1_Inc_Cargador);
       var T1_Inc_Cargador_C1       =  Check(values.precios.T1_Inc_Cargador_C1);
+      var T1_Inc_SmartHome = Check(values.precios.T1_Inc_SmartHome, '');
+      var T1_Inc_SmartHome_C1 = Check(values.precios.T1_Inc_SmartHome_C1, '');
 
     }
 
@@ -185,6 +188,9 @@ function Add_Tipo_1(idrow,values){
    request.input('cargador',sql.Int,cargador);
    request.input('T1_Inc_Cargador',sql.VarChar(25),T1_Inc_Cargador);
    request.input('T1_Inc_Cargador_C1',sql.VarChar(25),T1_Inc_Cargador_C1);
+   request.input('smart_home',sql.Int,smart_home);
+   request.input('T1_Inc_SmartHome',sql.VarChar(25),T1_Inc_SmartHome);
+   request.input('T1_Inc_SmartHome_C1',sql.VarChar(25),T1_Inc_SmartHome_C1);
      // Devuelve una promesa que se resuelve al terminar el alta de la línea (los errores solo se registran)
   return new Promise(function (resolve) {
   request.execute('sp_sol_pedidos_cola_tipo_1_add',

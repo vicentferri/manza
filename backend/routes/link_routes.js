@@ -19,6 +19,7 @@ lmapi.get('/accion/:cli/:pro',LM.accion);
 lmapi.get('/accionT/:cli/:idrow/:tipo',LM.accionT);
 lmapi.get('/accionC/:cli/:acc/:tipo/:produc',LM.accionC);
 lmapi.get('/cargadores/:id',LM.Cargadores);
+lmapi.get('/smart_home/:cli/:modelo',LM.SmartHome);
 lmapi.get('/lacados/:cli',LM.lacados);
 
 lmapi.get('/accion_gen/:cli',LM.accion_gen);

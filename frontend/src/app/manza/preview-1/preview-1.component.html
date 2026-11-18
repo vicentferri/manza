@@ -93,6 +93,14 @@
             <small>{{ item.precios.T1_Inc_Cargador_48 }}</small>
           </div>
         </div>
+        <div class="cfg-precio-fila" *ngIf="item.precios.T1_Inc_SmartHome > 0">
+          <span>Smart Home</span>
+          <div>
+            {{ item.precios.T1_Inc_SmartHome | number:'1.2-2' }} €
+            <small>{{ item.precios.T1_Inc_SmartHome_C1 }}</small>
+            <small>{{ item.precios.T1_Inc_SmartHome_48 }}</small>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -283,6 +283,18 @@
                   </option>
                 </select>
               </div>
+              <div class="cfg-field" *ngIf="smartHome.length > 0">
+                <label>Smart Home<span class="cfg-extra" *ngIf="SmartHome_Extra"> {{ SmartHome_Extra }}</span></label>
+                <select
+                  name="Tipo1_SmartHome"
+                  class="form-control form-control-sm"
+                  [ngModelOptions]="{ standalone: true }"
+                  [(ngModel)]="Tipo1_SmartHome"
+                  (change)="changeSmartHome();"
+                >
+                  <option *ngFor="let pow of smartHome" [value]="pow.id">{{ pow.text }}</option>
+                </select>
+              </div>
               <div class="cfg-field" [class.cfg-error]="Tipo1_Posicion == '-1'">
                 <label>{{ "POSICION" | translate }}</label>
                 <select
