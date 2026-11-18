@@ -82,10 +82,20 @@ async function leerLineas(pool, doc, id, cliente) {
       '  t.sop_tipo_text, t.sop_color_text, t.tej_tipo_text, t.tej_color_text, t.tej_salida_text, ' +
       '  t.con_tipo_text, t.con_color_text, t.cad_color_text, t.cad_Tipo, t.cad_Altura, t.impresion, t.impresion_imagen, ' +
       '  t.mando_text, t.Estancia, t.T1_PVP, t.T1_PVP_C1, ca.descripcion as cargador_text, t.smart_home, ' +
-      '  dbo.AT_Tejido_color_codigoprov_Cliente(t.tej_tipo_id, @cliente, t.tej_color_id) as codigo48 ' +
+      '  dbo.AT_Tejido_color_codigoprov_Cliente(t.tej_tipo_id, @cliente, t.tej_color_id) as codigo48, ' +
+      '  tc.descripcion as tej_tipo_cliente, cc.descripcion as tej_color_cliente, ' +
+      '  te.descripcion as tej_tipo_nuestro, co.descripcion as tej_color_nuestro ' +
       'from ' + doc.lineas + ' l ' +
       'inner join ' + doc.tablaTipo + '1 t on t.idrow = l.ID ' +
       'left join dbo.SOL_ARTICULOS_MANDOS_CARGADORES ca on ca.idrow = t.cargador ' +
+      // Nombre del tejido y del color para el cliente (SOLAR 5% / GRIS PERLA en Leroy)
+      'outer apply (select top 1 x.descripcion from dbo.SOL_ARTICULOS_TEJIDOS_CLIENTES x ' +
+      '  where x.id = t.tej_tipo_id and x.cliente = @cliente) tc ' +
+      'outer apply (select top 1 x.descripcion from dbo.SOL_ARTICULOS_TEJIDOS_ATRIBUTOS x ' +
+      '  where x.tejido = t.tej_tipo_id and x.color = t.tej_color_id and x.cliente = @cliente) cc ' +
+      // Nuestro nombre (el mismo que pone sp_sol_pedidos_cola_tipo_1_add en el pedido), para producción
+      'left join dbo.SOL_ARTICULOS_TEJIDOS te on te.idrow = t.tej_tipo_id ' +
+      'left join dbo.SOL_ARTICULOS_COLORES_MARCAS co on co.idrow = t.tej_color_id ' +
       'where l.IDROW = @id and l.TIPO = 1 ' +
       'order by l.ID, t.id'
     );
@@ -109,8 +119,17 @@ function alturaCadena(l) {
   }
 }
 
+/* El pedido guarda nuestros nombres de tejido y color (sp_sol_pedidos_cola_tipo_1_add los sustituye al grabar) y el
+   presupuesto los del cliente, así que no se usa el texto guardado salvo si falta el otro: el PDF normal saca los
+   nombres del cliente y el de producción los nuestros, en pedidos y en presupuestos. */
+function nombreTejido(l, produccion) {
+  const tejido = produccion ? l.tej_tipo_nuestro : l.tej_tipo_cliente;
+  const color = produccion ? l.tej_color_nuestro : l.tej_color_cliente;
+  return unir(c.texto(tejido) || l.tej_tipo_text, c.texto(color) || l.tej_color_text);
+}
+
 /* Una línea del pedido -> su plantilla, la fila y una entrada por cortina con su parte del precio y del C1 */
-function filaDeLinea(l) {
+function filaDeLinea(l, produccion) {
   const motor = l.acc_tipo_id === TIPO_MOTOR;
   const fila = {
     producto: 'Enrollable',
@@ -119,7 +138,7 @@ function filaDeLinea(l) {
     sistema: motor ? c.texto(l.sop_tipo_text) : c.texto(l.acc_marca_text),
     ancho: c.formatMedida(l.ancho),
     alto: c.formatMedida(l.alto),
-    tejido: unir(l.tej_tipo_text, l.tej_color_text),
+    tejido: nombreTejido(l, produccion),
     codigo48: c.texto(l.codigo48),
     posicion: c.texto(l.acc_posicion_text),
     caida: c.texto(l.tej_salida_text),
@@ -213,15 +232,16 @@ function seccionDePlantilla(nombre, lineas) {
 
 /* Hojas y totales del enrollable del documento, o null si no tiene enrollable o el cliente no imprime así.
    Devuelve { secciones, precio, c1 } con los totales en céntimos (c1 = null si alguna línea no lo tiene). */
-async function leer(pool, doc, id, cliente) {
+async function leer(pool, doc, id, cliente, opciones) {
   if (!aplica(cliente)) return null;
+  const produccion = !!(opciones && opciones.produccion);
   const lineas = await leerLineas(pool, doc, id, cliente);
   if (!lineas.length) return null;
 
   const porPlantilla = { cadena: [], motor: [] };
   let unidades = [];
   lineas.forEach(function (l) {
-    const linea = filaDeLinea(l);
+    const linea = filaDeLinea(l, produccion);
     porPlantilla[linea.plantilla].push(linea);
     unidades = unidades.concat(linea.unidades);
   });

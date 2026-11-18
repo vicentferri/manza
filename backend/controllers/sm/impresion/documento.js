@@ -25,7 +25,9 @@ const c = require('./comun');
      nombre      en el resumen y en el nombre del fichero ('Enrollable')
      tipo        TIPO de sus líneas en el pedido o presupuesto (1)
      aplica(cliente)                  si el cliente lo imprime aquí (si no, sale con Crystal en "Antiguo")
-     leer(pool, doc, id, cliente)     { secciones, precio, c1 } (totales en céntimos, c1 null si falta), o null
+     leer(pool, doc, id, cliente, opciones)
+                                      { secciones, precio, c1 } (totales en céntimos, c1 null si falta), o null;
+                                      opciones = { produccion } (true en la pestaña "Producción")
    Para añadir un producto: crear su módulo con ese contrato y añadirlo aquí. */
 const PRODUCTOS = [
   require('./enrollable'),
@@ -165,18 +167,20 @@ async function impresion_documento_pdf(req, res) {
     }
     const cabecera = cab.recordset[0];
 
+    // ?modo=produccion: el mismo documento sin códigos de tejido, precios, totales ni resumen,
+    // y con nuestros nombres de tejido en vez de los del cliente
+    const produccion = !!(req.query && req.query.modo === 'produccion');
+
     // Los productos del documento, cada uno con sus bloques y totales
     const partes = [];
     for (const producto of PRODUCTOS) {
       if (!producto.aplica(cabecera.CLIENTE)) continue;
-      const parte = await producto.leer(pool, p.doc, p.id, cabecera.CLIENTE);
+      const parte = await producto.leer(pool, p.doc, p.id, cabecera.CLIENTE, { produccion: produccion });
       if (parte) partes.push(Object.assign({ nombre: producto.nombre }, parte));
     }
     if (!partes.length) {
       return res.status(404).json({ error: 'El ' + req.params.doc + ' ' + p.id + ' no tiene productos que se impriman aquí' });
     }
-    // ?modo=produccion: el mismo documento sin códigos de tejido, precios, totales ni resumen
-    const produccion = req.query && req.query.modo === 'produccion';
     const secciones = [].concat.apply([], partes.map(function (parte) { return parte.secciones; }));
 
     // El título del documento es el nombre con el que el visor del navegador propone guardarlo
