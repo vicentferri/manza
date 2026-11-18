@@ -8,7 +8,7 @@ import { take } from 'rxjs/operators';
 import {
   Condicion, Consumo, ErroresRegla, OPERADORES_CONDICION, OPERADORES_CONSUMO,
   buildCondicion, buildConsumo, condicionVacia, consumoVacio, operandoValido, parseCondicion, parseConsumo,
-  validarCondicion, validarConsumo, validarRegla
+  esIgualdad, validarCondicion, validarConsumo, validarRegla
 } from './fabricacion-reglas.util';
 import * as XLSX from 'xlsx';
 import { recargarGrid } from '../../../shared/grid-recarga';
@@ -300,6 +300,11 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     if (String(field).indexOf('nombre_parametro') == 0 && /==\s*\*\s*$/.test(String(value || ''))) {
       return this.celda(this.escapeHtml(value) + ' <small class="text-muted">(cualquiera)</small>', 'fab-code',
         value + ' (cualquiera: se cumple si la línea tiene algún valor)');
+    }
+    /* sqlReglasProducto/06: "!= *" es «ninguno» */
+    if (String(field).indexOf('nombre_parametro') == 0 && /!=\s*\*\s*$/.test(String(value || ''))) {
+      return this.celda(this.escapeHtml(value) + ' <small class="text-muted">(ninguno)</small>', 'fab-code',
+        value + ' (ninguno: se cumple si la línea no tiene valor)');
     }
     return this.celda(this.escapeHtml(value), 'fab-code', value);
   };
@@ -843,17 +848,18 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     });
   }
 
-  /* El valor de una condición se elige de una lista si el parámetro tiene catálogo y el operador es "igual a" */
+  /* El valor de una condición se elige de una lista si el parámetro tiene catálogo y el operador es "igual a" o "distinto de" */
   tieneValores(c: Condicion): boolean {
-    return c.operador == '==' && !!this.valoresParametro[String(c.parametro).toUpperCase()];
+    return esIgualdad(c.operador) && !!this.valoresParametro[String(c.parametro).toUpperCase()];
   }
 
   /* Opciones de la lista; si la regla tiene un valor que ya no está en el catálogo, se añade para no perderlo */
   opcionesValor(c: Condicion): { valor: string, texto: string }[] {
     let lista = this.valoresParametro[String(c.parametro).toUpperCase()] || [];
     let actual = String(c.valor || '').trim();
-    /* sqlReglasProducto/04: la primera opción es «cualquiera» (*): se cumple si la línea tiene algún valor */
-    let cualquiera = [{ valor: VALOR_CUALQUIERA, texto: '— cualquiera (tenga el valor que tenga) —' }];
+    /* sqlReglasProducto/04: la primera opción es «cualquiera» (*): se cumple si la línea tiene algún valor.
+       sqlReglasProducto/06: con «distinto de», * es «ninguno»: se cumple si la línea no tiene valor */
+    let cualquiera = [{ valor: VALOR_CUALQUIERA, texto: c.operador == '!=' ? '— ninguno (la línea no tiene valor) —' : '— cualquiera (tenga el valor que tenga) —' }];
     if (actual != '' && actual != VALOR_CUALQUIERA && !lista.some(v => v.valor.toUpperCase() == actual.toUpperCase())) {
       return cualquiera.concat([{ valor: actual, texto: actual + ' (no está en el catálogo)' }], lista);
     }
@@ -882,9 +888,9 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     }
   }
 
-  textoValor(parametro: string, valor: string): string {
+  textoValor(parametro: string, valor: string, operador: string = '=='): string {
     if (String(valor || '').trim() == VALOR_CUALQUIERA) {
-      return ' (cualquiera: la línea tiene algún valor)';
+      return operador == '!=' ? ' (ninguno: la línea no tiene valor)' : ' (cualquiera: la línea tiene algún valor)';
     }
     let lista = this.valoresParametro[String(parametro).toUpperCase()] || [];
     let encontrado = lista.find(v => v.valor.toUpperCase() == String(valor || '').trim().toUpperCase());
@@ -1737,7 +1743,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
         let op = OPERADORES_CONDICION.find(o => o.valor == c.operador);
         frase = c.operador == 'entre'
           ? c.parametro + ' entre ' + c.desde + ' y ' + c.hasta
-          : c.parametro + ' ' + (op ? op.texto : c.operador) + ' ' + c.valor + (c.operador == '==' ? this.textoValor(c.parametro, c.valor) : '');
+          : c.parametro + ' ' + (op ? op.texto : c.operador) + ' ' + c.valor + (esIgualdad(c.operador) ? this.textoValor(c.parametro, c.valor, c.operador) : '');
       }
       partes.push((partes.length > 0 ? (this.regla.operaciones[i - 1] == 'O' ? ' O ' : ' Y ') : '') + frase);
     });
