@@ -327,7 +327,7 @@ async function reglas(req, res) {
         join SOL_FABRICACION_SISTEMAS s on s.sistema = r.sistema and s.activo = 1
         left join SOL_CLIENTES c on c.idrow = r.cliente
         where r.sistema = @sistema
-        order by case when r.cliente is null then 0 else 1 end, c.descripcion, r.orden, r.idrow`);
+        order by r.orden, case when r.cliente is null then 0 else 1 end, c.descripcion, r.idrow`);
     res.status(200).send({ Table: result.recordset });
   } catch (err) {
     console.error(err);

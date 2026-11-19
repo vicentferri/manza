@@ -375,14 +375,13 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     return fila && (fila.articulo === null || fila.articulo === '' || Number(fila.consumo) === -1) ? 'fab-sim-error' : '';
   };
 
+  /* Rejilla de reglas: sin páginas, todas las reglas del juego con scroll (con páginas de 100 las últimas no se veían) */
   settings: any = {
     width: '100%',
     height: 600,
-    pageable: true,
+    pageable: false,
     autoheight: false,
     theme: 'glacier',
-    pagesizeoptions: ['50', '100'],
-    pagesize: 100,
     scrollmode: 'logical',
     sortable: true,
     altrows: true,
