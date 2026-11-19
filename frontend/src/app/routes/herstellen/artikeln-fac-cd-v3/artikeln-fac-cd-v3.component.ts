@@ -831,18 +831,23 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     });
   }
 
-  /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
-     el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
-  parametrosCondicion(c: Condicion): string[] {
-    /* Ordenados alfabéticamente (sin distinguir mayúsculas, criterio del español). La lista ordenada se guarda
-       y solo se recalcula cuando se recargan los parámetros: este método se llama en cada revisión de Angular */
+  /* Todos los parámetros del juego, ordenados alfabéticamente (sin distinguir mayúsculas, criterio del español), para
+     los desplegables de la ventana de la regla. La lista ordenada se guarda y solo se recalcula cuando se recargan los
+     parámetros: este método se llama en cada revisión de Angular */
+  parametrosAlfabetico(): string[] {
     if (this.ordenadosOrigen !== this.nombresParametros) {
       this.ordenadosOrigen = this.nombresParametros;
       this.parametrosOrdenados = this.nombresParametros.slice()
         .sort((a, b) => String(a).localeCompare(String(b), 'es', { sensitivity: 'base' }));
     }
+    return this.parametrosOrdenados;
+  }
+
+  /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
+     el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
+  parametrosCondicion(c: Condicion): string[] {
     let actual = String(c.parametro || '').toUpperCase();
-    return this.parametrosOrdenados.filter(p => {
+    return this.parametrosAlfabetico().filter(p => {
       let nombre = String(p).toUpperCase();
       return !nombre.endsWith('_ID') || nombre == actual;
     });
@@ -1566,7 +1571,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   /* Parámetros que dan un artículo: las búsquedas cuyo resultado es el id de ARTICULOS (no las de un paso intermedio, como la Referencia) */
   parametrosArticulo(): string[] {
-    return this.parametros.filter(p => p.devuelve_articulo == 1).map(p => p.name);
+    let dan = this.parametros.filter(p => p.devuelve_articulo == 1).map(p => p.name);
+    return this.parametrosAlfabetico().filter(p => dan.indexOf(p) >= 0);
   }
 
   AnadirArticuloDinamico(parametro: string) {
