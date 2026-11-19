@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef, NgZone, ElementRef } from '@angular/core';
 import { destruirGrids } from '../grid-destruir';
 import { SearchArticleType } from '../../models/SearchArticleType';
 import { jqxGridComponent } from 'jqwidgets-framework/jqwidgets-ts/angular_jqxgrid';
@@ -20,6 +20,7 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
 
   @ViewChild('gridSReference', { static: false }) mySGrid!: jqxGridComponent;
   @ViewChild('staticModalAdd', { static: false }) modalAdd!: ModalDirective;
+  @ViewChild('inputDescripcion', { static: false }) inputDescripcion: ElementRef;
 
   @Input('editable') editable: number;
 
@@ -389,19 +390,18 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
     if (this.buscando) {
       return;
     }
-    this.buscando = true;
 
-    this.mySGrid.clearselection();
-    this.mySGrid.showloadelement();
+    /* Con la ventana recién abierta la rejilla aún no se ha pintado y jqx falla en clearselection: no impide buscar */
+    try {
+      this.mySGrid.clearselection();
+      this.mySGrid.showloadelement();
+      this.mySGrid.editable(this.editable == 1);
+    }
+    catch (e) {
+      /* se pinta en cuanto la ventana es visible */
+    }
     this.source.localdata = null;
-
-
-    if (this.editable == 1) {
-      this.mySGrid.editable(true);
-    }
-    else {
-      this.mySGrid.editable(false);
-    }
+    this.buscando = true;
 
     let model = {
       usuario: usuario,
@@ -427,12 +427,24 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
     );
   }
 
+  /* Deja el cursor en el campo Descripción (p. ej. al abrir el buscador en una ventana) */
+  enfocarDescripcion() {
+    if (this.inputDescripcion) {
+      this.inputDescripcion.nativeElement.focus();
+    }
+  }
+
   /* Pinta los artículos de la búsqueda (null = rejilla vacía) y quita el aviso de carga */
   private mostrarArticulos(filas: any[]) {
     this.source.localdata = filas;
     this.dataAdapter.dataBind();
-    this.mySGrid.updatebounddata("cells");
-    this.mySGrid.hideloadelement();
+    try {
+      this.mySGrid.updatebounddata("cells");
+      this.mySGrid.hideloadelement();
+    }
+    catch (e) {
+      /* rejilla aún sin pintar: muestra los datos del adaptador al hacerse visible */
+    }
   }
 
   New() {

@@ -1610,6 +1610,11 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   /* Cada ventana se abre cuando la otra ha terminado de cerrarse: si se solapan, el cierre de
      la primera quita a la página la clase que permite desplazar la ventana abierta */
   AbrirBuscador() {
+    /* Al abrirse busca solo (con los criterios que tenga escritos) y deja el cursor en Descripción */
+    this.modalAdd.onShown.pipe(take(1)).subscribe(() => {
+      this.search.searchDocuments();
+      this.search.enfocarDescripcion();
+    });
     this.modalRegla.onHidden.pipe(take(1)).subscribe(() => this.modalAdd.show());
     this.modalRegla.hide();
   }
