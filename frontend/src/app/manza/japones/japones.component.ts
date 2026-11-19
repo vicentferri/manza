@@ -294,7 +294,11 @@ export class JaponesComponent implements OnInit, OnChanges {
    }
 
    load_PJ_TejidosColores(tejidoId: number, slot: number): void {
-      this.service.getTejidosColor(tejidoId, parseInt(this.Cliente), this.SubCliente).subscribe(
+      // Con impresión digital los colores salen de la lista propia de impresión digital
+      const color$ = this.PJ_ID_Quiero
+         ? this.service.getTejidosColorID(tejidoId, parseInt(this.Cliente), this.SubCliente)
+         : this.service.getTejidosColor(tejidoId, parseInt(this.Cliente), this.SubCliente);
+      color$.subscribe(
          data => {
             if (slot === 1) { this.pj_tejidosC = data; if (data.length > 0) { this.Tipo2_TejidoColor = data[0].id.toString(); } }
             if (slot === 2) { this.pj_tejidosC_2 = data; if (data.length > 0) { this.Tipo2_TejidoColor_2 = data[0].id.toString(); } }
@@ -407,14 +411,9 @@ export class JaponesComponent implements OnInit, OnChanges {
       if (tejido > 0) {
          const pos = this.getPos(this.pj_tejidos, tejido);
          if (pos >= 0) this.CodigoProv2 = this.pj_tejidos[pos].codigoprov || '';
-         if (this.PJ_ID_Quiero) {
-            this.service.getTejidosColorID(tejido, parseInt(this.Cliente), this.SubCliente).subscribe(
-               data => { this.pj_tejidosC = data; if (data.length > 0) { this.Tipo2_TejidoColor = data[0].id.toString(); } },
-               error => console.log(error)
-            );
-         } else {
-            this.load_PJ_TejidosColores(tejido, 1);
-         }
+         this.load_PJ_TejidosColores(tejido, 1);
+         // Si se combinan colores, las demás lamas también pasan al tejido nuevo
+         this.CombinarColores();
       }
    }
 

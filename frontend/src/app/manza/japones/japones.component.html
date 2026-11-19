@@ -207,7 +207,7 @@
               <div class="cfg-check">
                 <label>
                   <input type="checkbox" name="CombinarColores"
-                    [(ngModel)]="PJ_CombinarColores" (click)="CombinarColores()" />
+                    [(ngModel)]="PJ_CombinarColores" (ngModelChange)="CombinarColores()" />
                   {{ "COMBINARCOLORES" | translate }}
                 </label>
               </div>
