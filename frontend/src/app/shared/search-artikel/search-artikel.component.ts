@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ViewChild, ViewContainerRef, NgZone, ElementRef } from '@angular/core';
 import { destruirGrids } from '../grid-destruir';
 import { SearchArticleType } from '../../models/SearchArticleType';
 import { jqxGridComponent } from 'jqwidgets-framework/jqwidgets-ts/angular_jqxgrid';
@@ -20,6 +20,7 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
 
   @ViewChild('gridSReference', { static: false }) mySGrid!: jqxGridComponent;
   @ViewChild('staticModalAdd', { static: false }) modalAdd!: ModalDirective;
+  @ViewChild('inputDescripcion', { static: false }) inputDescripcion: ElementRef;
 
   @Input('editable') editable: number;
 
@@ -65,6 +66,9 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
   }
 
   searchmodel = new SearchArticleType();
+
+  /* Hay una búsqueda en marcha (ver searchDocuments) */
+  private buscando = false;
 
   TipoProdSource = {
     type: "GET",
@@ -382,46 +386,65 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
     }
 
 
-    this.mySGrid.clearselection();
-    this.mySGrid.showloadelement();
+    /* Una búsqueda cada vez: con dobles clics la respuesta antigua podía llegar después y pisar la nueva */
+    if (this.buscando) {
+      return;
+    }
+
+    /* Con la ventana recién abierta la rejilla aún no se ha pintado y jqx falla en clearselection: no impide buscar */
+    try {
+      this.mySGrid.clearselection();
+      this.mySGrid.showloadelement();
+      this.mySGrid.editable(this.editable == 1);
+    }
+    catch (e) {
+      /* se pinta en cuanto la ventana es visible */
+    }
     this.source.localdata = null;
-
-
-    if (this.editable == 1) {
-      this.mySGrid.editable(true);
-    }
-    else {
-      this.mySGrid.editable(false);
-    }
+    this.buscando = true;
 
     let model = {
       usuario: usuario,
-      criterio: criterio,
-      alias: alias,
-      barras: barras
+      criterio: String(criterio).trim(),
+      alias: String(alias).trim(),
+      barras: String(barras).trim()
     }
 
     let values = JSON.stringify(model);
 
     this.service.HTTP_Post("/sm/articulos", values).subscribe(
       (data: any) => {
-        if (data.Table.length > 0) {
-          this.source.localdata = data.Table;
-          this.dataAdapter.dataBind();
-          this.mySGrid.updatebounddata("cells");
-          this.mySGrid.hideloadelement();
-        }
-        else {
-          this.source.localdata = null;
-          this.dataAdapter.dataBind();
-          this.mySGrid.updatebounddata("cells");
-          this.mySGrid.hideloadelement();
-        }
+        this.buscando = false;
+        this.mostrarArticulos(data && data.Table && data.Table.length > 0 ? data.Table : null);
       },
       (error: any) => {
-        this.toaster.error(error.message);
+        /* Sin esto el aviso "Loading..." se quedaba para siempre y parecía que no cargaba */
+        this.buscando = false;
+        this.mostrarArticulos(null);
+        this.toaster.error('No se han podido cargar los artículos. Vuelva a pulsar Buscar.', 'Buscador de artículos',
+          { disableTimeOut: true, closeButton: true });
       }
     );
+  }
+
+  /* Deja el cursor en el campo Descripción (p. ej. al abrir el buscador en una ventana) */
+  enfocarDescripcion() {
+    if (this.inputDescripcion) {
+      this.inputDescripcion.nativeElement.focus();
+    }
+  }
+
+  /* Pinta los artículos de la búsqueda (null = rejilla vacía) y quita el aviso de carga */
+  private mostrarArticulos(filas: any[]) {
+    this.source.localdata = filas;
+    this.dataAdapter.dataBind();
+    try {
+      this.mySGrid.updatebounddata("cells");
+      this.mySGrid.hideloadelement();
+    }
+    catch (e) {
+      /* rejilla aún sin pintar: muestra los datos del adaptador al hacerse visible */
+    }
   }
 
   New() {

@@ -375,14 +375,13 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     return fila && (fila.articulo === null || fila.articulo === '' || Number(fila.consumo) === -1) ? 'fab-sim-error' : '';
   };
 
+  /* Rejilla de reglas: sin páginas, todas las reglas del juego con scroll (con páginas de 100 las últimas no se veían) */
   settings: any = {
     width: '100%',
     height: 600,
-    pageable: true,
+    pageable: false,
     autoheight: false,
     theme: 'glacier',
-    pagesizeoptions: ['50', '100'],
-    pagesize: 100,
     scrollmode: 'logical',
     sortable: true,
     altrows: true,
@@ -831,18 +830,23 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     });
   }
 
-  /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
-     el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
-  parametrosCondicion(c: Condicion): string[] {
-    /* Ordenados alfabéticamente (sin distinguir mayúsculas, criterio del español). La lista ordenada se guarda
-       y solo se recalcula cuando se recargan los parámetros: este método se llama en cada revisión de Angular */
+  /* Todos los parámetros del juego, ordenados alfabéticamente (sin distinguir mayúsculas, criterio del español), para
+     los desplegables de la ventana de la regla. La lista ordenada se guarda y solo se recalcula cuando se recargan los
+     parámetros: este método se llama en cada revisión de Angular */
+  parametrosAlfabetico(): string[] {
     if (this.ordenadosOrigen !== this.nombresParametros) {
       this.ordenadosOrigen = this.nombresParametros;
       this.parametrosOrdenados = this.nombresParametros.slice()
         .sort((a, b) => String(a).localeCompare(String(b), 'es', { sensitivity: 'base' }));
     }
+    return this.parametrosOrdenados;
+  }
+
+  /* Parámetros del desplegable de condiciones: sin los que terminan en _ID (las condiciones se escriben con
+     el texto, p. ej. @TEJIDO_TIPO y no @TEJIDO_TIPO_ID). Si la condición ya usa uno, se mantiene para no perderlo */
+  parametrosCondicion(c: Condicion): string[] {
     let actual = String(c.parametro || '').toUpperCase();
-    return this.parametrosOrdenados.filter(p => {
+    return this.parametrosAlfabetico().filter(p => {
       let nombre = String(p).toUpperCase();
       return !nombre.endsWith('_ID') || nombre == actual;
     });
@@ -1566,7 +1570,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   /* Parámetros que dan un artículo: las búsquedas cuyo resultado es el id de ARTICULOS (no las de un paso intermedio, como la Referencia) */
   parametrosArticulo(): string[] {
-    return this.parametros.filter(p => p.devuelve_articulo == 1).map(p => p.name);
+    let dan = this.parametros.filter(p => p.devuelve_articulo == 1).map(p => p.name);
+    return this.parametrosAlfabetico().filter(p => dan.indexOf(p) >= 0);
   }
 
   AnadirArticuloDinamico(parametro: string) {
@@ -1605,6 +1610,11 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   /* Cada ventana se abre cuando la otra ha terminado de cerrarse: si se solapan, el cierre de
      la primera quita a la página la clase que permite desplazar la ventana abierta */
   AbrirBuscador() {
+    /* Al abrirse busca solo (con los criterios que tenga escritos) y deja el cursor en Descripción */
+    this.modalAdd.onShown.pipe(take(1)).subscribe(() => {
+      this.search.searchDocuments();
+      this.search.enfocarDescripcion();
+    });
     this.modalRegla.onHidden.pipe(take(1)).subscribe(() => this.modalAdd.show());
     this.modalRegla.hide();
   }

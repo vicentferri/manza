@@ -694,14 +694,14 @@
               <label class="small mb-0">Ancho</label>
               <select class="form-control form-control-sm" [(ngModel)]="regla.param_ancho">
                 <option value="">— el de la cortina —</option>
-                <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+                <option *ngFor="let p of parametrosAlfabetico()" [value]="p">{{ p }}</option>
               </select>
             </div>
             <div class="col-md-6">
               <label class="small mb-0">Alto</label>
               <select class="form-control form-control-sm" [(ngModel)]="regla.param_alto">
                 <option value="">— el de la cortina —</option>
-                <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+                <option *ngFor="let p of parametrosAlfabetico()" [value]="p">{{ p }}</option>
               </select>
             </div>
           </div>
@@ -842,7 +842,7 @@
 
 <!-- Parámetros que se pueden usar como operando en las operaciones del consumo -->
 <datalist id="fab-operandos">
-  <option *ngFor="let p of nombresParametros" [value]="p"></option>
+  <option *ngFor="let p of parametrosAlfabetico()" [value]="p"></option>
 </datalist>
 
 <!-- Editor de un consumo (tipo + campos) -->
@@ -858,7 +858,7 @@
     <select *ngIf="consumo.tipo == 'parametro' || consumo.tipo == 'operacion'" class="form-control form-control-sm fab-consumo-param"
       [(ngModel)]="consumo.parametro">
       <option value="">— parámetro —</option>
-      <option *ngFor="let p of nombresParametros" [value]="p">{{ p }}</option>
+      <option *ngFor="let p of parametrosAlfabetico()" [value]="p">{{ p }}</option>
     </select>
     <ng-container *ngIf="consumo.tipo == 'operacion'">
       <select class="form-control form-control-sm fab-consumo-oper" [(ngModel)]="consumo.operador">
