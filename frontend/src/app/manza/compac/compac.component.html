@@ -3,10 +3,12 @@
   <section class="cfg-panel">
     <div class="cfg-panel-cabecera">
       <h2>{{ nombreProducto | translate }}</h2>
-      <!-- Fichas en PDF del perfil (sqlPerfiles/06) -->
-      <a *ngFor="let d of documentos" class="cfg-btn cfg-btn-azul" [href]="d.url" target="_blank" rel="noopener">
-        <i *ngIf="d.icono" [class]="d.icono"></i>{{ d.etiqueta | translate }}
-      </a>
+      <!-- Fichas en PDF del perfil (sqlPerfiles/06), juntas en un grupo -->
+      <div class="d-flex flex-wrap" style="gap: 8px" *ngIf="documentos.length > 0">
+        <a *ngFor="let d of documentos" class="cfg-btn cfg-btn-azul" [href]="d.url" target="_blank" rel="noopener">
+          <i *ngIf="d.icono" [class]="d.icono"></i>{{ d.etiqueta | translate }}
+        </a>
+      </div>
     </div>
 
     <div class="cfg-panel-cuerpo">
