@@ -66,6 +66,9 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
 
   searchmodel = new SearchArticleType();
 
+  /* Hay una búsqueda en marcha (ver searchDocuments) */
+  private buscando = false;
+
   TipoProdSource = {
     type: "GET",
     datatype: "json",
@@ -382,6 +385,12 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
     }
 
 
+    /* Una búsqueda cada vez: con dobles clics la respuesta antigua podía llegar después y pisar la nueva */
+    if (this.buscando) {
+      return;
+    }
+    this.buscando = true;
+
     this.mySGrid.clearselection();
     this.mySGrid.showloadelement();
     this.source.localdata = null;
@@ -396,32 +405,34 @@ export class SearchArtikelComponent implements OnInit, OnDestroy {
 
     let model = {
       usuario: usuario,
-      criterio: criterio,
-      alias: alias,
-      barras: barras
+      criterio: String(criterio).trim(),
+      alias: String(alias).trim(),
+      barras: String(barras).trim()
     }
 
     let values = JSON.stringify(model);
 
     this.service.HTTP_Post("/sm/articulos", values).subscribe(
       (data: any) => {
-        if (data.Table.length > 0) {
-          this.source.localdata = data.Table;
-          this.dataAdapter.dataBind();
-          this.mySGrid.updatebounddata("cells");
-          this.mySGrid.hideloadelement();
-        }
-        else {
-          this.source.localdata = null;
-          this.dataAdapter.dataBind();
-          this.mySGrid.updatebounddata("cells");
-          this.mySGrid.hideloadelement();
-        }
+        this.buscando = false;
+        this.mostrarArticulos(data && data.Table && data.Table.length > 0 ? data.Table : null);
       },
       (error: any) => {
-        this.toaster.error(error.message);
+        /* Sin esto el aviso "Loading..." se quedaba para siempre y parecía que no cargaba */
+        this.buscando = false;
+        this.mostrarArticulos(null);
+        this.toaster.error('No se han podido cargar los artículos. Vuelva a pulsar Buscar.', 'Buscador de artículos',
+          { disableTimeOut: true, closeButton: true });
       }
     );
+  }
+
+  /* Pinta los artículos de la búsqueda (null = rejilla vacía) y quita el aviso de carga */
+  private mostrarArticulos(filas: any[]) {
+    this.source.localdata = filas;
+    this.dataAdapter.dataBind();
+    this.mySGrid.updatebounddata("cells");
+    this.mySGrid.hideloadelement();
   }
 
   New() {

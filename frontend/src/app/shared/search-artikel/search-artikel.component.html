@@ -2,20 +2,23 @@
   <div class="form-group col-2">
     <label>Barras</label>
     <input
-      type="number"
+      type="text"
       class="form-control form-control-sm"
       [ngModelOptions]="{ standalone: true }"
       [(ngModel)]="searchmodel.Barras"
+      (keyup.enter)="searchDocuments()"
     />
   </div>
 
   <div class="form-group col-2 col-no-pad">
     <label>Referencia</label>
     <input
-      type="number"
+      type="text"
       class="form-control form-control-sm"
       [ngModelOptions]="{ standalone: true }"
       [(ngModel)]="searchmodel.Alias"
+      title="Código Solupyme o alias del artículo"
+      (keyup.enter)="searchDocuments()"
     />
   </div>
 

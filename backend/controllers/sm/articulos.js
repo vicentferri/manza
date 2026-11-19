@@ -2,26 +2,60 @@
 
 var sql = require('mssql');
 
-function search_articulos(req,res){
+/* Texto de búsqueda para LIKE: sin espacios sobrantes y con los comodines de SQL Server (% _ [) como texto normal */
+function patronLike(valor) {
+    return '%' + String(valor).trim().replace(/[\[%_]/g, '[$&]') + '%';
+}
 
-    var sqlquery = "select idrow,descripcion,cod_solupyme,fam_solupyme,precio_coste1,precio_coste,precio_venta,";
-      sqlquery += " plazo_entrega,tiempo_fabricacion,clasificacion,synchro_date,tipoprod,elemento,descelemento,";
-      sqlquery += " descunidad,consumo,margen,vertical,tipocalculo,desctipocalculo,tipoatributo,descatributo ";
-      sqlquery += " from busqueda_articulos ";
-      //sqlquery += " inner join NET_Articulos_V on NET_Articulos_V.Codart = busqueda_articulos.cod_solupyme ";
-      //sqlquery += " where LTRIM(RTRIM(NET_Articulos_V.modelo)) = '*' ";
+/* Buscador de artículos (shared/search-artikel). body { criterio, alias, barras }:
+   - criterio: descripción; varios criterios separados por + (tienen que estar todos)
+   - alias: "Referencia" de la pantalla, contra el código Solupyme o el alias del artículo
+   - barras: código de barras
+   Los campos vacíos no filtran: sin ninguno salen todos los artículos, como antes */
+async function search_articulos(req, res) {
+    var body = req.body || {};
+    var criterios = String(body.criterio == null ? '' : body.criterio).split('+')
+        .map(c => c.trim())
+        .filter(c => c !== '');
+    var alias = String(body.alias == null ? '' : body.alias).trim();
+    var barras = String(body.barras == null ? '' : body.barras).trim();
 
-    new sql.Request().query(sqlquery, (err2,result) => {
+    try {
+        var pool = await sql.connect();
+        var request = pool.request();
+        var filtros = [];
 
-        if (err2 == null)
-        {
-            res.status(200).send({ Table : result.recordset });
+        criterios.forEach((c, i) => {
+            request.input('criterio' + i, sql.VarChar(200), patronLike(c));
+            filtros.push('b.descripcion like @criterio' + i);
+        });
+        if (alias !== '') {
+            request.input('alias', sql.VarChar(100), patronLike(alias));
+            filtros.push('(b.cod_solupyme like @alias or a.alias like @alias)');
         }
-        else
-        {
-            res.status(500).send({ message : err2 });	
+        if (barras !== '') {
+            request.input('barras', sql.VarChar(100), patronLike(barras));
+            filtros.push('a.barras like @barras');
         }
-    });
+
+        var sqlquery = "select b.idrow,b.descripcion,b.cod_solupyme,b.fam_solupyme,b.precio_coste1,b.precio_coste,b.precio_venta,";
+        sqlquery += " b.plazo_entrega,b.tiempo_fabricacion,b.clasificacion,b.synchro_date,b.tipoprod,b.elemento,b.descelemento,";
+        sqlquery += " b.descunidad,b.consumo,b.margen,b.vertical,b.tipocalculo,b.desctipocalculo,b.tipoatributo,b.descatributo";
+        sqlquery += " from busqueda_articulos b";
+        if (alias !== '' || barras !== '') {
+            sqlquery += " join ARTICULOS a on a.idrow = b.idrow";
+        }
+        if (filtros.length > 0) {
+            sqlquery += " where " + filtros.join(' and ');
+        }
+
+        var result = await request.query(sqlquery);
+        res.status(200).send({ Table: result.recordset });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'No se han podido cargar los artículos' });
+    }
 }
 
 module.exports = {
