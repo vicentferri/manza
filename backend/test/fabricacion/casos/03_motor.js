@@ -112,7 +112,8 @@ module.exports = async function (inf) {
 
     await inf.test('COLUMNA, FORMULA, BUSQUEDA y TABLA con un pedido normal', async () => {
       const p = await parametros(ctx);
-      eq([p['@ANCHO'], p['@ALTO'], p['@COLOR_ID'], p['@COLOR']], ['100', '20', '8', 'BEIGE'], 'columnas');
+      /* ancho y alto de TIPO_7 son decimal(12,2) desde las medidas con decimales */
+      eq([p['@ANCHO'], p['@ALTO'], p['@COLOR_ID'], p['@COLOR']], ['100.00', '20.00', '8', 'BEIGE'], 'columnas');
       eq([p['@REF'], p['@ART'], p['@REF_NOMBRE']], ['04810', A, '04810'], 'búsquedas en cadena');
       eq([p['@T'], p['@T_DEC']], ['2.00', '3.00'], 'tabla: 20 exacto; 20,5 -> fila siguiente (30)');
       eq([p['@F'], p['@M2']], ['95.0000', '1.9000'], 'fórmulas con parámetros de tabla');

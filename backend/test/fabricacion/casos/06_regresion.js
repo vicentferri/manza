@@ -1,41 +1,35 @@
 'use strict'
 
 /*
- * 6. Regresión y aislamiento: la HoneyComb no cambia nada de los demás productos.
- *   - Los scripts sqlHoney solo crean/modifican los objetos previstos.
- *   - Los objetos nuevos del motor solo los usa el motor (no CD, no SM antiguo).
- *   - sp_fichero_produccion_2: con pedidos reales, el XML es idéntico al de la versión
- *     original (backup del 2026-09-29) salvo los bloques HoneyComb.
+ * 6. Regresión: la HoneyComb no estropea nada de los demás productos.
+ *   - Quién usa el motor v3: solo los usos conocidos (motor de cada producto y CortinaDecor); uno nuevo es un fallo que hay
+ *     que revisar y, si es correcto, añadir a USOS_MOTOR.
+ *   - sp_fichero_produccion_2: con pedidos reales, el XML sale en orden y bien formado.
  *   - temp_sp_fabricacion_tipo_7 no toca la fabricación de otros tipos ni de otros pedidos.
  *   - sp_fabricacion_generate regenera pedidos reales de todos los tipos sin errores.
+ *   - XML de los pedidos HoneyComb reales sin "null", sin SIN ARTÍCULO y con código en cada componente.
  * En una transacción (se deshace).
+ *
+ * 2026-11-19: fuera las dos pruebas que leían ficheros de C:\dev\prod\sqlHoney (los scripts 01-16 y la copia de
+ * sp_fichero_produccion_2 del 29/09), que se borraron a propósito (commits 0e90e7a y 2a86ecf): la comprobación estática de
+ * los scripts y el XML "idéntico al del 29/09" (desde entonces el XML de otros productos ha cambiado a propósito). La
+ * regresión de la fabricación con pedidos reales está en C:\dev\sqlHoney\pruebas\foto_fabricacion_regresion.js y la de la
+ * HoneyComb en sql/sqlHoney/pruebas/foto_fabricacion_hc.js.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { eq, ok } = require('../lib/informe');
+const { eq } = require('../lib/informe');
 const E = require('../lib/entorno');
-
-const SQLHONEY = path.join(E.RAIZ, 'sqlHoney');
-
-/* Objetos que pueden crear o modificar los scripts de sqlHoney (aislamiento: nada compartido salvo lo previsto) */
-const PERMITIDOS = [
-  'SOL_FABRICACION_SISTEMAS', 'SOL_FABRICACION_PARAMETROS', 'SOL_ARTICULOS_FABRICACION_RELACION_V2',
-  'SOL_PEDIDOS_COLA_TIPO_7_PARAMETERS', 'SOL_FABRICACION_BUSQUEDAS', 'SOL_FABRICACION_TABLAS', 'SOL_FABRICACION_TABLAS_VALORES',
-  'sol_pedidos_cola_tipo_7_add', 'temp_sp_fabricacion_tipo_7', 'sp_fichero_produccion_2',
-  'fn_fabricacion_condicion', 'fn_fabricacion_pos_operador', 'sp_fabricacion_evaluar', 'sp_fabricacion_reglas_parametros',
-  'fn_fabricacion_articulos_detalle', 'sp_fabricacion_reglas_aplicar', 'fn_fabricacion_parametro_medida',
-  'sp_fabricacion_regla_add', 'sp_fabricacion_regla_update', 'sp_fabricacion_regla_edit', 'sp_fabricacion_regla_borrar',
-  'sp_fabricacion_parametros_valores', 'sp_fabricacion_parametro_edit', 'sp_fabricacion_parametro_borrar',
-  'sp_fabricacion_tabla_guardar', 'sp_fabricacion_tabla_borrar'
-].map(x => x.toUpperCase());
 
 const MOTOR = ['fn_fabricacion_condicion', 'fn_fabricacion_pos_operador', 'sp_fabricacion_evaluar', 'sp_fabricacion_reglas_parametros',
   'sp_fabricacion_reglas_aplicar', 'fn_fabricacion_articulos_detalle'];
 
-function sinHoneyComb(xml) {
-  return String(xml).replace(/<Detalles><Articulo>220\.00<\/Articulo>[\s\S]*?<\/Detalles>/g, '');
-}
+/* Quién puede usar el motor v3 (2026-11-19): el propio motor, la fabricación por reglas de cada producto
+   (temp_sp_fabricacion_tipo_7 y temp_sp_fabricacion_tipo_N_v3), el resultado de las reglas de código y descripción del
+   producto y la fabricación de CortinaDecor (sp_fabricacion_mrp_cd usa sp_fabricacion_evaluar) */
+const USOS_MOTOR = [/^temp_sp_fabricacion_tipo_7$/i, /^temp_sp_fabricacion_tipo_\d+_v3$/i, /^sp_fabricacion_reglas_resultado$/i,
+  /^sp_fabricacion_mrp_cd$/i];
+/* Copias de seguridad guardadas como SPs en la BD (no se ejecutan) */
+const COPIAS = /_copia|_test$|_antes_|_backup|_old$/i;
 
 async function xmlDe(procedimiento, idPedido) {
   const r = await E.filas('exec ' + procedimiento + ' @p', { p: idPedido });
@@ -60,28 +54,17 @@ async function huella(idPedido) {
 }
 
 module.exports = async function (inf) {
-  inf.empezar('6. Regresión y aislamiento (resto de productos, XML, objetos compartidos)');
+  inf.empezar('6. Regresión (resto de productos, XML, usos del motor)');
 
-  await inf.test('Los scripts sqlHoney solo crean o modifican los objetos previstos', () => {
-    const encontrados = [];
-    fs.readdirSync(SQLHONEY).filter(f => /^0\d_.*\.sql$/i.test(f)).forEach(f => {
-      const texto = fs.readFileSync(path.join(SQLHONEY, f), 'utf8');
-      const re = /^\s*(?:create|alter)\s+(?:procedure|proc|function|table|view|trigger)\s+(?:\[?dbo\]?\.)?\[?([A-Za-z0-9_]+)\]?/gim;
-      let m;
-      while ((m = re.exec(texto))) encontrados.push({ fichero: f, objeto: m[1] });
-    });
-    ok(encontrados.length > 20, 'no se han leído los scripts');
-    eq(encontrados.filter(x => PERMITIDOS.indexOf(x.objeto.toUpperCase()) === -1).map(x => x.fichero + ': ' + x.objeto), [], 'objetos no previstos');
-  });
-
-  await inf.test('Los objetos nuevos del motor solo los usa el motor v3', async () => {
+  await inf.test('El motor v3 solo lo usan el motor, la fabricación de cada producto y CortinaDecor (usos conocidos)', async () => {
     const usos = await E.filas(`
       select o.name as usa, m2.name as usado
       from sys.sql_modules m join sys.objects o on o.object_id = m.object_id
       cross join (select name from sys.objects where name in (${MOTOR.map(x => "'" + x + "'").join(',')})) m2
       where o.name <> m2.name and m.definition like '%' + m2.name + '%'`);
-    const permitidos = MOTOR.concat(['temp_sp_fabricacion_tipo_7']);
-    eq(usos.filter(u => permitidos.indexOf(u.usa) === -1).map(u => u.usa + ' -> ' + u.usado), [], 'usos fuera del motor');
+    const conocido = (nombre) => MOTOR.indexOf(nombre) !== -1 || USOS_MOTOR.some(re => re.test(nombre)) || COPIAS.test(nombre);
+    eq(usos.filter(u => !conocido(u.usa)).map(u => u.usa + ' -> ' + u.usado), [],
+      'usos nuevos del motor (revisar; si son correctos, añadirlos a USOS_MOTOR)');
   });
 
   await E.enTransaccion(async () => {
@@ -92,25 +75,6 @@ module.exports = async function (inf) {
         from (select distinct idrow, tipo from SOL_PEDIDOS_COLA_LINEAS where tipo in (1, 2, 3, 4, 7)) x
       ) y where n <= case when tipo = 7 then 20 else 3 end`)).map(f => f.idrow);
     const conHoneyComb = (await E.filas('select distinct idrow from SOL_PEDIDOS_COLA_LINEAS where tipo = 7')).map(f => f.idrow);
-
-    const original = fs.readFileSync(path.join(SQLHONEY, 'backup', 'sp_fichero_produccion_2_DEV_20260929.sql'), 'utf8')
-      .replace(/\[dbo\]\.\[sp_fichero_produccion_2\]/i, '[dbo].[sp_fichero_produccion_2_original_test]');
-    await new E.sql.Request().batch(original);
-
-    await inf.test('XML: idéntico a la versión original para los demás productos (' + pedidos.length + ' pedidos reales)', async () => {
-      const distintos = [];
-      let conDetalles = 0;
-      for (const p of pedidos) {
-        /* Se comparan las líneas ordenadas: la versión original no garantiza el orden (ver test siguiente) */
-        const lineas = (x) => sinHoneyComb(x).split(/(?=<)/).sort().join('');
-        const antes = lineas(await xmlDe('sp_fichero_produccion_2_original_test', p));
-        const ahora = lineas(await xmlDe('sp_fichero_produccion_2', p));
-        if (antes !== ahora) distintos.push(p);
-        if (ahora.indexOf('<Detalles>') !== -1) conDetalles++;
-      }
-      eq(distintos, [], 'pedidos con XML distinto fuera de la HoneyComb');
-      ok(conDetalles >= 10, 'pocos pedidos con contenido para comparar (' + conDetalles + ')');
-    });
 
     await inf.test('XML: las líneas salen en orden (empieza en <root>, acaba en </root>, etiquetas equilibradas)', async () => {
       const malos = [], conNulos = [];

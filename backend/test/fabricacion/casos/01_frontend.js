@@ -97,11 +97,13 @@ module.exports = async function (inf) {
 
   await inf.test('Consumos: errores de validación', () => {
     ['', '400', '1,5', '@ANCHO', '@ANCHO -- 0', '@ANCHO -- 1.5 ** 2', '@TEJIDO_ANCHO ** @TEJIDO_ALTO *T 0.0001',
-      '0.01 ** @ALTO ** 2', '0.01 *R @ALTO *R 2', '@ANCHO -- -5', '@ANCHO *R 0.013']
+      '0.01 ** @ALTO ** 2', '0.01 *R @ALTO *R 2', '@ANCHO -- -5', '@ANCHO *R 0.013',
+      /* división, desde 2026-11-02 (sqlHoney/23) */
+      '@ANCHO // 2', '@ANCHO -- 1.5 // 2', '@ANCHO // 2 ** @ALTO']
       .forEach(c => eq(u.validarConsumo(c, PARAMETROS), [], JSON.stringify(c)));
     eq(u.validarConsumo('@ANCHO ** @NO_EXISTE', PARAMETROS), ['El parámetro @NO_EXISTE no existe'], 'operando inexistente');
     eq(u.validarConsumo('@NO -- @NO', PARAMETROS), ['El parámetro @NO no existe'], 'el error no se repite');
-    ['@ANCHO -- 1 **', '@ANCHO // 2', '@ANCHO *X 2', 'abc', '@ANCHO -- abc', '@ANCHO -- 1.']
+    ['@ANCHO -- 1 **', '@ANCHO / 2', '@ANCHO *X 2', 'abc', '@ANCHO -- abc', '@ANCHO -- 1.']
       .forEach(c => eq(u.validarConsumo(c, PARAMETROS).length, 1, JSON.stringify(c) + ' tiene que dar error'));
   });
 

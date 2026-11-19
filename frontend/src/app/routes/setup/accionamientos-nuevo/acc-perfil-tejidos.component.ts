@@ -8,7 +8,7 @@ import { ToastrService } from 'ngx-toastr';
  * casilla, el nombre y las medidas de la serie se aplican a todos sus colores.
  * La pinta app-acc-tejidos cuando en Productos se elige "Ver como: <perfil>". Lo que se incluye en el producto
  * se sigue decidiendo en el catálogo maestro.
- * Backend: GET/POST /api/sm/cfg/admin/perfil/:id/tejidos/:producto (y .../todo). producto: ENR, MINI, ZIP, VER, PJ.
+ * Backend: GET/POST /api/sm/cfg/admin/perfil/:id/tejidos/:producto (y .../todo). producto: ENR, MINI, ZIP, VER, PJ, HC (HoneyComb: los tejidos del maestro enlazados a sus colores, sql/sqlHoney/21).
  */
 @Component({
     selector: 'app-acc-perfil-tejidos',

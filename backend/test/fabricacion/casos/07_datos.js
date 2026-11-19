@@ -197,9 +197,13 @@ module.exports = async function (inf) {
       if (!f.some(x => /^PERFIL/.test(atributoDe[x.orden]))) sinPerfil.add(c.p.texto);
       if (!f.some(x => atributoDe[x.orden] === 'TEJIDO' && x.articulo !== null)) sinTejido.add(c.t.ColorTejido + ' [' + c.t.TipoTejido + ']');
     });
-    if (sinPerfil.size) inf.aviso('Colores de perfil sin ningún PERFIL en la fabricación: ' + [...sinPerfil].join(', '), 'Faltan sus reglas (hoy solo hay reglas para BLANCO RAL 9016).');
+    if (sinPerfil.size) inf.aviso('Colores de perfil sin ningún PERFIL en la fabricación: ' + [...sinPerfil].join(', '), 'Faltan sus reglas.');
     if (sinTejido.size) inf.aviso('Colores de tejido que salen SIN ARTÍCULO: ' + [...sinTejido].join(', '));
     const dependenAcc = reglas.some(r => [r.nombre_parametro1, r.nombre_parametro2, r.nombre_parametro3, r.nombre_parametro4].some(c => /@ACCIONAMIENTO/i.test(c || '')));
-    if (!dependenAcc) inf.aviso('Ninguna regla depende del accionamiento: MANUAL, CON VARILLA y MOTOR llevan los mismos componentes');
+    if (!dependenAcc) {
+      const accionamientos = (await E.filas('select TipoAccionamiento from SOL_ARTICULOS_HONEYCOMB_TIPOSACCIONAMIENTO order by Incremento, idTipoAccionamiento'))
+        .map(a => a.TipoAccionamiento);
+      inf.aviso('Ninguna regla depende del accionamiento: ' + accionamientos.join(', ') + ' llevan los mismos componentes');
+    }
   });
 };

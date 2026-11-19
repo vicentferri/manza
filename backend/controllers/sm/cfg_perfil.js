@@ -396,7 +396,6 @@ async function admin_producto(req, res) {
   if (perfilId === null) return error400(res, 'Perfil no válido');
   if (!TIPOS_PRODUCTO.includes(tipo)) return error400(res, 'Producto no válido');
   if (!motor) return error400(res, 'Motor no válido (ANTIGUO o NUEVO)');
-  if (tipo === 7 && motor === 'NUEVO') return error400(res, 'La HoneyComb todavía no tiene configurador nuevo');
   if (tipo === 6 && visible && motor !== 'NUEVO') return error400(res, 'El Cajón ZIP propio solo existe con el configurador nuevo');
   try {
     const pool = await sql.connect();
@@ -546,10 +545,12 @@ const TEJIDOS_PRODUCTO = {
   MINI: 'select tejido from dbo.SOL_ACC_MINI_TEJIDO',
   ZIP: 'select tejido from dbo.SOL_ACC_ZIP_TEJIDO',
   VER: 'select distinct tejido from dbo.SOL_ACC_VER_TIPO_TEJIDO',
-  PJ: 'select tejido from dbo.SOL_ACC_PJ_TEJIDO'
+  PJ: 'select tejido from dbo.SOL_ACC_PJ_TEJIDO',
+  /* sql/sqlHoney/20-21: los tejidos del maestro enlazados a los colores de tejido de la HoneyComb */
+  HC: 'select distinct tejido_maestro as tejido from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO where tejido_maestro is not null'
 };
 /* Producto de Fase 1 (CFG_PERFIL_PRODUCTO.tipo_producto) de cada producto con tejidos */
-const TIPO_DE_PRODUCTO = { ENR: 1, PJ: 2, VER: 3, MINI: 4, ZIP: 6 };
+const TIPO_DE_PRODUCTO = { ENR: 1, PJ: 2, VER: 3, MINI: 4, ZIP: 6, HC: 7 };
 
 function medidaNull(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -579,8 +580,17 @@ async function textosPerfil(conexion, perfilId, ambito, catalogos) {
   return m;
 }
 
+/* Listas de la HoneyComb (sql/sqlHoney/21): sus tablas de siempre vistas como listas de Productos (vw_cfg_hc_*, solo lectura).
+   Solo para los perfiles: no van en CATALOGOS para que el mantenimiento genérico de listas no las toque */
+const CATALOGOS_HC = {
+  hc_tipos_tejido: { tabla: 'vw_cfg_hc_tipos_tejido' },
+  hc_colores_perfil: { tabla: 'vw_cfg_hc_colores_perfil' },
+  hc_accionamientos: { tabla: 'vw_cfg_hc_accionamientos' }
+};
+
 function catalogoValido(clave) {
-  return Object.prototype.hasOwnProperty.call(CATALOGOS, clave) ? CATALOGOS[clave] : null;
+  if (Object.prototype.hasOwnProperty.call(CATALOGOS, clave)) return CATALOGOS[clave];
+  return Object.prototype.hasOwnProperty.call(CATALOGOS_HC, clave) ? CATALOGOS_HC[clave] : null;
 }
 
 /* GET /cfg/admin/perfil/:id/opciones/:catalogo */

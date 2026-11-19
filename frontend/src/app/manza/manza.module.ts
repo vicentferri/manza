@@ -22,6 +22,7 @@ import { FrasePipe } from './config/frase.pipe';
 import { TwoColumnPipe } from './config/twocolumn.pipe';
 import { DesgloseComponent } from './desglose/desglose.component';
 import { HoneycombComponent } from './honeycomb/honeycomb.component';
+import { HoneycombNuevoComponent } from './honeycomb-nuevo/honeycomb-nuevo.component';
 import { HoneycombAdminLinkComponent } from './honeycomb-admin-link/honeycomb-admin-link.component';
 import { EnrollableComponent } from './enrollable/enrollable.component';
 import { EnrollableNuevoComponent } from './enrollable-nuevo/enrollable-nuevo.component';
@@ -79,6 +80,7 @@ import { PedirComoComponent } from './pedir-como/pedir-como.component';
     Preview3NuevoComponent,
     JaponesNuevoComponent,
     Preview2NuevoComponent,
+    HoneycombNuevoComponent,
     JaponesComponent,
     VerticalComponent,
     CompacComponent,

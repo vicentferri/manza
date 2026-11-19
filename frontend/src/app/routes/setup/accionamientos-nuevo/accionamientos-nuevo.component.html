@@ -606,7 +606,16 @@
                 </ng-container>
 
                 <!-- HONEYCOMB: la pantalla de datos de siempre, una pestaña por sección (sus tablas, su tarifa y su fabricación no cambian) -->
-                <ng-container *ngIf="producto === 'hc' && pestanaHc[seccion]">
+                <!-- HONEYCOMB · VER COMO <perfil> (sql/sqlHoney/21): qué ve el perfil y con qué nombre -->
+                <ng-container *ngIf="producto === 'hc' && perfilVista && catalogoPerfilHc[seccion]">
+                    <app-acc-perfil-lista [perfilId]="perfilVista.id" [perfilCodigo]="perfilVista.codigo"
+                        [catalogo]="catalogoPerfilHc[seccion]" [titulo]="tituloPerfilHc[seccion]"></app-acc-perfil-lista>
+                </ng-container>
+                <ng-container *ngIf="producto === 'hc' && perfilVista && seccion === 'hc_colorestejido'">
+                    <app-acc-perfil-tejidos [perfilId]="perfilVista.id" [perfilCodigo]="perfilVista.codigo" producto="HC"></app-acc-perfil-tejidos>
+                </ng-container>
+
+                <ng-container *ngIf="producto === 'hc' && pestanaHc[seccion] && !(perfilVista && (catalogoPerfilHc[seccion] || seccion === 'hc_colorestejido'))">
                     <div class="acc-intro">
                         La HoneyComb tiene sus propias tablas y su propia tarifa (no usa las listas ni los suplementos del resto de productos).
                         Lo que se cambia aquí lo ve el configurador al momento, también Leroy. Un nombre que usen las reglas de fabricación

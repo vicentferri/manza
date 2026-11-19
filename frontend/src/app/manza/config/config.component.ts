@@ -13,6 +13,7 @@ import { JaponesComponent } from '../japones/japones.component';
 import { VerticalComponent } from '../vertical/vertical.component';
 import { CompacComponent } from '../compac/compac.component';
 import { HoneycombComponent } from '../honeycomb/honeycomb.component';
+import { HoneycombNuevoComponent } from '../honeycomb-nuevo/honeycomb-nuevo.component';
 import { EnrollableNuevoComponent } from '../enrollable-nuevo/enrollable-nuevo.component';
 import { CompacNuevoComponent } from '../compac-nuevo/compac-nuevo.component';
 import { ZipNuevoComponent } from '../zip-nuevo/zip-nuevo.component';
@@ -45,6 +46,7 @@ export class ConfigComponent implements OnInit {
   @ViewChild(VerticalComponent, { static: false }) public verticalRef!: VerticalComponent;
   @ViewChild(CompacComponent, { static: false }) public compacRef!: CompacComponent;
   @ViewChild(HoneycombComponent, { static: false }) public honeycombRef!: HoneycombComponent;
+  @ViewChild(HoneycombNuevoComponent, { static: false }) public honeycombNuevoRef!: HoneycombNuevoComponent;
   @ViewChild(EnrollableNuevoComponent, { static: false }) public enrollableNuevoRef!: EnrollableNuevoComponent;
   @ViewChild(CompacNuevoComponent, { static: false }) public compacNuevoRef!: CompacNuevoComponent;
   @ViewChild(ZipNuevoComponent, { static: false }) public zipNuevoRef!: ZipNuevoComponent;
@@ -82,6 +84,7 @@ export class ConfigComponent implements OnInit {
   zipNuevo: boolean = false;   // Cajón ZIP, producto propio (tipo 6)
   verNuevo: boolean = false;   // vertical (tipo 3)
   pjNuevo: boolean = false;    // panel japonés (tipo 2)
+  hcNuevo: boolean = false;    // HoneyComb (tipo 7, sql/sqlHoney/21)
 
   editingItem: CortinaTipo | null = null;
 
@@ -326,6 +329,7 @@ export class ConfigComponent implements OnInit {
     this.verNuevo = motorNuevo(p, 3);
     this.miniNuevo = motorNuevo(p, 4);
     this.zipNuevo = motorNuevo(p, 6);
+    this.hcNuevo = motorNuevo(p, 7);
     this.recalcularProductos();
   }
 
@@ -594,7 +598,7 @@ export class ConfigComponent implements OnInit {
 
   /* El documento va por el configurador nuevo si el cliente tiene alguno de sus interruptores */
   get flujoNuevo(): boolean {
-    return this.accNuevo || this.miniNuevo || this.zipNuevo || this.verNuevo || this.pjNuevo;
+    return this.accNuevo || this.miniNuevo || this.zipNuevo || this.verNuevo || this.pjNuevo || this.hcNuevo;
   }
 
   ProcesarPedido() {
@@ -1416,7 +1420,11 @@ export class ConfigComponent implements OnInit {
         }
         break;
       case 7:
-        if (this.honeycombRef) { this.honeycombRef.cargarEdicion(item); }
+        if (this.hcNuevo && this.honeycombNuevoRef) {
+          this.honeycombNuevoRef.cargarEdicion(item);
+        } else if (this.honeycombRef) {
+          this.honeycombRef.cargarEdicion(item);
+        }
         break;
       case 6:
         if (item.nzip && this.zipNuevoRef) { this.zipNuevoRef.cargarEdicion(item); }

@@ -244,7 +244,7 @@
                 <th style="width: 60px;">ID</th>
                 <th>Color</th>
                 <th>Tipo de Tejido</th>
-                <th style="width: 180px;">Referencia</th>
+                <th style="width: 280px;">Tejido del maestro</th>
                 <th style="width: 100px;">Código Color</th>
                 <th style="width: 60px;">Muestra</th>
                 <th style="width: 130px;">Incremento (€)</th>
@@ -277,45 +277,31 @@
                   </select>
                   <span *ngIf="!color.editando">{{ color.TipoTejido }}</span>
                 </td>
+                <!-- Tejido del maestro (sql/sqlHoney/20): la Referencia que lee la fabricación es su código Solupyme -->
                 <td>
                   <ng-container *ngIf="color.editando">
-                    <div class="hc-ref-campo">
-                      <input
-                        type="text"
-                        class="form-control form-control-sm"
-                        [value]="color.Referencia || ''"
-                        readonly
-                        (click)="!guardando && abrirBuscadorReferencia(color)"
-                        placeholder="Sin artículo">
-                      <button
-                        type="button"
-                        class="btn btn-primary btn-sm"
-                        (click)="abrirBuscadorReferencia(color)"
-                        [disabled]="guardando"
-                        title="Buscar artículo Solupyme">
-                        <i class="fas fa-search"></i>
-                      </button>
-                      <button
-                        *ngIf="color.Referencia"
-                        type="button"
-                        class="btn btn-outline-secondary btn-sm"
-                        (click)="quitarReferencia(color)"
-                        [disabled]="guardando"
-                        title="Quitar artículo">
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </div>
-                    <small class="text-muted d-block" *ngIf="descripcionReferencia(color.Referencia)">
-                      {{ descripcionReferencia(color.Referencia) }}
+                    <select
+                      class="form-select form-select-sm"
+                      [(ngModel)]="color.tejido_maestro"
+                      [disabled]="guardando">
+                      <option [ngValue]="null">Sin tejido</option>
+                      <option *ngFor="let t of tejidosMaestro" [ngValue]="t.id">
+                        {{ t.nombre }} {{ t.color }} · {{ t.cod_solupyme }}
+                      </option>
+                    </select>
+                    <small class="text-muted d-block" *ngIf="tejidoMaestroDe(color) as t">
+                      Referencia {{ t.cod_solupyme }}
                     </small>
-                    <small class="text-danger d-block" *ngIf="referenciaNoExiste(color.Referencia)">
-                      No existe en Solupyme
+                    <small class="text-danger d-block" *ngIf="!color.tejido_maestro">
+                      Sin tejido: la fabricación no encontrará el artículo
                     </small>
                   </ng-container>
                   <ng-container *ngIf="!color.editando">
-                    <span *ngIf="!referenciaNoExiste(color.Referencia)" [title]="descripcionReferencia(color.Referencia)">{{ color.Referencia || '-' }}</span>
-                    <span *ngIf="referenciaNoExiste(color.Referencia)" class="text-danger" title="Este código no existe en Solupyme: la fabricación no encontrará el artículo">
-                      <i class="fa fa-exclamation-triangle"></i> {{ color.Referencia }}
+                    <span *ngIf="color.tejido_maestro" [title]="'Referencia ' + (color.Referencia || '-')">
+                      {{ color.maestro_nombre }} {{ color.maestro_color }} · {{ color.Referencia || '-' }}
+                    </span>
+                    <span *ngIf="!color.tejido_maestro" class="text-danger" title="Sin tejido del maestro: la fabricación no encontrará el artículo">
+                      <i class="fa fa-exclamation-triangle"></i> {{ color.Referencia || 'Sin tejido' }}
                     </span>
                   </ng-container>
                 </td>

@@ -100,9 +100,11 @@ module.exports = async function (inf, util) {
     '0.01 ** @ALTO ** 2': 4, '0,01 ** @ALTO ** 2': 4, '0.013 *R @ANCHO *R 1': 2,
     '@ANCHO -- -5': 155, '@ANCHO ++ -5': 145, '@ANCHO -- 5 *T 0.01': 1.45, '@ANCHO ++ 0.005 *T 1': 150.005,
     '@ANCHO *R 0': 0, '@ANCHO -- 151': -1 /* -1 legítimo: es el resultado de la operación */,
-    '@ANCHO ** 6000': 900000, '@ANCHO ** -6000': -900000
+    '@ANCHO ** 6000': 900000, '@ANCHO ** -6000': -900000,
+    /* división, desde 2026-11-02 (sqlHoney/23): de izquierda a derecha, como el resto */
+    '@ANCHO // 2': 75, '@ANCHO //2': 75, '@ANCHO -- 50 // 4': 25, '@ANCHO // 2 ** 3': 225, '@ANCHO // 4': 37.5
   };
-  const invalidos = ['', 'abc', '@NO_EXISTE', '@ANCHO ** @NO_EXISTE', '@ANCHO -- abc', '@ANCHO -- 1 **', '@ANCHO //2',
+  const invalidos = ['', 'abc', '@NO_EXISTE', '@ANCHO ** @NO_EXISTE', '@ANCHO -- abc', '@ANCHO -- 1 **', '@ANCHO / 2', '@ANCHO // 0', '@ANCHO // @VACIO',
     '@ANCHO *X 2', '@COLOR', '@COLOR ** 2', '@VACIO', '@VACIO -- 1', '@ANCHO ** @VACIO', '@DOLAR', '@PUNTO', '@EXP',
     '-- 5', '@ANCHO ** 10000', '@ANCHO ** 1000000000', '@ANCHO ** 1000000000 -- 1', '@ANCHO ** 100000000000 -- 1', '@ANCHO ++ 1e5',
     '@ANCHO -- $', '@ANCHO ** .'];
@@ -201,9 +203,10 @@ module.exports = async function (inf, util) {
   await inf.test('Coherencia frontend/SQL: lo que la pantalla acepta se calcula y lo que rechaza da -1', async () => {
     const nombres = Object.keys(PARAMETROS);
     const numericos = ['@ANCHO', '@ALTO', '@TEJIDO_ANCHO', '@TEJIDO_ALTO', '@DEC', '@COMA', '@CERO'];
-    /* El frontend no conoce los valores (texto, vacío) ni el rango del resultado (desbordamiento): solo la sintaxis */
+    /* El frontend no conoce los valores (texto, vacío) ni el rango del resultado (desbordamiento, dividir entre 0): solo la sintaxis */
     const corpus = Object.keys(esperados).concat(invalidos)
-      .filter(x => !/@(COLOR|VACIO|DOLAR|PUNTO|EXP)\b/i.test(x) && !/\d{9,}/.test(x) && x !== '@ANCHO ** 10000');
+      .filter(x => !/@(COLOR|VACIO|DOLAR|PUNTO|EXP)\b/i.test(x) && !/\d{9,}/.test(x) && x !== '@ANCHO ** 10000'
+        && !/\/\/\s*0(?![\d.,])/.test(x));
     const r = await evaluar(corpus);
     const incoherentes = [];
     corpus.forEach(x => {

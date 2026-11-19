@@ -47,8 +47,12 @@ export class HoneycombService {
       return this.http.delete(url, { headers }).pipe(map((response: any) => response));
    }
 
-   GetPrecio(Ancho: number, Alto: number, Cantidad: number, TipoTejido: number, TipoAccionamiento: number) {
-      let url = this.urlService + "/api/sm/honeycomb_obtener_tarifa?ancho=" + Ancho + "&alto=" + Alto + "&cantidad=" + Cantidad + "&tipoTejido=" + TipoTejido + "&tipoAccionamiento=" + TipoAccionamiento;
+   // Los colores de tejido y de perfil van para sus incrementos (Productos → HoneyComb)
+   GetPrecio(Ancho: number, Alto: number, Cantidad: number, TipoTejido: number, TipoAccionamiento: number,
+      ColorTejido: number, ColorPerfil: number) {
+      let url = this.urlService + "/api/sm/honeycomb_obtener_tarifa?ancho=" + Ancho + "&alto=" + Alto + "&cantidad=" + Cantidad
+         + "&tipoTejido=" + TipoTejido + "&tipoAccionamiento=" + TipoAccionamiento
+         + "&colorTejido=" + ColorTejido + "&colorPerfil=" + ColorPerfil;
       return this.HTTP_Get(url);
    }
 
@@ -181,6 +185,12 @@ export class HoneycombService {
 
    buscarArticulos(texto: string) {
       let url = this.urlService + "/api/sm/honeycomb_articulos_buscar?q=" + encodeURIComponent(texto);
+      return this.HTTP_Get(url);
+   }
+
+   // Tejidos del maestro (tipo HONEYCOMB) para enlazar con los colores de tejido
+   getTejidosMaestro() {
+      let url = this.urlService + "/api/sm/honeycomb_tejidos_maestro";
       return this.HTTP_Get(url);
    }
 

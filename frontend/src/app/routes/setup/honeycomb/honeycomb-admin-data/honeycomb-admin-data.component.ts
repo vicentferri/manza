@@ -20,8 +20,19 @@ interface ColorTejido {
    Referencia?: string;
    CodigoColor?: string;
    Incremento?: number;
+   /* Tejido del maestro (sql/sqlHoney/20): la Referencia es su código Solupyme */
+   tejido_maestro?: number | null;
+   maestro_nombre?: string;
+   maestro_color?: string;
    editando?: boolean;
    nuevo?: boolean;
+}
+
+interface TejidoMaestroHc {
+   id: number;
+   cod_solupyme: string;
+   nombre: string;
+   color: string;
 }
 
 interface ColorPerfil {
@@ -80,6 +91,7 @@ export class HoneycombAdminDataComponent implements OnInit {
    // Datos
    tiposTejido: TipoTejido[] = [];
    coloresTejido: ColorTejido[] = [];
+   tejidosMaestro: TejidoMaestroHc[] = [];
    coloresPerfil: ColorPerfil[] = [];
    tiposAccionamiento: TipoAccionamiento[] = [];
 
@@ -162,6 +174,7 @@ export class HoneycombAdminDataComponent implements OnInit {
          }
       } else if (tab === 'colorestejido') {
          this.cargarTiposTejidoLookup();
+         this.cargarTejidosMaestro();
          if (this.coloresTejido.length === 0) {
             this.cargarColoresTejido();
          }
@@ -316,6 +329,9 @@ export class HoneycombAdminDataComponent implements OnInit {
                Referencia: c.Referencia,
                CodigoColor: c.CodigoColor,
                Incremento: c.Incremento || 0,
+               tejido_maestro: c.tejido_maestro === undefined ? null : c.tejido_maestro,
+               maestro_nombre: c.maestro_nombre,
+               maestro_color: c.maestro_color,
                editando: false
             }));
             this.comprobarReferencias(this.coloresTejido.map(c => c.Referencia));
@@ -326,6 +342,19 @@ export class HoneycombAdminDataComponent implements OnInit {
             this.cargando = false;
          }
       });
+   }
+
+   /* Tejidos del maestro de tipo HONEYCOMB que se pueden enlazar con un color */
+   cargarTejidosMaestro() {
+      if (this.tejidosMaestro.length > 0) return;
+      this.service.getTejidosMaestro().subscribe({
+         next: (data) => { this.tejidosMaestro = data || []; },
+         error: () => { this.mostrarMensaje('error', 'Error al cargar los tejidos del maestro'); }
+      });
+   }
+
+   tejidoMaestroDe(color: ColorTejido): TejidoMaestroHc | undefined {
+      return this.tejidosMaestro.find(t => t.id === color.tejido_maestro);
    }
 
    get coloresTejidoFiltrados(): ColorTejido[] {
@@ -342,6 +371,7 @@ export class HoneycombAdminDataComponent implements OnInit {
          Referencia: '',
          CodigoColor: '',
          Incremento: 0,
+         tejido_maestro: null,
          editando: true,
          nuevo: true
       };
@@ -475,7 +505,7 @@ export class HoneycombAdminDataComponent implements OnInit {
       this.guardando = true;
 
       if (color.nuevo) {
-         // Insertar
+         // Insertar (el backend pone la Referencia del tejido del maestro elegido)
          this.service.insertColorTejido(color).subscribe({
             next: (response) => {
                color.idColorTejido = response.idColorTejido;
@@ -487,7 +517,7 @@ export class HoneycombAdminDataComponent implements OnInit {
             },
             error: (err) => {
                this.guardando = false;
-               this.mostrarMensaje('error', 'Error al crear color de tejido');
+               this.mostrarMensaje('error', this.textoError(err, 'Error al crear color de tejido'));
             }
          });
       } else {

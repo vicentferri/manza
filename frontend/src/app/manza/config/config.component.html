@@ -172,7 +172,7 @@
     </manza-zip-nuevo>
 
     <!-- HONEYCOMB -->
-    <manza-honeycomb *ngIf="TipoCortina == 7 && productos.prod_7"
+    <manza-honeycomb *ngIf="TipoCortina == 7 && productos.prod_7 && !hcNuevo"
       [Cliente]="Cliente" [codeCentro]="codeCentro"
       [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
       [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
@@ -180,6 +180,16 @@
       (onFinalizar)="ShowBtns($event); staticModal2.show()"
       (onVerCesta)="VerPedido()">
     </manza-honeycomb>
+
+    <!-- HoneyComb con el motor nuevo (sql/sqlHoney/21): las listas del perfil, el precio y el alta en el servidor -->
+    <manza-honeycomb-nuevo *ngIf="TipoCortina == 7 && productos.prod_7 && hcNuevo"
+      [Cliente]="Cliente" [codeCentro]="codeCentro"
+      [SubCliente]="SubCliente" [ReferenciaTienda]="ReferenciaTienda"
+      [NumeroCortinas]="NumeroCortinas" [TotalCesta]="TotalCesta"
+      (onAdd)="AgregarDesdeHijo($event)"
+      (onFinalizar)="ShowBtns($event); staticModal2.show()"
+      (onVerCesta)="VerPedido()">
+    </manza-honeycomb-nuevo>
     </ng-container>
 
   </div>

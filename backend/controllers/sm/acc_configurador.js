@@ -1294,15 +1294,239 @@ async function altaLineaPj(transaction, doc, idDocumento, l, p) {
     .execute(doc.lineaPj);
 }
 
+/*
+ * HoneyComb (sql/sqlHoney/20-21; interruptor SOL_ACC_HC_CLIENTE = perfil con la HoneyComb y motor NUEVO; tipo 7).
+ * A diferencia del resto, el catálogo padre son sus tablas de siempre (SOL_ARTICULOS_HONEYCOMB_*), su tarifa es la de
+ * siempre y la línea se graba con los SPs de siempre (sol_pedidos_cola_tipo_7_add / sol_presupuestos_cola_tipo_7_add),
+ * con los ids y los nombres de esas tablas: la fabricación no cambia. Lo nuevo es el perfil (qué ve el cliente, con qué
+ * nombre y con qué medidas) y que el precio y el alta los hace el servidor.
+ *   GET  /api/sm/acc_cfg/hc/activo/:cliente     ¿usa la HoneyComb nueva?
+ *   GET  /api/sm/acc_cfg/hc/opciones/:cliente   tipos de tejido, colores de tejido (con su tejido del maestro), colores
+ *                                               de perfil y accionamientos que ve el perfil, con sus nombres
+ *   POST /api/sm/acc_cfg/hc/precio/:cliente     precio de una línea (no graba nada)
+ *   Línea: { TipoCortina: 7, ancho, alto, cantidad, codeCentro,
+ *            nhc: { tipo_tejido, color_tejido, color_perfil, accionamiento } }   (ids de las tablas de la HoneyComb)
+ *   Las líneas de la HoneyComb de siempre (sin nhc: tej_tipo_id, tej_color_id, color_perfil_id, hc_accionamiento_id)
+ *   también se admiten en el pedido y el presupuesto del flujo nuevo (antes se rechazaban: problema P1).
+ */
+const HoneyComb = require('./honeycomb');
+
+const ERRORES_HC = {
+  '-2': 'El cliente no tiene activado el configurador nuevo de la HoneyComb',
+  '-91': 'Tipo de tejido de la HoneyComb no válido',
+  '-92': 'Color de tejido no válido para ese tipo de tejido',
+  '-93': 'Color de perfil de la HoneyComb no válido',
+  '-94': 'Accionamiento de la HoneyComb no válido',
+  '-95': 'No hay tarifa de la HoneyComb para esas medidas'
+};
+
+/* Medidas de la HoneyComb (las del configurador de siempre): ancho 40-120, alto 40-280, de 0,1 en 0,1 */
+const MEDIDAS_HC = { ancho_min: 40, ancho_max: 120, alto_min: 40, alto_max: 280, paso: 0.1 };
+
+const esHoneyComb = (l) => entero(l.TipoCortina) === 7;
+
+async function hcActivo(pool, cliente) {
+  const result = await pool.request().input('cliente', sql.Int, cliente)
+    .query('select 1 as ok from dbo.SOL_ACC_HC_CLIENTE where cliente = @cliente and activo = 1');
+  return result.recordset.length > 0;
+}
+
+/* Número > 0 en múltiplos de 0,1 → con un decimal; null si no vale */
+function medidaHc(value) {
+  const n = decimal(value);
+  if (n === null || n <= 0) return null;
+  return Math.abs(n * 10 - Math.round(n * 10)) < 1e-6 ? Math.round(n * 10) / 10 : null;
+}
+
+function errorMedidasHc(l) {
+  const ancho = medidaHc(l.ancho);
+  const alto = medidaHc(l.alto);
+  const m = MEDIDAS_HC;
+  if (ancho === null) return 'El ancho tiene que ser mayor que 0 y en múltiplos de 0,1 cm';
+  if (alto === null) return 'El alto tiene que ser mayor que 0 y en múltiplos de 0,1 cm';
+  if (ancho < m.ancho_min || ancho > m.ancho_max) return `El ancho debe estar entre ${m.ancho_min} y ${m.ancho_max} cm`;
+  if (alto < m.alto_min || alto > m.alto_max) return `El alto debe estar entre ${m.alto_min} y ${m.alto_max} cm`;
+  const cantidad = Number(l.cantidad);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) return 'La cantidad tiene que ser un número entero mayor que 0';
+  return '';
+}
+
+/* Ids de la línea (nhc, o los campos de la HoneyComb de siempre) con los nombres de sus tablas y el tejido del maestro */
+async function datosLineaHc(pool, l) {
+  const n = l.nhc || {};
+  const elegir = (nuevo, antiguo) => entero(nuevo !== undefined && nuevo !== null && nuevo !== '' ? nuevo : antiguo);
+  const ids = {
+    tipo_tejido: elegir(n.tipo_tejido, l.tej_tipo_id),
+    color_tejido: elegir(n.color_tejido, l.tej_color_id),
+    color_perfil: elegir(n.color_perfil, l.color_perfil_id),
+    accionamiento: elegir(n.accionamiento, l.hc_accionamiento_id)
+  };
+  const r = (await pool.request()
+    .input('tipo', sql.Int, ids.tipo_tejido).input('color', sql.Int, ids.color_tejido)
+    .input('perfil', sql.Int, ids.color_perfil).input('acc', sql.Int, ids.accionamiento)
+    .query(`select
+        (select TipoTejido from dbo.SOL_ARTICULOS_HONEYCOMB_TIPOSTEJIDO where idTipoTejido = @tipo) as tipo_text,
+        (select ColorTejido from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO where idColorTejido = @color and idTipoTejido = @tipo) as color_text,
+        (select tejido_maestro from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO where idColorTejido = @color) as tejido,
+        (select ColorPerfil from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESPERFIL where idColorPerfil = @perfil) as perfil_text,
+        (select TipoAccionamiento from dbo.SOL_ARTICULOS_HONEYCOMB_TIPOSACCIONAMIENTO where idTipoAccionamiento = @acc) as acc_text`))
+    .recordset[0];
+  if (!r.tipo_text) return { codigo: -91 };
+  if (!r.color_text) return { codigo: -92 };
+  if (!r.perfil_text) return { codigo: -93 };
+  if (!r.acc_text) return { codigo: -94 };
+  return {
+    codigo: 0, ids, tejido: r.tejido,
+    textos: { tipo: r.tipo_text, color: r.color_text, perfil: r.perfil_text, accionamiento: r.acc_text }
+  };
+}
+
+/* La línea como la ve el surtido del perfil (nhc con el tejido del maestro del color) */
+function lineaPerfilHc(l, d) {
+  return { ancho: l.ancho, alto: l.alto, nhc: Object.assign({}, d.ids, { tejido: d.tejido }) };
+}
+
+/* Precio de una línea de HoneyComb: la misma función que el configurador de siempre (honeycomb.precioHoneycomb).
+   pvp/c1 son de la línea entera (cantidad incluida), como T7_PVP y T7_PVP_C1 */
+async function precioLineaHc(pool, l) {
+  const d = await datosLineaHc(pool, l);
+  if (d.codigo !== 0) return { codigo: d.codigo, mensaje: ERRORES_HC[String(d.codigo)] };
+  const cantidad = entero(l.cantidad) || 1;
+  const p = await HoneyComb.precioHoneycomb(pool, {
+    ancho: medidaHc(l.ancho), alto: medidaHc(l.alto), cantidad, tipoTejido: d.ids.tipo_tejido,
+    colorTejido: d.ids.color_tejido, colorPerfil: d.ids.color_perfil, accionamiento: d.ids.accionamiento
+  });
+  if (p.codigo !== 0) return { codigo: -95, mensaje: ERRORES_HC['-95'] };
+  const pvp = Number(p.pvp.toFixed(2));
+  const importe = (coste) => Math.round(cantidad * coste * 1.9 * 100) / 100;
+  const inc = p.incrementos;
+  const desglose = [{ concepto: 'Tarifa', elemento: d.textos.tipo, detalle: `${p.ancho_m.toFixed(2)} x ${p.alto_m.toFixed(2)} m`, importe: importe(p.casilla) }]
+    .concat([['Tipo de tejido', d.textos.tipo, inc.tipo_tejido], ['Color de tejido', d.textos.color, inc.color_tejido],
+      ['Color de perfil', d.textos.perfil, inc.color_perfil], ['Accionamiento', d.textos.accionamiento, inc.accionamiento]]
+      .filter(x => x[2]).map(x => ({ concepto: x[0], elemento: x[1], detalle: 'incremento', importe: importe(x[2]) })));
+  return {
+    codigo: 0, datos: d, cantidad,
+    total: pvp, unitario: Math.round(pvp / cantidad * 100) / 100,
+    c1: p.c1, c1_total: Math.round(p.coste * 100) / 100,
+    casilla: p.casilla, incrementos: inc, desglose,
+    /* lo que guarda la línea, como el configurador de siempre */
+    precios: { T7_PVP: pvp, T7_PVP_C1: p.c1, T7_Fecha_Entrega: '', T7_Transporte: 0 }
+  };
+}
+
+/* GET /acc_cfg/hc/activo/:cliente — ante cualquier duda, false */
+async function hc_activo(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(200).send({ activo: false });
+  try {
+    const pool = await sql.connect();
+    res.status(200).send({ activo: await hcActivo(pool, cliente) });
+  } catch (err) {
+    console.error(err);
+    res.status(200).send({ activo: false });
+  }
+}
+
+/* GET /acc_cfg/hc/opciones/:cliente — listas de la HoneyComb que ve el perfil, con sus nombres y en el orden de siempre.
+   Colores de tejido: solo los enlazados a un tejido activo del maestro; id = el color de la HoneyComb (lo que se graba),
+   tejido = el del maestro (perfil: visible, nombre, límites de medida) */
+async function hc_opciones(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  try {
+    const pool = await sql.connect();
+    if (!await hcActivo(pool, cliente)) return res.status(403).send({ message: ERRORES_HC['-2'] });
+    const s = await surtido.surtidoDeCliente(pool, cliente, surtido.idiomaDe(req));
+    const q = async (consulta) => (await pool.request().query(consulta)).recordset;
+    const [tipos, perfiles, accionamientos, colores] = await Promise.all([
+      q('select id, nombre from dbo.vw_cfg_hc_tipos_tejido order by orden').then(conPerfil(s, 'hc_tipos_tejido')),
+      q('select id, nombre from dbo.vw_cfg_hc_colores_perfil order by orden').then(conPerfil(s, 'hc_colores_perfil')),
+      q(`select v.id, v.nombre, a.Incremento as incremento from dbo.vw_cfg_hc_accionamientos v
+         join dbo.SOL_ARTICULOS_HONEYCOMB_TIPOSACCIONAMIENTO a on a.idTipoAccionamiento = v.id order by v.orden`)
+        .then(conPerfil(s, 'hc_accionamientos')),
+      q(`select m.idrow as id, m.nombre, m.color, c.idColorTejido as color_id, c.idTipoTejido as tipo_tejido,
+                c.CodigoColor as codigo_color, c.Incremento as incremento
+         from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO c
+         join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = c.tejido_maestro and m.activo = 1
+         order by c.ColorTejido, c.idColorTejido`)
+    ]);
+    /* filtrarTejidos trabaja con el id del maestro: un color por fila, con el nombre del perfil (o el del maestro) */
+    const visibles = s.filtrarTejidos('HC', colores.map(c => Object.assign({}, c)));
+    const coloresTejido = visibles.map(t => ({
+      id: t.color_id, tipo_tejido: t.tipo_tejido, tejido: t.id, nombre: t.color || t.nombre,
+      nombre_tejido: t.nombre, codigo_color: t.codigo_color, incremento: Number(t.incremento) || 0,
+      limites: t.limites, ref: t.ref
+    }));
+    res.status(200).send({ tiposTejido: tipos, coloresTejido, coloresPerfil: perfiles, accionamientos, medidas: MEDIDAS_HC });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* POST /acc_cfg/hc/precio/:cliente   body: una línea de HoneyComb. No graba nada */
+async function hc_precio(req, res) {
+  const cliente = entero(req.params.cliente);
+  if (cliente === null) return res.status(400).send({ message: 'Cliente no válido' });
+  const l = req.body || {};
+  const errorM = errorMedidasHc(l);
+  if (errorM) return res.status(400).send({ message: errorM });
+  try {
+    const pool = await sql.connect();
+    if (!await hcActivo(pool, cliente)) return res.status(403).send({ message: ERRORES_HC['-2'] });
+    const d = await datosLineaHc(pool, l);
+    if (d.codigo !== 0) return res.status(400).send({ message: ERRORES_HC[String(d.codigo)], codigo: d.codigo });
+    const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('HC', lineaPerfilHc(l, d));
+    if (errorPerfil) return res.status(400).send({ message: errorPerfil });
+    const p = await precioLineaHc(pool, l);
+    if (p.codigo !== 0) return res.status(400).send({ message: p.mensaje, codigo: p.codigo });
+    res.status(200).send(p);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: 'KO' });
+  }
+}
+
+/* Alta de una línea de HoneyComb dentro de la transacción del documento: el SP de siempre, con los ids y los nombres de
+   las tablas de la HoneyComb y la tienda como la manda el configurador de siempre (-1 si no hay) */
+async function altaLineaHc(transaction, doc, idDocumento, l, p) {
+  const d = p.datos;
+  const centro = l.codeCentro === null || l.codeCentro === undefined ? -1 : entero(l.codeCentro);
+  const r = await new sql.Request(transaction)
+    .input('id', sql.Int, 0)
+    .input('idrow', sql.Int, idDocumento)
+    .input('ancho', sql.Decimal(12, 2), medidaHc(l.ancho))
+    .input('alto', sql.Decimal(12, 2), medidaHc(l.alto))
+    .input('cantidad', sql.Int, p.cantidad)
+    .input('tej_tipo_id', sql.Int, d.ids.tipo_tejido)
+    .input('tej_tipo_text', sql.VarChar(250), d.textos.tipo)
+    .input('tej_color_id', sql.Int, d.ids.color_tejido)
+    .input('tej_color_text', sql.VarChar(250), d.textos.color)
+    .input('color_perfil_id', sql.Int, d.ids.color_perfil)
+    .input('color_perfil_text', sql.VarChar(250), d.textos.perfil)
+    .input('hc_accionamiento_id', sql.Int, d.ids.accionamiento)
+    .input('hc_accionamiento_text', sql.VarChar(250), d.textos.accionamiento)
+    .input('T7_PVP', sql.Decimal(12, 2), p.precios.T7_PVP)
+    .input('T7_PVP_C1', sql.VarChar(25), p.precios.T7_PVP_C1)
+    .input('T7_Fecha_Entrega', sql.VarChar(25), p.precios.T7_Fecha_Entrega)
+    .input('T7_Transporte', sql.VarChar(25), String(p.precios.T7_Transporte))
+    .input('centro', sql.Int, centro === null ? -1 : centro)
+    .execute(doc.lineaHc);
+  const fila = (r.recordset || [])[0] || {};
+  return Number(fila.idrow) > 0 ? 1 : -1;
+}
+
 /* Pedido y presupuesto se graban igual; solo cambian los SPs y el nombre de sus parámetros */
 const DOCUMENTOS = {
   pedido:      { cabecera: 'sp_acc_pedido_add', ref: 'refPedido', linea: 'sp_acc_pedido_tipo_1_add',
                  lineaMini: 'sp_acc_mini_pedido_tipo_4_add', lineaZip: 'sp_acc_zip_pedido_tipo_6_add',
                  lineaVer: 'sp_acc_ver_pedido_tipo_3_add', lineaPj: 'sp_acc_pj_pedido_tipo_2_add',
+                 lineaHc: 'sol_pedidos_cola_tipo_7_add',
                  id: 'idPedido', nombre: 'pedido' },
   presupuesto: { cabecera: 'sp_acc_presupuesto_add', ref: 'refPresupuesto', linea: 'sp_acc_presupuesto_tipo_1_add',
                  lineaMini: 'sp_acc_mini_presupuesto_tipo_4_add', lineaZip: 'sp_acc_zip_presupuesto_tipo_6_add',
                  lineaVer: 'sp_acc_ver_presupuesto_tipo_3_add', lineaPj: 'sp_acc_pj_presupuesto_tipo_2_add',
+                 lineaHc: 'sol_presupuestos_cola_tipo_7_add',
                  id: 'idPresupuesto', nombre: 'presupuesto' }
 };
 
@@ -1365,14 +1589,17 @@ async function alta(doc, req, res) {
 
   /* sqlSolarMini/05, sqlCajonZip/05, sqlVertical/04 y sqlPanelJapones/05: enrollables (nacc), Solar Mini (nmini),
      Cajón ZIP (nzip), Vertical (nver) y panel japonés (npj) nuevos pueden ir en el mismo documento */
-  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l) && !esZipNuevo(l) && !esVerNuevo(l) && !esPjNuevo(l));
+  /* sql/sqlHoney/21: y la HoneyComb (nueva o de siempre: es la misma línea) */
+  const otras = lineas.findIndex(l => !esEnrollableNuevo(l) && !esMiniNuevo(l) && !esZipNuevo(l) && !esVerNuevo(l) && !esPjNuevo(l)
+    && !esHoneyComb(l));
   if (otras >= 0) {
-    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables, Solar Mini, Cajón ZIP, Vertical y panel japonés` });
+    return res.status(400).send({ message: `Línea ${otras + 1}: el configurador nuevo, de momento, solo admite enrollables, Solar Mini, Cajón ZIP, Vertical, panel japonés y HoneyComb` });
   }
   for (let i = 0; i < lineas.length; i++) {
-    /* el Vertical y el panel tienen sus propias medidas (cada modalidad lleva las suyas) */
+    /* el Vertical, el panel y la HoneyComb tienen sus propias medidas */
     const errorM = esVerNuevo(lineas[i]) ? errorMedidasVer(lineas[i])
-      : esPjNuevo(lineas[i]) ? errorMedidasPj(lineas[i]) : errorMedidas(lineas[i]);
+      : esPjNuevo(lineas[i]) ? errorMedidasPj(lineas[i])
+      : esHoneyComb(lineas[i]) ? errorMedidasHc(lineas[i]) : errorMedidas(lineas[i]);
     if (errorM) return res.status(400).send({ message: `Línea ${i + 1}: ${errorM}` });
   }
 
@@ -1397,10 +1624,19 @@ async function alta(doc, req, res) {
       return res.status(400).send({ message: ERRORES_PJ['-2'] });
     }
 
-    /* Fase 2: cada línea contra el perfil del cliente (lo que no ve y los límites de medida de cada tejido) */
+    /* Fase 2: cada línea contra el perfil del cliente (lo que no ve y los límites de medida de cada tejido).
+       La HoneyComb solo con su motor nuevo: con el de siempre el cliente la ve entera, como hoy */
     const s = await surtido.surtidoDeCliente(pool, cliente);
+    const hcNuevo = lineas.some(esHoneyComb) && await hcActivo(pool, cliente);
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
+      if (esHoneyComb(l)) {
+        const d = await datosLineaHc(pool, l);
+        if (d.codigo !== 0) return res.status(400).send({ message: `Línea ${i + 1}: ${ERRORES_HC[String(d.codigo)]}` });
+        const errorHc = hcNuevo ? s.validarLinea('HC', lineaPerfilHc(l, d)) : '';
+        if (errorHc) return res.status(400).send({ message: `Línea ${i + 1}: ${errorHc}` });
+        continue;
+      }
       const producto = esMiniNuevo(l) ? 'MINI' : esZipNuevo(l) ? 'ZIP' : esVerNuevo(l) ? 'VER' : esPjNuevo(l) ? 'PJ' : 'ENR';
       const errorPerfil = s.validarLinea(producto, l);
       if (errorPerfil) return res.status(400).send({ message: `Línea ${i + 1}: ${errorPerfil}` });
@@ -1410,7 +1646,8 @@ async function alta(doc, req, res) {
     const precios = [];
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
-      const p = esMiniNuevo(l) ? await precioLineaMini(pool, cliente, l)
+      const p = esHoneyComb(l) ? await precioLineaHc(pool, l)
+        : esMiniNuevo(l) ? await precioLineaMini(pool, cliente, l)
         : esZipNuevo(l) ? await precioLineaZip(pool, cliente, l)
         : esVerNuevo(l) ? await precioLineaVer(pool, cliente, l)
         : esPjNuevo(l) ? await precioLineaPj(pool, cliente, l) : await precioLinea(pool, cliente, l);
@@ -1435,6 +1672,14 @@ async function alta(doc, req, res) {
 
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
+      if (esHoneyComb(l)) {
+        const rh = await altaLineaHc(transaction, doc, idDocumento, l, precios[i]);
+        if (!(rh > 0)) {
+          await transaction.rollback();
+          return res.status(400).send({ message: `Línea ${i + 1}: no se pudo grabar la HoneyComb` });
+        }
+        continue;
+      }
       if (esMiniNuevo(l)) {
         const rm = await altaLineaMini(transaction, doc, idDocumento, l, precios[i]);
         if (!(rm.returnValue > 0)) {
@@ -1582,6 +1827,9 @@ module.exports = {
   pj_activo,
   pj_opciones,
   pj_precio,
+  hc_activo,
+  hc_opciones,
+  hc_precio,
   pedido,
   presupuesto,
   presupuesto_a_pedido

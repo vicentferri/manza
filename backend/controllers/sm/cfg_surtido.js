@@ -63,6 +63,13 @@ const LINEAS = {
     tejidos: ['tejido'],
     /* colores de las lamas: lista de filas del maestro */
     listasTejido: ['colores']
+  },
+  /* HoneyComb (sql/sqlHoney/21): las listas son las tablas de siempre (vistas vw_cfg_hc_*); el tejido es el del maestro
+     enlazado al color de tejido (nhc.tejido lo rellena el servidor a partir de nhc.color_tejido) */
+  HC: {
+    campo: 'nhc',
+    opciones: { tipo_tejido: 'hc_tipos_tejido', color_perfil: 'hc_colores_perfil', accionamiento: 'hc_accionamientos' },
+    tejidos: ['tejido']
   }
 };
 

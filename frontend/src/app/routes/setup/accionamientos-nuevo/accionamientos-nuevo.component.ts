@@ -126,6 +126,15 @@ export class AccionamientosNuevoComponent implements OnInit, OnDestroy {
         { id: 'hc_imagenes', paso: '', label: 'Imágenes', ayuda: 'De tejidos, colores, perfiles y accionamientos', icono: 'fa-picture-o' }
     ];
     /* sección de Productos → pestaña de app-honeycomb-admin-data */
+    /* "Ver como" en la HoneyComb (sql/sqlHoney/21): sus listas, vistas para el perfil (vw_cfg_hc_*); los colores de tejido son
+       los tejidos del maestro enlazados (producto HC). La tarifa y las imágenes no dependen del perfil */
+    readonly catalogoPerfilHc: { [seccion: string]: string } = {
+        hc_tipostejido: 'hc_tipos_tejido', hc_coloresperfil: 'hc_colores_perfil', hc_tiposaccionamiento: 'hc_accionamientos'
+    };
+    readonly tituloPerfilHc: { [seccion: string]: string } = {
+        hc_tipostejido: 'Tipos de tejido', hc_coloresperfil: 'Colores de perfil', hc_tiposaccionamiento: 'Accionamientos'
+    };
+
     readonly pestanaHc: { [seccion: string]: any } = {
         hc_tipostejido: 'tipostejido', hc_colorestejido: 'colorestejido', hc_coloresperfil: 'coloresperfil',
         hc_tiposaccionamiento: 'tiposaccionamiento', hc_tarifas: 'tarifas'
@@ -286,7 +295,7 @@ export class AccionamientosNuevoComponent implements OnInit, OnDestroy {
 
     /* Productos donde tiene sentido "Ver como" (los del configurador nuevo) */
     get conVerComo(): boolean {
-        return ['enrollable', 'mini', 'zip', 'ver', 'pj'].includes(this.producto);
+        return ['enrollable', 'mini', 'zip', 'ver', 'pj', 'hc'].includes(this.producto);
     }
 
     get perfilVista(): any {

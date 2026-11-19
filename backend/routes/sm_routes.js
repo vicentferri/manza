@@ -672,6 +672,10 @@ smapi.post('/acc_cfg/ver/precio/:cliente', Auth.ensureAuth, AccConfiguradorContr
 smapi.get('/acc_cfg/pj/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.pj_activo);
 smapi.get('/acc_cfg/pj/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.pj_opciones);
 smapi.post('/acc_cfg/pj/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.pj_precio);
+/* HoneyComb (sql/sqlHoney/21; interruptor SOL_ACC_HC_CLIENTE): el alta va por /acc_cfg/pedido y /acc_cfg/presupuesto */
+smapi.get('/acc_cfg/hc/activo/:cliente', Auth.ensureAuth, AccConfiguradorController.hc_activo);
+smapi.get('/acc_cfg/hc/opciones/:cliente', Auth.ensureAuth, AccConfiguradorController.hc_opciones);
+smapi.post('/acc_cfg/hc/precio/:cliente', Auth.ensureAuth, AccConfiguradorController.hc_precio);
 smapi.get('/honeycomb/obtener_precio_lote', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_precio_lote);
 smapi.get('/honeycomb/obtener_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_obtener_tarifa_tipotejido);
 smapi.post('/honeycomb/actualizar_tarifa_tipotejido', Auth.ensureAuth, HoneyCombController.honeycomb_actualizar_tarifa_tipotejido);
@@ -708,6 +712,7 @@ smapi.delete('/honeycomb_tipotejido_delete/:id', Auth.ensureAuth, HoneyCombContr
 
 // Rutas CRUD - Colores de Tejido
 smapi.get('/honeycomb_colortejido_getall', HoneyCombController.honeycomb_colortejido_getall);
+smapi.get('/honeycomb_tejidos_maestro', Auth.ensureAuth, HoneyCombController.honeycomb_tejidos_maestro);
 smapi.get('/honeycomb_articulos_buscar', Auth.ensureAuth, HoneyCombController.honeycomb_articulos_buscar);
 smapi.get('/honeycomb_articulos_existen', Auth.ensureAuth, HoneyCombController.honeycomb_articulos_existen);
 smapi.post('/honeycomb_colortejido_insert', Auth.ensureAuth, HoneyCombController.honeycomb_colortejido_insert);

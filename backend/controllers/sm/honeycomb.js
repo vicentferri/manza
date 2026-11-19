@@ -10,6 +10,65 @@ function formatC1(importe) {
   return 'C1 ' + centimos.padStart(7, '0');
 }
 
+/*
+ * Incrementos de la HoneyComb (Productos → HoneyComb): tipo de tejido, color de tejido, color de perfil y accionamiento.
+ * Coste por cortina que se suma a la casilla de la tarifa antes del margen. Hasta 2026-11-18 solo se cobraba el del
+ * accionamiento; desde entonces se cobran todos (decisión del usuario, sql/sqlHoney/19 los dejó a 0).
+ * Un id que falte o no exista suma 0.
+ */
+async function incrementosHoneycomb(pool, ids) {
+  const id = (v) => { const n = parseInt(v, 10); return isNaN(n) ? null : n; };
+  const r = await pool.request()
+    .input('tipoTejido', sql.Int, id(ids.tipoTejido))
+    .input('colorTejido', sql.Int, id(ids.colorTejido))
+    .input('colorPerfil', sql.Int, id(ids.colorPerfil))
+    .input('accionamiento', sql.Int, id(ids.accionamiento))
+    .query(`select
+        isnull((select Incremento from SOL_ARTICULOS_HONEYCOMB_TIPOSTEJIDO where idTipoTejido = @tipoTejido), 0) as tipo_tejido,
+        isnull((select Incremento from SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO where idColorTejido = @colorTejido), 0) as color_tejido,
+        isnull((select Incremento from SOL_ARTICULOS_HONEYCOMB_COLORESPERFIL where idColorPerfil = @colorPerfil), 0) as color_perfil,
+        isnull((select Incremento from SOL_ARTICULOS_HONEYCOMB_TIPOSACCIONAMIENTO where idTipoAccionamiento = @accionamiento), 0) as accionamiento`);
+  const f = r.recordset[0] || {};
+  const inc = {
+    tipo_tejido: Number(f.tipo_tejido) || 0,
+    color_tejido: Number(f.color_tejido) || 0,
+    color_perfil: Number(f.color_perfil) || 0,
+    accionamiento: Number(f.accionamiento) || 0
+  };
+  inc.total = inc.tipo_tejido + inc.color_tejido + inc.color_perfil + inc.accionamiento;
+  return inc;
+}
+
+/*
+ * Precio de una HoneyComb, el mismo para el configurador de siempre (honeycomb_obtener_tarifa) y el nuevo
+ * (acc_configurador, /acc_cfg/hc/precio y alta): casilla de SOL_ARTICULOS_TARIFA_HONEYCOMB + incrementos.
+ *   C1 (coste) = cantidad × (casilla + incrementos); PVP = C1 × 1,9. Sin promoción de tienda (no la ha tenido nunca).
+ * Medidas en cm de 0,1 en 0,1: se sube al cm entero antes de pasar a metros (120,3 -> 1,21), para que no se redondee a
+ * 1,20 m (Decimal(10,2)) y caiga en el tramo inferior de la tarifa.
+ * Devuelve { codigo: 0, casilla, fila, columna, incrementos, coste, pvp, c1, alto_m, ancho_m } o { codigo: 404, ... }
+ */
+async function precioHoneycomb(pool, d) {
+  const alto_m = Math.ceil(parseFloat(d.alto)) / 100;
+  const ancho_m = Math.ceil(parseFloat(d.ancho)) / 100;
+  const result = await pool.request()
+    .input('alto', sql.Decimal(10, 2), alto_m)
+    .input('ancho', sql.Decimal(10, 2), ancho_m)
+    .input('tipoTejido', sql.Int, parseInt(d.tipoTejido, 10))
+    .output('precio', sql.Decimal(10, 2))
+    .output('filaEncontrada', sql.Decimal(10, 2))
+    .output('columnaEncontrada', sql.Decimal(10, 2))
+    .execute('sp_ObtenerPrecioHoneycomb');
+  const casilla = result.output.precio;
+  const base = { alto_m, ancho_m, fila: result.output.filaEncontrada, columna: result.output.columnaEncontrada };
+  if (casilla === 0) return Object.assign({ codigo: 404, mensaje: 'No hay tarifa de la HoneyComb para esas medidas' }, base);
+  const incrementos = await incrementosHoneycomb(pool, {
+    tipoTejido: d.tipoTejido, colorTejido: d.colorTejido, colorPerfil: d.colorPerfil, accionamiento: d.accionamiento
+  });
+  const coste = d.cantidad * (Number(casilla) + incrementos.total);
+  const pvp = coste * 1.9;
+  return Object.assign({ codigo: 0, casilla: Number(casilla), incrementos, coste, pvp, c1: formatC1(coste) }, base);
+}
+
 /**
  * GET /api/honeycomb/precio
  * Consulta el precio de una tarifa según alto, ancho y tipo de tejido
@@ -44,54 +103,31 @@ async function honeycomb_obtener_tarifa(req, res) {
     }
 
     const pool = await sql.connect();
+    const p = await precioHoneycomb(pool, {
+      ancho, alto, cantidad, tipoTejido: tipoTejidoNum, colorTejido: req.query.colorTejido,
+      colorPerfil: req.query.colorPerfil, accionamiento: tipoAccionamiento
+    });
 
-    const result = await pool.request()
-      .input('alto', sql.Decimal(10, 2), altoNum)
-      .input('ancho', sql.Decimal(10, 2), anchoNum)
-      .input('tipoTejido', sql.Int, tipoTejidoNum)
-      .output('precio', sql.Decimal(10, 2))
-      .output('filaEncontrada', sql.Decimal(10, 2))
-      .output('columnaEncontrada', sql.Decimal(10, 2))
-      .execute('sp_ObtenerPrecioHoneycomb');
-
-    const precio = result.output.precio;
-    const filaEncontrada = result.output.filaEncontrada;
-    const columnaEncontrada = result.output.columnaEncontrada;
-
-    if (precio === 0) {
+    if (p.codigo !== 0) {
       return res.status(404).json({
         error: 'No se encontró tarifa para los valores especificados',
-        alto: altoNum,
-        ancho: anchoNum,
+        alto: p.alto_m,
+        ancho: p.ancho_m,
         tipoTejido: tipoTejidoNum
       });
     }
 
-    // Incremento del accionamiento (coste por cortina, se suma antes del margen)
-    let incremento = 0;
-    const tipoAccionamientoNum = parseInt(tipoAccionamiento);
-    if (!isNaN(tipoAccionamientoNum)) {
-      const resAcc = await pool.request()
-        .input('idTipoAccionamiento', sql.Int, tipoAccionamientoNum)
-        .query('SELECT Incremento FROM sol_articulos_honeycomb_tiposaccionamiento WHERE idTipoAccionamiento = @idTipoAccionamiento');
-      if (resAcc.recordset.length > 0) {
-        incremento = Number(resAcc.recordset[0].Incremento) || 0;
-      }
-    }
-
-    const coste = cantidad * (Number(precio) + incremento);
-    const pvp = coste * 1.9;
-
     res.json({
-      PVP: parseFloat(pvp).toFixed(2),
-      PVP_C1: formatC1(coste),
-      Incremento_Accionamiento: incremento,
+      PVP: p.pvp.toFixed(2),
+      PVP_C1: p.c1,
+      Incremento_Accionamiento: p.incrementos.accionamiento,
+      Incrementos: p.incrementos,
       Fecha_Entrega: '',
       Transporte: 0,
-      filaEncontrada: filaEncontrada,
-      columnaEncontrada: columnaEncontrada,
-      alto: altoNum,
-      ancho: anchoNum,
+      filaEncontrada: p.fila,
+      columnaEncontrada: p.columna,
+      alto: p.alto_m,
+      ancho: p.ancho_m,
       tipoTejido: tipoTejidoNum
     });
 
@@ -885,16 +921,82 @@ async function honeycomb_tipotejido_delete(req, res) {
 }
 
 // COLORES DE TEJIDO
+/* Cada color de tejido va enlazado a su tejido del maestro (sql/sqlHoney/20): lo que se graba en la línea y lo que
+   lee la fabricación sigue siendo el color de la HoneyComb (id -> Referencia), y la Referencia sale del maestro */
 async function honeycomb_colortejido_getall(req, res) {
   try {
     const pool = await sql.connect();
-    const result = await pool.request()
-      .execute('SP_Honeycomb_ColorTejido_GetAll');
+    const result = await pool.request().query(`
+      select c.idColorTejido, c.ColorTejido, c.idTipoTejido, t.TipoTejido, c.Referencia, c.CodigoColor, c.Incremento,
+             c.tejido_maestro, m.nombre as maestro_nombre, m.color as maestro_color,
+             ltrim(rtrim(m.cod_solupyme)) as maestro_cod, m.activo as maestro_activo
+      from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO c
+      join dbo.SOL_ARTICULOS_HONEYCOMB_TIPOSTEJIDO t on t.idTipoTejido = c.idTipoTejido
+      left join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = c.tejido_maestro
+      order by t.TipoTejido, c.ColorTejido`);
 
     res.json(result.recordset);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener colores de tejido' });
+  }
+}
+
+/* Tejido del maestro elegido para un color. Sin el campo (Excel, llamadas antiguas): { id: null, quitar: false }, se
+   enlaza por la Referencia. Con el campo vacío ("Sin tejido" en Productos): { id: null, quitar: true }.
+   Error si no existe, no está activo o no tiene código Solupyme */
+async function tejidoMaestroElegido(pool, body) {
+  if (!Object.prototype.hasOwnProperty.call(body || {}, 'tejido_maestro')) return { id: null, quitar: false };
+  const valor = body.tejido_maestro;
+  if (valor === undefined || valor === null || valor === '') return { id: null, quitar: true };
+  const id = parseInt(valor, 10);
+  if (isNaN(id)) return { error: 'Tejido del maestro no válido' };
+  const r = await pool.request().input('id', sql.Int, id)
+    .query('select idrow, ltrim(rtrim(cod_solupyme)) as cod, activo from dbo.SOL_TEJIDOS_MAESTRO where idrow = @id');
+  if (!r.recordset.length) return { error: 'El tejido ' + id + ' no existe en el maestro de tejidos' };
+  if (!r.recordset[0].activo) return { error: 'El tejido ' + id + ' no está activo en el maestro de tejidos' };
+  if (!r.recordset[0].cod) return { error: 'El tejido ' + id + ' no tiene código Solupyme en el maestro' };
+  return { id };
+}
+
+/* Enlace del color con el maestro: con tejido elegido, la Referencia pasa a ser su código Solupyme; "Sin tejido" quita
+   el enlace y la Referencia (la fabricación sacará SIN ARTÍCULO) SOLO si el color estaba enlazado: un color sin enlace al que
+   se le cambia otra cosa (p. ej. el incremento) conserva su Referencia; sin el campo (Excel, llamadas antiguas), se enlaza
+   con el tejido del maestro que tenga ese código, si hay uno */
+async function enlazarColorTejidoMaestro(pool, idColorTejido, maestro) {
+  await pool.request()
+    .input('idColorTejido', sql.Int, idColorTejido)
+    .input('tejido', sql.Int, maestro.id)
+    .input('quitar', sql.Bit, maestro.quitar ? 1 : 0)
+    .query(`if @quitar = 1 and exists (select 1 from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO
+                                       where idColorTejido = @idColorTejido and tejido_maestro is not null)
+        update dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO set tejido_maestro = null, Referencia = null
+        where idColorTejido = @idColorTejido
+      else if @tejido is not null
+        update c set tejido_maestro = m.idrow, Referencia = ltrim(rtrim(m.cod_solupyme))
+        from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO c join dbo.SOL_TEJIDOS_MAESTRO m on m.idrow = @tejido
+        where c.idColorTejido = @idColorTejido
+      else
+        update c set tejido_maestro = (select top 1 m.idrow from dbo.SOL_TEJIDOS_MAESTRO m
+                                       where ltrim(rtrim(m.cod_solupyme)) = ltrim(rtrim(c.Referencia)) order by m.activo desc, m.idrow)
+        from dbo.SOL_ARTICULOS_HONEYCOMB_COLORESTEJIDO c
+        where c.idColorTejido = @idColorTejido`);
+}
+
+/* GET /honeycomb_tejidos_maestro: tejidos del maestro que se pueden enlazar con un color (tipo HONEYCOMB, activos) */
+async function honeycomb_tejidos_maestro(req, res) {
+  try {
+    const pool = await sql.connect();
+    const r = await pool.request().query(`
+      select m.idrow as id, ltrim(rtrim(m.cod_solupyme)) as cod_solupyme, m.nombre, m.color, t.descripcion as tipo
+      from dbo.SOL_TEJIDOS_MAESTRO m
+      left join dbo.SOL_TEJIDOS_TIPOS t on t.idrow = m.tipo_tejido
+      where m.activo = 1 and t.descripcion = 'HONEYCOMB'
+      order by m.nombre, m.color`);
+    res.json(r.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener los tejidos del maestro' });
   }
 }
 
@@ -909,6 +1011,8 @@ async function honeycomb_colortejido_insert(req, res) {
 
 
     const pool = await sql.connect();
+    const maestro = await tejidoMaestroElegido(pool, req.body);
+    if (maestro.error) return res.status(400).json({ error: maestro.error, message: maestro.error });
     const result = await pool.request()
       .input('ColorTejido', sql.NVarChar(100), ColorTejido)
       .input('idTipoTejido', sql.Int, idTipoTejido)
@@ -916,10 +1020,12 @@ async function honeycomb_colortejido_insert(req, res) {
       .input('CodigoColor', sql.NVarChar(7), CodigoColor || null)
       .input('Incremento', sql.Decimal(12,2), Incremento)
       .execute('SP_Honeycomb_ColorTejido_Insert');
+    const idColorTejido = result.recordset[0].idColorTejido;
+    await enlazarColorTejidoMaestro(pool, idColorTejido, maestro);
 
     res.json({ 
       success: true, 
-      idColorTejido: result.recordset[0].idColorTejido 
+      idColorTejido 
     });
   } catch (err) {
     console.error(err);
@@ -934,6 +1040,8 @@ async function honeycomb_colortejido_update(req, res) {
     const pool = await sql.connect();
     const chk = await renombradoBloqueado(pool, 'colortejido', idColorTejido, ColorTejido);
     if (chk.error) return res.status(409).json({ error: chk.error, message: chk.error });
+    const maestro = await tejidoMaestroElegido(pool, req.body);
+    if (maestro.error) return res.status(400).json({ error: maestro.error, message: maestro.error });
     await pool.request()
       .input('idColorTejido', sql.Int, idColorTejido)
       .input('ColorTejido', sql.NVarChar(100), chk.nombre)
@@ -942,6 +1050,7 @@ async function honeycomb_colortejido_update(req, res) {
       .input('CodigoColor', sql.NVarChar(7), CodigoColor || null)
       .input('Incremento', sql.Decimal(12,2), Incremento)
       .execute('SP_Honeycomb_ColorTejido_Update');
+    await enlazarColorTejidoMaestro(pool, idColorTejido, maestro);
 
     res.json({ success: true });
   } catch (err) {
@@ -1692,6 +1801,9 @@ module.exports = {
   honeycomb_articulos_existen,
   honeycomb_articulos_buscar,
   honeycomb_obtener_tarifa,
+  incrementosHoneycomb,
+  precioHoneycomb,
+  honeycomb_tejidos_maestro,
   honeycomb_obtener_precio_lote,
   honeycomb_obtener_tarifa_tipotejido,
   honeycomb_actualizar_tarifa_tipotejido,

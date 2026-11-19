@@ -107,8 +107,18 @@ export class AccConfiguradorService {
         return this.http.post<any>(this.url + '/pj/precio/' + cliente, linea);
     }
 
-    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc, Solar Mini con nmini, Cajón ZIP con nzip, Vertical con nver
-       y panel japonés con npj) */
+    /* HoneyComb nueva (sql/sqlHoney/21): listas de la HoneyComb que ve el perfil del cliente, con sus nombres */
+    hcOpciones(cliente: string | number): Observable<any> {
+        return this.http.get<any>(this.url + '/hc/opciones/' + cliente);
+    }
+
+    /* Precio de una línea de HoneyComb (la tarifa de siempre más los incrementos), sin grabar nada */
+    hcPrecio(cliente: string | number, linea: any): Observable<any> {
+        return this.http.post<any>(this.url + '/hc/precio/' + cliente, linea);
+    }
+
+    /* Alta del pedido: líneas del flujo nuevo (enrollables con nacc, Solar Mini con nmini, Cajón ZIP con nzip, Vertical con nver,
+       panel japonés con npj y HoneyComb, con nhc o la de siempre) */
     altaPedido(lineas: any[], referencia: string, cliente: string | number): Observable<any> {
         const ref = encodeURIComponent(referencia || '-');
         return this.http.post<any>(this.url + '/pedido/' + cliente + '/' + ref, lineas);

@@ -21,7 +21,7 @@ import { FrasePipe } from '../config/frase.pipe';
 })
 export class HoneycombComponent implements OnInit, OnDestroy {
 
-  private destroy$ = new Subject<void>();
+  protected destroy$ = new Subject<void>();
   calculando: boolean = false;
 
   // Placeholder SVG como constante
@@ -115,12 +115,13 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     ];
   }
 
+  /* protected: manza-honeycomb-nuevo (motor nuevo, sql/sqlHoney/21) hereda de este componente y usa su plantilla */
   constructor(
-    private service: HoneycombService,
-    private imageCacheService: ImageCacheService,
-    private toaster: ToastrService,
-    private translation: TranslationService,
-    private sanitizer: DomSanitizer
+    protected service: HoneycombService,
+    protected imageCacheService: ImageCacheService,
+    protected toaster: ToastrService,
+    protected translation: TranslationService,
+    protected sanitizer: DomSanitizer
   ) { }
 
   VerVideo() {
@@ -179,7 +180,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
    */
   // En honeycomb.component.ts
 
-  private loadTiposTejidoImages() {
+  protected loadTiposTejidoImages() {
     this.TiposTejido.forEach((tipo, index) => {
       setTimeout(() => {
         console.log('Cargando imagen para tipo tejido:', tipo.idTipoTejido, tipo.TipoTejido);
@@ -203,7 +204,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadColoresTejidoImages() {
+  protected loadColoresTejidoImages() {
     this.ColoresTejidoFiltrados.forEach((color, index) => {
       setTimeout(() => {
         console.log('Cargando imagen para color:', color.idColorTejido, color.ColorTejido);
@@ -227,7 +228,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadPerfilesImages() {
+  protected loadPerfilesImages() {
     this.ColoresPerfil.forEach((perfil, index) => {
       setTimeout(() => {
         console.log('Cargando imagen para perfil:', perfil.idColorPerfil, perfil.ColorPerfil);
@@ -269,11 +270,11 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
 
-  // Límites de medidas (cm)
-  readonly ANCHO_MIN = 40;
-  readonly ANCHO_MAX = 120;
-  readonly ALTO_MIN = 40;
-  readonly ALTO_MAX = 280;
+  // Límites de medidas (cm). El motor nuevo los toma del servidor y de los límites del tejido en el perfil
+  ANCHO_MIN = 40;
+  ANCHO_MAX = 120;
+  ALTO_MIN = 40;
+  ALTO_MAX = 280;
 
   anchoInvalido(): boolean {
     const v = Number(this.model.Ancho);
@@ -286,7 +287,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
   // Devuelve el mensaje de error de las medidas, o '' si son correctas
-  private errorMedidas(): string {
+  protected errorMedidas(): string {
     if (this.anchoInvalido()) {
       return `El ancho debe estar entre ${this.ANCHO_MIN} y ${this.ANCHO_MAX} cm`;
     }
@@ -297,7 +298,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
   // Borra el precio calculado para que no se añada a la cesta un precio desfasado
-  private limpiarPrecio() {
+  protected limpiarPrecio() {
     this.model.precios.T7_PVP = 0;
     this.model.precios.T7_PVP_C1 = '';
   }
@@ -345,19 +346,21 @@ export class HoneycombComponent implements OnInit, OnDestroy {
 
   // El color elegido tiene que ser uno de los del tipo de tejido (idColorTejido). Si no lo es
   // (al arrancar o al cambiar de tipo de tejido), se elige el primero de la lista
-  private asegurarColorTejido() {
+  protected asegurarColorTejido() {
     const existe = this.ColoresTejidoFiltrados.some(c => c.idColorTejido == this.model.ColorTejido);
     if (!existe) {
       this.model.ColorTejido = this.ColoresTejidoFiltrados.length > 0 ? this.ColoresTejidoFiltrados[0].idColorTejido : '';
+      this.limpiarPrecio();
     }
   }
 
+  // El color de tejido y el de perfil pueden llevar incremento (Productos → HoneyComb): el precio calculado ya no vale
   ChangeColorTejido() {
-    // Lógica al cambiar color
+    this.limpiarPrecio();
   }
 
   ChangeColorPerfil() {
-    // Lógica al cambiar color de perfil
+    this.limpiarPrecio();
   }
 
   ChangeAccionamiento() {
@@ -401,7 +404,9 @@ export class HoneycombComponent implements OnInit, OnDestroy {
       this.model.Alto,
       this.model.Cantidad,
       Number(this.model.TipoTejido),
-      Number(this.model.TipoAccionamiento)
+      Number(this.model.TipoAccionamiento),
+      Number(this.model.ColorTejido),
+      Number(this.model.ColorPerfil)
     ).subscribe({
       next: (response: any) => {
         if (response) {
@@ -438,27 +443,30 @@ export class HoneycombComponent implements OnInit, OnDestroy {
 
     if (confirm("¿Estás seguro de agregar a su cesta?")) {
 
-      //const preciosCompleto = this.buildPreciosCompleto();
-      const tipo = new CortinaTipo(this.codeCentro);
-      const tipoTejidoObj = this.TiposTejido.find(t => t.idTipoTejido == this.model.TipoTejido);
-      const colorTejidoObj = this.ColoresTejidoFiltrados.find(c => c.idColorTejido == this.model.ColorTejido);
-      const colorPerfilObj = this.ColoresPerfil.find(p => p.idColorPerfil == Number(this.model.ColorPerfil));
-      const accionamientoObj = this.TiposAccionamiento.find(a => a.idTipoAccionamiento == Number(this.model.TipoAccionamiento));
-
-      tipo.HoneyComb_Add(
-        Number(this.model.Ancho), Number(this.model.Alto), Number(this.model.Cantidad),
-        Number(this.model.TipoTejido), tipoTejidoObj ? tipoTejidoObj.TipoTejido : '',
-        Number(this.model.ColorTejido), colorTejidoObj ? colorTejidoObj.ColorTejido : '',
-        Number(this.model.ColorPerfil), colorPerfilObj ? colorPerfilObj.ColorPerfil : '',
-        Number(this.model.TipoAccionamiento), accionamientoObj ? accionamientoObj.TipoAccionamiento : '',
-        this.model.precios
-      );
-
-      this.onAdd.emit(tipo);
+      this.onAdd.emit(this.construirLinea());
       const message = this.translation.get('AGREGADO HONEYCOMB A CESTA');
       this.toaster.success(message, 'Cesta');
       this.reset();
     }
+  }
+
+  // Línea de la cesta con lo elegido (el motor nuevo le añade nhc)
+  protected construirLinea(): CortinaTipo {
+    const tipo = new CortinaTipo(this.codeCentro);
+    const tipoTejidoObj = this.TiposTejido.find(t => t.idTipoTejido == this.model.TipoTejido);
+    const colorTejidoObj = this.ColoresTejidoFiltrados.find(c => c.idColorTejido == this.model.ColorTejido);
+    const colorPerfilObj = this.ColoresPerfil.find(p => p.idColorPerfil == Number(this.model.ColorPerfil));
+    const accionamientoObj = this.TiposAccionamiento.find(a => a.idTipoAccionamiento == Number(this.model.TipoAccionamiento));
+
+    tipo.HoneyComb_Add(
+      Number(this.model.Ancho), Number(this.model.Alto), Number(this.model.Cantidad),
+      Number(this.model.TipoTejido), tipoTejidoObj ? tipoTejidoObj.TipoTejido : '',
+      Number(this.model.ColorTejido), colorTejidoObj ? colorTejidoObj.ColorTejido : '',
+      Number(this.model.ColorPerfil), colorPerfilObj ? colorPerfilObj.ColorPerfil : '',
+      Number(this.model.TipoAccionamiento), accionamientoObj ? accionamientoObj.TipoAccionamiento : '',
+      this.model.precios
+    );
+    return tipo;
   }
 
   // Rellena el formulario en modo edición a partir de las propiedades reales que
