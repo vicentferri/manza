@@ -9,9 +9,11 @@ import {CortinaTipo} from '../config/CortinaTipo';
 export class Preview1Component implements OnInit {
 
   @Input() item : CortinaTipo
+  @Input() esLeroy = false;
   @Input() soloLectura = false; // en la ventana de finalizar: sin MODIFICAR ni BORRAR
   @Output() onDelete = new EventEmitter();
   @Output() onEdit = new EventEmitter();
+  readonly ACCESORIOS_48 = '48381445';
   // Detalle técnico y desglose de precio, plegados por defecto
   verDetalle = false;
   isCopied1 = false;

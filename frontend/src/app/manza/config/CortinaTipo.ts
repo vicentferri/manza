@@ -56,6 +56,7 @@ export class CortinaTipo {
     SubTipoCortina!: number;
 
     Tipo1_Cargador: string = '-1';
+    codigoprov: string = '';
     Tipo1_SmartHome: string = '-1';
 
 
@@ -98,6 +99,10 @@ export class CortinaTipo {
     PJ_Text_3!: string;
     PJ_Text_4!: string;
     PJ_Text_5!: string;
+    PJ_codigoprov_2: string = '';
+    PJ_codigoprov_3: string = '';
+    PJ_codigoprov_4: string = '';
+    PJ_codigoprov_5: string = '';
 
     /* PANEL JAPONES */
 
@@ -119,6 +124,7 @@ export class CortinaTipo {
     PV_Tejido_c1_text!: string;
     PV_Tejido_c2_id!: number;
     PV_Tejido_c2_text!: string;
+    PV_codigoprov_2: string = '';
     PV_estancia_id_1!: string;
     PV_estancia_obs_1!: string;
     PV_Impresion_1!: boolean;
@@ -224,7 +230,9 @@ export class CortinaTipo {
         T1_Transporte: "",
         T1_Inc_Cargador: 0,
         T1_Inc_Cargador_C1: '',
-        T1_Inc_Cargador_48: 0,
+        T1_Inc_Cargador_48: '' as any,
+        T1_Inc_Modelo_48: '',
+        T1_Inc_Mando_48: '',
         T1_Inc_SmartHome: 0,
         T1_Inc_SmartHome_C1: '',
         T1_Inc_SmartHome_48: '',
@@ -1007,6 +1015,7 @@ export class CortinaTipo {
         this.color_perfil_text = color_perfil_text;
         this.hc_accionamiento_id = hc_accionamiento_id;
         this.hc_accionamiento_text = hc_accionamiento_text;
+        this.codigoprov = '48007280';
 
         this.precios = Object.assign({}, values);
 

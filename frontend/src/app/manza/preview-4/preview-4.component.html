@@ -7,6 +7,7 @@
         <strong>{{ nombreProducto | translate }}</strong>
         <span class="cfg-mono">{{ item.ancho }} × {{ item.alto }} cm</span>
         <span>· {{ item.com_tej_tipo_text | frase }} · {{ item.com_tej_color_text | frase }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.codigoprov">{{ item.codigoprov }}</span>
       </div>
       <div class="cfg-linea-sub">
         <span>{{ item.com_acc_tipo_text | frase }} {{ item.com_acc_marca_text | frase }} · {{ item.com_acc_posicion_text | frase }}</span>
@@ -71,7 +72,10 @@
       </div>
       <div class="cfg-dato cfg-dato-ancho">
         <span>{{ "TEJIDO" | translate }}</span>
-        <strong>{{ item.com_tej_tipo_text | frase }} · {{ item.com_tej_color_text | frase }} · {{ item.com_tej_salida_text | frase }}</strong>
+        <strong>
+          {{ item.com_tej_tipo_text | frase }} · {{ item.com_tej_color_text | frase }} · {{ item.com_tej_salida_text | frase }}
+          <span class="cfg-mono" *ngIf="esLeroy && item.codigoprov">({{ item.codigoprov }})</span>
+        </strong>
       </div>
     </div>
 
@@ -80,7 +84,10 @@
         <h5>{{ "Resumen de precio" | translate }}</h5>
         <div class="cfg-precio-fila">
           <span>{{ "Según tarifa" | translate }}</span>
-          <div>{{ item.precios.T4_Tejido | number:'1.2-2' }} €</div>
+          <div>
+            {{ item.precios.T4_Tejido | number:'1.2-2' }} €
+            <small *ngIf="esLeroy && item.codigoprov">{{ item.codigoprov }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila">
           <span>{{ "CANTIDAD" | translate }}</span>

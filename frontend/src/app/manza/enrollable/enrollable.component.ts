@@ -177,15 +177,39 @@ export class EnrollableComponent implements OnInit, OnChanges {
    Tipo1_Estancia_Obs: string = '';
    public Tipo1_Estancias: any = [];
 
+   get esLeroy(): boolean {
+      return this.Cliente == '1' || this.Cliente == '5';
+   }
+
    // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
    get resumenFilas(): { etiqueta: string, valor: string }[] {
-      return [
+      const codTej = this.esLeroy ? this.obtenerCodigoProv() : '';
+      const posMod = this.getPos(this.items3, this.Tipo1_Color);
+      const codMod = (this.esLeroy && posMod >= 0 && (this.items3[posMod] as any).precio > 0 && (this.items3[posMod] as any).codigo_48 && (this.items3[posMod] as any).codigo_48 !== '0')
+         ? String((this.items3[posMod] as any).codigo_48)
+         : '';
+      const filas = [
          { etiqueta: 'Producto', valor: this.translation.get(this.SubTipoCortina == 2 ? 'CAJON ZIP' : 'ENROLLABLE') },
          { etiqueta: 'Medidas', valor: medida(this.Ancho) + ' × ' + medida(this.Alto) + ' cm' },
-         { etiqueta: 'Tejido', valor: texto(this.tejidos, this.Tipo1_Tejido) + ' · ' + texto(this.tejidosC, this.Tipo1_TejidoColor) },
-         { etiqueta: 'Accionamiento', valor: texto(this.items1, this.Tipo1_Tipo) + ' · ' + texto(this.items2, this.Tipo1_Marca) },
-         { etiqueta: 'Cantidad', valor: medida(this.Cantidad) }
+         { etiqueta: 'Tejido', valor: texto(this.tejidos, this.Tipo1_Tejido) + ' · ' + texto(this.tejidosC, this.Tipo1_TejidoColor) + (codTej ? ' (' + codTej + ')' : '') },
+         { etiqueta: 'Accionamiento', valor: texto(this.items1, this.Tipo1_Tipo) + ' · ' + texto(this.items2, this.Tipo1_Marca) + (codMod ? ' (' + codMod + ')' : '') }
       ];
+      if (this.esLeroy) {
+         if (this.verMando && this.precios.T1_Inc_Mando > 0 && this.precios.T1_Inc_Mando_48) {
+            filas.push({ etiqueta: 'Mando', valor: texto(this.radiomando, this.Tipo1_Mando) + ' (' + this.precios.T1_Inc_Mando_48 + ')' });
+         }
+         if (this.precios.T1_Inc_Cargador > 0 && this.precios.T1_Inc_Cargador_48) {
+            filas.push({ etiqueta: 'Cargador', valor: texto(this.cargadores, this.Tipo1_Cargador) + ' (' + this.precios.T1_Inc_Cargador_48 + ')' });
+         }
+         if (this.precios.T1_Inc_SmartHome > 0 && this.precios.T1_Inc_SmartHome_48) {
+            filas.push({ etiqueta: 'Smart Home', valor: this.precios.T1_Inc_SmartHome_48 });
+         }
+         if (this.precios.T1_Inc_CadenaMetalica > 0 || this.precios.T1_Inc_Contrapeso > 0) {
+            filas.push({ etiqueta: 'Cod. 48 Accesorios', valor: '48381445' });
+         }
+      }
+      filas.push({ etiqueta: 'Cantidad', valor: medida(this.Cantidad) });
+      return filas;
    }
 
    // Precios
@@ -207,7 +231,9 @@ export class EnrollableComponent implements OnInit, OnChanges {
       T1_Transporte: '',
       T1_Inc_Cargador: 0,
       T1_Inc_Cargador_C1: '',
-      T1_Inc_Cargador_48: 0,
+      T1_Inc_Cargador_48: '' as any,
+      T1_Inc_Modelo_48: '',
+      T1_Inc_Mando_48: '',
       T1_Inc_SmartHome: 0,
       T1_Inc_SmartHome_C1: '',
       T1_Inc_SmartHome_48: '',
@@ -308,7 +334,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
          T1_Inc_Mando: 0, T1_Inc_Mando_C1: '',
          T1_Inc_Impresion: 0, T1_Inc_Impresion_C1: '',
          T1_PVP: 0, T1_PVP_C1: '', T1_Fecha_Entrega: '', T1_Transporte: '',
-         T1_Inc_Cargador: 0, T1_Inc_Cargador_C1: '', T1_Inc_Cargador_48: 0,
+         T1_Inc_Cargador: 0, T1_Inc_Cargador_C1: '', T1_Inc_Cargador_48: '' as any,
+         T1_Inc_Modelo_48: '', T1_Inc_Mando_48: '',
          T1_Inc_SmartHome: 0, T1_Inc_SmartHome_C1: '', T1_Inc_SmartHome_48: '',
       };
    }
@@ -407,7 +434,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.Label_Cargador = 'Cargador'; this.Cargador_Extra = '';
          this.precios.T1_Inc_Cargador = 0;
          this.precios.T1_Inc_Cargador_C1 = '';
-         this.precios.T1_Inc_Cargador_48 = 0;
+         this.precios.T1_Inc_Cargador_48 = '';
          return of(null);
       }
       const cargador = this.cargadores[pos] as any;
@@ -797,6 +824,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
 
    ChangeAccionamiento(): void {
       this.precios.T1_Inc_Mando = 0;
+      this.precios.T1_Inc_Mando_48 = '';
+      this.precios.T1_Inc_Modelo_48 = '';
       const accionamiento = this.Tipo1_Tipo;
       const acctext = this.items1[this.getPos(this.items1, accionamiento)].text;
       this.esCadena = acctext.toUpperCase() === 'CADENA' ? 1 : 0;
@@ -807,6 +836,8 @@ export class EnrollableComponent implements OnInit, OnChanges {
 
    ChangeAccionamientoMarca(): void {
       this.precios.T1_Inc_Mando = 0;
+      this.precios.T1_Inc_Mando_48 = '';
+      this.precios.T1_Inc_Modelo_48 = '';
       const accionamiento = this.Tipo1_Tipo;
       const accionamientom = this.Tipo1_Marca;
       this.load_ColorAccionamientos(parseInt(accionamiento), parseInt(accionamientom));
@@ -824,6 +855,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.Tipo1_SoporteC = color;
       }
       const pos = this.getPos(this.items3, this.Tipo1_Color);
+      this.precios.T1_Inc_Modelo_48 = '';
       if (pos >= 0) {
          const precio = (this.items3[pos] as any).precio;
          const c1 = (this.items3[pos] as any).c1;
@@ -832,6 +864,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '';
          if (precio > 0) {
             this.Modelo_Label = 'Modelo'; this.Modelo_Extra = '(' + precio + '€ ' + c1 + ' ' + codigo_48 + ')';
+            this.precios.T1_Inc_Modelo_48 = (codigo_48 && codigo_48 !== '0') ? String(codigo_48) : '';
          }
       }
       if (this.verMando) this.load_RadioMando();
@@ -853,6 +886,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
       const radio = this.Tipo1_Mando;
       const cantidad = Number(this.Cantidad);
       const pos = this.getPos(this.radiomando, radio);
+      this.precios.T1_Inc_Mando_48 = '';
       if (pos >= 0) {
          const precio = this.radiomando[pos].precio;
          const c1 = this.radiomando[pos].c1;
@@ -862,6 +896,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
             this.Tipo1_RadioMando_Label = 'Mando'; this.Tipo1_RadioMando_Extra = '(' + precio + '€ ' + c1 + ' ' + codigo_48 + ')';
             this.precios.T1_Inc_Mando = cantidad * precio;
             this.precios.T1_Inc_Mando_C1 = c1;
+            this.precios.T1_Inc_Mando_48 = (codigo_48 && codigo_48 !== '0') ? String(codigo_48) : '';
             return this.c1PorCantidad(c1, cantidad).pipe(
                tap(c1Total => { this.precios.T1_Inc_Mando_C1 = c1Total; })
             );
@@ -1354,6 +1389,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          this.Tipo1_Guia, this.Tipo1_GuiaC, this.Tipo1_GuiaRAL,
          this.SubTipoCortina, this.Tipo1_Cargador, this.Tipo1_SmartHome
       );
+      tipo.codigoprov = this.obtenerCodigoProv();
 
       this.onAdd.emit(tipo);
       const message = this.translation.get('AGREGADA CORTINA ENROLLABLE A CESTA');
@@ -1557,6 +1593,18 @@ export class EnrollableComponent implements OnInit, OnChanges {
 
    // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
+   private obtenerCodigoProv(): string {
+      const posC = this.getPos(this.tejidosC || [], this.Tipo1_TejidoColor);
+      if (posC >= 0 && this.tejidosC[posC].codigoprov) {
+         return this.tejidosC[posC].codigoprov;
+      }
+      const posT = this.getPos(this.tejidos || [], this.Tipo1_Tejido);
+      if (posT >= 0 && this.tejidos[posT].codigoprov) {
+         return this.tejidos[posT].codigoprov;
+      }
+      return this.CodigoProv || '';
+   }
+
    private selectFromList(list: any[], value: any): string {
       if (!list || list.length === 0) { return '-1'; }
       const pos = this.getPos(list, value);
@@ -1670,6 +1718,7 @@ export class EnrollableComponent implements OnInit, OnChanges {
          tipo.Enrollable_Add(ancho, alto, cantidad, it1, it1s, it2, it2s, it13, it13s, it3, it3s, it4, it4s, it5, it5s, it6, it6s, it7, it7s, it8, it8s, it9, it9s, it10, it10s, it11, it11s, it12, it12s,
             alturaCadena, colorCadena, this.esCadenaExt, it28, it28s, this.ID_Quiero, this.ID_Imagen, it31, it31s, this.Tipo1_Estancia, this.Tipo1_Estancia_Obs, this.precios,
             this.Tipo1_Cajon, this.Tipo1_CajonC, this.Tipo1_CajonRAL, this.Tipo1_Guia, this.Tipo1_GuiaC, this.Tipo1_GuiaRAL, this.SubTipoCortina, this.Tipo1_Cargador, this.Tipo1_SmartHome);
+         tipo.codigoprov = this.obtenerCodigoProv();
 
          this.CestaPrecios = [];
          this.CestaPrecios.push(tipo);

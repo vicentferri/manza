@@ -151,25 +151,38 @@ export class VerticalComponent implements OnInit, OnChanges {
 
    public Estancias: any = [];
 
+   get esLeroy(): boolean {
+      return this.Cliente == '1' || this.Cliente == '5';
+   }
+
    // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
    get resumenFilas(): { etiqueta: string, valor: string }[] {
       const componentes = { '1': 'TEJIDOMASRIEL', '2': 'SOLOTEJIDO', '3': 'SOLORIEL' };
 
       if (this.VerticalInclinada == '1') {
-         return [
+         const codTej2 = this.esLeroy ? this.obtenerCodigoProv(this.Tipo3_Tejido_2, this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2, this.CodigoProv32) : '';
+         const filasInc = [
             { etiqueta: 'Producto', valor: this.translation.get('VERTICALINCLINADA') },
             { etiqueta: 'Medidas', valor: medida(this.PV_Ancho_2) + ' × ' + medida(this.PV_AlturaMin_2) + '/' + medida(this.PV_AlturaMax_2) + ' cm' },
-            { etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido_2) + ' · ' + texto(this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2) },
-            { etiqueta: 'Cantidad', valor: medida(this.PV_Cantidad_2) }
+            { etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido_2) + ' · ' + texto(this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2) + (codTej2 ? ' (' + codTej2 + ')' : '') }
          ];
+         if (this.esLeroy && (this.precios.T32_TejidosCombinados > 0 || this.precios.T32_NumSoportes > 0)) {
+            filasInc.push({ etiqueta: 'Cod. 48 Mecanismo', valor: '48381466' });
+         }
+         filasInc.push({ etiqueta: 'Cantidad', valor: medida(this.PV_Cantidad_2) });
+         return filasInc;
       }
+      const codTej1 = this.esLeroy && this.TipoVertical != '3' ? this.obtenerCodigoProv(this.Tipo3_Tejido, this.pv_tejidosC_1, this.Tipo3_TejidoColor1, this.CodigoProv31) : '';
       const filas = [
          { etiqueta: 'Producto', valor: this.translation.get('VERTICAL') },
          { etiqueta: 'Componente', valor: this.translation.get(componentes[this.TipoVertical]) },
          { etiqueta: 'Medidas', valor: medida(this.PV_Ancho_1) + ' × ' + medida(this.PV_Alto_1) + ' cm' }
       ];
       if (this.TipoVertical != '3') {
-         filas.push({ etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido) + ' · ' + texto(this.pv_tejidosC_1, this.Tipo3_TejidoColor1) });
+         filas.push({ etiqueta: 'Tejido', valor: texto(this.pv_tejidos_1, this.Tipo3_Tejido) + ' · ' + texto(this.pv_tejidosC_1, this.Tipo3_TejidoColor1) + (codTej1 ? ' (' + codTej1 + ')' : '') });
+      }
+      if (this.esLeroy && (this.TipoVertical == '3' || this.precios.T3_TejidosCombinados > 0 || this.precios.T3_NumSoportes > 0)) {
+         filas.push({ etiqueta: 'Cod. 48 Mecanismo', valor: '48381466' });
       }
       filas.push({ etiqueta: 'Cantidad', valor: medida(this.PV_Cantidad_1) });
       return filas;
@@ -749,6 +762,10 @@ export class VerticalComponent implements OnInit, OnChanges {
             this.PV_ID_Quiero_1, this.PV_ID_Imagen_1,
             preciosCompleto
          );
+         tipo.codigoprov = this.obtenerCodigoProv(this.Tipo3_Tejido, this.pv_tejidosC_1, this.Tipo3_TejidoColor1, this.CodigoProv31);
+         tipo.PV_codigoprov_2 = (this.TipoVertical != '3' && this.Tipo3_TejidoColor2 !== '-1' && this.Tipo3_TejidoColor2 !== this.Tipo3_TejidoColor1)
+            ? this.obtenerCodigoProv(this.Tipo3_Tejido, this.pv_tejidosC_2, this.Tipo3_TejidoColor2, this.CodigoProv31)
+            : '';
       }
 
 
@@ -766,6 +783,10 @@ export class VerticalComponent implements OnInit, OnChanges {
             parseInt(this.Tipo3_TejidoColor1_2), this.textoDe(this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2),
             parseInt(this.Tipo3_TejidoColor2_2), this.textoDe(this.pv_tejidosC_2, this.Tipo3_TejidoColor2_2)
          );
+         tipo.codigoprov = this.obtenerCodigoProv(this.Tipo3_Tejido_2, this.pv_tejidosC_2, this.Tipo3_TejidoColor1_2, this.CodigoProv32);
+         tipo.PV_codigoprov_2 = (this.Tipo3_TejidoColor2_2 !== '-1' && this.Tipo3_TejidoColor2_2 !== this.Tipo3_TejidoColor1_2)
+            ? this.obtenerCodigoProv(this.Tipo3_Tejido_2, this.pv_tejidosC_2, this.Tipo3_TejidoColor2_2, this.CodigoProv32)
+            : '';
       }
 
       this.onAdd.emit(tipo);
@@ -777,6 +798,19 @@ export class VerticalComponent implements OnInit, OnChanges {
    private textoDe(lista: any[], id: string): string {
       const pos = this.getPos(lista, parseInt(id));
       return pos >= 0 ? lista[pos].text : '';
+   }
+
+   private obtenerCodigoProv(tejidoId: any, listaColores: any[], colorId: any, fallback: string): string {
+      if (this.PV_SEL_1 && this.TipoVertical == '3') return '';
+      const posC = this.getPos(listaColores || [], parseInt(colorId));
+      if (posC >= 0 && listaColores[posC].codigoprov) {
+         return listaColores[posC].codigoprov;
+      }
+      const posT = this.getPos(this.pv_tejidos_1 || [], parseInt(tejidoId));
+      if (posT >= 0 && this.pv_tejidos_1[posT].codigoprov) {
+         return this.pv_tejidos_1[posT].codigoprov;
+      }
+      return fallback || '';
    }
 
    private buildPreciosCompleto(): any {

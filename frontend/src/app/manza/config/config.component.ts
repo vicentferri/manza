@@ -100,6 +100,10 @@ export class ConfigComponent implements OnInit {
   Cliente = "-1";
   SubCliente = "2";
 
+  get esLeroy(): boolean {
+    return this.Cliente == "1" || this.Cliente == "5";
+  }
+
   /* Logo de la cabecera (parámetro "logo" del perfil) */
   get logo(): string {
     return (this.perfilCfg.parametros && this.perfilCfg.parametros['logo']) || 'SM';
@@ -848,8 +852,12 @@ export class ConfigComponent implements OnInit {
               T1_Inc_Impresion_C1: item.T1_Inc_Impresion_C1,
               T1_Inc_Cargador: item.T1_Inc_Cargador || 0,
               T1_Inc_Cargador_C1: item.T1_Inc_Cargador_C1 || '',
+              T1_Inc_Cargador_48: item.T1_Inc_Cargador_48 || '',
+              T1_Inc_Modelo_48: item.T1_Inc_Modelo_48 || '',
+              T1_Inc_Mando_48: (Number(item.T1_Inc_Mando) > 0 && item.T1_Inc_Mando_48) ? item.T1_Inc_Mando_48 : '',
               T1_Inc_SmartHome: Number(item.T1_Inc_SmartHome) || 0,
               T1_Inc_SmartHome_C1: item.T1_Inc_SmartHome_C1 || '',
+              T1_Inc_SmartHome_48: (Number(item.T1_Inc_SmartHome) > 0 && item.T1_Inc_Modelo_48) ? item.T1_Inc_Modelo_48 : '',
               T1_PVP: Number(item.T1_PVP),
               T1_PVP_C1: item.T1_PVP_C1,
               T1_Fecha_Entrega: item.T1_Fecha_Entrega,
@@ -892,6 +900,7 @@ export class ConfigComponent implements OnInit {
               item.Tipo1_Cajon, item.Tipo1_CajonC, item.Tipo1_CajonRAL,
               item.Tipo1_Guia, item.Tipo1_GuiaC, item.Tipo1_GuiaRAL,
               item.SubTipoCortina, item.Tipo1_Cargador, item.Tipo1_SmartHome);
+            tipo.codigoprov = item.codigoprov || '';
 
             /* Línea del configurador nuevo: se recupera su selección (nacc_*) para poder editarla y volver a guardarla */
             if (item.nacc_accionamiento_id) {
@@ -982,6 +991,11 @@ export class ConfigComponent implements OnInit {
               item.T2_TejidoColor_2, item.T2_TejidoColor_3, item.T2_TejidoColor_4, item.T2_TejidoColor_5,
               item.PJ_Text2, item.PJ_Text3, item.PJ_Text4, item.PJ_Text5, item.PJ_CombinarColores,
               precios);
+            tipo.codigoprov = item.codigoprov || '';
+            tipo.PJ_codigoprov_2 = item.PJ_codigoprov_2 || '';
+            tipo.PJ_codigoprov_3 = item.PJ_codigoprov_3 || '';
+            tipo.PJ_codigoprov_4 = item.PJ_codigoprov_4 || '';
+            tipo.PJ_codigoprov_5 = item.PJ_codigoprov_5 || '';
 
             this.Cesta.push(tipo);
             anadidas++;
@@ -1072,6 +1086,8 @@ export class ConfigComponent implements OnInit {
                 item.PV_Tejido_c1_id, item.PV_Tejido_c1_text,
                 item.PV_Tejido_c2_id, item.PV_Tejido_c2_text);
             }
+            tipo.codigoprov = item.codigoprov || '';
+            tipo.PV_codigoprov_2 = item.PV_codigoprov_2 || '';
 
             this.Cesta.push(tipo);
           }
@@ -1177,6 +1193,7 @@ export class ConfigComponent implements OnInit {
               item.estancia, item.estanciaobs,
               item.perfileria, item.ral, item.impresion, item.impresion_imagen,
               precios);
+            tipo.codigoprov = item.codigoprov || '';
 
             /* Línea del configurador nuevo del Solar Mini: se recupera su selección (nmini_*) para poder editarla y volver a guardarla */
             if (item.nmini_junquillo_id) {

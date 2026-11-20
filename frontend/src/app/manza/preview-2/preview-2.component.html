@@ -7,12 +7,14 @@
         <strong>{{ "PANEL JAPONES" | translate }}</strong>
         <span class="cfg-mono" *ngIf="item.PJ_TipoJapones != 2">{{ item.PJ_Ancho_2 }} × {{ item.PJ_Alto_1 }} cm</span>
         <span *ngIf="item.PJ_TipoJapones != 3">· {{ item.PJ_tejidos_text | frase }} · {{ item.PJ_tejidosC_text | frase }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.PJ_TipoJapones != 3 && item.codigoprov">{{ item.codigoprov }}</span>
       </div>
       <div class="cfg-linea-sub">
         <span *ngIf="item.PJ_TipoJapones == 1">{{ "MECANISMOTEJIDO" | translate }}</span>
         <span *ngIf="item.PJ_TipoJapones == 2">{{ "SOLOTEJIDO" | translate }}</span>
         <span *ngIf="item.PJ_TipoJapones == 3">{{ "SOLOMECANISMO" | translate }}</span>
         <span *ngIf="item.PJ_TipoJapones != 3">· {{ item.PJ_NumeroLamas }} {{ "Lamas" | translate | lowercase }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.PJ_TipoJapones != 2">{{ "Mecanismo" | translate }} {{ ACCESORIOS_48 }}</span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
@@ -103,10 +105,11 @@
         <span>{{ "TEJIDO" | translate }}</span>
         <strong>
           {{ item.PJ_tejidos_text | frase }} · (1) {{ item.PJ_tejidosC_text | frase }}
-          <ng-container *ngIf="item.Tipo2_TejidoColor_2 != '-1'"> · (2) {{ item.PJ_Text_2 | frase }}</ng-container>
-          <ng-container *ngIf="item.Tipo2_TejidoColor_3 != '-1'"> · (3) {{ item.PJ_Text_3 | frase }}</ng-container>
-          <ng-container *ngIf="item.Tipo2_TejidoColor_4 != '-1'"> · (4) {{ item.PJ_Text_4 | frase }}</ng-container>
-          <ng-container *ngIf="item.Tipo2_TejidoColor_5 != '-1'"> · (5) {{ item.PJ_Text_5 | frase }}</ng-container>
+          <span class="cfg-mono" *ngIf="esLeroy && item.codigoprov">({{ item.codigoprov }})</span>
+          <ng-container *ngIf="item.Tipo2_TejidoColor_2 != '-1'"> · (2) {{ item.PJ_Text_2 | frase }}<span class="cfg-mono" *ngIf="esLeroy && item.PJ_codigoprov_2"> ({{ item.PJ_codigoprov_2 }})</span></ng-container>
+          <ng-container *ngIf="item.Tipo2_TejidoColor_3 != '-1'"> · (3) {{ item.PJ_Text_3 | frase }}<span class="cfg-mono" *ngIf="esLeroy && item.PJ_codigoprov_3"> ({{ item.PJ_codigoprov_3 }})</span></ng-container>
+          <ng-container *ngIf="item.Tipo2_TejidoColor_4 != '-1'"> · (4) {{ item.PJ_Text_4 | frase }}<span class="cfg-mono" *ngIf="esLeroy && item.PJ_codigoprov_4"> ({{ item.PJ_codigoprov_4 }})</span></ng-container>
+          <ng-container *ngIf="item.Tipo2_TejidoColor_5 != '-1'"> · (5) {{ item.PJ_Text_5 | frase }}<span class="cfg-mono" *ngIf="esLeroy && item.PJ_codigoprov_5"> ({{ item.PJ_codigoprov_5 }})</span></ng-container>
         </strong>
         <div *ngIf="item.impresion == true" class="cfg-aviso">
           {{ "IMPRESIONDIGITAL" | translate }}: {{ item.impresion_imagen }}
@@ -129,15 +132,27 @@
         <h5>{{ "Resumen de precio" | translate }}</h5>
         <div class="cfg-precio-fila">
           <span>{{ "Tejido según tarifa" | translate }}</span>
-          <div>{{ item.precios.T2_Tejido | number:'1.2-2' }} €<small>{{ item.precios.T2_Tejido_C1 }}</small></div>
+          <div>
+            {{ item.precios.T2_Tejido | number:'1.2-2' }} €
+            <small>{{ item.precios.T2_Tejido_C1 }}</small>
+            <small *ngIf="esLeroy && item.PJ_TipoJapones != 3 && item.codigoprov">{{ item.codigoprov }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila">
           <span>{{ "NUMEROVIAS" | translate }}</span>
-          <div>{{ item.precios.T2_NumeroVias | number:'1.2-2' }} €<small>{{ item.precios.T2_NumeroVias_C1 }}</small></div>
+          <div>
+            {{ item.precios.T2_NumeroVias | number:'1.2-2' }} €
+            <small>{{ item.precios.T2_NumeroVias_C1 }}</small>
+            <small *ngIf="esLeroy && item.PJ_TipoJapones != 2">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila">
           <span>{{ "SOPORTES" | translate }}</span>
-          <div>{{ item.precios.T2_SoporteTotal | number:'1.2-2' }} €<small>{{ item.precios.T2_TipoSoporte_C1 }}</small></div>
+          <div>
+            {{ item.precios.T2_SoporteTotal | number:'1.2-2' }} €
+            <small>{{ item.precios.T2_TipoSoporte_C1 }}</small>
+            <small *ngIf="esLeroy && item.precios.T2_SoporteTotal > 0">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T2_Inc_Impresion > 0">
           <span>{{ "IMPRESIONDIGITAL" | translate }}</span>

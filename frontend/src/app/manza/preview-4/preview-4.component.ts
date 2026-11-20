@@ -11,6 +11,7 @@ export class Preview4Component implements OnInit {
 
   @Input() item!: CortinaTipo;
   @Input() Cliente: string = '-1';
+  @Input() esLeroy = false;
   @Input() soloLectura = false; // en la ventana de finalizar: sin MODIFICAR ni BORRAR
   @Output() onDelete = new EventEmitter();
   @Output() onEdit = new EventEmitter();

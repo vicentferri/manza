@@ -7,9 +7,15 @@
         <strong>{{ "ENROLLABLE" | translate }}</strong>
         <span class="cfg-mono">{{ item.ancho }} × {{ item.alto }} cm</span>
         <span>· {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.codigoprov">{{ item.codigoprov }}</span>
       </div>
       <div class="cfg-linea-sub">
         <span>{{ item.acc_tipo_text | frase }} {{ item.acc_marca_text | frase }} · {{ item.acc_posicion_text | frase }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.precios.T1_Inc_Modelo_48 && item.precios.T1_Inc_Modelo_48 != '0'">{{ "Motor" | translate }} {{ item.precios.T1_Inc_Modelo_48 }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.precios.T1_Inc_Mando > 0 && item.precios.T1_Inc_Mando_48 && item.precios.T1_Inc_Mando_48 != '0'">{{ "Mando" | translate }} {{ item.precios.T1_Inc_Mando_48 }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.precios.T1_Inc_Cargador > 0 && item.precios.T1_Inc_Cargador_48 && item.precios.T1_Inc_Cargador_48 != '0'">{{ "Cargador" | translate }} {{ item.precios.T1_Inc_Cargador_48 }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.precios.T1_Inc_SmartHome > 0 && item.precios.T1_Inc_SmartHome_48 && item.precios.T1_Inc_SmartHome_48 != '0'">Smart Home {{ item.precios.T1_Inc_SmartHome_48 }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && (item.precios.T1_Inc_CadenaMetalica > 0 || item.precios.T1_Inc_Contrapeso > 0)">Acc. {{ ACCESORIOS_48 }}</span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
@@ -36,6 +42,7 @@
           {{ item.acc_tipo_text | frase }} {{ item.acc_marca_text | frase }}
           {{ item.acc_tubo_text | frase }} {{ item.acc_modelo_text | frase }}
           {{ item.acc_posicion_text | frase }}
+          <span class="cfg-mono" *ngIf="esLeroy && item.precios.T1_Inc_Modelo_48 && item.precios.T1_Inc_Modelo_48 != '0'">({{ item.precios.T1_Inc_Modelo_48 }})</span>
         </strong>
         <div *ngIf="item.acc_tipo_text == 'Cadena'" class="cfg-aviso">
           <span *ngIf="item.cad_Tipo == 2">{{ "CADENAMETÁLICA" | translate }}: {{ item.cad_Altura }} {{ item.cad_color_text | frase }}</span>
@@ -46,7 +53,10 @@
 
       <div class="cfg-dato cfg-dato-ancho">
         <span>{{ "TEJIDO" | translate }}</span>
-        <strong>{{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }} · {{ item.tej_salida_text | frase }}</strong>
+        <strong>
+          {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }} · {{ item.tej_salida_text | frase }}
+          <span class="cfg-mono" *ngIf="esLeroy && item.codigoprov">({{ item.codigoprov }})</span>
+        </strong>
         <div *ngIf="item.impresion" class="cfg-aviso">
           {{ "IMPRESION_DIGITAL" | translate }}: {{ item.impresion_imagen }}
         </div>
@@ -71,19 +81,36 @@
         <h5>{{ "Resumen de precio" | translate }}</h5>
         <div class="cfg-precio-fila">
           <span>{{ "Tejido según tarifa" | translate }}</span>
-          <div>{{ item.precios.T1_Tejido | number:'1.2-2' }} €<small>{{ item.precios.T1_Tejido_C1 }}</small></div>
+          <div>
+            {{ item.precios.T1_Tejido | number:'1.2-2' }} €
+            <small>{{ item.precios.T1_Tejido_C1 }}</small>
+            <small *ngIf="esLeroy && item.codigoprov">{{ item.codigoprov }}</small>
+            <small *ngIf="esLeroy && item.precios.T1_Inc_Modelo_48 && item.precios.T1_Inc_Modelo_48 != '0'">{{ "Motor" | translate }}: {{ item.precios.T1_Inc_Modelo_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T1_Inc_CadenaMetalica > 0">
           <span>{{ "Incr. cadena metálica" | translate }}</span>
-          <div>{{ item.precios.T1_Inc_CadenaMetalica | number:'1.2-2' }} €<small>{{ item.precios.T1_Inc_CadenaMetalica_C1 }}</small></div>
+          <div>
+            {{ item.precios.T1_Inc_CadenaMetalica | number:'1.2-2' }} €
+            <small>{{ item.precios.T1_Inc_CadenaMetalica_C1 }}</small>
+            <small *ngIf="esLeroy">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T1_Inc_Contrapeso > 0">
           <span>{{ "Incr. contrapeso" | translate }}</span>
-          <div>{{ item.precios.T1_Inc_Contrapeso | number:'1.2-2' }} €<small>{{ item.precios.T1_Inc_Contrapeso_C1 }}</small></div>
+          <div>
+            {{ item.precios.T1_Inc_Contrapeso | number:'1.2-2' }} €
+            <small>{{ item.precios.T1_Inc_Contrapeso_C1 }}</small>
+            <small *ngIf="esLeroy">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T1_Inc_Mando > 0">
           <span>{{ "Incr. mando" | translate }}</span>
-          <div>{{ item.precios.T1_Inc_Mando | number:'1.2-2' }} €<small>{{ item.precios.T1_Inc_Mando_C1 }}</small></div>
+          <div>
+            {{ item.precios.T1_Inc_Mando | number:'1.2-2' }} €
+            <small>{{ item.precios.T1_Inc_Mando_C1 }}</small>
+            <small *ngIf="esLeroy && item.precios.T1_Inc_Mando_48 && item.precios.T1_Inc_Mando_48 != '0'">{{ item.precios.T1_Inc_Mando_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T1_Inc_Cargador > 0">
           <span>{{ "Incr. cargador" | translate }}</span>

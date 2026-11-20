@@ -138,16 +138,21 @@ export class CompacComponent implements OnInit, OnChanges {
 
    public Estancias: any = [];
 
+   get esLeroy(): boolean {
+      return this.Cliente == '1' || this.Cliente == '5';
+   }
+
    // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
    get resumenFilas(): { etiqueta: string, valor: string }[] {
       const perfileria = this.compac.PC_ColorPerfileria == 'RAL'
          ? 'RAL ' + texto(this.items90, this.compac.Ral)
          : (this.compac.PC_ColorPerfileria == '-1' ? '—' : this.translation.get(this.compac.PC_ColorPerfileria));
+      const codTej = this.esLeroy ? this.obtenerCodigoProv() : '';
       return [
          { etiqueta: 'Producto', valor: this.translation.get(this.nombreProducto) },
          { etiqueta: 'Medidas', valor: medida(this.Ancho) + ' × ' + medida(this.Alto) + ' cm' },
          { etiqueta: 'Perfilería', valor: perfileria },
-         { etiqueta: 'Tejido', valor: texto(this.tejidos_compac, this.Tipo4_Tejido) + ' · ' + texto(this.tejidos_compac_colores, this.Tipo4_TejidoColor) },
+         { etiqueta: 'Tejido', valor: texto(this.tejidos_compac, this.Tipo4_Tejido) + ' · ' + texto(this.tejidos_compac_colores, this.Tipo4_TejidoColor) + (codTej ? ' (' + codTej + ')' : '') },
          { etiqueta: 'Cantidad', valor: medida(this.Cantidad) }
       ];
    }
@@ -318,12 +323,12 @@ export class CompacComponent implements OnInit, OnChanges {
          if (pos >= 0) this.CodigoProv4 = this.tejidos_compac[pos].codigoprov || '';
          if (this.TIPO4_ID_Quiero) {
             this.service.getTejidosColorID(tejido, parseInt(this.Cliente), this.SubCliente).subscribe(
-               data => { this.tejidos_compac_colores = data; if (data.length > 0) this.Tipo4_TejidoColor = data[0].id.toString(); },
+               data => { this.tejidos_compac_colores = data; if (data.length > 0) { this.Tipo4_TejidoColor = data[0].id.toString(); this.ChangeTipo4Color(); } },
                error => console.log(error)
             );
          } else {
             this.service.getTejidosColor(tejido, parseInt(this.Cliente), this.SubCliente).subscribe(
-               data => { this.tejidos_compac_colores = data; if (data.length > 0) this.Tipo4_TejidoColor = data[0].id.toString(); },
+               data => { this.tejidos_compac_colores = data; if (data.length > 0) { this.Tipo4_TejidoColor = data[0].id.toString(); this.ChangeTipo4Color(); } },
                error => console.log(error)
             );
          }
@@ -540,6 +545,7 @@ export class CompacComponent implements OnInit, OnChanges {
          this.compac.Compac_Acc_Cad_Altura, this.compac.Compac_Acc_Cad_Altura, this.compac.Compac_Acc_Cad_Color, this.compac.Compac_Acc_Cad_Color,
          this.AlturaCadena.toString(), this.esCadenaExt.toString(), this.Tipo4_Estancia, this.Tipo4_Estancia_Obs, this.compac.PC_ColorPerfileria, this.compac.Ral, this.TIPO4_ID_Quiero, this.TIPO4_ID_Imagen, this.precios
       );
+      tipo.codigoprov = this.obtenerCodigoProv();
 
       this.onAdd.emit(tipo);
       const message = this.translation.get('AGREGADA CORTINA ' + this.nombreProducto + ' A CESTA');
@@ -628,6 +634,18 @@ export class CompacComponent implements OnInit, OnChanges {
    }
 
    // ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+   private obtenerCodigoProv(): string {
+      const posC = this.getPos(this.tejidos_compac_colores || [], this.Tipo4_TejidoColor);
+      if (posC >= 0 && this.tejidos_compac_colores[posC].codigoprov) {
+         return this.tejidos_compac_colores[posC].codigoprov;
+      }
+      const posT = this.getPos(this.tejidos_compac || [], this.Tipo4_Tejido);
+      if (posT >= 0 && this.tejidos_compac[posT].codigoprov) {
+         return this.tejidos_compac[posT].codigoprov;
+      }
+      return this.CodigoProv4 || '';
+   }
 
    getPos(array: any[], value: any): number {
       for (let i = 0; i < array.length; i++) {

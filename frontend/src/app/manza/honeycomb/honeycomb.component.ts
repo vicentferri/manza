@@ -99,6 +99,10 @@ export class HoneycombComponent implements OnInit, OnDestroy {
 
 
 
+  get esLeroy(): boolean {
+    return this.Cliente == '1' || this.Cliente == '5';
+  }
+
   // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
   get resumenFilas(): { etiqueta: string, valor: string }[] {
     const buscar = (lista: any[], campo: string, id: any, texto: string) => {
@@ -109,7 +113,7 @@ export class HoneycombComponent implements OnInit, OnDestroy {
       { etiqueta: 'Producto', valor: this.translation.get('HONEYCOMB') },
       { etiqueta: 'Medidas', valor: medida(this.model.Ancho) + ' × ' + medida(this.model.Alto) + ' cm' },
       { etiqueta: 'Accionamiento', valor: buscar(this.TiposAccionamiento, 'idTipoAccionamiento', this.model.TipoAccionamiento, 'TipoAccionamiento') },
-      { etiqueta: 'Tejido', valor: buscar(this.TiposTejido, 'idTipoTejido', this.model.TipoTejido, 'TipoTejido') + ' · ' + buscar(this.ColoresTejidoFiltrados, 'idColorTejido', this.model.ColorTejido, 'ColorTejido') },
+      { etiqueta: 'Tejido', valor: buscar(this.TiposTejido, 'idTipoTejido', this.model.TipoTejido, 'TipoTejido') + ' · ' + buscar(this.ColoresTejidoFiltrados, 'idColorTejido', this.model.ColorTejido, 'ColorTejido') + (this.esLeroy ? ' (48007280)' : '') },
       { etiqueta: 'Perfil', valor: buscar(this.ColoresPerfil, 'idColorPerfil', this.model.ColorPerfil, 'ColorPerfil') },
       { etiqueta: 'Cantidad', valor: medida(this.model.Cantidad) }
     ];

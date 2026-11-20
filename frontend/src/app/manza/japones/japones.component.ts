@@ -98,18 +98,26 @@ export class JaponesComponent implements OnInit, OnChanges {
    Tipo2_Estancia_Obs: string = '';
    public Estancias: any = [];
 
+   get esLeroy(): boolean {
+      return this.Cliente == '1' || this.Cliente == '5';
+   }
+
    // Filas del resumen lateral (cfg-resumen) con lo que hay elegido en el formulario
    get resumenFilas(): { etiqueta: string, valor: string }[] {
       const composiciones = { '1': 'MECANISMOTEJIDO', '2': 'SOLOTEJIDO', '3': 'SOLOMECANISMO' };
+      const codTej = this.esLeroy && this.TipoJapones != '3' ? this.obtenerCodigoProv(this.pj_tejidosC, this.Tipo2_TejidoColor) : '';
       const filas = [
          { etiqueta: 'Producto', valor: this.translation.get('PANEL JAPONES') },
          { etiqueta: 'Componente', valor: this.translation.get(composiciones[this.TipoJapones]) }
       ];
       if (this.TipoJapones != '2') {
          filas.push({ etiqueta: 'Medidas', valor: medida(this.PJ_Ancho_2) + ' × ' + medida(this.PJ_Alto_1) + ' cm' });
+         if (this.esLeroy) {
+            filas.push({ etiqueta: 'Cod. 48 Mecanismo', valor: '48381452' });
+         }
       }
       if (this.TipoJapones != '3') {
-         filas.push({ etiqueta: 'Tejido', valor: texto(this.pj_tejidos, this.Tipo2_Tejido) + ' · ' + texto(this.pj_tejidosC, this.Tipo2_TejidoColor) });
+         filas.push({ etiqueta: 'Tejido', valor: texto(this.pj_tejidos, this.Tipo2_Tejido) + ' · ' + texto(this.pj_tejidosC, this.Tipo2_TejidoColor) + (codTej ? ' (' + codTej + ')' : '') });
          filas.push({ etiqueta: 'Lamas', valor: medida(this.PJ_NumeroLamas) });
       }
       if (this.TipoJapones != '2') {
@@ -300,7 +308,7 @@ export class JaponesComponent implements OnInit, OnChanges {
          : this.service.getTejidosColor(tejidoId, parseInt(this.Cliente), this.SubCliente);
       color$.subscribe(
          data => {
-            if (slot === 1) { this.pj_tejidosC = data; if (data.length > 0) { this.Tipo2_TejidoColor = data[0].id.toString(); } }
+            if (slot === 1) { this.pj_tejidosC = data; if (data.length > 0) { this.Tipo2_TejidoColor = data[0].id.toString(); this.ChangeTipo2Color(); } }
             if (slot === 2) { this.pj_tejidosC_2 = data; if (data.length > 0) { this.Tipo2_TejidoColor_2 = data[0].id.toString(); } }
             if (slot === 3) { this.pj_tejidosC_3 = data; if (data.length > 0) { this.Tipo2_TejidoColor_3 = data[0].id.toString(); } }
             if (slot === 4) { this.pj_tejidosC_4 = data; if (data.length > 0) { this.Tipo2_TejidoColor_4 = data[0].id.toString(); } }
@@ -670,6 +678,13 @@ export class JaponesComponent implements OnInit, OnChanges {
          it102s + " " + it102sc, it103s + " " + it103sc, it104s + " " + it104sc, it105s + " " + it105sc,
          this.PJ_CombinarColores,
          this.precios);
+      tipo.codigoprov = this.obtenerCodigoProv(this.pj_tejidosC, this.Tipo2_TejidoColor);
+      if (this.PJ_CombinarColores) {
+         tipo.PJ_codigoprov_2 = this.Tipo2_TejidoColor_2 !== '-1' ? this.obtenerCodigoProv(this.pj_tejidosC_2, this.Tipo2_TejidoColor_2) : '';
+         tipo.PJ_codigoprov_3 = this.Tipo2_TejidoColor_3 !== '-1' ? this.obtenerCodigoProv(this.pj_tejidosC_3, this.Tipo2_TejidoColor_3) : '';
+         tipo.PJ_codigoprov_4 = this.Tipo2_TejidoColor_4 !== '-1' ? this.obtenerCodigoProv(this.pj_tejidosC_4, this.Tipo2_TejidoColor_4) : '';
+         tipo.PJ_codigoprov_5 = this.Tipo2_TejidoColor_5 !== '-1' ? this.obtenerCodigoProv(this.pj_tejidosC_5, this.Tipo2_TejidoColor_5) : '';
+      }
 
       this.onAdd.emit(tipo);
       const message = this.translation.get('AGREGADO PANEL JAPONÉS A CESTA');
@@ -753,6 +768,19 @@ export class JaponesComponent implements OnInit, OnChanges {
    }
 
    // ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+   private obtenerCodigoProv(listaColores: any[], colorId: any): string {
+      if (this.TipoJapones == '3') return '';
+      const posC = this.getPos(listaColores || [], colorId);
+      if (posC >= 0 && listaColores[posC].codigoprov) {
+         return listaColores[posC].codigoprov;
+      }
+      const posT = this.getPos(this.pj_tejidos || [], this.Tipo2_Tejido);
+      if (posT >= 0 && this.pj_tejidos[posT].codigoprov) {
+         return this.pj_tejidos[posT].codigoprov;
+      }
+      return this.CodigoProv2 || '';
+   }
 
    getPos(array: any[], value: any): number {
       for (let i = 0; i < array.length; i++) {

@@ -875,8 +875,15 @@ function budget_hinzu(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select *, cargador as Tipo1_Cargador, smart_home as Tipo1_SmartHome from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_1] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select t.*, t.cargador as Tipo1_Cargador, t.smart_home as Tipo1_SmartHome, ";
+ 	query += "isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.tej_tipo_id, p.cliente, t.tej_color_id), '') as codigoprov, ";
+ 	query += "isnull((select top 1 codigo_48 from [solarmanes_dev].[dbo].[SOL_ARTICULOS_MANDOS_CARGADORES] where idrow = t.cargador), '') as T1_Inc_Cargador_48, ";
+ 	query += "isnull((select top 1 codigo_48 from [solarmanes_dev].[dbo].[SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO_CLIENTE] where modelo = t.acc_modelo_id and cliente = p.cliente), '') as T1_Inc_Modelo_48, ";
+ 	query += "isnull((select top 1 codigo_48 from [solarmanes_dev].[dbo].[SOL_ARTICULOS_ACCIONAMIENTOS_RADIO_TIPO_CLIENTE] where id = t.mando_id and cliente = p.cliente order by case when modelo = t.acc_modelo_id then 0 else 1 end), '') as T1_Inc_Mando_48 ";
+ 	query += "from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_1] t ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] l on l.id = t.idrow ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola] p on p.idrow = l.idrow ";
+ 	query += "where l.idrow="+idrow;
  	ExecuteSQL(query,res);
  }
 
@@ -884,8 +891,16 @@ function budget_herunterladen_T2(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_2] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select t.*, ";
+ 	query += "case when t.TipoJapones = 3 then '' else isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.pj_tejidos_id, p.cliente, t.pj_tejidosC_id), '') end as codigoprov, ";
+ 	query += "case when t.PJ_CombinarColores = 1 and isnumeric(t.T2_TejidoColor_2) = 1 and cast(t.T2_TejidoColor_2 as int) > 0 then isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.pj_tejidos_id, p.cliente, cast(t.T2_TejidoColor_2 as int)), '') else '' end as PJ_codigoprov_2, ";
+ 	query += "case when t.PJ_CombinarColores = 1 and isnumeric(t.T2_TejidoColor_3) = 1 and cast(t.T2_TejidoColor_3 as int) > 0 then isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.pj_tejidos_id, p.cliente, cast(t.T2_TejidoColor_3 as int)), '') else '' end as PJ_codigoprov_3, ";
+ 	query += "case when t.PJ_CombinarColores = 1 and isnumeric(t.T2_TejidoColor_4) = 1 and cast(t.T2_TejidoColor_4 as int) > 0 then isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.pj_tejidos_id, p.cliente, cast(t.T2_TejidoColor_4 as int)), '') else '' end as PJ_codigoprov_4, ";
+ 	query += "case when t.PJ_CombinarColores = 1 and isnumeric(t.T2_TejidoColor_5) = 1 and cast(t.T2_TejidoColor_5 as int) > 0 then isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.pj_tejidos_id, p.cliente, cast(t.T2_TejidoColor_5 as int)), '') else '' end as PJ_codigoprov_5 ";
+ 	query += "from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_2] t ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] l on l.id = t.idrow ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola] p on p.idrow = l.idrow ";
+ 	query += "where l.idrow="+idrow;
  	ExecuteSQL(query,res);
  }
 
@@ -893,8 +908,13 @@ function budget_herunterladen_T2(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_3] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select t.*, ";
+ 	query += "case when t.PV_Tejido_id > 0 and t.PV_Tejido_c1_id > 0 then isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.PV_Tejido_id, p.cliente, t.PV_Tejido_c1_id), '') else '' end as codigoprov, ";
+ 	query += "case when t.PV_Tejido_id > 0 and isnumeric(t.PV_Tejido_c2_id) = 1 and cast(t.PV_Tejido_c2_id as int) > 0 and cast(t.PV_Tejido_c2_id as int) <> t.PV_Tejido_c1_id then isnull(dbo.AT_Tejido_color_codigoprov_Cliente(t.PV_Tejido_id, p.cliente, cast(t.PV_Tejido_c2_id as int)), '') else '' end as PV_codigoprov_2 ";
+ 	query += "from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_3] t ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] l on l.id = t.idrow ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola] p on p.idrow = l.idrow ";
+ 	query += "where l.idrow="+idrow;
  	ExecuteSQL(query,res);
  }
 
@@ -902,8 +922,12 @@ function budget_herunterladen_T4(req,res)
  {
  	var idrow = req.params.idrow;
 
- 	var query = "select * from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_4] where idrow ";
- 	query += " in (select id from [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] where idrow="+idrow+")";
+ 	var query = "select t.*, ";
+ 	query += "case when isnumeric(t.tej_tipo_id) = 1 and isnumeric(t.tej_color_id) = 1 then isnull(dbo.AT_Tejido_color_codigoprov_Cliente(cast(t.tej_tipo_id as int), p.cliente, cast(t.tej_color_id as int)), '') else '' end as codigoprov ";
+ 	query += "from [solarmanes_dev].[dbo].[SOL_PRESUPUESTOS_COLA_TIPO_4] t ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola_lineas] l on l.id = t.idrow ";
+ 	query += "inner join [solarmanes_dev].[dbo].[sol_presupuestos_cola] p on p.idrow = l.idrow ";
+ 	query += "where l.idrow="+idrow;
  	ExecuteSQL(query,res);
  }
 

@@ -9,9 +9,11 @@ import { CortinaTipo } from '../config/CortinaTipo';
 export class Preview7Component {
 
    @Input() item!: CortinaTipo;
+   @Input() esLeroy = false;
    @Input() soloLectura = false; // en la ventana de finalizar: sin MODIFICAR ni BORRAR
    @Output() onDelete = new EventEmitter<CortinaTipo>();
    @Output() onEdit = new EventEmitter<CortinaTipo>();
+   readonly CODIGO_48 = '48007280';
    // Detalle técnico y desglose de precio, plegados por defecto
    verDetalle = false;
 

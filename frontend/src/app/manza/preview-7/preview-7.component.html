@@ -7,6 +7,7 @@
         <strong>{{ "HONEYCOMB" | translate }}</strong>
         <span class="cfg-mono">{{ item.ancho }} × {{ item.alto }} cm</span>
         <span>· {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy">{{ item.codigoprov || CODIGO_48 }}</span>
       </div>
       <div class="cfg-linea-sub">
         <span>{{ "COLOR_PERFIL" | translate }}: {{ item.color_perfil_text | frase }}</span>
@@ -44,7 +45,10 @@
       </div>
       <div class="cfg-dato cfg-dato-ancho">
         <span>{{ "TEJIDO" | translate }}</span>
-        <strong>{{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}</strong>
+        <strong>
+          {{ item.tej_tipo_text | frase }} · {{ item.tej_color_text | frase }}
+          <span class="cfg-mono" *ngIf="esLeroy">({{ item.codigoprov || CODIGO_48 }})</span>
+        </strong>
       </div>
       <div class="cfg-dato">
         <span>{{ "COLOR_PERFIL" | translate }}</span>
@@ -57,7 +61,11 @@
         <h5>{{ "Resumen de precio" | translate }}</h5>
         <div class="cfg-precio-fila">
           <span>{{ "Según tarifa" | translate }}</span>
-          <div>{{ item.precios.T7_PVP | number:'1.2-2' }} €<small>{{ item.precios.T7_PVP_C1 }}</small></div>
+          <div>
+            {{ item.precios.T7_PVP | number:'1.2-2' }} €
+            <small>{{ item.precios.T7_PVP_C1 }}</small>
+            <small *ngIf="esLeroy">{{ item.codigoprov || CODIGO_48 }}</small>
+          </div>
         </div>
       </div>
     </div>

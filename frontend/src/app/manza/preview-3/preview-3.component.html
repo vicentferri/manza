@@ -7,12 +7,15 @@
         <strong>{{ (item.PV_SEL_2 ? "VERTICALINCLINADA" : "VERTICAL") | translate }}</strong>
         <span class="cfg-mono" *ngIf="item.PV_SEL_1">{{ item.PV_Ancho_1 }} × {{ item.PV_Alto_1 }} cm</span>
         <span class="cfg-mono" *ngIf="item.PV_SEL_2">{{ item.PV_Ancho_2 }} × {{ item.PV_AlturaMin_2 }}/{{ item.PV_AlturaMax_2 }} cm</span>
-        <span *ngIf="item.PV_SEL_1 && item.PV_Tejido_text">· {{ item.PV_Tejido_text | frase }} · {{ item.PV_Tejido_c1_text | frase }}</span>
+        <span *ngIf="item.PV_Tejido_text">· {{ item.PV_Tejido_text | frase }} · {{ item.PV_Tejido_c1_text | frase }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.TipoVertical != 3 && item.codigoprov">{{ item.codigoprov }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && item.TipoVertical != 3 && item.PV_codigoprov_2 && item.PV_codigoprov_2 != item.codigoprov">{{ item.PV_codigoprov_2 }}</span>
       </div>
       <div class="cfg-linea-sub">
         <span *ngIf="item.TipoVertical == 1">{{ "TEJIDOMASRIEL" | translate }}</span>
         <span *ngIf="item.TipoVertical == 2">{{ "SOLOTEJIDO" | translate }}</span>
         <span *ngIf="item.TipoVertical == 3">{{ "SOLORIEL" | translate }}</span>
+        <span class="cfg-chip cfg-mono" *ngIf="esLeroy && (item.TipoVertical == 3 || item.precios.T3_TejidosCombinados > 0 || item.precios.T3_NumSoportes > 0 || item.precios.T32_TejidosCombinados > 0 || item.precios.T32_NumSoportes > 0)">{{ "Mecanismo" | translate }} {{ ACCESORIOS_48 }}</span>
       </div>
       <button type="button" class="cfg-linea-toggle" (click)="verDetalle = !verDetalle">
         <i class="fas" [class.fa-chevron-right]="!verDetalle" [class.fa-chevron-down]="verDetalle"></i>
@@ -75,7 +78,8 @@
           <span>{{ "TEJIDO" | translate }}</span>
           <strong>
             {{ item.PV_Tejido_text | frase }} · {{ item.PV_Tejido_c1_text | frase }}
-            <ng-container *ngIf="item.PV_Tejido_c2_text"> / {{ item.PV_Tejido_c2_text | frase }}</ng-container>
+            <span class="cfg-mono" *ngIf="esLeroy && item.codigoprov">({{ item.codigoprov }})</span>
+            <ng-container *ngIf="item.PV_Tejido_c2_text"> / {{ item.PV_Tejido_c2_text | frase }}<span class="cfg-mono" *ngIf="esLeroy && item.PV_codigoprov_2"> ({{ item.PV_codigoprov_2 }})</span></ng-container>
           </strong>
         </div>
       </ng-container>
@@ -127,15 +131,27 @@
         <h5>{{ "Resumen de precio" | translate }}</h5>
         <div class="cfg-precio-fila">
           <span>{{ "Según tarifa" | translate }}</span>
-          <div>{{ item.precios.T3_Tejido | number:'1.2-2' }} €<small>{{ item.precios.T3_Tejido_C1 }}</small></div>
+          <div>
+            {{ item.precios.T3_Tejido | number:'1.2-2' }} €
+            <small>{{ item.precios.T3_Tejido_C1 }}</small>
+            <small *ngIf="esLeroy">{{ item.TipoVertical == 3 ? ACCESORIOS_48 : item.codigoprov }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T3_TejidosCombinados > 0">
           <span>{{ "Tejidos combinados" | translate }}</span>
-          <div>{{ item.precios.T3_TejidosCombinados | number:'1.2-2' }} €<small>{{ item.precios.T3_TejidosCombinados_C1 }}</small></div>
+          <div>
+            {{ item.precios.T3_TejidosCombinados | number:'1.2-2' }} €
+            <small>{{ item.precios.T3_TejidosCombinados_C1 }}</small>
+            <small *ngIf="esLeroy">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T3_NumSoportes > 0">
           <span>{{ "Incr. soporte" | translate }} ({{ item.precios.T3_NumSoportes }})</span>
-          <div>{{ item.precios.T3_TipoSoporte | number:'1.2-2' }} €<small>{{ item.precios.T3_TipoSoporte_C1 }}</small></div>
+          <div>
+            {{ item.precios.T3_TipoSoporte | number:'1.2-2' }} €
+            <small>{{ item.precios.T3_TipoSoporte_C1 }}</small>
+            <small *ngIf="esLeroy">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
       </div>
       <!-- Precios vertical inclinada -->
@@ -143,15 +159,27 @@
         <h5>{{ "Resumen de precio" | translate }}</h5>
         <div class="cfg-precio-fila">
           <span>{{ "Según tarifa" | translate }}</span>
-          <div>{{ item.precios.T32_Tejido | number:'1.2-2' }} €<small>{{ item.precios.T32_Tejido_C1 }}</small></div>
+          <div>
+            {{ item.precios.T32_Tejido | number:'1.2-2' }} €
+            <small>{{ item.precios.T32_Tejido_C1 }}</small>
+            <small *ngIf="esLeroy && item.codigoprov">{{ item.codigoprov }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T32_TejidosCombinados > 0">
           <span>{{ "Tejidos combinados" | translate }}</span>
-          <div>{{ item.precios.T32_TejidosCombinados | number:'1.2-2' }} €<small>{{ item.precios.T32_TejidosCombinados_C1 }}</small></div>
+          <div>
+            {{ item.precios.T32_TejidosCombinados | number:'1.2-2' }} €
+            <small>{{ item.precios.T32_TejidosCombinados_C1 }}</small>
+            <small *ngIf="esLeroy">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
         <div class="cfg-precio-fila" *ngIf="item.precios.T32_NumSoportes > 0">
           <span>{{ "Incr. soporte" | translate }} ({{ item.precios.T32_NumSoportes }})</span>
-          <div>{{ item.precios.T32_TipoSoporte | number:'1.2-2' }} €<small>{{ item.precios.T32_TipoSoporte_C1 }}</small></div>
+          <div>
+            {{ item.precios.T32_TipoSoporte | number:'1.2-2' }} €
+            <small>{{ item.precios.T32_TipoSoporte_C1 }}</small>
+            <small *ngIf="esLeroy">{{ ACCESORIOS_48 }}</small>
+          </div>
         </div>
       </div>
     </div>
