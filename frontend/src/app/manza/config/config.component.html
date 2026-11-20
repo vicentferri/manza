@@ -65,6 +65,18 @@
 <div class="cfg-page" [hidden]="bConfigurador == 1 || bConfigurador == 2 || bConfigurador == 3">
   <div class="cfg-wrap">
 
+    <!-- PROMOCION-->
+    <div class="cfg-promo" [hidden]="!Promocion">
+      <div class="cfg-promo-texto" *ngIf="Promocion_Mensaje">
+        <span>{{ Promocion_Mensaje }}</span>
+        <app-ticker [maxDate]="Promocion_Hasta"></app-ticker>
+      </div>
+      <div class="cfg-promo-banner" *ngIf="Promocion_Banner">
+        <img [src]="Promocion_Banner" alt="Banner promoción" />
+      </div>
+    </div>
+    <!-- PROMOCION-->
+
     <!-- Tipo de producto -->
     <nav class="cfg-productos cfg-productos-grande">
       <!-- Los productos del perfil (sqlPerfiles) que tiene el usuario (prod_N), en su orden y con su nombre.
@@ -76,16 +88,6 @@
         </button>
       </ng-container>
     </nav>
-
-    <!-- PROMOCION-->
-    <div class="cfg-promo" [hidden]="!Promocion">
-      <div class="cfg-promo-texto">
-        <span>{{ Promocion_Mensaje }}</span>
-        <app-ticker [maxDate]="Promocion_Hasta"></app-ticker>
-      </div>
-      <img *ngIf="Promocion_Banner" [src]="Promocion_Banner" alt="Banner promoción" />
-    </div>
-    <!-- PROMOCION-->
 
     <!-- Productos (se vuelven a crear al cambiar de cliente con "pedir como") -->
     <ng-container *ngIf="mostrarProductos">
