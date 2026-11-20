@@ -511,6 +511,7 @@ smapi.post('/cajoncliente_del', LM.cajon_cliente_del);
 /* SECCION DE ARTICULOS SM */
 var SM_Articulos = require('../controllers/sm/articulos');
 smapi.post('/articulos', SM_Articulos.search_articulos);
+smapi.post('/articulos/sincronizar_erp', Auth.ensureAuth, SM_Articulos.sincronizar_erp);
 
 /* MANDOS */
 var CargadorController = require('../controllers/sm/mandos');
