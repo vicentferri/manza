@@ -7,11 +7,13 @@ function patronLike(valor) {
     return '%' + String(valor).trim().replace(/[\[%_]/g, '[$&]') + '%';
 }
 
-/* Buscador de artículos (shared/search-artikel). body { criterio, alias, barras }:
+/* Buscador de artículos (shared/search-artikel).
+   Devuelve únicamente los artículos marcados con '*' en Solupyme (modelo = '*') y no bloqueados (bloqueado = 0),
+   sincronizados desde las funciones del ERP [dbo].[Articulo_Modelo](@Codart) y [dbo].[Articulo_bloqueado](@Codart).
+   body { criterio, alias, barras }:
    - criterio: descripción; varios criterios separados por + (tienen que estar todos)
    - alias: "Referencia" de la pantalla, contra el código Solupyme o el alias del artículo
-   - barras: código de barras
-   Los campos vacíos no filtran: sin ninguno salen todos los artículos, como antes */
+   - barras: código de barras */
 async function search_articulos(req, res) {
     var body = req.body || {};
     var criterios = String(body.criterio == null ? '' : body.criterio).split('+')
@@ -23,7 +25,10 @@ async function search_articulos(req, res) {
     try {
         var pool = await sql.connect();
         var request = pool.request();
-        var filtros = [];
+        var filtros = [
+            "ltrim(rtrim(isnull(b.modelo, ''))) = '*'",
+            "isnull(b.bloqueado, 0) = 0"
+        ];
 
         criterios.forEach((c, i) => {
             request.input('criterio' + i, sql.VarChar(200), patronLike(c));
@@ -45,9 +50,7 @@ async function search_articulos(req, res) {
         if (alias !== '' || barras !== '') {
             sqlquery += " join ARTICULOS a on a.idrow = b.idrow";
         }
-        if (filtros.length > 0) {
-            sqlquery += " where " + filtros.join(' and ');
-        }
+        sqlquery += " where " + filtros.join(' and ');
 
         var result = await request.query(sqlquery);
         res.status(200).send({ Table: result.recordset });
@@ -58,6 +61,21 @@ async function search_articulos(req, res) {
     }
 }
 
+/* Refresca modelo (*) y bloqueado en dbo.ARTICULOS consultando las funciones del ERP
+   [B98247596].[dbo].[Articulo_Modelo] y [B98247596].[dbo].[Articulo_bloqueado] en [88.30.3.157] */
+async function sincronizar_erp(req, res) {
+    try {
+        var pool = await sql.connect();
+        await pool.request().execute('sp_articulos_sincronizar_erp');
+        res.status(200).send({ message: 'OK' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'No se ha podido sincronizar con el ERP' });
+    }
+}
+
 module.exports = {
-    search_articulos
+    search_articulos,
+    sincronizar_erp
 }
