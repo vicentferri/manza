@@ -19,9 +19,26 @@
             </select>
           </div>
           <!-- Solo los productos que se dividen por sistemas (el enrollable); HoneyComb tiene un único juego -->
-          <div *ngIf="productoConSistema || productoConJuegos" class="input-group input-group-sm fab-sistema">
+          <!-- Vertical y panel japonés (sqlFabricacionModalidad): tipo (solo el vertical) y modalidad (si el tipo tiene varias) -->
+          <div *ngIf="conSelectorTipo" class="input-group input-group-sm fab-sistema">
             <div class="input-group-prepend">
-              <span class="input-group-text">{{ productoConSistema ? 'Sistema' : 'Tipo' }}</span>
+              <span class="input-group-text">Tipo</span>
+            </div>
+            <select class="form-control form-control-sm" [(ngModel)]="grupo" (change)="ChangeGrupo()" style="width: 140px">
+              <option *ngFor="let g of gruposJuego" [value]="g.id">{{ g.nombre }}</option>
+            </select>
+          </div>
+          <div *ngIf="conSelectorModalidad" class="input-group input-group-sm fab-sistema">
+            <div class="input-group-prepend">
+              <span class="input-group-text">Modalidad</span>
+            </div>
+            <select class="form-control form-control-sm" [(ngModel)]="sistema" (change)="ChangeSistema()" style="width: 170px">
+              <option *ngFor="let s of juegosDelGrupo" [value]="s.sistema">{{ s.modalidad_nombre || s.descripcion }}</option>
+            </select>
+          </div>
+          <div *ngIf="productoConSistema" class="input-group input-group-sm fab-sistema">
+            <div class="input-group-prepend">
+              <span class="input-group-text">Sistema</span>
             </div>
             <select
               class="form-control form-control-sm"

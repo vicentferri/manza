@@ -111,13 +111,22 @@ async function sistemas(req, res) {
       request.input('producto', sql.Int, producto);
       filtro = 'and s.producto = @producto';
     }
+    /* sqlFabricacionModalidad: el vertical y el panel japonés tienen un juego por tipo (vertical) y modalidad
+       (Completa, Solo mecanismo / Solo riel, Solo tejido); la pantalla los agrupa por tipo ("grupo") */
     const result = await request.query(`
       select s.sistema, s.descripcion, s.producto, s.acc_sistema_id, a.nombre as sistema_nombre,
-             isnull(s.codigo_defecto, '') as codigo_defecto, isnull(s.descripcion_defecto, '') as descripcion_defecto
+             isnull(s.codigo_defecto, '') as codigo_defecto, isnull(s.descripcion_defecto, '') as descripcion_defecto,
+             s.acc_ver_tipo_id, vt.nombre as tipo_nombre,
+             coalesce(s.acc_ver_modalidad_id, s.acc_pj_modalidad_id) as modalidad_id,
+             coalesce(vm.nombre, pm.nombre) as modalidad_nombre
       from SOL_FABRICACION_SISTEMAS s
       left join SOL_ACC_SISTEMA a on a.id = s.acc_sistema_id
+      left join SOL_ACC_VER_TIPO vt on vt.id = s.acc_ver_tipo_id
+      left join SOL_ACC_VER_MODALIDAD vm on vm.id = s.acc_ver_modalidad_id
+      left join SOL_ACC_PJ_MODALIDAD pm on pm.id = s.acc_pj_modalidad_id
       where s.activo = 1 ${filtro}
-      order by s.descripcion`);
+      order by isnull(vt.orden, 0), case when vt.id is null then s.descripcion end,
+               isnull(coalesce(vm.orden, pm.orden), 0), s.descripcion`);
     let disponibles = [];
     if (!isNaN(producto)) {
       const libres = await pool.request().input('producto', sql.Int, producto).query(`
@@ -676,17 +685,23 @@ async function simular(req, res) {
     /* Juego de un sistema del enrollable (sqlEnrrollable): el procedimiento fabrica todas las líneas
        del modelo nuevo del pedido, pero solo se muestran las del sistema elegido */
     const porSistema = sistema.acc_sistema_id !== null && sistema.acc_sistema_id !== undefined;
-    /* Juego de un tipo de vertical (sqlVertical/06): se muestran solo las líneas nuevas de ese tipo */
-    const porTipoVer = sistema.acc_ver_tipo_id !== null && sistema.acc_ver_tipo_id !== undefined;
-    /* Panel japonés (sqlPanelJapones/07): solo las líneas del configurador nuevo (las de siempre no se fabrican por reglas) */
+    /* Vertical (sqlVertical/06) y panel japonés (sqlPanelJapones/07), con un juego por tipo y modalidad
+       (sqlFabricacionModalidad): se muestran solo las líneas nuevas que fabrica ESTE juego, elegido con la misma
+       función que la fabricación (fn_fabricacion_juego); las de siempre no se fabrican por reglas */
+    const productoJuego = Number(sistema.producto);
+
+    const filtroLineaNueva = productoJuego === 3 ? 't.nver_tipo_id is not null'
+      : (productoJuego === 2 ? 't.npj_modalidad_id is not null' : null);
+    const juegoDeLinea = productoJuego === 3 ? 'dbo.fn_fabricacion_juego(3, t.nver_tipo_id, t.nver_modalidad_id)'
+      : (productoJuego === 2 ? 'dbo.fn_fabricacion_juego(2, null, t.npj_modalidad_id)' : null);
     const filtroSistema = porSistema ? ' and t.nacc_accionamiento_id is not null and t.nacc_sistema_id = @acc'
-      : (porTipoVer ? ' and t.nver_tipo_id = @ver' : (Number(sistema.producto) === 2 ? ' and t.npj_modalidad_id is not null' : ''));
+      : (juegoDeLinea ? ` and ${filtroLineaNueva} and ${juegoDeLinea} = @sis` : '');
 
     const fabricacion = await pool.request()
       .input('idPedido', sql.Int, idPedido)
       .input('tipo', sql.Int, sistema.tipo_linea)
       .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
-      .input('ver', sql.Int, porTipoVer ? sistema.acc_ver_tipo_id : null)
+      .input('sis', sql.VarChar(50), sistema.sistema)
       .query(`
         select f.id, f.idpedido, f.orden, f.articulo, f.descripcion, f.cantidad, f.unidad, f.descUnidad,
                f.consumo, isnull(f.cod_sol,'') as cod_sol, f.fam_sol
@@ -700,7 +715,7 @@ async function simular(req, res) {
       .input('idPedido', sql.Int, idPedido)
       .input('tipo', sql.Int, sistema.tipo_linea)
       .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
-      .input('ver', sql.Int, porTipoVer ? sistema.acc_ver_tipo_id : null)
+      .input('sis', sql.VarChar(50), sistema.sistema)
       .query(`
         select p.idpedido, p.parametro, p.valor
         from dbo.[${sistema.tabla_parametros}] p
@@ -723,15 +738,16 @@ async function simular(req, res) {
           join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
           where l.idrow = @idPedido`);
       omitidas = { otros_sistemas: r.recordset[0].otros_sistemas || 0, modelo_antiguo: r.recordset[0].modelo_antiguo || 0 };
-    } else if (porTipoVer) {
-      /* Vertical: las líneas de otros tipos de vertical y las de siempre (Leroy, sin fabricación por reglas) */
+    } else if (juegoDeLinea) {
+      /* Vertical y panel japonés: las líneas nuevas que fabrica otro juego (otro tipo u otra modalidad) y las de siempre
+         (Leroy, sin fabricación por reglas) */
       const r = await pool.request()
         .input('idPedido', sql.Int, idPedido)
         .input('tipo', sql.Int, sistema.tipo_linea)
-        .input('ver', sql.Int, sistema.acc_ver_tipo_id)
+        .input('sis', sql.VarChar(50), sistema.sistema)
         .query(`
-          select sum(case when t.nver_tipo_id is not null and t.nver_tipo_id <> @ver then 1 else 0 end) as otros_sistemas,
-                 sum(case when t.nver_tipo_id is null then 1 else 0 end) as modelo_antiguo
+          select sum(case when ${filtroLineaNueva} and isnull(${juegoDeLinea}, '') <> @sis then 1 else 0 end) as otros_sistemas,
+                 sum(case when not (${filtroLineaNueva}) then 1 else 0 end) as modelo_antiguo
           from dbo.[${sistema.tabla_origen}] t
           join SOL_PEDIDOS_COLA_LINEAS l on l.id = t.idrow and l.tipo = @tipo
           where l.idrow = @idPedido`);
@@ -762,7 +778,7 @@ async function simular(req, res) {
         .input('idPedido', sql.Int, idPedido)
         .input('tipo', sql.Int, sistema.tipo_linea)
         .input('acc', sql.Int, porSistema ? sistema.acc_sistema_id : null)
-        .input('ver', sql.Int, porTipoVer ? sistema.acc_ver_tipo_id : null)
+        .input('sis', sql.VarChar(50), sistema.sistema)
         .query(`
           select x.idpedido, t.fab_codigo as codigo, t.fab_descripcion as descripcion,
                  rc.orden as codigo_orden, rc.atributo as codigo_regla, rd.orden as descripcion_orden, rd.atributo as descripcion_regla

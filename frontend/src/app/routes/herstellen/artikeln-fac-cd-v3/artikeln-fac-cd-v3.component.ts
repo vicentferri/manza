@@ -99,6 +99,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   producto: any = '';
   sistemas: any = [];
   sistema = '';
+  /* sqlFabricacionModalidad: tipo de vertical elegido ('' = sin tipo, p. ej. el panel japonés); sus juegos son las modalidades */
+  grupo = '';
   sistemasDisponibles: any = [];
   sistemaNuevo: any = '';
   clientes: any = [];
@@ -672,6 +674,44 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     return !this.productoConSistema && this.sistemas.length > 1;
   }
 
+  /* sqlFabricacionModalidad: los juegos del vertical se agrupan por tipo (Normal, Inclinada, Viena) y, dentro de cada
+     tipo, uno por modalidad (Completa, Solo mecanismo, Solo tejido; hoy solo la Normal). El panel japonés no tiene tipos:
+     un único grupo con sus modalidades (Completa, Solo tejido, Solo riel) */
+  grupoDe(s: any): string {
+    return s && s.acc_ver_tipo_id !== null && s.acc_ver_tipo_id !== undefined ? String(s.acc_ver_tipo_id) : '';
+  }
+
+  get gruposJuego(): any[] {
+    const grupos = [];
+    this.sistemas.forEach(s => {
+      const id = this.grupoDe(s);
+      if (!grupos.some(g => g.id === id)) {
+        grupos.push({ id: id, nombre: s.tipo_nombre || s.descripcion });
+      }
+    });
+    return grupos;
+  }
+
+  get juegosDelGrupo(): any[] {
+    return this.sistemas.filter(s => this.grupoDe(s) === this.grupo);
+  }
+
+  /* Selector de tipo: solo si hay varios tipos; selector de modalidad: solo si el tipo elegido tiene varios juegos */
+  get conSelectorTipo(): boolean {
+    return this.productoConJuegos && this.gruposJuego.length > 1;
+  }
+
+  get conSelectorModalidad(): boolean {
+    return this.productoConJuegos && this.juegosDelGrupo.length > 1;
+  }
+
+  /* Cambio de tipo: su primer juego (la Completa) */
+  ChangeGrupo() {
+    const juegos = this.juegosDelGrupo;
+    this.sistema = juegos.length > 0 ? juegos[0].sistema : '';
+    this.ChangeSistema();
+  }
+
   /* Nombre del juego elegido para los títulos ("Enrollable · Rhin", "HoneyComb") */
   /* sqlCajonZip/07: el XML de este producto usa las reglas de código y descripción */
   get usaReglasProducto(): boolean {
@@ -729,6 +769,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
         this.sistemaNuevo = '';
         const elegido = elegir && this.sistemas.find(s => s.sistema == elegir);
         this.sistema = elegido ? elegido.sistema : (this.sistemas.length > 0 ? this.sistemas[0].sistema : '');
+        this.grupo = this.grupoDe(this.sistemas.find(s => s.sistema == this.sistema));
         this.ChangeSistema();
       },
       error => {
@@ -1279,6 +1320,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
           this.loadSistemas(destino);
         } else if (destino != this.sistema) {
           this.sistema = destino;
+          this.grupo = this.grupoDe(this.sistemas.find(s => s.sistema == destino));
           this.ChangeSistema();
         } else {
           this.loadDetails({ conservar: true });
@@ -2016,7 +2058,9 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
         if (omitidas && (omitidas.otros_sistemas > 0 || omitidas.modelo_antiguo > 0)) {
           let partes = [];
           if (omitidas.otros_sistemas > 0) {
-            partes.push(omitidas.otros_sistemas + (omitidas.otros_sistemas == 1 ? ' línea de otro sistema' : ' líneas de otros sistemas'));
+            /* enrollable: otro sistema; vertical y panel japonés: otro tipo u otra modalidad (sqlFabricacionModalidad) */
+            const otro = this.productoConSistema ? ['otro sistema', 'otros sistemas'] : ['otro tipo o modalidad', 'otros tipos o modalidades'];
+            partes.push(omitidas.otros_sistemas + (omitidas.otros_sistemas == 1 ? ' línea de ' + otro[0] : ' líneas de ' + otro[1]));
           }
           if (omitidas.modelo_antiguo > 0) {
             partes.push(omitidas.modelo_antiguo + (omitidas.modelo_antiguo == 1 ? ' línea' : ' líneas')
