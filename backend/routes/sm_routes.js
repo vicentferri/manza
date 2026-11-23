@@ -392,6 +392,15 @@ smapi.get('/cd_revision/:idrow', Auth.ensureAuth, CortinaDecorPreciosController.
 smapi.post('/cd_revision/lote', Auth.ensureAuth, CortinaDecorPreciosController.revision_lote);
 smapi.post('/cd_revision/:idrow/precio', Auth.ensureAuth, CortinaDecorPreciosController.precio_pedido);
 
+/* PEDIDOS B2B POR API (VENETIANS, contrato v3): los recibe el servidor B2B (proyecto CD) en SOL_B2B_*; aquí se consultan */
+var B2BPedidosController = require('../controllers/sm/b2b_pedidos');
+smapi.get('/b2b/pedidos', Auth.ensureAuth, B2BPedidosController.pedidos);
+smapi.get('/b2b/pedido/:id', Auth.ensureAuth, B2BPedidosController.pedido);
+smapi.post('/b2b/pedido/:id/estado', Auth.ensureAuth, B2BPedidosController.pedido_estado);
+smapi.post('/b2b/linea/:id/estado', Auth.ensureAuth, B2BPedidosController.linea_estado);
+smapi.post('/b2b/borrar_pruebas', Auth.ensureAuth, B2BPedidosController.borrar_pruebas);
+smapi.get('/b2b/recepciones', Auth.ensureAuth, B2BPedidosController.recepciones);
+
 /* Panel Cortinadecor > Tarifas: reglas Referencia + color -> tabla e incrementos */
 var CortinaDecorTarifasController = require('../controllers/sm/cortinadecor_tarifas');
 smapi.get('/cd_tarifas/referencias', Auth.ensureAuth, CortinaDecorTarifasController.referencias);

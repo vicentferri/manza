@@ -1,0 +1,274 @@
+<div class="b2b">
+  <div class="b2b-vistas">
+    <button type="button" class="btn btn-sm" [ngClass]="vista === 'pedidos' ? 'btn-dark' : 'btn-outline-dark'" (click)="cambiarVista('pedidos')">
+      Pedidos
+      <span class="badge badge-danger ml-1" *ngIf="totalConErrores > 0">{{ totalConErrores }} con errores</span>
+    </button>
+    <button type="button" class="btn btn-sm" [ngClass]="vista === 'recepciones' ? 'btn-dark' : 'btn-outline-dark'" (click)="cambiarVista('recepciones')">
+      Todo lo recibido
+    </button>
+  </div>
+
+  <div class="b2b-filtros">
+    <label>Recibidos desde <input type="date" class="form-control form-control-sm" [(ngModel)]="desde"></label>
+    <label>hasta <input type="date" class="form-control form-control-sm" [(ngModel)]="hasta"></label>
+    <ng-container *ngIf="vista === 'pedidos'">
+      <label>Pedidos
+        <select class="form-control form-control-sm" [(ngModel)]="prueba">
+          <option value="">Todos</option>
+          <option value="0">Reales</option>
+          <option value="1">De prueba</option>
+        </select>
+      </label>
+      <label class="b2b-check"><input type="checkbox" [(ngModel)]="soloAvisos"> Solo con avisos o errores</label>
+      <button type="button" class="btn btn-sm btn-primary" (click)="consultar()" [disabled]="cargando">
+        <i class="fa fa-search"></i> Consultar
+      </button>
+    </ng-container>
+    <ng-container *ngIf="vista === 'recepciones'">
+      <label class="b2b-check"><input type="checkbox" [(ngModel)]="soloFallidas"> Solo las que no han dado un pedido correcto</label>
+      <button type="button" class="btn btn-sm btn-primary" (click)="consultarRecepciones()" [disabled]="cargandoRecepciones">
+        <i class="fa fa-search"></i> Consultar
+      </button>
+    </ng-container>
+    <span class="b2b-espacio"></span>
+    <ng-container *ngIf="vista === 'pedidos' && totalPruebas > 0">
+      <button type="button" class="btn btn-sm btn-outline-danger" *ngIf="confirmarBorrado !== 'todos'" (click)="confirmarBorrado = 'todos'">
+        <i class="fa fa-trash"></i> Borrar todos los pedidos de prueba
+      </button>
+      <span *ngIf="confirmarBorrado === 'todos'" class="b2b-confirmar">
+        ¿Borrar TODOS los pedidos de prueba (de cualquier fecha)?
+        <button type="button" class="btn btn-sm btn-danger" (click)="borrarPruebas('todos')">Sí, borrar</button>
+        <button type="button" class="btn btn-sm btn-secondary" (click)="confirmarBorrado = null">No</button>
+      </span>
+    </ng-container>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <!-- ============================== TODO LO RECIBIDO ============================== -->
+  <ng-container *ngIf="vista === 'recepciones'">
+    <table class="table table-sm table-hover b2b-tabla">
+      <thead>
+        <tr>
+          <th>Recibido</th>
+          <th>Cliente</th>
+          <th>Pedido</th>
+          <th class="num">HTTP</th>
+          <th>Resultado</th>
+          <th>Detalle</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="!cargandoRecepciones && recepciones.length === 0">
+          <td colspan="7" class="text-muted">No hay recepciones en esas fechas.</td>
+        </tr>
+        <ng-container *ngFor="let r of recepciones">
+          <tr class="b2b-fila" (click)="recepcionAbierta = recepcionAbierta === r.idrow ? null : r.idrow">
+            <td>{{ r.recibido | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>
+              {{ r.nombre_cliente || r.cliente_b2b }}
+              <span class="badge badge-warning" *ngIf="r.prueba">PRUEBA</span>
+              <span class="badge badge-dark" *ngIf="!r.autenticado">SIN TOKEN VÁLIDO</span>
+            </td>
+            <td>{{ r.pedido }}</td>
+            <td class="num">{{ r.http }}</td>
+            <td><span class="badge" [ngClass]="claseResultado(r.resultado)">{{ r.resultado }}</span></td>
+            <td class="b2b-detalle-texto">{{ textoDetalle(r.detalle) }}</td>
+            <td>
+              <button type="button" class="btn btn-sm btn-outline-primary" *ngIf="r.pedido_id" (click)="$event.stopPropagation(); irAPedido(r)">Ver pedido</button>
+            </td>
+          </tr>
+          <tr *ngIf="recepcionAbierta === r.idrow" class="b2b-desglose">
+            <td colspan="7">
+              <div class="small text-muted">IP {{ r.ip }} · copia en el servidor B2B: {{ r.fichero || '—' }}</div>
+              <pre class="b2b-json">{{ r.cuerpo || '(vacío)' }}</pre>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </ng-container>
+
+  <!-- ============================== PEDIDOS ============================== -->
+  <ng-container *ngIf="vista === 'pedidos'">
+  <table class="table table-sm table-hover b2b-tabla">
+    <thead>
+      <tr>
+        <th>Recibido</th>
+        <th>Cliente</th>
+        <th>Pedido</th>
+        <th>Referencia</th>
+        <th class="num">Líneas</th>
+        <th class="num">Con avisos</th>
+        <th class="num">Sin mecanizar</th>
+        <th class="num">Importe</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="!cargando && lista.length === 0">
+        <td colspan="9" class="text-muted">No hay pedidos B2B en esas fechas.</td>
+      </tr>
+      <tr *ngFor="let p of lista" (click)="abrir(p)" class="b2b-fila"
+        [class.table-active]="seleccionado && seleccionado.cabecera.idrow === p.idrow">
+        <td>{{ p.recibido | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ p.nombre_cliente }}</td>
+        <td>
+          {{ p.pedido }}
+          <span class="badge badge-warning" *ngIf="p.prueba">PRUEBA</span>
+        </td>
+        <td>{{ p.referencia }}</td>
+        <td class="num">{{ p.lineas }}</td>
+        <td class="num"><span [class.b2b-aviso]="p.lineas_aviso > 0">{{ p.lineas_aviso }}</span></td>
+        <td class="num">{{ p.lineas_pendientes }}</td>
+        <td class="num">{{ p.importe | number:'1.2-2' }}</td>
+        <td>
+          <span class="badge" [ngClass]="claseEstado(p.estado)">{{ p.descestado }}</span>
+          <span class="small text-danger" *ngIf="p.estado === 2 && p.errores?.length"> {{ p.errores.length }} error(es)</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="b2b-detalle" *ngIf="seleccionado as s">
+    <div class="b2b-cabecera">
+      <div>
+        <h5>
+          Pedido {{ s.cabecera.pedido }} · {{ s.cabecera.nombre_cliente }}
+          <span class="badge badge-warning" *ngIf="s.cabecera.prueba">PRUEBA</span>
+          <span class="badge" [ngClass]="claseEstado(s.cabecera.estado)">{{ descEstado(s.cabecera.estado) }}</span>
+        </h5>
+        <div class="text-muted small">
+          Fecha del pedido {{ s.cabecera.fecha ? (s.cabecera.fecha | date:'dd/MM/yyyy') : '(sin fecha válida)' }} · recibido {{ s.cabecera.recibido | date:'dd/MM/yyyy HH:mm' }}
+          <span *ngIf="s.cabecera.referencia"> · referencia {{ s.cabecera.referencia }}</span>
+          <span *ngIf="s.cabecera.estado_usuario"> · último cambio de estado: {{ s.cabecera.estado_usuario }} {{ s.cabecera.estado_fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div *ngIf="s.cabecera.observaciones" class="small"><b>Observaciones:</b> {{ s.cabecera.observaciones }}</div>
+      </div>
+      <div class="b2b-acciones">
+        <button type="button" class="btn btn-sm btn-success" *ngIf="s.cabecera.estado !== 1" (click)="estadoPedido(1)">Marcar revisado</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" *ngIf="s.cabecera.estado !== 0 && s.cabecera.estado !== 2" (click)="estadoPedido(0)">Volver a recibido</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" *ngIf="s.cabecera.estado !== -1" (click)="estadoPedido(-1)">Cancelar pedido</button>
+        <ng-container *ngIf="s.cabecera.prueba">
+          <button type="button" class="btn btn-sm btn-outline-danger" *ngIf="confirmarBorrado !== 'uno'" (click)="confirmarBorrado = 'uno'">
+            <i class="fa fa-trash"></i> Borrar este pedido de prueba
+          </button>
+          <span *ngIf="confirmarBorrado === 'uno'" class="b2b-confirmar">
+            ¿Seguro?
+            <button type="button" class="btn btn-sm btn-danger" (click)="borrarPruebas('uno')">Sí</button>
+            <button type="button" class="btn btn-sm btn-secondary" (click)="confirmarBorrado = null">No</button>
+          </span>
+        </ng-container>
+        <button type="button" class="btn btn-sm btn-outline-primary" (click)="verOriginal = !verOriginal">
+          {{ verOriginal ? 'Ocultar' : 'Ver' }} JSON recibido
+        </button>
+      </div>
+    </div>
+
+    <div class="alert alert-danger b2b-errores" *ngIf="s.cabecera.errores?.length">
+      <b>El pedido llegó con errores de formato</b> (al cliente se le respondió 422; si lo reenvía corregido con el mismo nº, sustituye a este):
+      <ul>
+        <li *ngFor="let e of s.cabecera.errores">
+          <span *ngIf="e.linea">Línea {{ e.linea }} · </span><b>{{ e.campo }}</b>: {{ e.motivo }}
+        </li>
+      </ul>
+    </div>
+
+    <pre class="b2b-json" *ngIf="verOriginal">{{ s.original | json }}</pre>
+
+    <table class="table table-sm b2b-tabla">
+      <thead>
+        <tr>
+          <th></th>
+          <th>#</th>
+          <th>Producto</th>
+          <th>Sistema / modelo</th>
+          <th class="num">Ancho</th>
+          <th class="num">Alto</th>
+          <th class="num">Cant.</th>
+          <th class="num">Precio</th>
+          <th class="num">Importe</th>
+          <th>Estancia</th>
+          <th>Avisos</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="s.lineas.length === 0">
+          <td colspan="13" class="text-muted">El pedido no trae líneas que se puedan leer: mira el JSON recibido.</td>
+        </tr>
+        <ng-container *ngFor="let l of s.lineas">
+          <tr [class.b2b-linea-aviso]="l.n_avisos > 0" [class.b2b-linea-error]="erroresDeLinea(l).length > 0" [class.b2b-linea-hecha]="l.estado === 1">
+            <td><button type="button" class="btn btn-link btn-sm p-0" (click)="abiertas[l.idrow] = !abiertas[l.idrow]">
+              <i class="fa" [ngClass]="abiertas[l.idrow] ? 'fa-chevron-down' : 'fa-chevron-right'"></i></button></td>
+            <td>{{ l.linea }}</td>
+            <td>{{ l.producto || (l.tipo_cortina ? 'TipoCortina ' + l.tipo_cortina : '—') }}</td>
+            <td>{{ l.sistema }}</td>
+            <td class="num">{{ l.ancho | number:'1.0-2' }}<span *ngIf="l.ancho2"> / {{ l.ancho2 | number:'1.0-2' }}</span></td>
+            <td class="num">{{ l.alto | number:'1.0-2' }}</td>
+            <td class="num">{{ l.cantidad }}</td>
+            <td class="num">{{ l.precio | number:'1.2-2' }}</td>
+            <td class="num">{{ l.importe | number:'1.2-2' }}</td>
+            <td>{{ l.estancia }}</td>
+            <td><span *ngIf="l.n_avisos > 0" class="b2b-aviso">{{ l.n_avisos }}</span></td>
+            <td><span class="badge" [ngClass]="l.estado === 1 ? 'badge-success' : 'badge-light'">{{ l.descestado }}</span></td>
+            <td>
+              <button type="button" class="btn btn-sm btn-outline-success" *ngIf="l.estado !== 1" (click)="estadoLinea(l, 1)">Mecanizada</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" *ngIf="l.estado === 1" (click)="estadoLinea(l, 0)">Pendiente</button>
+            </td>
+          </tr>
+          <tr *ngIf="abiertas[l.idrow]" class="b2b-desglose">
+            <td></td>
+            <td colspan="12">
+              <ul class="b2b-avisos" *ngIf="l.avisos.length">
+                <li *ngFor="let a of l.avisos">{{ a }}</li>
+              </ul>
+              <table class="table table-sm table-bordered b2b-parametros" *ngIf="l.resolucion.length">
+                <thead><tr><th>Parámetro</th><th>Enviado</th><th>Nuestro</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let r of l.resolucion" [class.b2b-param-ko]="!r.ok">
+                    <td>{{ r.campo }}</td>
+                    <td>{{ r.valor }}</td>
+                    <td>{{ r.ok ? r.nombre : 'no reconocido' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <table class="table table-sm table-bordered b2b-parametros" *ngIf="atributos(l).length">
+                <thead><tr><th>Atributo adicional</th><th>Valor</th><th>Valor 2</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let a of atributos(l)">
+                    <td>{{ a.nombre }}</td><td>{{ a.valor }}</td><td>{{ a.valor2 }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div *ngIf="impresion(l)" class="small"><b>Impresión digital:</b> {{ impresion(l) }}</div>
+              <div *ngIf="l.observaciones" class="small"><b>Observaciones:</b> {{ l.observaciones }}</div>
+              <div class="small"><b>Línea tal como llegó:</b></div>
+              <pre class="b2b-json b2b-json-linea">{{ l.parametros | json }}</pre>
+              <div *ngIf="l.estado_usuario" class="small text-muted">Estado cambiado por {{ l.estado_usuario }} el {{ l.estado_fecha | date:'dd/MM/yyyy HH:mm' }}</div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+
+    <div *ngIf="s.recepciones?.length" class="small">
+      <b>Envíos de este pedido</b>
+      <table class="table table-sm table-bordered b2b-parametros">
+        <thead><tr><th>Recibido</th><th class="num">HTTP</th><th>Resultado</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let r of s.recepciones">
+            <td>{{ r.recibido | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="num">{{ r.http }}</td>
+            <td><span class="badge" [ngClass]="claseResultado(r.resultado)">{{ r.resultado }}</span></td>
+            <td class="b2b-detalle-texto">{{ textoDetalle(r.detalle) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </ng-container>
+</div>

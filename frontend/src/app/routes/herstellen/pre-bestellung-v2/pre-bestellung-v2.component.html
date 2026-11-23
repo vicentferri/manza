@@ -118,6 +118,15 @@
                 <jqxGrid #gridReference6 [auto-create]="false"></jqxGrid>
               </div>
             </tab>
+            <tab>
+              <ng-template tabHeading>
+                <div>
+                  <i class="icon-cloud-download"></i>&nbsp;B2B
+                </div>
+              </ng-template>
+              <!-- Pedidos recibidos por API (VENETIANS): tiene sus propios filtros, no usa los de arriba -->
+              <b2b-pedidos></b2b-pedidos>
+            </tab>
           </tabset>
         </div>
       </div>
