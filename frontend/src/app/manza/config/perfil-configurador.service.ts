@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -56,12 +56,21 @@ export class PerfilConfiguradorService {
 
     constructor(private http: HttpClient) { }
 
+    private getOptions() {
+        let registerToken = localStorage.getItem('registerToken');
+        if (registerToken) {
+            registerToken = registerToken.replace(/^"(.*)"$/, '$1');
+            return { headers: new HttpHeaders({ 'Authorization': registerToken }) };
+        }
+        return {};
+    }
+
     /* Perfil del cliente (una sola petición por cliente). Ante cualquier error, el perfil vacío */
     perfil(cliente: string | number): Observable<PerfilConfigurador> {
         const clave = String(cliente);
         if (!(parseInt(clave, 10) > 0)) { return of(PERFIL_VACIO); }
         if (!this.cache.has(clave)) {
-            this.cache.set(clave, this.http.get<PerfilConfigurador>(this.url + clave).pipe(
+            this.cache.set(clave, this.http.get<PerfilConfigurador>(this.url + clave, this.getOptions()).pipe(
                 map(p => p && Array.isArray(p.productos) ? p : PERFIL_VACIO),
                 catchError(err => {
                     console.error('No se ha podido cargar el perfil del configurador', err);

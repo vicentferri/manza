@@ -620,7 +620,7 @@ smapi.post('/acc/:catalogo/importar-ral', NuevoSistema, AccionamientosNuevoContr
 
 /* Perfil de configurador del cliente: productos, motor, nombres, documentos y parámetros (sqlPerfiles 01-08) */
 var CfgPerfilController = require('../controllers/sm/cfg_perfil');
-smapi.get('/cfg/perfil/:cliente', Auth.ensureAuth, CfgPerfilController.perfil);
+smapi.get('/cfg/perfil/:cliente', CfgPerfilController.perfil);
 /* Pantalla Productos -> Perfiles (solo "Nuevo sistema"); cada cambio queda en CFG_AUDITORIA */
 smapi.get('/cfg/admin/perfiles', NuevoSistema, CfgPerfilController.admin_perfiles);
 smapi.get('/cfg/admin/clientes', NuevoSistema, CfgPerfilController.admin_clientes);

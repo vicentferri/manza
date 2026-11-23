@@ -34,6 +34,14 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   font-variant-numeric: tabular-nums;
 }
 
+// ---------- Cabecera fija (topbar + subbar) ----------
+.cfg-cabecera-fija {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.06);
+}
+
 // ---------- Barra superior ----------
 .cfg-topbar {
   background: $cfg-oscuro;
@@ -42,15 +50,16 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   .cfg-wrap {
     display: flex;
     align-items: center;
-    gap: 24px;
-    height: 64px;
+    gap: 18px;
+    height: 44px;
   }
 }
 
 .cfg-marca {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 0.9rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -59,12 +68,12 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   background: $cfg-azul;
   color: $cfg-oscuro;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 800;
 }
 
@@ -74,10 +83,10 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   flex: 1;
 
   a {
-    padding: 7px 12px;
-    border-radius: 7px;
+    padding: 5px 10px;
+    border-radius: 6px;
     color: #c9ced6;
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
@@ -95,29 +104,29 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
 .cfg-topbar-dcha {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 
   // Selector de idioma ES / PT
   .cfg-idioma {
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    padding: 3px;
+    padding: 2px;
     border: 1px solid #3a3f48;
     border-radius: 999px;
     background: #22262d;
 
-    i { margin: 0 6px 0 8px; color: #9aa3ad; font-size: 0.85rem; }
+    i { margin: 0 5px 0 7px; color: #9aa3ad; font-size: 0.8rem; }
 
     button {
-      min-width: 38px;
-      height: 28px;
-      padding: 0 10px;
+      min-width: 34px;
+      height: 24px;
+      padding: 0 8px;
       border: 0;
       border-radius: 999px;
       background: transparent;
       color: #c9ced6;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 700;
       letter-spacing: 0.05em;
       cursor: pointer;
@@ -133,7 +142,7 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
 
   a {
     color: #c9ced6;
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     cursor: pointer;
     white-space: nowrap;
 
@@ -149,8 +158,14 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   .cfg-wrap {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 60px;
+    gap: 8px;
+    min-height: 40px;
+  }
+
+  .cfg-btn {
+    height: 28px;
+    padding: 0 11px;
+    font-size: 0.82rem;
   }
 }
 
@@ -158,7 +173,7 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
 .cfg-eyebrow {
   margin-right: 6px;
   color: $cfg-texto-suave;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -167,7 +182,7 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
 .cfg-subbar-info {
   margin-left: auto;
   color: $cfg-texto-suave;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 
   strong { color: $cfg-texto; }
 }
@@ -178,7 +193,7 @@ $cfg-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospac
   text-align: center;
   color: $cfg-azul; // azul corporativo
   font-family: $cfg-mono;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
@@ -614,7 +629,7 @@ section.cfg-panel {
 cfg-resumen {
   display: block;
   position: sticky;
-  top: 16px;
+  top: 98px;
 }
 
 .cfg-resumen-cabecera {

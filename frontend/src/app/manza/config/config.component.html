@@ -1,4 +1,5 @@
 <!-- CABECERA-->
+<div class="cfg-cabecera-fija">
 <header class="cfg-topbar">
   <div class="cfg-wrap">
     <div class="cfg-marca">
@@ -59,6 +60,7 @@
     </div>
   </div>
 </div>
+</div>
 <!-- CABECERA-->
 
 <!-- CONFIGURADOR -->
@@ -81,12 +83,34 @@
     <nav class="cfg-productos cfg-productos-grande">
       <!-- Los productos del perfil (sqlPerfiles) que tiene el usuario (prod_N), en su orden y con su nombre.
            El Cajón ZIP propio (tipo 6) solo existe con el motor nuevo -->
-      <ng-container *ngFor="let p of productosVisibles">
-        <button type="button" *ngIf="p.tipo != 6 || zipNuevo"
-          [class.activo]="TipoCortina == p.tipo" (click)="Tipo(p.tipo)">
-          {{ p.nombre | translate }}
-        </button>
+      <ng-container *ngIf="productosVisibles.length > 0; else botonesFallback">
+        <ng-container *ngFor="let p of productosVisibles">
+          <button type="button" *ngIf="p.tipo != 6 || zipNuevo"
+            [class.activo]="TipoCortina == p.tipo" (click)="Tipo(p.tipo)">
+            {{ p.nombre | translate }}
+          </button>
+        </ng-container>
       </ng-container>
+      <ng-template #botonesFallback>
+        <button type="button" [class.activo]="TipoCortina == 1" (click)="Tipo(1)" *ngIf="productos.prod_1">
+          {{ "ENROLLABLES" | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 2" (click)="Tipo(2)" *ngIf="productos.prod_2">
+          {{ "PANEL JAPONES" | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 3" (click)="Tipo(3)" *ngIf="productos.prod_3">
+          {{ "VERTICAL" | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 4" (click)="Tipo(4)" *ngIf="productos.prod_4">
+          {{ (!isInterno && (Cliente == '1' || Cliente == '5') ? 'COMPAC' : 'SOLAR MINI') | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 7" (click)="Tipo(7)" *ngIf="productos.prod_7">
+          {{ "HONEYCOMB" | translate }}
+        </button>
+        <button type="button" [class.activo]="TipoCortina == 6" (click)="Tipo(6)" *ngIf="zipNuevo">
+          {{ "CAJON ZIP" | translate }}
+        </button>
+      </ng-template>
     </nav>
 
     <!-- Productos (se vuelven a crear al cambiar de cliente con "pedir como") -->

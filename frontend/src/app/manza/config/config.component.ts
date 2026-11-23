@@ -106,17 +106,26 @@ export class ConfigComponent implements OnInit {
 
   /* Logo de la cabecera (parámetro "logo" del perfil) */
   get logo(): string {
-    return (this.perfilCfg.parametros && this.perfilCfg.parametros['logo']) || 'SM';
+    return (this.perfilCfg.parametros && this.perfilCfg.parametros['logo']) || (this.esLeroy ? 'LM' : 'SM');
   }
 
   /* Documentos de la barra superior (p. ej. la tarifa en PDF de Leroy) */
   get documentosBarra(): DocumentoPerfil[] {
-    return this.perfilCfg.documentos || [];
+    if (this.perfilCfg.documentos && this.perfilCfg.documentos.length > 0) {
+      return this.perfilCfg.documentos;
+    }
+    if (this.esLeroy) {
+      return [{ subtipo: null, etiqueta: 'TARIFA', url: 'assets/pdf/tarifa_leroy_2025_es.pdf', icono: null }];
+    }
+    return [];
   }
 
   /* Botones de producto: los visibles del perfil que además tiene el usuario (prod_N), en el orden del perfil */
   get productosVisibles(): ProductoPerfil[] {
-    return (this.perfilCfg.productos || []).filter(p => this.productos['prod_' + p.tipo]);
+    const lista = (this.perfilCfg && this.perfilCfg.productos && this.perfilCfg.productos.length > 0)
+      ? this.perfilCfg.productos
+      : PERFIL_VACIO.productos;
+    return lista.filter(p => this.productos['prod_' + p.tipo]);
   }
 
 
@@ -341,7 +350,8 @@ export class ConfigComponent implements OnInit {
   private recalcularProductos(): void {
     [1, 2, 3, 4, 6, 7].forEach(tipo => {
       const enPerfil = productoDe(this.perfilCfg, tipo);
-      this.productos['prod_' + tipo] = !!this.productosUsuario['prod_' + tipo] && !!enPerfil && enPerfil.visible;
+      const enUsuario = !!this.productosUsuario['prod_' + tipo];
+      this.productos['prod_' + tipo] = enPerfil ? (enUsuario && enPerfil.visible) : enUsuario;
     });
   }
 
@@ -366,10 +376,11 @@ export class ConfigComponent implements OnInit {
           this.ambito = this.currentUser.ambito;
         }
 
-        const isInterno = this.currentUser.tipo === 'interno' ||
+        const isInterno = (this.currentUser.tipo !== 'cliente') && (
+                          this.currentUser.tipo === 'interno' ||
                           this.currentUser.ambito === 'I' ||
                           this.currentUser.isAdmin === true ||
-                          localStorage.getItem('tipoUsuario') === 'interno';
+                          localStorage.getItem('tipoUsuario') === 'interno');
 
         this.isInterno = isInterno;
 
@@ -393,24 +404,34 @@ export class ConfigComponent implements OnInit {
           return true;
         }
 
-        if (this.currentUser.code) {
+        this.nombreCentro = this.currentUser.name || '';
+        this.codeCentro = (this.currentUser.code !== undefined && this.currentUser.code !== null) ? String(this.currentUser.code) : "-1";
+        this.nombreCentroEmp = this.currentUser.descsubemp || '';
+        this.Cliente = String(this.currentUser.emp || 1);
+        this.UserName = String(this.currentUser.user || '');
 
-          console.log(this.currentUser);
-          this.nombreCentro = this.currentUser.name;
-          this.codeCentro = this.currentUser.code;
-          this.nombreCentroEmp = this.currentUser.descsubemp;
-          this.Cliente = this.currentUser.emp;
-          this.UserName = this.currentUser.user;
-
-          if ('emp' in this.currentUser && this.currentUser.emp == -1) {
-            this.nombreCentroEmp = this.currentUser.name;
-            this.codeCentro = "4";
-            this.Cliente = "4";
-          } else if ('nombre' in this.currentUser) {
-            this.nombreCentroEmp = this.currentUser.nombre;
-          }
-          this.loadInfoUser();
+        if ('emp' in this.currentUser && this.currentUser.emp == -1) {
+          this.nombreCentroEmp = this.currentUser.name;
+          this.codeCentro = "4";
+          this.Cliente = "4";
+        } else if ('nombre' in this.currentUser && !this.nombreCentroEmp) {
+          this.nombreCentroEmp = this.currentUser.nombre;
         }
+
+        if (this.esLeroy) {
+          this.productosUsuario.prod_1 = true;
+          this.productosUsuario.prod_2 = true;
+          this.productosUsuario.prod_3 = true;
+          this.productosUsuario.prod_4 = true;
+          this.productosUsuario.prod_7 = true;
+          this.productos.prod_1 = true;
+          this.productos.prod_2 = true;
+          this.productos.prod_3 = true;
+          this.productos.prod_4 = true;
+          this.productos.prod_7 = true;
+        }
+
+        this.loadInfoUser();
         return true;
       } else {
         return false;
@@ -424,10 +445,11 @@ export class ConfigComponent implements OnInit {
   }
 
   loadPromotion() {
-    console.log(this.Cliente, this.currentUser.user);
-    this.service.getdatosPromocion(this.Cliente, this.usuarioPromocion).subscribe(
+    const cli = (this.Cliente && parseInt(this.Cliente, 10) > 0) ? this.Cliente : (this.currentUser ? String(this.currentUser.emp) : '1');
+    const usr = this.usuarioPromocion || (this.currentUser ? this.currentUser.user : null);
+    if (!usr) return;
+    this.service.getdatosPromocion(cli, usr).subscribe(
       data => {
-        console.log(data);
         if (data && data.length > 0) {
           this.Promocion_Desde = data[0].desde;
           this.Promocion_Hasta = data[0].hasta;
@@ -456,6 +478,13 @@ export class ConfigComponent implements OnInit {
           this.productosUsuario.prod_4 = !!data[0].prod_4;
           this.productosUsuario.prod_6 = !!data[0].prod_6;
           this.productosUsuario.prod_7 = !!data[0].prod_7;
+
+          this.productos.prod_1 = !!data[0].prod_1;
+          this.productos.prod_2 = !!data[0].prod_2;
+          this.productos.prod_3 = !!data[0].prod_3;
+          this.productos.prod_4 = !!data[0].prod_4;
+          this.productos.prod_6 = !!data[0].prod_6;
+          this.productos.prod_7 = !!data[0].prod_7;
           this.recalcularProductos();
         }
       },
@@ -470,29 +499,27 @@ export class ConfigComponent implements OnInit {
   }
 
   loadPromotionData() {
-    if (this.codeCentro == "") {
-      alert("NO HAY CODIGO DE CENTRO");
-    } else if (this.usuarioPromocion === null || this.usuarioPromocion === undefined || this.usuarioPromocion === '') {
-      /* "pedir como" sin tienda: no hay promociones de tienda */
+    const usr = this.usuarioPromocion || (this.currentUser ? this.currentUser.user : null);
+    if (!usr) {
       this.Promocion = 0;
-    } else {
-      this.service.getPromocionActiva(this.Cliente, this.usuarioPromocion).subscribe(
-        data => {
-          if (!data || data.length === 0 || data[0].existe == 0) {
-            this.Promocion = 0;
-          } else {
-            this.Promocion = 1;
-            this.loadPromotion();
-          }
-        },
-        error => {
-          console.log(error);
-          if (error.status == 500) {
-            alert("NO HAY CONEXION CON EL SERVIDOR");
-          }
-        }
-      );
+      return;
     }
+    const cli = (this.Cliente && parseInt(this.Cliente, 10) > 0) ? this.Cliente : (this.currentUser ? String(this.currentUser.emp) : '1');
+    this.service.getPromocionActiva(cli, usr).subscribe(
+      data => {
+        if (!data || data.length === 0 || data[0].existe == 0) {
+          this.Promocion = 0;
+          this.Promocion_Banner = "";
+        } else {
+          this.Promocion = 1;
+          this.loadPromotion();
+        }
+      },
+      error => {
+        console.log(error);
+        this.Promocion = 0;
+      }
+    );
   }
 
   CheckAnchoMax() {
