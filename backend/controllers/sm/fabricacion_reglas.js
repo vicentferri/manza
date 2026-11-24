@@ -88,7 +88,7 @@ async function productos(req, res) {
   try {
     const pool = await sql.connect();
     const result = await pool.request().query(`
-      select fp.producto, p.descripcion, fp.con_sistema
+      select fp.producto, p.descripcion, fp.con_sistema, isnull(fp.con_modelo, 0) as con_modelo
       from SOL_FABRICACION_PRODUCTOS fp
       join SOL_ARTICULOS_PRODUCTOS p on p.idrow = fp.producto
       where fp.activo = 1 order by p.descripcion`);
@@ -118,9 +118,11 @@ async function sistemas(req, res) {
              isnull(s.codigo_defecto, '') as codigo_defecto, isnull(s.descripcion_defecto, '') as descripcion_defecto,
              s.acc_ver_tipo_id, vt.nombre as tipo_nombre,
              coalesce(s.acc_ver_modalidad_id, s.acc_pj_modalidad_id) as modalidad_id,
-             coalesce(vm.nombre, pm.nombre) as modalidad_nombre
+             coalesce(vm.nombre, pm.nombre) as modalidad_nombre,
+             s.acc_zip_modelo_id, zm.nombre as modelo_nombre
       from SOL_FABRICACION_SISTEMAS s
       left join SOL_ACC_SISTEMA a on a.id = s.acc_sistema_id
+      left join SOL_ACC_ZIP_MODELO_CAJON zm on zm.id = s.acc_zip_modelo_id
       left join SOL_ACC_VER_TIPO vt on vt.id = s.acc_ver_tipo_id
       left join SOL_ACC_VER_MODALIDAD vm on vm.id = s.acc_ver_modalidad_id
       left join SOL_ACC_PJ_MODALIDAD pm on pm.id = s.acc_pj_modalidad_id
@@ -137,6 +139,15 @@ async function sistemas(req, res) {
           and not exists (select 1 from SOL_FABRICACION_SISTEMAS s where s.producto = @producto and s.acc_sistema_id = a.id)
         order by a.orden, a.nombre`);
       disponibles = libres.recordset;
+      /* sqlCajonZip/10: el Cajón ZIP tiene un juego por modelo de cajón. Se ofrecen también los modelos inactivos, para
+         preparar su fabricación antes de activarlos en Productos */
+      if (await productoDivision(pool, producto) === 'modelo') {
+        disponibles = (await pool.request().query(`
+          select m.id, m.codigo, m.nombre + case when m.activo = 1 then '' else ' (inactivo)' end as nombre
+          from SOL_ACC_ZIP_MODELO_CAJON m
+          where not exists (select 1 from SOL_FABRICACION_SISTEMAS s where s.producto = 6 and s.acc_zip_modelo_id = m.id)
+          order by m.orden, m.nombre`)).recordset;
+      }
     }
     res.status(200).send({ Table: result.recordset, Disponibles: disponibles });
   } catch (err) {
@@ -151,15 +162,32 @@ function nombreProducto(descripcion) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-/* POST /fabricacion/sistemas { producto, acc_sistema_id } — crea un juego de fabricación VACÍO para un
-   producto con sistemas. Clave: producto + código del sistema (ENROLLABLE_RHIN); el cableado (tablas
-   y procedimiento) se copia del producto. No copia nada de otros juegos */
+/* Cómo se divide un producto en juegos: 'sistema' (enrollable: uno por sistema), 'modelo' (Cajón ZIP: uno por modelo
+   de cajón, sqlCajonZip/10) o null (juegos fijos) */
+function divisionDe(p) {
+  if (!p) return null;
+  if (p.con_sistema) return 'sistema';
+  if (p.con_modelo) return 'modelo';
+  return null;
+}
+
+async function productoDivision(pool, producto) {
+  const p = (await pool.request().input('producto', sql.Int, producto)
+    .query('select * from SOL_FABRICACION_PRODUCTOS where producto = @producto and activo = 1')).recordset[0];
+  return divisionDe(p);
+}
+
+/* POST /fabricacion/sistemas { producto, id } — crea un juego de fabricación VACÍO para un sistema del enrollable
+   (id = SOL_ACC_SISTEMA; se admite también acc_sistema_id) o para un modelo del Cajón ZIP (id = SOL_ACC_ZIP_MODELO_CAJON).
+   Clave: producto + código del sistema (ENROLLABLE_RHIN) o ZIP_ + código del modelo (ZIP_CAJON_70_CUADRADO); el cableado
+   (tablas y procedimiento) se copia del producto. No copia reglas de otros juegos; en el Cajón ZIP sí el código y la
+   descripción del producto por defecto (los del juego CAJON_ZIP), para que el XML siga teniendo cabecera */
 async function sistema_add(req, res) {
   const body = req.body || {};
   const producto = parseInt(body.producto, 10);
-  const accSistema = parseInt(body.acc_sistema_id, 10);
-  if (isNaN(producto) || isNaN(accSistema)) {
-    return res.status(400).send({ message: 'Indique el producto y el sistema' });
+  const idDivision = parseInt(body.id !== undefined && body.id !== null ? body.id : body.acc_sistema_id, 10);
+  if (isNaN(producto) || isNaN(idDivision)) {
+    return res.status(400).send({ message: 'Indique el producto y el sistema o el modelo' });
   }
   try {
     const pool = await sql.connect();
@@ -168,31 +196,54 @@ async function sistema_add(req, res) {
       join SOL_ARTICULOS_PRODUCTOS ap on ap.idrow = fp.producto
       where fp.producto = @producto and fp.activo = 1`)).recordset[0];
     if (!p) return res.status(400).send({ message: 'Producto no válido' });
-    if (!p.con_sistema) return res.status(400).send({ message: 'Este producto no se divide por sistemas' });
-    const s = (await pool.request().input('id', sql.Int, accSistema)
-      .query('select id, codigo, nombre from SOL_ACC_SISTEMA where id = @id and activo = 1')).recordset[0];
-    if (!s) return res.status(400).send({ message: 'Sistema no válido' });
+    const division = divisionDe(p);
+    if (!division) return res.status(400).send({ message: 'Este producto no se divide por sistemas ni por modelos' });
 
-    const clave = (String(p.descripcion).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_') + '_' + s.codigo).substring(0, 50);
+    let s, clave, columna, yaTiene, defecto = { codigo: null, descripcion: null };
+    if (division === 'sistema') {
+      s = (await pool.request().input('id', sql.Int, idDivision)
+        .query('select id, codigo, nombre from SOL_ACC_SISTEMA where id = @id and activo = 1')).recordset[0];
+      if (!s) return res.status(400).send({ message: 'Sistema no válido' });
+      clave = (String(p.descripcion).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_') + '_' + s.codigo).substring(0, 50);
+      columna = 'acc_sistema_id';
+      yaTiene = 'Ese sistema ya tiene su juego de fabricación';
+    } else {
+      s = (await pool.request().input('id', sql.Int, idDivision)
+        .query('select id, codigo, nombre from SOL_ACC_ZIP_MODELO_CAJON where id = @id')).recordset[0];
+      if (!s) return res.status(400).send({ message: 'Modelo de cajón no válido' });
+      clave = ('ZIP_' + String(s.codigo).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_')).substring(0, 50);
+      columna = 'acc_zip_modelo_id';
+      yaTiene = 'Ese modelo de cajón ya tiene su juego de fabricación';
+      const base = (await pool.request().input('producto', sql.Int, producto).query(`
+        select top 1 codigo_defecto, descripcion_defecto from SOL_FABRICACION_SISTEMAS
+        where producto = @producto order by case when sistema = 'CAJON_ZIP' then 0 else 1 end, sistema`)).recordset[0];
+      if (base) defecto = { codigo: base.codigo_defecto, descripcion: base.descripcion_defecto };
+    }
     if (!IDENTIFICADOR.test(clave)) return res.status(400).send({ message: 'No se puede formar la clave del juego' });
     const repetido = (await pool.request().input('clave', sql.VarChar(50), clave).input('producto', sql.Int, producto).input('id', sql.Int, s.id)
       .query(`select count(*) as n from SOL_FABRICACION_SISTEMAS
-              where sistema = @clave or (producto = @producto and acc_sistema_id = @id)`)).recordset[0].n;
-    if (repetido > 0) return res.status(409).send({ message: 'Ese sistema ya tiene su juego de fabricación' });
+              where sistema = @clave or (producto = @producto and ${columna} = @id)`)).recordset[0].n;
+    if (repetido > 0) return res.status(409).send({ message: yaTiene });
 
     await pool.request()
       .input('clave', sql.VarChar(50), clave)
-      .input('descripcion', sql.VarChar(100), (nombreProducto(p.descripcion) + ' · ' + s.nombre).substring(0, 100))
+      .input('descripcion', sql.VarChar(100),
+        ((division === 'modelo' ? 'Cajón ZIP' : nombreProducto(p.descripcion)) + ' · ' + s.nombre).substring(0, 100))
       .input('tipo', sql.Int, p.producto)
       .input('origen', sql.NVarChar(128), p.tabla_origen)
       .input('fabricacion', sql.NVarChar(128), p.tabla_fabricacion)
       .input('parametros', sql.NVarChar(128), p.tabla_parametros)
       .input('procedimiento', sql.NVarChar(128), p.procedimiento)
       .input('producto', sql.Int, p.producto)
-      .input('acc', sql.Int, s.id)
+      .input('acc', sql.Int, division === 'sistema' ? s.id : null)
+      .input('modelo', sql.Int, division === 'modelo' ? s.id : null)
+      .input('codigo', sql.VarChar(50), defecto.codigo)
+      .input('descDefecto', sql.VarChar(100), defecto.descripcion)
       .query(`insert into SOL_FABRICACION_SISTEMAS
-                (sistema, descripcion, tipo_linea, tabla_origen, tabla_fabricacion, tabla_parametros, procedimiento, activo, producto, acc_sistema_id)
-              values (@clave, @descripcion, @tipo, @origen, @fabricacion, @parametros, @procedimiento, 1, @producto, @acc)`);
+                (sistema, descripcion, tipo_linea, tabla_origen, tabla_fabricacion, tabla_parametros, procedimiento, activo, producto,
+                 acc_sistema_id, acc_zip_modelo_id, codigo_defecto, descripcion_defecto)
+              values (@clave, @descripcion, @tipo, @origen, @fabricacion, @parametros, @procedimiento, 1, @producto,
+                      @acc, @modelo, @codigo, @descDefecto)`);
 
     /* Parámetros estándar del producto (p. ej. todos los datos de una línea de enrollable): el juego empieza
        sin reglas, pero con sus parámetros. El procedimiento sale del catálogo y se valida antes de usarlo */
@@ -205,14 +256,14 @@ async function sistema_add(req, res) {
     res.status(200).send({ message: 'OK', sistema: clave });
   } catch (err) {
     const numero = err && (err.number || (err.originalError && err.originalError.info && err.originalError.info.number));
-    if (numero === 2627 || numero === 2601) return res.status(409).send({ message: 'Ese sistema ya tiene su juego de fabricación' });
+    if (numero === 2627 || numero === 2601) return res.status(409).send({ message: 'Ese juego de fabricación ya existe' });
     console.error(err);
     res.status(500).send({ message: 'KO' });
   }
 }
 
 /* POST /fabricacion/sistemas/delete { sistema } — borra el juego de fabricación de un sistema y sus
-   parámetros. Solo juegos de productos con sistemas (nunca HONEYCOMB) y solo si no tienen reglas,
+   parámetros. Solo juegos de productos con sistemas o con modelos (Cajón ZIP; nunca HONEYCOMB) y solo si no tienen reglas,
    búsquedas ni tablas de valores: lo que se pierde son los parámetros, que se vuelven a crear al añadirlo */
 /* POST /fabricacion/sistemas/defecto { sistema, codigo_defecto, descripcion_defecto } — código y descripción del producto
    cuando ninguna regla de código o descripción se cumple (sqlCajonZip/07). Vacío = sin valor por defecto */
@@ -242,12 +293,15 @@ async function sistema_delete(req, res) {
   try {
     const pool = await sql.connect();
     const s = (await pool.request().input('sistema', sql.VarChar(50), clave).query(`
-      select s.sistema, s.acc_sistema_id, fp.con_sistema
+      select s.sistema, s.acc_sistema_id, s.acc_zip_modelo_id, fp.con_sistema, isnull(fp.con_modelo, 0) as con_modelo
       from SOL_FABRICACION_SISTEMAS s
       left join SOL_FABRICACION_PRODUCTOS fp on fp.producto = s.producto
       where s.sistema = @sistema`)).recordset[0];
     if (!s) return res.status(404).send({ message: 'Ese juego de fabricación no existe' });
-    if (s.acc_sistema_id === null || !s.con_sistema) {
+    /* Juegos de un sistema del enrollable o de un modelo del Cajón ZIP (sqlCajonZip/10) */
+    const porSistema = s.acc_sistema_id !== null && s.con_sistema;
+    const porModelo = s.acc_zip_modelo_id !== null && s.con_modelo;
+    if (!porSistema && !porModelo) {
       return res.status(400).send({ message: 'Este juego de fabricación no se puede borrar' });
     }
     const usos = (await pool.request().input('sistema', sql.VarChar(50), clave).query(`
@@ -690,10 +744,13 @@ async function simular(req, res) {
        función que la fabricación (fn_fabricacion_juego); las de siempre no se fabrican por reglas */
     const productoJuego = Number(sistema.producto);
 
+    /* Cajón ZIP (sqlCajonZip/10): un juego por modelo de cajón */
     const filtroLineaNueva = productoJuego === 3 ? 't.nver_tipo_id is not null'
-      : (productoJuego === 2 ? 't.npj_modalidad_id is not null' : null);
+      : (productoJuego === 2 ? 't.npj_modalidad_id is not null'
+      : (productoJuego === 6 ? 't.nzip_modelo_cajon_id is not null' : null));
     const juegoDeLinea = productoJuego === 3 ? 'dbo.fn_fabricacion_juego(3, t.nver_tipo_id, t.nver_modalidad_id)'
-      : (productoJuego === 2 ? 'dbo.fn_fabricacion_juego(2, null, t.npj_modalidad_id)' : null);
+      : (productoJuego === 2 ? 'dbo.fn_fabricacion_juego(2, null, t.npj_modalidad_id)'
+      : (productoJuego === 6 ? 'dbo.fn_fabricacion_juego(6, t.nzip_modelo_cajon_id, null)' : null));
     const filtroSistema = porSistema ? ' and t.nacc_accionamiento_id is not null and t.nacc_sistema_id = @acc'
       : (juegoDeLinea ? ` and ${filtroLineaNueva} and ${juegoDeLinea} = @sis` : '');
 

@@ -38,7 +38,7 @@
           </div>
           <div *ngIf="productoConSistema" class="input-group input-group-sm fab-sistema">
             <div class="input-group-prepend">
-              <span class="input-group-text">Sistema</span>
+              <span class="input-group-text">{{ division.titulo }}</span>
             </div>
             <select
               class="form-control form-control-sm"
@@ -47,12 +47,12 @@
               [disabled]="sistemas.length === 0"
               style="width: 200px"
             >
-              <option *ngIf="sistemas.length === 0" value="">Sin sistemas: añada uno</option>
-              <option *ngFor="let s of sistemas" [value]="s.sistema">{{ s.sistema_nombre || s.descripcion }}</option>
+              <option *ngIf="sistemas.length === 0" value="">Sin {{ division.varios }}: añada uno</option>
+              <option *ngFor="let s of sistemas" [value]="s.sistema">{{ nombreEnSelector(s) }}</option>
             </select>
             <div class="input-group-append" *ngIf="productoConSistema">
               <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="!sistema" (click)="BorrarSistema()"
-                title="Borra el juego de fabricación de este sistema y sus parámetros. Solo si no tiene reglas, búsquedas ni tablas">
+                [title]="'Borra el juego de fabricación de este ' + division.uno + ' y sus parámetros. Solo si no tiene reglas, búsquedas ni tablas'">
                 <i class="fa fa-trash"></i>
               </button>
             </div>
@@ -62,10 +62,10 @@
               class="form-control form-control-sm"
               [(ngModel)]="sistemaNuevo"
               [disabled]="sistemasDisponibles.length === 0"
-              title="Crea el juego de fabricación del sistema, vacío: no copia nada de otros sistemas"
+              [title]="'Crea el juego de fabricación del ' + division.uno + ', vacío: no copia nada de otros ' + division.varios"
               style="width: 170px"
             >
-              <option value="">{{ sistemasDisponibles.length ? 'Añadir sistema…' : 'Todos añadidos' }}</option>
+              <option value="">{{ sistemasDisponibles.length ? 'Añadir ' + division.uno + '…' : 'Todos añadidos' }}</option>
               <option *ngFor="let d of sistemasDisponibles" [value]="d.id">{{ d.nombre }}</option>
             </select>
             <div class="input-group-append">
@@ -766,7 +766,7 @@
                 <option value="">— elija la fabricación de destino —</option>
                 <optgroup label="Fabricaciones existentes">
                   <option *ngFor="let s of sistemas" [value]="s.sistema">
-                    {{ s.sistema_nombre || s.descripcion }}{{ s.sistema == sistema ? ' (esta misma)' : '' }}
+                    {{ nombreEnSelector(s) }}{{ s.sistema == sistema ? ' (esta misma)' : '' }}
                   </option>
                 </optgroup>
                 <optgroup label="Nueva fabricación" *ngIf="productoConSistema && sistemasDisponibles.length > 0">

@@ -663,9 +663,28 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       });
   }
 
+  /* Producto con un juego por sistema (enrollable) o por modelo de cajón (Cajón ZIP, sqlCajonZip/10): se añaden y se
+     borran juegos desde la pantalla */
   get productoConSistema(): boolean {
     const p = this.productos.find(x => x.producto == this.producto);
-    return !!(p && p.con_sistema);
+    return !!(p && (p.con_sistema || p.con_modelo));
+  }
+
+  get productoConModelo(): boolean {
+    const p = this.productos.find(x => x.producto == this.producto);
+    return !!(p && p.con_modelo);
+  }
+
+  /* Cómo se llama cada juego en la pantalla: «sistema» en el enrollable, «modelo» en el Cajón ZIP */
+  get division(): { uno: string, varios: string, titulo: string, tituloVarios: string } {
+    return this.productoConModelo
+      ? { uno: 'modelo', varios: 'modelos', titulo: 'Modelo', tituloVarios: 'Modelos' }
+      : { uno: 'sistema', varios: 'sistemas', titulo: 'Sistema', tituloVarios: 'Sistemas' };
+  }
+
+  /* Nombre del juego en los selectores: el sistema, el modelo de cajón o la descripción del juego */
+  nombreEnSelector(s: any): string {
+    return s ? (s.sistema_nombre || s.modelo_nombre || s.descripcion) : '';
   }
 
   /* Producto con varios juegos que no son por sistema (el Vertical: uno por tipo, sqlVertical/06): selector de juego,
@@ -780,19 +799,19 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   /* Crea el juego vacío del producto para el sistema elegido: no copia nada de otros sistemas */
   AnadirSistema() {
     if (!this.sistemaNuevo) {
-      this.toaster.warning('Elija el sistema que quiere añadir', 'Sistemas');
+      this.toaster.warning('Elija el ' + this.division.uno + ' que quiere añadir', this.division.tituloVarios);
       return;
     }
-    let values = JSON.stringify({ producto: this.producto, acc_sistema_id: this.sistemaNuevo });
+    let values = JSON.stringify({ producto: this.producto, id: this.sistemaNuevo });
     this.service.HTTP_Post('/sm/fabricacion/sistemas', values).subscribe(
       data => {
         if (data.message == 'OK') {
-          this.toaster.success('Sistema añadido, sin reglas', 'Sistemas');
+          this.toaster.success(this.division.titulo + ' añadido, sin reglas', this.division.tituloVarios);
           this.loadSistemas(data.sistema);
         }
       },
       error => {
-        this.toaster.error(this.errorMessage(error), 'Sistemas');
+        this.toaster.error(this.errorMessage(error), this.division.tituloVarios);
       });
   }
 
@@ -809,12 +828,12 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     this.service.HTTP_Post('/sm/fabricacion/sistemas/delete', values).subscribe(
       data => {
         if (data.message == 'OK') {
-          this.toaster.success('Juego de fabricación borrado', 'Sistemas');
+          this.toaster.success('Juego de fabricación borrado', this.division.tituloVarios);
           this.loadSistemas();
         }
       },
       error => {
-        this.toaster.error(this.errorMessage(error), 'Sistemas');
+        this.toaster.error(this.errorMessage(error), this.division.tituloVarios);
       });
   }
 
@@ -1261,7 +1280,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
     /* Destino nuevo: primero se crea el juego (como "Añadir sistema") y después se copia */
     if (destino.indexOf('nuevo:') === 0) {
-      let values = JSON.stringify({ producto: this.producto, acc_sistema_id: destino.substring(6) });
+      let values = JSON.stringify({ producto: this.producto, id: destino.substring(6) });
       this.service.HTTP_Post('/sm/fabricacion/sistemas', values).subscribe(
         data => {
           if (data.message == 'OK') {
@@ -2059,7 +2078,9 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
           let partes = [];
           if (omitidas.otros_sistemas > 0) {
             /* enrollable: otro sistema; vertical y panel japonés: otro tipo u otra modalidad (sqlFabricacionModalidad) */
-            const otro = this.productoConSistema ? ['otro sistema', 'otros sistemas'] : ['otro tipo o modalidad', 'otros tipos o modalidades'];
+            /* Cajón ZIP: otro modelo de cajón, o un modelo sin juego (no se fabrica; sqlCajonZip/11) */
+            const otro = this.productoConModelo ? ['otro modelo o sin fabricación', 'otros modelos o sin fabricación']
+              : this.productoConSistema ? ['otro sistema', 'otros sistemas'] : ['otro tipo o modalidad', 'otros tipos o modalidades'];
             partes.push(omitidas.otros_sistemas + (omitidas.otros_sistemas == 1 ? ' línea de ' + otro[0] : ' líneas de ' + otro[1]));
           }
           if (omitidas.modelo_antiguo > 0) {
