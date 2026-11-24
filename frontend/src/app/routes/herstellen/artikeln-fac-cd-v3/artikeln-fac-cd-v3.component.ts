@@ -291,6 +291,12 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
 
   renderTexto = (row, field, value) => this.celda(this.escapeHtml(value), '', value);
 
+  /* Columna Sistema: en los productos con juego por modelo (Cajón ZIP) el nombre del modelo, no la clave interna del juego */
+  renderSistema = (row, field, value) => {
+    let juego = this.productoConModelo ? (this.sistemas || []).find(s => s.sistema === value) : null;
+    return this.renderTexto(row, field, juego ? this.nombreEnSelector(juego) : value);
+  }
+
   renderCentro = (row, field, value) => this.celda(this.escapeHtml(value), 'fab-center', value);
 
   renderCodigo = (row, field, value, html?, props?, fila?) => {
@@ -405,7 +411,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       { text: '', datafield: 'acciones', width: 86, sortable: false, filterable: false, menu: false, cellsrenderer: this.renderAcciones },
       { text: '', datafield: 'idrow', width: 40, filterable: false, menu: false, cellsrenderer: this.renderEstado },
       { text: 'Orden', datafield: 'orden', width: 60, minwidth: 60, filtertype: 'textbox', cellsrenderer: this.renderCentro },
-      { text: 'Sistema', datafield: 'sistema', width: 100, minwidth: 70, filtertype: 'textbox', cellsrenderer: this.renderTexto },
+      { text: 'Sistema', datafield: 'sistema', width: 130, minwidth: 70, filtertype: 'textbox', cellsrenderer: this.renderSistema },
       /* Filtro de texto: con 'checkedlist' jqxGrid deja la fila de filtros a medias y falla al cambiar anchos */
       { text: 'Cliente', datafield: 'cliente_nombre', width: 120, minwidth: 120, filtertype: 'textbox', cellsrenderer: this.renderCliente },
       { text: 'Elemento', datafield: 'atributo', width: 120, minwidth: 80, filtertype: 'textbox', cellsrenderer: this.renderTexto },
