@@ -724,6 +724,39 @@
             </div>
           </div>
         </div>
+
+        <!-- sqlCantidadXml/01: excepción de la regla general de cantidad y factor del XML -->
+        <div class="fab-seccion" *ngIf="!regla.tipo_regla">
+          <div class="fab-seccion-titulo" style="cursor: pointer" (click)="xmlAbierto = !xmlAbierto">
+            <i class="fa" [ngClass]="xmlAbierto ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+            Cantidad y factor en el XML (excepción)
+            <span class="text-muted small font-weight-normal" *ngIf="!xmlAbierto">
+              {{ (regla.param_cantidad || regla.param_factor) ? '— cantidad ' + (regla.param_cantidad || '?') + ', factor ' + (regla.param_factor || '?') : '— según la unidad del artículo' }}
+            </span>
+          </div>
+          <div class="text-muted small mb-2" *ngIf="xmlAbierto">
+            Por defecto decide la unidad del artículo: Ud, juego, par y min llevan el consumo en la cantidad (factor 1);
+            m2, ml y sin unidad, cantidad 1 y el consumo en el factor. Si elige los dos parámetros, el componente sale con
+            la cantidad y el factor que den, tal cual, sea cual sea la unidad (p. ej. cantidad = número de vías).
+            El consumo de la regla no cambia.
+          </div>
+          <div class="form-row" *ngIf="xmlAbierto">
+            <div class="col-md-6">
+              <label class="small mb-0">Cantidad (C_CANT)</label>
+              <select class="form-control form-control-sm" [(ngModel)]="regla.param_cantidad">
+                <option value="">— según la unidad —</option>
+                <option *ngFor="let p of parametrosAlfabetico()" [value]="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="small mb-0">Factor (C_FACTOR)</label>
+              <select class="form-control form-control-sm" [(ngModel)]="regla.param_factor">
+                <option value="">— según la unidad —</option>
+                <option *ngFor="let p of parametrosAlfabetico()" [value]="p">{{ p }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <div class="fab-mensaje-error mr-auto" *ngIf="erroresVentana().length > 0">
