@@ -32,16 +32,15 @@ const ERRORES_REGLA = {
   /* sqlCajonZip/07: reglas de código y descripción del producto */
   '-4': 'Indique el código o la descripción que da la regla',
   '-5': 'Tipo de regla no válido',
-  /* sqlCantidadXml/01: excepción de cantidad y factor en el XML */
-  '-6': 'Cantidad y factor en el XML: elija los dos parámetros o ninguno',
-  '-7': 'Cantidad y factor en el XML: el parámetro no existe'
+  /* sqlCantidadXml/01: cantidad del XML desde un parámetro (excepción) */
+  '-7': 'Cantidad en el XML: el parámetro no existe'
 };
 
-/* sqlCantidadXml/01: parámetro de la cantidad o el factor del XML. Si la petición no lo trae (pantalla antigua), al editar
-   se manda '-' para que el SP no lo toque */
-function parametroXml(body, campo, editar) {
-  if (editar && (body[campo] === undefined || body[campo] === null)) return '-';
-  return texto(body[campo], 50);
+/* sqlCantidadXml/01: parámetro de la cantidad del XML (el factor es el consumo). Si la petición no lo trae (pantalla
+   antigua), al editar se manda '-' para que el SP no lo toque */
+function parametroCantidadXml(body, editar) {
+  if (editar && (body.param_cantidad === undefined || body.param_cantidad === null)) return '-';
+  return texto(body.param_cantidad, 50);
 }
 
 const ERRORES_PARAMETRO = {
@@ -395,7 +394,7 @@ async function reglas(req, res) {
                r.nombre_parametro1, r.operacion, r.nombre_parametro2, r.operacion2,
                r.nombre_parametro3, r.operacion3, r.nombre_parametro4, r.consumo,
                isnull(r.param_ancho, '') as param_ancho, isnull(r.param_alto, '') as param_alto,
-               isnull(r.param_cantidad, '') as param_cantidad, isnull(r.param_factor, '') as param_factor,
+               isnull(r.param_cantidad, '') as param_cantidad,
                isnull(r.tipo_regla, '') as tipo_regla, isnull(r.resultado, '') as resultado
         from SOL_ARTICULOS_FABRICACION_RELACION_V2 r
         join SOL_FABRICACION_SISTEMAS s on s.sistema = r.sistema and s.activo = 1
@@ -432,9 +431,8 @@ async function regla_add(req, res) {
       /* sqlCajonZip/07: '' = componente; CODIGO o DESCRIPCION con su texto */
       .input('tipo_regla', sql.VarChar(15), tipoRegla(body.tipo_regla))
       .input('resultado', sql.VarChar(100), texto(body.resultado, 100))
-      /* sqlCantidadXml/01: excepción de cantidad y factor en el XML (los dos o ninguno) */
-      .input('param_cantidad', sql.VarChar(50), parametroXml(body, 'param_cantidad', false))
-      .input('param_factor', sql.VarChar(50), parametroXml(body, 'param_factor', false))
+      /* sqlCantidadXml/01: cantidad del XML desde un parámetro (el factor es el consumo) */
+      .input('param_cantidad', sql.VarChar(50), parametroCantidadXml(body, false))
       .execute('sp_fabricacion_regla_add');
     if (result.returnValue > 0) {
       res.status(200).send({ message: 'OK', idrow: result.returnValue });
@@ -476,9 +474,8 @@ async function regla_save(req, res) {
       /* sqlCajonZip/07: se manda siempre (componente = NULL) */
       .input('tipo_regla', sql.VarChar(15), tipoRegla(body.tipo_regla))
       .input('resultado', sql.VarChar(100), texto(body.resultado, 100))
-      /* sqlCantidadXml/01: excepción de cantidad y factor en el XML (los dos o ninguno; sin ellos no se tocan) */
-      .input('param_cantidad', sql.VarChar(50), parametroXml(body, 'param_cantidad', true))
-      .input('param_factor', sql.VarChar(50), parametroXml(body, 'param_factor', true))
+      /* sqlCantidadXml/01: cantidad del XML desde un parámetro (sin el campo no se toca) */
+      .input('param_cantidad', sql.VarChar(50), parametroCantidadXml(body, true))
       .execute('sp_fabricacion_regla_edit');
     if (result.returnValue === 1) {
       res.status(200).send({ message: 'OK', idrow: idrow });
@@ -541,7 +538,7 @@ async function regla_delete(req, res) {
    (en la pantalla salen con error hasta que se creen) */
 const PARAMETRO = /@[A-Za-z0-9_]+/g;
 const CAMPOS_CON_PARAMETROS = ['articulos', 'consumo', 'nombre_parametro1', 'nombre_parametro2',
-  'nombre_parametro3', 'nombre_parametro4', 'param_ancho', 'param_alto', 'param_cantidad', 'param_factor'];
+  'nombre_parametro3', 'nombre_parametro4', 'param_ancho', 'param_alto', 'param_cantidad'];
 
 async function regla_copiar(req, res) {
   const body = req.body || {};
@@ -598,12 +595,12 @@ async function regla_copiar(req, res) {
           (orden, sistema, cliente, atributo, valor, valor2, articulos,
            nombre_parametro1, operacion, nombre_parametro2, operacion2,
            nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto, tipo_regla, resultado,
-           param_cantidad, param_factor)
+           param_cantidad)
         select orden, @destino, case @modo when 'mismo' then cliente when 'cliente' then @cliente else null end,
            atributo, valor, valor2, articulos,
            nombre_parametro1, operacion, nombre_parametro2, operacion2,
            nombre_parametro3, operacion3, nombre_parametro4, agregar, consumo, param_ancho, param_alto, tipo_regla, resultado,
-           param_cantidad, param_factor
+           param_cantidad
         from SOL_ARTICULOS_FABRICACION_RELACION_V2
         where sistema = @origen and idrow in (${lista})
         order by orden, idrow`);
@@ -773,10 +770,10 @@ async function simular(req, res) {
     const filtroSistema = porSistema ? ' and t.nacc_accionamiento_id is not null and t.nacc_sistema_id = @acc'
       : (juegoDeLinea ? ` and ${filtroLineaNueva} and ${juegoDeLinea} = @sis` : '');
 
-    /* sqlCantidadXml/02: cantidad y factor del XML cuando la regla los da (solo en los productos que ya los guardan) */
+    /* sqlCantidadXml/02: cantidad del XML cuando la regla la da (solo en los productos que ya la guardan) */
     const conXml = (await pool.request().input('tabla', sql.NVarChar(128), 'dbo.' + sistema.tabla_fabricacion)
       .query("select col_length(@tabla, 'cantidad_xml') as n")).recordset[0].n;
-    const columnasXml = conXml ? ', f.cantidad_xml, f.factor_xml' : ', null as cantidad_xml, null as factor_xml';
+    const columnasXml = conXml ? ', f.cantidad_xml' : ', null as cantidad_xml';
 
     const fabricacion = await pool.request()
       .input('idPedido', sql.Int, idPedido)

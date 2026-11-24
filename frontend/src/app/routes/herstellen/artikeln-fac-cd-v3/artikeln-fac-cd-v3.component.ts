@@ -174,7 +174,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   tituloRegla = '';
   consumoComun = true;
   medidasAbiertas = false;   /* sección "Medidas del componente" de la ventana de la regla: plegada salvo que la regla ya las tenga */
-  xmlAbierto = false;        /* sqlCantidadXml: sección "Cantidad y factor en el XML": plegada salvo que la regla ya los tenga */
+  xmlAbierto = false;        /* sqlCantidadXml: sección "Cantidad en el XML": plegada salvo que la regla ya la tenga */
   consumoTodos: Consumo = consumoVacio();
   guardandoRegla = false;
 
@@ -214,8 +214,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       { name: 'consumo', type: 'string' },
       { name: 'param_ancho', type: 'string' },   /* sin declarar aquí, el grid los quita de la fila y al guardar se perderían */
       { name: 'param_alto', type: 'string' },
-      { name: 'param_cantidad', type: 'string' },   /* sqlCantidadXml/01: excepción de cantidad y factor en el XML */
-      { name: 'param_factor', type: 'string' },
+      { name: 'param_cantidad', type: 'string' },   /* sqlCantidadXml/01: cantidad del XML desde un parámetro */
       { name: 'tipo_regla', type: 'string' },    /* sqlCajonZip/07: reglas de código y descripción del producto */
       { name: 'resultado', type: 'string' },
     ],
@@ -253,7 +252,6 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       { name: "cod_sol", type: "string" },
       { name: "fam_sol", type: "string" },
       { name: "cantidad_xml", type: "number" },   /* sqlCantidadXml/02: excepción de la regla (vacío = regla general) */
-      { name: "factor_xml", type: "number" },
     ],
     localdata: null,
   };
@@ -494,9 +492,8 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       { text: "Cantidad", datafield: "cantidad", width: 70, filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
       { text: "Unidad", datafield: "descUnidad", width: 70, filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
       { text: "Consumo", datafield: "consumo", width: 80, filtertype: "textbox", cellsalign: "center", cellsformat: "d3", cellclassname: this.claseSimulacion },
-      /* sqlCantidadXml/02: solo cuando la regla da la cantidad y el factor del XML; vacío = regla general de la unidad */
+      /* sqlCantidadXml/02: solo cuando la regla da la cantidad del XML (entonces el factor es el consumo); vacío = regla general */
       { text: "Cant. XML", datafield: "cantidad_xml", width: 75, filtertype: "textbox", cellsalign: "center", cellsformat: "d3", cellclassname: this.claseSimulacion },
-      { text: "Factor XML", datafield: "factor_xml", width: 80, filtertype: "textbox", cellsalign: "center", cellsformat: "d3", cellclassname: this.claseSimulacion },
       { text: "Cod_Sol", datafield: "cod_sol", width: 80, filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
       { text: "Fam_Sol", datafield: "fam_sol", filtertype: "textbox", cellsalign: "center", cellclassname: this.claseSimulacion },
     ],
@@ -1570,8 +1567,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       articulos: [] as ArticuloRegla[],
       param_ancho: '',   /* medidas propias del componente (XML Cn_P1 / Cn_P2); vacío = las de la línea */
       param_alto: '',
-      param_cantidad: '',  /* sqlCantidadXml/01: excepción del XML: Cn_CANT y Cn_FACTOR de dos parámetros (los dos o ninguno) */
-      param_factor: '',
+      param_cantidad: '',  /* sqlCantidadXml/01: excepción del XML: Cn_CANT de un parámetro y Cn_FACTOR = el consumo */
       tipo_regla: '',    /* sqlCajonZip/07: '' componente; CODIGO o DESCRIPCION del producto, con su texto en resultado */
       resultado: '',
     };
@@ -1644,8 +1640,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     regla.resultado = fila.resultado || '';
     this.medidasAbiertas = regla.param_ancho !== '' || regla.param_alto !== '';
     regla.param_cantidad = String(fila.param_cantidad || '').toUpperCase();
-    regla.param_factor = String(fila.param_factor || '').toUpperCase();
-    this.xmlAbierto = regla.param_cantidad !== '' || regla.param_factor !== '';
+    this.xmlAbierto = regla.param_cantidad !== '';
 
     let ids = String(fila.articulos || '').replace(/;/g, ',').split(',').map(a => a.trim()).filter(a => a !== '');
     let consumos = String(fila.consumo || '').trim() == '' ? [] : String(fila.consumo).split(';');
@@ -1850,13 +1845,10 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
     [this.regla.param_ancho, this.regla.param_alto]
       .filter(p => p && !this.nombresParametros.some(n => String(n).toUpperCase() == String(p).toUpperCase()))
       .forEach(p => errores.push('Medidas del componente: el parámetro ' + p + ' no existe'));
-    /* sqlCantidadXml/01: la excepción del XML lleva los dos parámetros o ninguno */
-    if (!this.regla.param_cantidad != !this.regla.param_factor) {
-      errores.push('Cantidad y factor en el XML: elija los dos parámetros o ninguno');
-    }
-    [this.regla.param_cantidad, this.regla.param_factor]
+    /* sqlCantidadXml/01: cantidad del XML desde un parámetro */
+    [this.regla.param_cantidad]
       .filter(p => p && !this.nombresParametros.some(n => String(n).toUpperCase() == String(p).toUpperCase()))
-      .forEach(p => errores.push('Cantidad y factor en el XML: el parámetro ' + p + ' no existe'));
+      .forEach(p => errores.push('Cantidad en el XML: el parámetro ' + p + ' no existe'));
     return errores;
   }
 
@@ -1921,7 +1913,6 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       param_ancho: this.regla.param_ancho || '',
       param_alto: this.regla.param_alto || '',
       param_cantidad: this.regla.param_cantidad || '',
-      param_factor: this.regla.param_factor || '',
       tipo_regla: this.regla.tipo_regla || '',
       resultado: this.regla.tipo_regla ? String(this.regla.resultado || '').trim() : '',
     };
@@ -1932,7 +1923,6 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       body.param_ancho = '';
       body.param_alto = '';
       body.param_cantidad = '';
-      body.param_factor = '';
     }
 
     this.guardandoRegla = true;
