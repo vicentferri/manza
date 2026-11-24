@@ -81,7 +81,7 @@
     <div class="ml-2 mr-2 mt-2">
       <tabset>
         <!-- ======================= PARAMETROS ======================= -->
-        <tab>
+        <tab (selectTab)="alMostrarParametros()">
           <ng-template tabHeading
             ><i class="icon-list"></i>&nbsp;Parámetros
           </ng-template>
@@ -228,6 +228,7 @@
                   #gridReference2
                   [auto-create]="false"
                   (onCellclick)="Cellclick2($event)"
+                  (onBindingcomplete)="ajustarColumnasParametros()"
                 ></jqxGrid>
               </div>
             </div>

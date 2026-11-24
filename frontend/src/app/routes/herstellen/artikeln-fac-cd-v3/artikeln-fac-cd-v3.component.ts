@@ -68,7 +68,8 @@ interface ColumnaAjustable {
 const FUENTE_CODIGO = "12px Consolas, 'Courier New', monospace";
 const RELLENO_CELDA = 16 + 10;   /* padding de .fab-cell + margen */
 const RELLENO_CABECERA = 34;     /* iconos de orden y filtro */
-const ANCHO_MAXIMO = 420;
+/* Sin tope de ancho: cada columna mide lo que su texto más largo y, si no cabe, la tabla se desplaza en horizontal */
+const ANCHO_MAXIMO = Number.MAX_SAFE_INTEGER;
 
 @Component({
   selector: 'app-artikeln-fac-cd-v3',
@@ -292,9 +293,11 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
   renderTexto = (row, field, value) => this.celda(this.escapeHtml(value), '', value);
 
   /* Columna Sistema: en los productos con juego por modelo (Cajón ZIP) el nombre del modelo, no la clave interna del juego */
-  renderSistema = (row, field, value) => {
-    let juego = this.productoConModelo ? (this.sistemas || []).find(s => s.sistema === value) : null;
-    return this.renderTexto(row, field, juego ? this.nombreEnSelector(juego) : value);
+  renderSistema = (row, field, value) => this.renderTexto(row, field, this.textoSistema(value));
+
+  textoSistema(valor: string): string {
+    let juego = this.productoConModelo ? (this.sistemas || []).find(s => s.sistema === valor) : null;
+    return juego ? this.nombreEnSelector(juego) : valor;
   }
 
   renderCentro = (row, field, value) => this.celda(this.escapeHtml(value), 'fab-center', value);
@@ -1016,6 +1019,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       this.dataAdapter2.dataBind();
       /* Las reglas se cargan siempre, aunque falle el repintado de la tabla de parámetros (pestaña oculta) */
       this.refrescarGrid(this.myGrid2, 'cells');
+      this.alMostrarParametros();
       this.loadDetails();
     });
   }
@@ -1457,7 +1461,7 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       return e && e.campos[campo] ? 22 : 0;
     };
     this.ajustarGrid(this.myGrid, filas, [
-      { campo: 'sistema' },
+      { campo: 'sistema', texto: f => this.textoSistema(f.sistema) },
       { campo: 'cliente_nombre', extra: 16, texto: f => f.cliente_nombre || 'Todos' },
       { campo: 'orden' },
       { campo: 'atributo' },
@@ -1497,6 +1501,34 @@ export class ArtikelnFacCdV3Component implements OnInit, OnDestroy {
       { campo: 'idpedido' }, { campo: 'parametro' },
     ]);
     return this.rellenarColumna(this.myGrid4, 'valor') && ok;
+  }
+
+  /* Parámetros del juego: nombre, tipo y orden a su texto; el origen ocupa el resto o lo que mida su texto */
+  ajustarColumnasParametros(): boolean {
+    return this.fueraDeZona(() => {
+      try {
+        let filas: any[] = this.source2.localdata || [];
+        this.ajustarGrid(this.myGrid2, filas, [
+          { campo: 'name' },
+          { campo: 'tipo', texto: f => TIPOS_PARAMETRO[f.tipo] || f.tipo },
+          { campo: 'orden' },
+        ]);
+        let fuente = this.fuenteTabla(this.myGrid2, false);
+        let anchoOrigen = 0;
+        filas.forEach(f => {
+          let medida = this.medirTexto(this.textoOrigenParametro(f), f.tipo == 'FORMULA' ? FUENTE_CODIGO : fuente) + RELLENO_CELDA;
+          anchoOrigen = Math.max(anchoOrigen, medida);
+        });
+        return this.rellenarColumna(this.myGrid2, 'origen', anchoOrigen);
+      }
+      catch (e) {
+        return false;
+      }
+    });
+  }
+
+  alMostrarParametros() {
+    this.reintentar(() => this.ajustarColumnasParametros());
   }
 
   /* Al mostrar la pestaña se vuelve a medir (la fuente se lee de las celdas pintadas) */
