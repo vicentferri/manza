@@ -45,9 +45,9 @@
       <div class="row mt-2">
         <div class="col col-md-12">
           <tabset>
-            <tab>
+            <tab (selectTab)="alSeleccionarPestana(1)">
               <ng-template tabHeading>
-                <div (click)="setTipo(1)">
+                <div>
                   <i class="icon-basket"></i>&nbsp;Leroy Merlin
                 </div>
               </ng-template>
@@ -55,9 +55,9 @@
                 <jqxGrid #gridReference [auto-create]="false"></jqxGrid>
               </div>
             </tab>
-            <tab>
+            <tab (selectTab)="alSeleccionarPestana(2)">
               <ng-template tabHeading>
-                <div (click)="setTipo(2)">
+                <div>
                   <i class="icon-layers"></i>&nbsp;Cortinadecor
                 </div>
               </ng-template>
@@ -88,9 +88,9 @@
                   (onFilter)="AlFiltrarCD()"></jqxGrid>
               </div>
             </tab>
-            <tab>
+            <tab (selectTab)="alSeleccionarPestana(4)">
               <ng-template tabHeading>
-                <div (click)="setTipo(4)">
+                <div>
                   <i class="icon-drop"></i>&nbsp;Solarmanes
                 </div>
               </ng-template>
@@ -98,9 +98,9 @@
                 <jqxGrid #gridReference4 [auto-create]="false"></jqxGrid>
               </div>
             </tab>
-            <tab>
+            <tab (selectTab)="alSeleccionarPestana(5)">
               <ng-template tabHeading>
-                <div (click)="setTipo(5)">
+                <div>
                   <i class="icon-globe"></i>&nbsp;Leroy Merlin Online
                 </div>
               </ng-template>
@@ -108,9 +108,9 @@
                 <jqxGrid #gridReference5 [auto-create]="false"></jqxGrid>
               </div>
             </tab>
-            <tab>
+            <tab (selectTab)="alSeleccionarPestana(99)">
               <ng-template tabHeading>
-                <div (click)="setTipo(99)">
+                <div>
                   <i class="icon-list"></i>&nbsp;Otros
                 </div>
               </ng-template>
@@ -118,7 +118,7 @@
                 <jqxGrid #gridReference6 [auto-create]="false"></jqxGrid>
               </div>
             </tab>
-            <tab>
+            <tab (selectTab)="alSeleccionarPestana(0)">
               <ng-template tabHeading>
                 <div>
                   <i class="icon-cloud-download"></i>&nbsp;B2B

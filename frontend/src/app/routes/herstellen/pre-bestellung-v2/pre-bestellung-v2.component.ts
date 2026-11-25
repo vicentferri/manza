@@ -111,10 +111,9 @@ export class PreBestellungV2Component implements OnInit {
   ngAfterViewInit() {
     this.myGrid.createComponent(this.settings);
     this.myGrid2.createComponent(this.settings2);
-    this.myGrid4.createComponent(this.settings4);
-    this.myGrid5.createComponent(this.settings5);
-
-    this.myGrid6.createComponent(this.settings6);
+    /* Solarmanes (4), Leroy Online (5) y Otros (6) se crean al abrir su pestaña por primera vez (CrearRejilla):
+       jqxGrid creado oculto y redimensionado antes de mostrarse (cambio de ventana, menú lateral...) queda
+       con filas sin celdas y se queda en «Loading…» */
     this.gridDetail.createComponent(this.settingsDet);
     this.Init();
     this.startTimer();
@@ -143,6 +142,7 @@ export class PreBestellungV2Component implements OnInit {
   }
 
   getSelectedRows(myGrid: jqxGridComponent, field: string) {
+    if (!myGrid || !myGrid.host) return []; /* rejilla aún sin crear (pestaña no abierta) */
     var rowsSelected = myGrid.getselectedrowindexes();
     var info = myGrid.getboundrows();
 
@@ -344,6 +344,45 @@ export class PreBestellungV2Component implements OnInit {
   setTipo(cliente) {
     this.SelectedCliente = cliente;
     this.getScope();
+  }
+
+  /* Se lanza al seleccionar la pestaña (cualquier punto de ella, no solo el texto). Un tick después, para que el panel
+     ya esté visible: una rejilla jqx que se enlaza oculta se queda en «Loading…» sin pintar las filas */
+  alSeleccionarPestana(cliente) {
+    setTimeout(() => {
+      this.AbortarCargasPendientes(cliente);
+      if (cliente === 0) return; /* B2B: no usa estas rejillas */
+      this.CrearRejilla(cliente);
+      this.setTipo(cliente);
+    }, 0);
+  }
+
+  /* Cancela las cargas en curso de las demás pestañas: si la respuesta llega con su rejilla oculta (Cortinadecor tarda
+     unos 3 s), jqxGrid la enlaza oculta y se queda en blanco o en «Loading…» para siempre. Al volver a la pestaña se
+     carga de nuevo, ya visible */
+  private AbortarCargasPendientes(activa) {
+    const adaptadores = {
+      1: this.dataAdapter,
+      2: this.dataAdapter2,
+      4: this.dataAdapter4,
+      5: this.dataAdapter5,
+      99: this.dataAdapter6,
+    };
+    Object.keys(adaptadores).forEach((c) => {
+      const xhr = adaptadores[c] && adaptadores[c].xhr;
+      if (Number(c) !== activa && xhr && xhr.readyState !== 4 && typeof xhr.abort === "function") xhr.abort();
+    });
+  }
+
+  /* Crea la rejilla de la pestaña la primera vez que se abre (ya visible, con su ancho real) */
+  private rejillasCreadas: { [cliente: number]: boolean } = {};
+
+  private CrearRejilla(cliente) {
+    if (this.rejillasCreadas[cliente]) return;
+    this.rejillasCreadas[cliente] = true;
+    if (cliente === 4) this.myGrid4.createComponent(this.settings4);
+    if (cliente === 5) this.myGrid5.createComponent(this.settings5);
+    if (cliente === 99) this.myGrid6.createComponent(this.settings6);
   }
 
   getScope() {
