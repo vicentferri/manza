@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, OnDestroy, Input, ViewChild } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, OnDestroy, Input, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { ModalDirective } from 'ngx-bootstrap/modal';
 import { HoneycombService } from './honeycomb.service';
@@ -19,7 +19,7 @@ import { FrasePipe } from '../config/frase.pipe';
   styleUrls: ['./honeycomb.component.scss'],
   providers: [HoneycombService],
 })
-export class HoneycombComponent implements OnInit, OnDestroy {
+export class HoneycombComponent implements OnInit, OnDestroy, OnChanges {
 
   protected destroy$ = new Subject<void>();
   calculando: boolean = false;
@@ -141,7 +141,14 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.limitesPorCliente();
     this.loadData();
+  }
+
+  /* El cliente puede llegar después de crear el componente (pedir como cliente). El motor nuevo
+     (manza-honeycomb-nuevo) tiene su propio ngOnChanges y toma los límites del servidor */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['Cliente']) { this.limitesPorCliente(); }
   }
 
   ngOnDestroy() {
@@ -279,6 +286,15 @@ export class HoneycombComponent implements OnInit, OnDestroy {
   ANCHO_MAX = 120;
   ALTO_MIN = 40;
   ALTO_MAX = 280;
+
+  // Leroy (clientes 1 y 5): mínimo 30 cm de ancho y de alto; el resto, 40. Los máximos son los mismos
+  protected limitesPorCliente() {
+    const minimo = this.esLeroy ? 30 : 40;
+    this.ANCHO_MIN = minimo;
+    this.ANCHO_MAX = 120;
+    this.ALTO_MIN = minimo;
+    this.ALTO_MAX = 280;
+  }
 
   anchoInvalido(): boolean {
     const v = Number(this.model.Ancho);

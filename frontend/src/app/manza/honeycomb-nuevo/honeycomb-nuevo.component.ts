@@ -48,6 +48,9 @@ export class HoneycombNuevoComponent extends HoneycombComponent implements OnCha
     if (changes['Cliente'] && !changes['Cliente'].firstChange) { this.loadData(); }
   }
 
+  /* Los límites de medida del motor nuevo los manda el servidor (aplicarOpciones), no los del configurador antiguo */
+  protected limitesPorCliente() { }
+
   loadData() {
     if (!(parseInt(this.Cliente, 10) > 0)) { return; }
     this.acc.hcOpciones(this.Cliente).pipe(takeUntil(this.destroy$)).subscribe(
