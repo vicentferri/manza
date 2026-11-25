@@ -43,20 +43,31 @@
                   <option *ngFor="let v of vistas" [value]="v.id">{{ v.nombre }}</option>
                </select>
             </div>
-            <div class="col-md-3 col-6 form-group">
+            <!-- Color del cajón (sqlCajonZip/13): un color del modelo o un RAL, como la perfilería del Solar Mini -->
+            <div class="col-md-3 col-6 form-group" *ngIf="hayColorCajon">
+               <label>Color del cajón</label>
+               <div class="btn-group btn-group-sm d-flex" role="group">
+                  <button type="button" class="btn w-100" [disabled]="coloresCajon.length === 0"
+                     [class.btn-primary]="modoCajon === 'color'" [class.btn-outline-primary]="modoCajon !== 'color'"
+                     (click)="cambiarModoCajon('color')">Colores</button>
+                  <button type="button" class="btn w-100" [disabled]="lacados.length === 0"
+                     [class.btn-primary]="modoCajon === 'ral'" [class.btn-outline-primary]="modoCajon !== 'ral'"
+                     (click)="cambiarModoCajon('ral')">RAL</button>
+               </div>
+            </div>
+            <div class="col-md-3 col-6 form-group" *ngIf="hayColorCajon && modoCajon === 'color'">
                <label>
-                  Color del cajón
+                  Color
                   <span *ngIf="hexDe(coloresCajon, colorCajon)" class="enx-muestra" [style.background]="hexDe(coloresCajon, colorCajon)"></span>
                </label>
-               <select class="form-control form-control-sm" [(ngModel)]="colorCajon" [ngModelOptions]="{ standalone: true }" [disabled]="coloresCajon.length === 0">
-                  <option value="">{{ modeloCajon && coloresCajon.length === 0 ? 'Sin colores' : 'Seleccionar' }}</option>
+               <select class="form-control form-control-sm" [(ngModel)]="colorCajon" [ngModelOptions]="{ standalone: true }">
+                  <option value="">Seleccionar</option>
                   <option *ngFor="let c of coloresCajon" [value]="c.id">{{ etiquetaColor(c) }}</option>
                </select>
             </div>
-            <div class="col-md-3 col-6 form-group">
-               <label>Lacado <span class="enx-nota">(opcional)</span></label>
-               <app-selector-ral [opciones]="lacados" [vacio]="lacados.length === 0 ? 'Sin lacados' : 'Sin lacado'"
-                  [disabled]="lacados.length === 0" [(valor)]="lacado"></app-selector-ral>
+            <div class="col-md-3 col-6 form-group" *ngIf="hayColorCajon && modoCajon === 'ral'">
+               <label>Color RAL</label>
+               <app-selector-ral [opciones]="lacados" vacio="Seleccionar" [(valor)]="lacado"></app-selector-ral>
             </div>
          </div>
       </div>

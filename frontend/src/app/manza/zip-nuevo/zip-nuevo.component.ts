@@ -15,7 +15,8 @@ import { errorPasoMedidas, PASO_MEDIDA } from '../config/medidas';
  *   tejido (los del maestro marcados para el Cajón ZIP; el criterio lo elige el configurador según el ancho)
  *   motor (siempre): tipo (los del modelo) → modelo → mando (los del modelo de motor) y posición del mando
  *   guía (las del modelo) → su color y su contrapeso → el color del contrapeso
- *   lacado: lista aislada, opcional; va en el pedido en un campo aparte
+ *   color del cajón (sqlCajonZip/13): un color del modelo O un RAL (SOL_ACC_ZIP_LACADO, en todos los modelos), como la
+ *   perfilería del Solar Mini; el RAL va en el campo del lacado (nzip.lacado)
  *   medidas (pasos de 0,5 cm, sin mínimos ni máximos por ahora), estancia y observaciones
  * En cada paso: si la opción anterior tiene opciones marcadas hay que elegir una; si no tiene ninguna, no se pide.
  * Si una lista solo tiene una opción, se elige sola.
@@ -63,6 +64,8 @@ export class ZipNuevoComponent implements OnChanges {
    impresionTexto = '';
    contrapeso = '';
    colorContrapeso = '';
+   /* color del cajón (sqlCajonZip/13): 'color' (lista del modelo) o 'ral' (lista de RAL, en `lacado`); nunca los dos */
+   modoCajon: 'color' | 'ral' = 'color';
    lacado = '';
 
    /* tejido del maestro: tipo -> tejido -> color; el criterio (ancho del rollo), el menor que cubra el ancho */
@@ -172,7 +175,11 @@ export class ZipNuevoComponent implements OnChanges {
       this.modeloCajon = ajusta(this.modelosCajon, this.modeloCajon);
       this.soporte = ajusta(this.soportes, this.soporte);
       this.salida = ajusta(this.salidas, this.salida);
-      this.colorCajon = ajusta(this.coloresCajon, this.colorCajon);
+      /* sin colores en el modelo, RAL; sin RAL, colores */
+      if (this.modoCajon === 'color' && this.modeloSel && this.coloresCajon.length === 0 && this.lacados.length > 0) { this.modoCajon = 'ral'; }
+      if (this.modoCajon === 'ral' && this.lacados.length === 0) { this.modoCajon = 'color'; }
+      this.colorCajon = this.modoCajon === 'color' ? ajusta(this.coloresCajon, this.colorCajon) : '';
+      if (this.modoCajon === 'color') { this.lacado = ''; }
       this.tipoMotor = ajusta(this.tiposMotor, this.tipoMotor);
       this.modeloMotor = ajusta(this.modelosMotor, this.modeloMotor);
       this.mando = ajusta(this.mandos, this.mando);
@@ -182,6 +189,16 @@ export class ZipNuevoComponent implements OnChanges {
       this.colorContrapeso = ajusta(this.coloresContrapeso, this.colorContrapeso);
       if (this.lacado && !this.porId(this.lacados, this.lacado)) { this.lacado = ''; }
       this.autoElegirTejido();
+   }
+
+   get hayColorCajon(): boolean { return !!this.modeloSel && (this.coloresCajon.length > 0 || this.lacados.length > 0); }
+
+   /* Colores | RAL: al cambiar, se vacía lo del otro modo */
+   cambiarModoCajon(modo: 'color' | 'ral'): void {
+      this.modoCajon = modo;
+      this.colorCajon = '';
+      this.lacado = '';
+      this.ajustar();
    }
 
    /* Color con su muestra: para pintar el cuadradito del hex junto al select */
@@ -269,7 +286,8 @@ export class ZipNuevoComponent implements OnChanges {
       if (!this.modeloCajon) { return 'Seleccione el modelo de cajón'; }
       if (this.soportes.length > 0 && !this.soporte) { return 'Seleccione el soporte'; }
       if (this.salidas.length > 0 && !this.salida) { return 'Seleccione la posición de salida'; }
-      if (this.coloresCajon.length > 0 && !this.colorCajon) { return 'Seleccione el color del cajón'; }
+      if (this.modoCajon === 'color' && this.coloresCajon.length > 0 && !this.colorCajon) { return 'Seleccione el color del cajón'; }
+      if (this.modoCajon === 'ral' && !this.lacado) { return 'Seleccione el color RAL del cajón'; }
       if (!this.vista) { return 'Seleccione la vista del cajón'; }
       if (!this.tipoTejido || !this.nombreTejido || !this.colorTejido) { return 'Seleccione el tejido y su color'; }
       if (this.impresion && !this.impresionTexto.trim()) { return 'Indique el texto de la impresión digital'; }
@@ -354,6 +372,7 @@ export class ZipNuevoComponent implements OnChanges {
       const id = (v: string) => (v ? parseInt(v, 10) : null);
       const nombre = (lista: any[], v: string) => { const x = this.porId(lista, v); return x ? x.nombre : ''; };
       const color = (lista: any[], v: string) => { const x = this.porId(lista, v); return x ? { nombre: x.nombre, ral: x.ral || '', hex: x.hex || '' } : null; };
+      const ral = this.modoCajon === 'ral' ? this.porId(this.lacados, this.lacado) : null;
 
       const t = new CortinaTipo(this.codeCentro);
       t.TipoCortina = 6;
@@ -372,7 +391,7 @@ export class ZipNuevoComponent implements OnChanges {
          modelo: nombre(this.modelosCajon, this.modeloCajon),
          soporte: nombre(this.soportes, this.soporte),
          salida: nombre(this.salidas, this.salida),
-         colorCajon: color(this.coloresCajon, this.colorCajon),
+         colorCajon: ral ? { nombre: 'RAL ' + ral.nombre, ral: '', hex: ral.hex || '' } : color(this.coloresCajon, this.colorCajon),
          vista: nombre(this.vistas, this.vista),
          tipoMotor: nombre(this.tiposMotor, this.tipoMotor),
          motor: nombre(this.modelosMotor, this.modeloMotor),
@@ -382,7 +401,7 @@ export class ZipNuevoComponent implements OnChanges {
          colorGuia: color(this.coloresGuia, this.colorGuia),
          contrapeso: nombre(this.contrapesos, this.contrapeso),
          colorContrapeso: color(this.coloresContrapeso, this.colorContrapeso),
-         lacado: nombre(this.lacados, this.lacado),
+         lacado: '',
          criterio: fila ? fila.criterio : null
       };
 
@@ -391,7 +410,7 @@ export class ZipNuevoComponent implements OnChanges {
          modelo_cajon: id(this.modeloCajon),
          soporte: id(this.soporte),
          posicion_salida: id(this.salida),
-         color_cajon: id(this.colorCajon),
+         color_cajon: this.modoCajon === 'color' ? id(this.colorCajon) : null,
          vista: this.vista,
          tejido: fila ? fila.id : null,
          tipo_motor: id(this.tipoMotor),
@@ -402,7 +421,7 @@ export class ZipNuevoComponent implements OnChanges {
          color_guia: id(this.colorGuia),
          contrapeso: id(this.contrapeso),
          color_contrapeso: id(this.colorContrapeso),
-         lacado: id(this.lacado)
+         lacado: this.modoCajon === 'ral' ? id(this.lacado) : null
       };
       (t as any).tipo_tarifa = this.tipoTarifa;
       return t;
@@ -419,6 +438,11 @@ export class ZipNuevoComponent implements OnChanges {
       this.soporte = txt(n.soporte);
       this.salida = txt(n.posicion_salida);
       this.colorCajon = txt(n.color_cajon);
+      /* con RAL y sin color, modo RAL; las líneas antiguas con los dos se abren con el color (y se avisa) */
+      this.modoCajon = n.lacado && !n.color_cajon ? 'ral' : 'color';
+      if (n.lacado && n.color_cajon) {
+         this.toaster.warning('Esta línea tenía color del cajón y RAL a la vez: se conserva el color; si quiere el RAL, elíjalo', 'Configurador');
+      }
       this.vista = txt(n.vista);
       this.tipoMotor = txt(n.tipo_motor);
       this.modeloMotor = txt(n.modelo_motor);

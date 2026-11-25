@@ -450,16 +450,16 @@
                     </div>
                 </ng-container>
 
-                <!-- CAJÓN ZIP · LACADOS (lista aislada: siempre disponible, va en el pedido en un campo aparte) -->
+                <!-- CAJÓN ZIP · COLORES RAL DEL CAJÓN (sqlCajonZip/13: el color del cajón es un color del modelo o uno de estos RAL) -->
                 <ng-container *ngIf="seccion === 'zip_lacados'">
                     <div class="acc-intro">
-                        Lacados que puede elegir el cliente en el Cajón ZIP. Es una lista independiente: no depende del modelo ni de ninguna otra opción
-                        y se guarda en el pedido en un campo aparte del color.
+                        Colores RAL del cajón. En el configurador, el color del cajón es un color del modelo o uno de estos RAL (nunca los dos).
+                        La lista es la misma para todos los modelos de cajón.
                     </div>
                     <div class="row">
                         <div class="col-xl-6 col-lg-8">
-                            <app-acc-tabla catalogo="zip_lacados" titulo="Lacados" singular="lacado" [importarRal]="true" [extras]="extrasRal"
-                                ayuda="Colores RAL del lacado. Con Cargar Excel se dan de alta los que falten y se les pone el color."></app-acc-tabla>
+                            <app-acc-tabla catalogo="zip_lacados" titulo="Colores RAL del cajón" singular="color RAL" [importarRal]="true" [extras]="extrasRal"
+                                ayuda="Colores RAL del cajón. Con Cargar Excel se dan de alta los que falten y se les pone el color."></app-acc-tabla>
                         </div>
                     </div>
                 </ng-container>

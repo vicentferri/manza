@@ -1047,7 +1047,7 @@ function budget_herunterladen_T6(req,res)
  		       "tm.nombre as zip_tipo_motor, mm.nombre as zip_motor, ma.nombre as zip_mando, gu.nombre as zip_guia, " +
  		       "cg.nombre as zip_color_guia, cg.ral as zip_color_guia_ral, cg.hex as zip_color_guia_hex, " +
  		       "co.nombre as zip_contrapeso, ck.nombre as zip_color_contrapeso, ck.ral as zip_color_contrapeso_ral, ck.hex as zip_color_contrapeso_hex, " +
- 		       "la.nombre as zip_lacado, tj.criterio as zip_criterio " +
+ 		       "la.nombre as zip_lacado, la.hex as zip_lacado_hex, tj.criterio as zip_criterio " +
  		       "from SOL_PRESUPUESTOS_COLA_TIPO_6 t " +
  		       "left join SOL_ACC_ZIP_MODELO_CAJON mc on mc.id = t.nzip_modelo_cajon_id " +
  		       "left join SOL_ACC_ZIP_SOPORTE so on so.id = t.nzip_soporte_id " +
