@@ -571,7 +571,9 @@ const ERRORES_ZIP = {
   '-43': 'Vista del cajón no válida (exterior o interior)',
   '-44': 'Posición del mando no válida',
   '-45': 'Faltan las medidas o la cantidad',
-  '-46': 'La impresión digital necesita un tejido que la admita'
+  '-46': 'La impresión digital necesita un tejido que la admita',
+  /* sqlCajonZip/13: el color del cajón es un color de la lista o un RAL, nunca los dos */
+  '-47': 'El color del cajón es un color de la lista o un RAL, no los dos'
 };
 
 /* Interruptor del Cajón ZIP (sqlCajonZip/02), independiente de los del enrollable y del Solar Mini */

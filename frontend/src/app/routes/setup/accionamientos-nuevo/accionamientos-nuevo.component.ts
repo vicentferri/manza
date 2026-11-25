@@ -89,7 +89,7 @@ export class AccionamientosNuevoComponent implements OnInit, OnDestroy {
         { id: 'zip_motor', paso: '3', label: 'Motor', ayuda: 'Tipos, modelos y mandos', icono: '' },
         { id: 'zip_guias', paso: '4', label: 'Guía', ayuda: 'Contrapesos y colores de cada guía', icono: '' },
         { id: 'zip_contrapesos', paso: '5', label: 'Contrapeso', ayuda: 'Colores de cada contrapeso', icono: '' },
-        { id: 'zip_lacados', paso: '', label: 'Lacados', ayuda: 'Siempre disponibles, aparte del color', icono: 'fa-paint-brush' },
+        { id: 'zip_lacados', paso: '', label: 'Colores RAL', ayuda: 'Del cajón, en todos los modelos', icono: 'fa-paint-brush' },
         { id: 'impresion', paso: '', label: 'Impresión digital', ayuda: 'Importe fijo por cortina y tejidos aptos', icono: 'fa-picture-o' },
         { id: 'zip_listas', paso: '', label: 'Listas de opciones', ayuda: 'Soportes, salidas, colores, mandos', icono: 'fa-list' },
         { id: 'zip_suplementos', paso: '', label: 'Suplementos', ayuda: 'Todos los precios que suman', icono: 'fa-eur' }
@@ -251,7 +251,7 @@ export class AccionamientosNuevoComponent implements OnInit, OnDestroy {
         accionamientos: 'Accionamientos', tipos_cadena: 'Tipos de cadena',
         alturas: 'Alturas', tipos_motor: 'Tipos de motor', modelos_motor: 'Motores',
         zip_modelos_cajon: 'Modelos de cajón', zip_tipos_motor: 'Tipos de motor', zip_modelos_motor: 'Motores',
-        zip_guias: 'Guías', zip_contrapesos: 'Contrapesos', zip_lacados: 'Lacados',
+        zip_guias: 'Guías', zip_contrapesos: 'Contrapesos', zip_lacados: 'Colores RAL del cajón',
         ver_tipos: 'Tipos de vertical', ver_modalidades: 'Modalidades', pj_modalidades: 'Tipos de pedido'
     }, ...this.listas.concat(<any[]>this.perfileria, <any[]>this.accionamientoMini, <any[]>this.listasZip, <any[]>this.listasVer,
         <any[]>this.listasPj)

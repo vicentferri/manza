@@ -1321,14 +1321,17 @@ export class ConfigComponent implements OnInit {
     tipo.precios.T6_PVP_C1 = '';
     (tipo as any).zip = {
       modelo: item.zip_modelo || '', soporte: item.zip_soporte || '', salida: item.zip_salida || '',
-      colorCajon: color(item.zip_color_cajon, item.zip_color_cajon_ral, item.zip_color_cajon_hex),
+      /* sqlCajonZip/13: el color del cajón es un color de la lista o un RAL (las líneas antiguas con los dos, como estaban) */
+      colorCajon: item.zip_color_cajon || !item.zip_lacado
+        ? color(item.zip_color_cajon, item.zip_color_cajon_ral, item.zip_color_cajon_hex)
+        : color('RAL ' + item.zip_lacado, '', item.zip_lacado_hex),
       vista: item.cajon_vista === 'INTERIOR' ? 'Visto desde el interior' : item.cajon_vista === 'EXTERIOR' ? 'Visto desde el exterior' : '',
       tipoMotor: item.zip_tipo_motor || '', motor: item.zip_motor || '', mando: item.zip_mando || '',
       posicion: item.acc_posicion_text || '', guia: item.zip_guia || '',
       colorGuia: color(item.zip_color_guia, item.zip_color_guia_ral, item.zip_color_guia_hex),
       contrapeso: item.zip_contrapeso || '',
       colorContrapeso: color(item.zip_color_contrapeso, item.zip_color_contrapeso_ral, item.zip_color_contrapeso_hex),
-      lacado: item.zip_lacado || '', criterio: item.zip_criterio || null
+      lacado: item.zip_color_cajon ? item.zip_lacado || '' : '', criterio: item.zip_criterio || null
     };
     (tipo as any).nzip = {
       modelo_cajon: item.nzip_modelo_cajon_id, soporte: item.nzip_soporte_id, posicion_salida: item.nzip_posicion_salida_id,
