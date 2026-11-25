@@ -185,6 +185,7 @@
           <th>#</th>
           <th>Producto</th>
           <th>Sistema / modelo</th>
+          <th title="Código de Solupyme del tejido + color enviados (maestro de tejidos)">Tejido Solupyme</th>
           <th class="num">Ancho</th>
           <th class="num">Alto</th>
           <th class="num">Cant.</th>
@@ -198,7 +199,7 @@
       </thead>
       <tbody>
         <tr *ngIf="s.lineas.length === 0">
-          <td colspan="13" class="text-muted">El pedido no trae líneas que se puedan leer: mira el JSON recibido.</td>
+          <td colspan="14" class="text-muted">El pedido no trae líneas que se puedan leer: mira el JSON recibido.</td>
         </tr>
         <ng-container *ngFor="let l of s.lineas">
           <tr [class.b2b-linea-aviso]="l.n_avisos > 0" [class.b2b-linea-error]="erroresDeLinea(l).length > 0" [class.b2b-linea-hecha]="l.estado === 1">
@@ -207,6 +208,7 @@
             <td>{{ l.linea }}</td>
             <td>{{ l.producto || (l.tipo_cortina ? 'TipoCortina ' + l.tipo_cortina : '—') }}</td>
             <td>{{ l.sistema }}</td>
+            <td>{{ l.tejido_cod_solupyme || '—' }}</td>
             <td class="num">{{ l.ancho | number:'1.0-2' }}<span *ngIf="l.ancho2"> / {{ l.ancho2 | number:'1.0-2' }}</span></td>
             <td class="num">{{ l.alto | number:'1.0-2' }}</td>
             <td class="num">{{ l.cantidad }}</td>
@@ -222,7 +224,7 @@
           </tr>
           <tr *ngIf="abiertas[l.idrow]" class="b2b-desglose">
             <td></td>
-            <td colspan="12">
+            <td colspan="13">
               <ul class="b2b-avisos" *ngIf="l.avisos.length">
                 <li *ngFor="let a of l.avisos">{{ a }}</li>
               </ul>
