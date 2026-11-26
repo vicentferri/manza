@@ -1,6 +1,9 @@
 'use strict'
 
 const sql = require('mssql');
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const Paneles = require('./cortinadecor_paneles');
 
 /*
@@ -32,6 +35,12 @@ const Paneles = require('./cortinadecor_paneles');
  *   - Productos valorados por ahora: 1 enrollable y 3 vertical.
  *   - Paneles japoneses: módulo aparte, cortinadecor_paneles.js (mecanismo + tejido por panel).
  *   - Piezas sueltas (sin medidas): reglas de incremento del producto 9 (revisarPieza).
+ *
+ * Huellas (19_huellas_revision.sql, SOL_CD_REVISION_PEDIDO): al revisar un pedido se guarda la huella (SHA-256) de sus
+ * líneas y atributos y la de la referencia (tarifa, reglas, incrementos y el código de estos ficheros). La rejilla de
+ * prebestell2 (prepararRejilla) solo revisa los pedidos cuya huella ya no coincide o que no la tienen; el resto se
+ * muestra con lo guardado en SOL_CD_REVISION. Las demás revisiones (un pedido, aplicar precio, lote) revisan siempre
+ * y dejan la huella al día. Sin la tabla se revisa todo, como antes.
  */
 
 const PRODUCTOS_VALORADOS = [1, 3];
@@ -44,6 +53,17 @@ const TOLERANCIA = 0.02;      // € por unidad: diferencias de redondeo
 const ATRIBUTO_COLOR = 'COLOR DE LA LINEA';   // condición de incremento sobre el color que envían (p. ej. COMBINADAS)
 const ATRIBUTO_REFERENCIA = 'REFERENCIA DE LA LINEA';   // ... y sobre la referencia (p. ej. FOTOGR = impresión digital)
 const EPSILON = 1e-9;
+const MAX_IDS_LISTA = 2000;   // más pedidos pendientes que esto: se leen las líneas del rango y se filtran aquí
+
+/* Huella del código de la revisión: si cambia este fichero o el de paneles (despliegue), todas las revisiones dejan de
+   valer y la siguiente carga de la rejilla las rehace */
+const HUELLA_CODIGO = (() => {
+  const h = crypto.createHash('sha256');
+  [__filename, path.join(__dirname, 'cortinadecor_paneles.js')].forEach(f => {
+    try { h.update(fs.readFileSync(f)); } catch (e) { h.update(f); }
+  });
+  return h.digest('hex');
+})();
 
 /* ---------- Utilidades ---------- */
 
@@ -143,7 +163,21 @@ async function cargarReferencia(pool) {
   });
   porId.forEach(t => { t.anchos.sort((a, b) => a - b); t.altos.sort((a, b) => a - b); });
 
+  ref.huella = huellaReferencia(r.recordsets);
   return ref;
+}
+
+/* SHA-256 de todo lo leído de la referencia y del código. Las filas se ordenan solo para la huella (las consultas no
+   llevan ORDER BY y el orden no debe cambiarla) */
+function huellaReferencia(recordsets) {
+  const h = crypto.createHash('sha256');
+  h.update(HUELLA_CODIGO);
+  recordsets.forEach((filas, i) => {
+    const texto = filas.map(f => JSON.stringify(f)).sort();
+    h.update('#' + i + ':' + texto.length + '\n');
+    texto.forEach(t => h.update(t + '\n'));
+  });
+  return h.digest();
 }
 
 const vigente = (x, fecha) => (!fecha || !x.desde || x.desde <= fecha) && (!fecha || !x.hasta || x.hasta >= fecha);
@@ -426,6 +460,58 @@ async function hayCostCd(pool) {
   return columnaCostCd;
 }
 
+/* Condición sobre SOL_CORTINADECOR_HEADER h: { idrow } | { idrows: [...] } | { desde, hasta } (AAAA-MM-DD) */
+function filtroPedidos(request, filtro) {
+  if (filtro.idrows) {
+    const ids = filtro.idrows.map(n => parseInt(n, 10)).filter(n => n > 0);   // enteros: se pueden poner en el texto
+    return ids.length ? 'h.idrow in (' + ids.join(',') + ')' : '1 = 0';
+  }
+  if (filtro.idrow) {
+    request.input('idrow', sql.Int, filtro.idrow);
+    return 'h.idrow = @idrow';
+  }
+  request.input('desde', sql.Date, filtro.desde);
+  request.input('hasta', sql.Date, filtro.hasta);
+  return 'try_convert(date, h.date) between @desde and @hasta';
+}
+
+let tablaHuellas = false;
+async function hayHuellas(pool) {
+  if (!tablaHuellas) {
+    const r = await pool.request().query("select case when object_id('dbo.SOL_CD_REVISION_PEDIDO', 'U') is null then 0 else 1 end as existe");
+    tablaHuellas = !!r.recordset[0].existe;
+  }
+  return tablaHuellas;
+}
+
+/*
+ * Huella (SHA-256) de cada pedido del filtro: fecha, líneas y atributos, es decir, todo lo que lee cargarLineas.
+ * soloPendientes: devuelve solo los pedidos sin huella guardada, con la huella cambiada o revisados con otra
+ * referencia (huellaRef). Devuelve Map idrow -> huella (Buffer).
+ */
+async function huellasPedidos(pool, filtro, huellaRef, soloPendientes) {
+  const costeCd = (await hayCostCd(pool)) ? ', l.cost_cd' : '';
+  const request = pool.request();
+  const where = filtroPedidos(request, filtro);
+  request.input('huella_ref', sql.VarBinary(32), huellaRef);
+  const r = await request.query(`
+    select x.idrow, x.huella
+      from (select h.idrow,
+                   hashbytes('SHA2_256', concat(convert(nvarchar(50), h.date), N'|', (
+                     select l.id, l.name, l.color, l.amount, l.cost${costeCd}, l._producto, l._tejido, t.descripcion as tejido,
+                            (select a.atributte, a.value, a.value2
+                               from SOL_CORTINADECOR_LINES_ATTRIBUTES a
+                              where a.id = l.id order by a.idattr for json path) as atributos
+                       from SOL_CORTINADECOR_LINES l
+                       left join SOL_ARTICULOS_TEJIDOS t on t.idrow = l._tejido
+                      where l.idrow = h.idrow order by l.id for json path))) as huella
+              from SOL_CORTINADECOR_HEADER h
+             where ${where}) x
+    ${soloPendientes ? `left join SOL_CD_REVISION_PEDIDO rp on rp.idrow = x.idrow
+     where rp.idrow is null or rp.huella <> x.huella or rp.huella_ref <> @huella_ref` : ''}`);
+  return new Map(r.recordset.map(f => [f.idrow, f.huella]));
+}
+
 async function cargarLineas(pool, filtro) {
   /* cost = precio de CortinaDecor: si se ha aplicado nuestro precio, el original está en cost_cd y cost es el nuestro.
      cost_actual = el valor que hay ahora en cost (el que irá al XML) */
@@ -433,15 +519,7 @@ async function cargarLineas(pool, filtro) {
     ? 'isnull(l.cost_cd, l.cost) as cost, l.cost_cd, l.cost as cost_actual'
     : 'l.cost, cast(null as decimal(12, 2)) as cost_cd, l.cost as cost_actual';
   const request = pool.request();
-  let where;
-  if (filtro.idrow) {
-    request.input('idrow', sql.Int, filtro.idrow);
-    where = 'h.idrow = @idrow';
-  } else {
-    request.input('desde', sql.Date, filtro.desde);
-    request.input('hasta', sql.Date, filtro.hasta);
-    where = 'try_convert(date, h.date) between @desde and @hasta';
-  }
+  const where = filtroPedidos(request, filtro);
   const r = await request.query(`
     select l.id, l.idrow, l.name, l.color, l.amount, ${costes}, l._producto, l._tejido, t.descripcion as tejido,
            try_convert(date, h.date) as fecha
@@ -464,8 +542,10 @@ async function cargarLineas(pool, filtro) {
   return lineas.map(l => Object.assign(l, { fecha: fechaISO(l.fecha), atributos: porLinea.get(l.id) || [] }));
 }
 
-async function grabar(pool, resultados) {
-  if (!resultados.length) return;
+/* huellas (opcional): { porPedido: Map idrow -> huella, ref: huella de la referencia }. Con huellas también se graban
+   los pedidos revisados sin líneas (si no, se volverían a revisar en cada carga) */
+async function grabar(pool, resultados, huellas) {
+  if (!resultados.length && !(huellas && huellas.porPedido.size)) return;
   const tabla = new sql.Table('SOL_CD_REVISION');
   tabla.create = false;
   tabla.columns.add('id', sql.Int, { nullable: false });
@@ -486,16 +566,36 @@ async function grabar(pool, resultados) {
   resultados.forEach(x => tabla.rows.add(x.id, x.idrow, x.estado, x.idtarifa, x.ancho_tarifa, x.alto_tarifa, x.precio_tarifa,
     x.suplementos, x.cantidad, x.esperado, x.precio_cd, x.diferencia, JSON.stringify(x.detalle), ahora));
 
+  let tablaH = null;
+  if (huellas && huellas.porPedido.size) {
+    tablaH = new sql.Table('SOL_CD_REVISION_PEDIDO');
+    tablaH.create = false;
+    tablaH.columns.add('idrow', sql.Int, { nullable: false });
+    tablaH.columns.add('huella', sql.VarBinary(32), { nullable: false });
+    tablaH.columns.add('huella_ref', sql.VarBinary(32), { nullable: false });
+    tablaH.columns.add('fecha_revision', sql.DateTime, { nullable: false });
+    huellas.porPedido.forEach((huella, idrow) => tablaH.rows.add(idrow, huella, huellas.ref, ahora));
+  }
+
+  /* Se revisan siempre pedidos completos: se sustituye la revisión anterior de esos pedidos
+     (también la de líneas que ya no existan). Los idrow son enteros de la BD. */
+  const conHuella = huellas ? [...huellas.porPedido.keys()] : [];
+  const pedidos = [...new Set(resultados.map(x => x.idrow).concat(conHuella).map(n => parseInt(n, 10)).filter(n => n > 0))];
+  const huellasIds = conHuella.map(n => parseInt(n, 10)).filter(n => n > 0);
+
   const tx = new sql.Transaction(pool);
   await tx.begin();
   try {
-    /* Se revisan siempre pedidos completos: se sustituye la revisión anterior de esos pedidos
-       (también la de líneas que ya no existan). Los idrow son enteros de la BD. */
-    const pedidos = [...new Set(resultados.map(x => parseInt(x.idrow, 10)).filter(n => n > 0))];
     for (let i = 0; i < pedidos.length; i += 1000) {
       await new sql.Request(tx).query('delete from SOL_CD_REVISION where idrow in (' + pedidos.slice(i, i + 1000).join(',') + ')');
     }
-    await new sql.Request(tx).bulk(tabla);
+    if (resultados.length) await new sql.Request(tx).bulk(tabla);
+    if (tablaH) {
+      for (let i = 0; i < huellasIds.length; i += 1000) {
+        await new sql.Request(tx).query('delete from SOL_CD_REVISION_PEDIDO where idrow in (' + huellasIds.slice(i, i + 1000).join(',') + ')');
+      }
+      await new sql.Request(tx).bulk(tablaH);
+    }
     await tx.commit();
   } catch (e) {
     try { await tx.rollback(); } catch (e2) { /* ya deshecha */ }
@@ -503,10 +603,33 @@ async function grabar(pool, resultados) {
   }
 }
 
-/* Revisa las líneas del filtro, guarda el resultado y lo devuelve */
+/*
+ * Revisa las líneas del filtro, guarda el resultado y lo devuelve.
+ * opciones.sinGrabar     : no escribe nada (pruebas).
+ * opciones.soloPendientes: solo los pedidos del filtro cuya huella no coincide (rejilla); devuelve solo esos.
+ *                          Sin la tabla de huellas, o si falla su cálculo, revisa todo el filtro como antes.
+ */
 async function revisar(pool, filtro, opciones) {
+  const o = opciones || {};
   const ref = await cargarReferencia(pool);
-  const lineas = await cargarLineas(pool, filtro);
+  let huellas = null;
+  if (!o.sinGrabar && await hayHuellas(pool)) {
+    try {
+      huellas = await huellasPedidos(pool, filtro, ref.huella, !!o.soloPendientes);
+    } catch (e) {
+      console.log('cd_revision huellas: ' + e.message);
+      huellas = null;
+    }
+  }
+  let lineas;
+  if (huellas && o.soloPendientes) {
+    if (!huellas.size) return [];
+    lineas = huellas.size <= MAX_IDS_LISTA
+      ? await cargarLineas(pool, { idrows: [...huellas.keys()] })
+      : (await cargarLineas(pool, filtro)).filter(l => huellas.has(l.idrow));
+  } else {
+    lineas = await cargarLineas(pool, filtro);
+  }
   const resultados = lineas.map(l => {
     const r = revisarLinea(l, ref);
     /* Nuestro precio ya aplicado a la línea (va al XML); null si la línea conserva el de CortinaDecor */
@@ -515,7 +638,7 @@ async function revisar(pool, filtro, opciones) {
     r.producto = l._producto == null ? null : l._producto;   // _producto asignado por el diccionario (diagnóstico de en_xml)
     return r;
   });
-  if (!(opciones && opciones.sinGrabar)) await grabar(pool, resultados);
+  if (!o.sinGrabar) await grabar(pool, resultados, huellas ? { porPedido: huellas, ref: ref.huella } : null);
   return resultados;
 }
 
@@ -562,7 +685,7 @@ async function prepararRejilla(desde, hasta) {
   const d = fechaRejilla(desde), h = fechaRejilla(hasta);
   if (d && h && d <= h && (new Date(h) - new Date(d)) / 86400000 <= MAX_DIAS_REJILLA) {
     try {
-      await revisar(pool, { desde: d, hasta: h });
+      await revisar(pool, { desde: d, hasta: h }, { soloPendientes: true });   // solo lo que ha cambiado (huellas)
     } catch (e) {
       console.log('cd_revision rejilla: ' + e.message);
     }
