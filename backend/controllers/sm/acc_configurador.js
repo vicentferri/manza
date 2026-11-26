@@ -288,6 +288,24 @@ async function opciones(req, res) {
         t.sistemas_impresion = t.impresion_digital ? t.sistemas.filter(si => conImpresion.has(t.id + '|' + si)) : [];
         t.impresion_digital = t.sistemas_impresion.length > 0 ? 1 : 0;
       });
+      /* sqlLeroy/10: de cada tejido, su color antiguo (la foto y el ancho máximo informativo de su pantalla de siempre) y de
+         cada contrapeso, su id antiguo (la foto) */
+      const antiguos = await q(`
+        select e.tejido_maestro, e.tejido_antiguo, e.color_antiguo, a.anchomax
+        from dbo.CFG_TEJIDO_EQUIVALENCIA e
+        left join dbo.SOL_ARTICULOS_TEJIDOS_ATRIBUTOS a on a.cliente = e.cliente and a.tejido = e.tejido_antiguo and a.color = e.color_antiguo
+        where e.cliente = ${cliente} and e.producto = 1 and e.tejido_maestro is not null and e.origen <> 'EXCLUIDO'
+        order by e.tejido_maestro, e.color_antiguo`).catch(() => []);
+      const porMaestro = {};
+      antiguos.forEach(a => {
+        if (!porMaestro[a.tejido_maestro]) {
+          porMaestro[a.tejido_maestro] = { tejido: a.tejido_antiguo, color: a.color_antiguo, ancho_max: a.anchomax > 0 ? Number(a.anchomax) : null };
+        }
+      });
+      tejidos.forEach(t => { t.antiguo = porMaestro[t.id] || null; });
+      const fotos = await q(`select clave_antigua, id_nuevo from dbo.CFG_ACC_EQUIVALENCIA
+        where cliente = ${cliente} and producto = 1 and ambito = 'CONTRAPESO' and id_nuevo is not null`).catch(() => []);
+      contrapesos.forEach(c => { const f = fotos.find(x => x.id_nuevo === c.id); c.imagen = f ? Number(f.clave_antigua) : null; });
     }
 
     /* Solo se enlazan ids de opciones activas: una opción oculta desaparece de todas las listas */
@@ -522,6 +540,17 @@ function desgloseXml(desglose) {
   ).join('') + '</d>';
 }
 
+/* sqlLeroy/16: en la línea guardada el Smart Home es un SÍ/NO (columna smart_home); al recargar un presupuesto en la cesta
+   llega `true` en vez del id de la opción. Si no hay opción activa se deja -1, que el precio y el alta rechazan (mejor que
+   perder el Smart Home en silencio) */
+async function resolverSmartHome(pool, l) {
+  const n = l && l.nacc;
+  if (!n || n.smart_home !== true) return;
+  const r = await pool.request().query('select top 1 id from dbo.SOL_ACC_SMART_HOME where activo = 1 order by orden, id')
+    .catch(() => ({ recordset: [] }));
+  n.smart_home = r.recordset[0] ? r.recordset[0].id : -1;
+}
+
 /* POST /acc_cfg/precio/:cliente   body: una línea (la misma forma que en el alta). No graba nada */
 async function precio(req, res) {
   const cliente = entero(req.params.cliente);
@@ -535,6 +564,7 @@ async function precio(req, res) {
     if (!await clienteActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo' });
     }
+    await resolverSmartHome(pool, l);
     /* Fase 2: lo que el perfil del cliente no ve, o medidas fuera de los límites del tejido */
     const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('ENR', l);
     if (errorPerfil) return res.status(400).send({ message: errorPerfil });
@@ -1756,6 +1786,7 @@ async function alta(doc, req, res) {
 
     /* Fase 2: cada línea contra el perfil del cliente (lo que no ve y los límites de medida de cada tejido).
        La HoneyComb solo con su motor nuevo: con el de siempre el cliente la ve entera, como hoy */
+    for (const l of lineas.filter(esEnrollableNuevo)) await resolverSmartHome(pool, l);
     const s = await surtido.surtidoDeCliente(pool, cliente);
     const hcNuevo = lineas.some(esHoneyComb) && await hcActivo(pool, cliente);
     for (let i = 0; i < lineas.length; i++) {

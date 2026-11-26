@@ -52,6 +52,8 @@ export class AccSuplementosComponent {
                     medida: l.medida || '',
                     hasta: l.hasta === null ? '' : this.numero(l.hasta),
                     importe: this.numero(l.importe),
+                    /* sqlLeroy/14: C1 de la línea (solo clientes con coeficiente_c1); vacío = importe / coeficiente */
+                    c1: l.c1 === null || l.c1 === undefined ? '' : this.numero(l.c1),
                     activo: !!l.activo
                 }));
                 this.modal.show();
@@ -65,7 +67,7 @@ export class AccSuplementosComponent {
         const ultima = this.lineas[this.lineas.length - 1];
         this.lineas.push({
             cliente: ultima ? ultima.cliente : '', sistema_id: ultima ? ultima.sistema_id : '',
-            medida: ultima ? ultima.medida : '', hasta: '', importe: '', activo: true
+            medida: ultima ? ultima.medida : '', hasta: '', importe: '', c1: '', activo: true
         });
     }
 
@@ -80,7 +82,7 @@ export class AccSuplementosComponent {
     guardar() {
         const lineas = this.lineas.map(l => ({
             cliente: l.cliente || null, sistema_id: l.sistema_id || null, medida: l.medida || null,
-            hasta: l.medida ? l.hasta : null, importe: l.importe, activo: l.activo
+            hasta: l.medida ? l.hasta : null, importe: l.importe, c1: l.c1, activo: l.activo
         }));
         this.guardando = true;
         this.service.HTTP_Post('/sm/acc/sup/' + this.catalogo + '/' + this.id, JSON.stringify({ lineas })).subscribe(

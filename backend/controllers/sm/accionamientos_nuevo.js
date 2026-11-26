@@ -180,6 +180,14 @@ function codigoDesde(value) {
     .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').substring(0, 40);
 }
 
+/* ¿Falta en la BD alguna de las tablas? Las listas de un script que aún no se ha aplicado (p. ej. Smart Home, sqlLeroy/09)
+   salen vacías en vez de dar error: el backend puede desplegarse antes que el SQL */
+async function faltaTabla(pool, ...tablas) {
+  const r = await pool.request().query("select name from sys.objects where type in ('U', 'V')");
+  const existentes = new Set(r.recordset.map(o => o.name.toUpperCase()));
+  return tablas.some(t => !existentes.has(t.toUpperCase()));
+}
+
 function errorSql(err, res) {
   const numero = err && (err.number || (err.originalError && err.originalError.info && err.originalError.info.number));
   if (numero === 2627 || numero === 2601) {
@@ -256,6 +264,7 @@ async function lista(req, res) {
   if (cat.padre && padre === null) return res.status(400).send({ message: 'Falta el registro padre' });
   try {
     const pool = await sql.connect();
+    if (await faltaTabla(pool, cat.tabla)) return res.status(200).send({ Table: [] });
     const refs = await referencias(pool, cat.tabla);
     const dependencias = refs.internas.length
       ? refs.internas.map(r => `(select count(*) from dbo.${r.tabla} d where d.${r.columna} = x.id)`).join(' + ')
@@ -481,6 +490,7 @@ async function relacion(req, res) {
   const destino = CATALOGOS[rel.catDestino];
   try {
     const pool = await sql.connect();
+    if (await faltaTabla(pool, rel.tabla, destino.tabla)) return res.status(200).send({ Table: [] });
     /* Columnas propias del destino (RAL y hex del color del ZIP): la pantalla pinta una muestra del color */
     const extras = (destino.extras || []).map(e => `d.${e.columna}, `).join('');
     const result = await pool.request().input('id', sql.Int, id).query(`
@@ -794,7 +804,11 @@ async function suplementos_guardar(req, res) {
 async function suplementos_resumen(req, res) {
   try {
     const pool = await sql.connect();
-    const nombres = Object.keys(CATALOGOS).map(clave => {
+    /* Solo las listas cuya tabla ya existe: si el backend se despliega antes que un script que crea una lista (p. ej.
+       SOL_ACC_SMART_HOME, sqlLeroy/09), el resumen sigue saliendo con las demás */
+    const existentes = new Set((await pool.request().query("select name from sys.objects where type in ('U', 'V')"))
+      .recordset.map(o => o.name.toUpperCase()));
+    const nombres = Object.keys(CATALOGOS).filter(clave => existentes.has(CATALOGOS[clave].tabla.toUpperCase())).map(clave => {
       const cat = CATALOGOS[clave];
       /* grupo: el tipo de vertical de las listas del Vertical (para filtrar el resumen por tipo) */
       return `select '${clave}' as clave, '${cat.tabla}' as tabla, x.id, ${nombreElemento(cat, 'x')} as nombre,
