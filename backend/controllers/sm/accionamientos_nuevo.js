@@ -36,6 +36,8 @@ const CATALOGOS = {
   mandos:              { tabla: 'SOL_ACC_MANDO' },
   cargadores:          { tabla: 'SOL_ACC_CARGADOR' },
   baterias:            { tabla: 'SOL_ACC_BATERIA' },
+  /* sqlLeroy/09: Smart Home (SÍ/NO del enrollable con motor), con los tipos de motor que lo admiten */
+  smart_home:          { tabla: 'SOL_ACC_SMART_HOME' },
   tipos_cadena:        { tabla: 'SOL_ACC_TIPO_CADENA', padre: 'accionamiento_id', tablaPadre: 'SOL_ACC_ACCIONAMIENTO', codigoPadre: 'CADENA',
                          protegidos: ['ARO_CADENA', 'CADENA_A_MEDIDA'] },
   tipos_motor:         { tabla: 'SOL_ACC_TIPO_MOTOR', padre: 'accionamiento_id', tablaPadre: 'SOL_ACC_ACCIONAMIENTO', codigoPadre: 'MOTOR' },
@@ -109,6 +111,9 @@ const RELACIONES = {
                            catOrigen: 'modelos_motor', catDestino: 'cargadores' },
   modelo_motor_bateria:  { tabla: 'SOL_ACC_MODELO_MOTOR_BATERIA', origen: 'modelo_motor_id', destino: 'bateria_id',
                            catOrigen: 'modelos_motor', catDestino: 'baterias' },
+  /* sqlLeroy/09: tipos de motor que admiten Smart Home */
+  tipo_motor_smart_home: { tabla: 'SOL_ACC_TIPO_MOTOR_SMART_HOME', origen: 'tipo_motor_id', destino: 'smart_home_id',
+                           catOrigen: 'tipos_motor', catDestino: 'smart_home' },
   /* Desde el sistema se marcan sus soportes, sus tapas y sus contrapesos (script 37) */
   sistema_soporte:       { tabla: 'SOL_ACC_SOPORTE_SISTEMA', origen: 'sistema_id', destino: 'soporte_id',
                            catOrigen: 'sistemas', catDestino: 'soportes' },
@@ -173,6 +178,14 @@ function decimal(value) {
 function codigoDesde(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').substring(0, 40);
+}
+
+/* ¿Falta en la BD alguna de las tablas? Las listas de un script que aún no se ha aplicado (p. ej. Smart Home, sqlLeroy/09)
+   salen vacías en vez de dar error: el backend puede desplegarse antes que el SQL */
+async function faltaTabla(pool, ...tablas) {
+  const r = await pool.request().query("select name from sys.objects where type in ('U', 'V')");
+  const existentes = new Set(r.recordset.map(o => o.name.toUpperCase()));
+  return tablas.some(t => !existentes.has(t.toUpperCase()));
 }
 
 function errorSql(err, res) {
@@ -251,6 +264,7 @@ async function lista(req, res) {
   if (cat.padre && padre === null) return res.status(400).send({ message: 'Falta el registro padre' });
   try {
     const pool = await sql.connect();
+    if (await faltaTabla(pool, cat.tabla)) return res.status(200).send({ Table: [] });
     const refs = await referencias(pool, cat.tabla);
     const dependencias = refs.internas.length
       ? refs.internas.map(r => `(select count(*) from dbo.${r.tabla} d where d.${r.columna} = x.id)`).join(' + ')
@@ -476,6 +490,7 @@ async function relacion(req, res) {
   const destino = CATALOGOS[rel.catDestino];
   try {
     const pool = await sql.connect();
+    if (await faltaTabla(pool, rel.tabla, destino.tabla)) return res.status(200).send({ Table: [] });
     /* Columnas propias del destino (RAL y hex del color del ZIP): la pantalla pinta una muestra del color */
     const extras = (destino.extras || []).map(e => `d.${e.columna}, `).join('');
     const result = await pool.request().input('id', sql.Int, id).query(`
@@ -626,9 +641,19 @@ async function elementoExiste(pool, cat, id) {
   return r.recordset[0] || null;
 }
 
-const SELECT_SUPLEMENTO = `
+/* sqlLeroy/14: C1 del suplemento (euros, opcional; vacío = importe / coeficiente_c1 del perfil). Si el backend llega antes que
+   el SQL, la columna aún no existe: se comprueba y, mientras no esté, se trabaja sin ella */
+let suplementoTieneC1 = false;
+async function conC1(pool) {
+  if (suplementoTieneC1) return true;
+  const r = await pool.request().query("select col_length('dbo.SOL_ACC_SUPLEMENTO', 'c1') as n");
+  suplementoTieneC1 = r.recordset[0].n !== null;
+  return suplementoTieneC1;
+}
+
+const selectSuplemento = (c1) => `
   select s.id, s.catalogo, s.elemento_id, s.cliente, c.descripcion as cliente_nombre, s.sistema_id, si.nombre as sistema_nombre,
-         s.medida, s.hasta, s.importe, s.activo
+         s.medida, s.hasta, s.importe, ${c1 ? 's.c1' : 'cast(null as decimal(10, 2)) as c1'}, s.activo
   from dbo.SOL_ACC_SUPLEMENTO s
   left join dbo.SOL_CLIENTES c on c.idrow = s.cliente
   left join dbo.SOL_ACC_SISTEMA si on si.id = s.sistema_id`;
@@ -643,7 +668,7 @@ async function suplementos(req, res) {
     const pool = await sql.connect();
     const elemento = await elementoExiste(pool, cat, id);
     if (!elemento) return res.status(404).send({ message: 'El registro no existe' });
-    const r = await pool.request().input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id).query(`${SELECT_SUPLEMENTO}
+    const r = await pool.request().input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id).query(`${selectSuplemento(await conC1(pool))}
       where s.catalogo = @tabla and s.elemento_id = @id
       order by case when s.cliente is null then 0 else 1 end, c.descripcion,
                case when s.sistema_id is null then 0 else 1 end, si.nombre, s.medida, s.hasta`);
@@ -707,9 +732,12 @@ async function suplementos_guardar(req, res) {
       medida: vacio(l.medida) ? null : String(l.medida).toUpperCase(),
       hasta: vacio(l.hasta) ? null : decimal(l.hasta),
       importe: decimal(l.importe),
+      /* sqlLeroy/14: C1 opcional; si la pantalla no lo manda (undefined), se conserva el que tenía esa línea */
+      c1: !Object.prototype.hasOwnProperty.call(l, 'c1') ? undefined : vacio(l.c1) ? null : decimal(l.c1),
       activo: l.activo === false || l.activo === 0 ? 0 : 1
     };
     if (linea.importe === null || linea.importe < 0) return res.status(400).send({ message: 'Cada línea necesita un importe mayor o igual que 0' });
+    if (linea.c1 !== undefined && linea.c1 !== null && linea.c1 < 0) return res.status(400).send({ message: 'El C1 no puede ser negativo' });
     if (linea.medida && !MEDIDAS.includes(linea.medida)) return res.status(400).send({ message: 'Medida no válida' });
     if (linea.medida === 'LONGITUD' && !longitud) return res.status(400).send({ message: 'La longitud de cadena solo vale en los elementos de la cadena' });
     if (cat.sinSistema && linea.sistema_id !== null) return res.status(400).send({ message: 'Este producto no tiene sistemas: deje el sistema en Todos' });
@@ -734,19 +762,31 @@ async function suplementos_guardar(req, res) {
   try {
     const pool = await sql.connect();
     if (!(await elementoExiste(pool, cat, id))) return res.status(404).send({ message: 'El registro no existe' });
+    const c1 = await conC1(pool);
     transaction = new sql.Transaction(pool);
     await transaction.begin();
+    /* sqlLeroy/14: el C1 de las líneas que la pantalla no manda sale de la línea igual de antes (mismo cliente, sistema,
+       medida y tramo) */
+    const antes = c1 ? (await new sql.Request(transaction).input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id)
+      .query('select cliente, sistema_id, medida, hasta, c1 from dbo.SOL_ACC_SUPLEMENTO where catalogo = @tabla and elemento_id = @id')).recordset : [];
+    const claveSup = (x) => [x.cliente, x.sistema_id, x.medida, x.hasta === null || x.hasta === undefined ? null : Number(x.hasta)].join('|');
+    const c1Antes = new Map(antes.map(x => [claveSup(x), x.c1]));
     await new sql.Request(transaction).input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id)
       .query('delete from dbo.SOL_ACC_SUPLEMENTO where catalogo = @tabla and elemento_id = @id');
     for (const l of lineas) {
+      const c1Linea = l.c1 !== undefined ? l.c1 : (c1Antes.has(claveSup(l)) ? c1Antes.get(claveSup(l)) : null);
       /* Cliente y sistema inexistentes los para la FK */
       await new sql.Request(transaction)
         .input('tabla', sql.VarChar(50), cat.tabla).input('id', sql.Int, id)
         .input('cliente', sql.Int, l.cliente).input('sistema', sql.Int, l.sistema_id)
         .input('medida', sql.VarChar(10), l.medida).input('hasta', sql.Decimal(10, 2), l.hasta)
         .input('importe', sql.Decimal(10, 2), l.importe).input('activo', sql.Bit, l.activo)
-        .query(`insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, cliente, sistema_id, medida, hasta, importe, activo)
-                values (@tabla, @id, @cliente, @sistema, @medida, @hasta, @importe, @activo)`);
+        .input('c1', sql.Decimal(10, 2), c1Linea)
+        .query(c1
+          ? `insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, cliente, sistema_id, medida, hasta, importe, activo, c1)
+             values (@tabla, @id, @cliente, @sistema, @medida, @hasta, @importe, @activo, @c1)`
+          : `insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, cliente, sistema_id, medida, hasta, importe, activo)
+             values (@tabla, @id, @cliente, @sistema, @medida, @hasta, @importe, @activo)`);
     }
     await transaction.commit();
     res.status(200).send({ message: 'OK' });
@@ -764,7 +804,11 @@ async function suplementos_guardar(req, res) {
 async function suplementos_resumen(req, res) {
   try {
     const pool = await sql.connect();
-    const nombres = Object.keys(CATALOGOS).map(clave => {
+    /* Solo las listas cuya tabla ya existe: si el backend se despliega antes que un script que crea una lista (p. ej.
+       SOL_ACC_SMART_HOME, sqlLeroy/09), el resumen sigue saliendo con las demás */
+    const existentes = new Set((await pool.request().query("select name from sys.objects where type in ('U', 'V')"))
+      .recordset.map(o => o.name.toUpperCase()));
+    const nombres = Object.keys(CATALOGOS).filter(clave => existentes.has(CATALOGOS[clave].tabla.toUpperCase())).map(clave => {
       const cat = CATALOGOS[clave];
       /* grupo: el tipo de vertical de las listas del Vertical (para filtrar el resumen por tipo) */
       return `select '${clave}' as clave, '${cat.tabla}' as tabla, x.id, ${nombreElemento(cat, 'x')} as nombre,
@@ -773,7 +817,7 @@ async function suplementos_resumen(req, res) {
     const r = await pool.request().query(`
       with elementos as (${nombres})
       select e.clave, e.nombre as elemento_nombre, e.grupo, e.activo as elemento_activo, sup.*
-      from (${SELECT_SUPLEMENTO}) sup
+      from (${selectSuplemento(await conC1(pool))}) sup
       join elementos e on e.tabla = sup.catalogo and e.id = sup.elemento_id
       order by e.clave, e.nombre, sup.cliente_nombre, sup.sistema_nombre, sup.medida, sup.hasta`);
     res.status(200).send({ Table: r.recordset });
@@ -1082,6 +1126,7 @@ async function copiar(req, res) {
       .query(`select id from dbo.${cat.tablaPadre} where id in (@origen, @destino)`);
     if (padres.recordset.length !== 2) return res.status(400).send({ message: 'El origen o el destino no existen' });
 
+    const c1 = await conC1(pool);
     transaction = new sql.Transaction(pool);
     await transaction.begin();
     const nuevos = await new sql.Request(transaction).input('origen', sql.Int, origen).input('destino', sql.Int, destino).query(`
@@ -1100,8 +1145,8 @@ async function copiar(req, res) {
           select @destino, ${columnas.join(', ')},
                  (select isnull(max(orden), 0) + 1 from dbo.${cat.tabla} where ${cat.padre} = @destino)
           from dbo.${cat.tabla} where id = @id;
-          insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, cliente, sistema_id, medida, hasta, importe, activo)
-          select s.catalogo, n.id, s.cliente, s.sistema_id, s.medida, s.hasta, s.importe, s.activo
+          insert into dbo.SOL_ACC_SUPLEMENTO (catalogo, elemento_id, cliente, sistema_id, medida, hasta, importe, activo${c1 ? ', c1' : ''})
+          select s.catalogo, n.id, s.cliente, s.sistema_id, s.medida, s.hasta, s.importe, s.activo${c1 ? ', s.c1' : ''}
           from dbo.SOL_ACC_SUPLEMENTO s cross join @nuevo n
           where s.catalogo = @tabla and s.elemento_id = @id;
           select id from @nuevo`);

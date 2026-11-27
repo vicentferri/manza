@@ -938,6 +938,8 @@ export class ConfigComponent implements OnInit {
                 cadena_longitud: item.nacc_cadena_longitud,
                 tipo_motor: item.nacc_tipo_motor_id, modelo_motor: item.nacc_modelo_motor_id,
                 mando: item.nacc_mando_id, cargador: item.nacc_cargador_id, bateria: item.nacc_bateria_id,
+                /* sqlLeroy/16: la línea guarda el Smart Home como SÍ/NO; el servidor pone la opción */
+                smart_home: item.smart_home === 1 ? true : null,
                 soporte: item.nacc_soporte_id, soporte_color: item.nacc_soporte_color_id,
                 tapa: item.nacc_tapa_id, tapa_color: item.nacc_tapa_color_id,
                 contrapeso: item.nacc_contrapeso_id, contrapeso_color: item.nacc_contrapeso_color_id,

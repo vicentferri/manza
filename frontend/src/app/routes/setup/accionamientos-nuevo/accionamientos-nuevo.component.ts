@@ -242,7 +242,9 @@ export class AccionamientosNuevoComponent implements OnInit, OnDestroy {
         { id: 'colores_contrapeso', label: 'Colores de contrapeso', singular: 'color', ayuda: 'Se marcan en cada contrapeso (pestaña Contrapesos).' },
         { id: 'mandos', label: 'Mandos', singular: 'mando', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' },
         { id: 'cargadores', label: 'Cargadores', singular: 'cargador', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' },
-        { id: 'baterias', label: 'Baterías', singular: 'batería', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' }
+        { id: 'baterias', label: 'Baterías', singular: 'batería', ayuda: 'Se asignan a cada modelo de motor en el paso 3.' },
+        /* sqlLeroy/09 */
+        { id: 'smart_home', label: 'Smart Home', singular: 'opción de Smart Home', ayuda: 'Se marca en cada tipo de motor que la admite (paso 3).' }
     ];
     lista: any = this.listas[0];
 

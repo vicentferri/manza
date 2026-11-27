@@ -1,5 +1,5 @@
 <div class="enx">
-   <div class="enx-aviso">
+   <div class="enx-aviso" *ngIf="opc && !conRejilla">
       <i class="fa fa-flask"></i>
       Configurador nuevo de accionamientos: de momento solo enrollables, Solar Mini y Cajón ZIP en la cesta.
    </div>
@@ -98,21 +98,22 @@
                <small *ngIf="tiposMotor.length === 0" class="enx-error">No hay motores asignados a este sistema.</small>
             </div>
             <div class="col-md-3 col-6 form-group" *ngIf="sel.tipo_motor">
-               <label>Modelo</label>
+               <label>Modelo<span class="enx-nota" *ngIf="codigoModelo"> ({{ codigoModelo }})</span></label>
                <select class="form-control form-control-sm" [(ngModel)]="sel.modelo_motor" [ngModelOptions]="{ standalone: true }" (change)="cambiar('modelo_motor')">
                   <option value="">Seleccionar</option>
                   <option *ngFor="let m of modelos" [value]="m.id">{{ m.nombre }}</option>
                </select>
             </div>
             <div class="col-md-2 col-6 form-group" *ngIf="sel.modelo_motor && mandos.length > 0">
-               <label>Mando</label>
+               <label>Mando<span class="enx-nota" *ngIf="codigoMando"> ({{ codigoMando }})</span></label>
                <select class="form-control form-control-sm" [(ngModel)]="sel.mando" [ngModelOptions]="{ standalone: true }">
-                  <option value="">Sin mando</option>
+                  <option value="">{{ conRejilla ? 'Seleccionar' : 'Sin mando' }}</option>
+                  <option *ngIf="conRejilla" value="sin">Sin mando</option>
                   <option *ngFor="let m of mandos" [value]="m.id">{{ m.nombre }}</option>
                </select>
             </div>
             <div class="col-md-2 col-6 form-group" *ngIf="sel.modelo_motor && cargadores.length > 0">
-               <label>Cargador</label>
+               <label>Cargador<span class="enx-nota" *ngIf="codigoCargador"> ({{ codigoCargador }})</span></label>
                <select class="form-control form-control-sm" [(ngModel)]="sel.cargador" [ngModelOptions]="{ standalone: true }">
                   <option value="">Sin cargador</option>
                   <option *ngFor="let c of cargadores" [value]="c.id">{{ c.nombre }}</option>
@@ -125,6 +126,20 @@
                   <option *ngFor="let b of baterias" [value]="b.id">{{ b.nombre }}</option>
                </select>
             </div>
+            <div class="col-md-2 col-6 form-group" *ngIf="smartHomes.length > 0">
+               <label>Smart Home<span class="enx-nota" *ngIf="sel.smart_home && codigoModelo"> ({{ codigoModelo }})</span></label>
+               <select class="form-control form-control-sm" [(ngModel)]="sel.smart_home" [ngModelOptions]="{ standalone: true }">
+                  <option value="">No</option>
+                  <option *ngFor="let h of smartHomes" [value]="h.id">{{ smartHomes.length === 1 ? 'Sí' : h.nombre }}</option>
+               </select>
+            </div>
+         </div>
+         <div class="alert alert-info" *ngIf="verAvisoCargador">
+            Para garantizar el correcto funcionamiento del motor AM25 Plus L USB-C, se recomienda utilizar el cargador original del
+            fabricante, con una tensión de salida de 5 V y una intensidad de 2 A. El uso de cargadores con otras características no
+            garantiza su correcto funcionamiento.
+            <br /><br />
+            <strong>Recuerda añadir al pedido el cargador y el mando si los necesitas.</strong>
          </div>
       </ng-container>
    </div>
@@ -135,10 +150,11 @@
       <!-- cada sistema tiene sus tejidos (script 36): primero se elige el sistema -->
       <div *ngIf="opc && !sel.sistema" class="text-muted small mb-2">Elija antes el accionamiento y el sistema: cada sistema tiene sus tejidos.</div>
       <div *ngIf="opc && sel.sistema && tejidosDisponibles.length === 0" class="enx-error mb-2">
-         No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }} para este sistema. Márquelos en Configuración → Productos → Tejidos.
+         No hay tejidos disponibles{{ impresion ? ' con impresión digital' : '' }} para este sistema.<span *ngIf="!conRejilla"> Márquelos en Configuración → Productos → Tejidos.</span>
       </div>
       <div class="row">
-         <div class="col-md-3 col-6 form-group">
+         <!-- con rejilla del cliente (Leroy) no se elige el tipo: se elige solo -->
+         <div class="col-md-3 col-6 form-group" *ngIf="!conRejilla">
             <label>{{ "TIPO DE TEJIDO" | translate }}</label>
             <select class="form-control form-control-sm" [(ngModel)]="tipoTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarTipoTejido()" [disabled]="!sel.sistema">
                <option value="">Seleccionar</option>
@@ -146,7 +162,7 @@
             </select>
          </div>
          <div class="col-md-3 col-6 form-group">
-            <label>{{ "SERIE" | translate }}</label>
+            <label>{{ (conRejilla ? "TEJIDO" : "SERIE") | translate }}</label>
             <select class="form-control form-control-sm" [(ngModel)]="nombreTejido" [ngModelOptions]="{ standalone: true }" (change)="cambiarNombreTejido()" [disabled]="!tipoTejido">
                <option value="">Seleccionar</option>
                <option *ngFor="let n of nombresTejido" [value]="n">{{ n }}</option>
@@ -158,9 +174,10 @@
                <option value="">Seleccionar</option>
                <option *ngFor="let c of coloresTejido" [value]="c">{{ c }}</option>
             </select>
-            <small *ngIf="tejidoFila" class="enx-nota">Rollo de {{ tejidoFila.criterio }} cm<span *ngIf="tejidoFila.grupo"> · grupo {{ tejidoFila.grupo }}</span></small>
+            <small *ngIf="tejidoFila && !conRejilla" class="enx-nota">Rollo de {{ tejidoFila.criterio }} cm<span *ngIf="tejidoFila.grupo"> · grupo {{ tejidoFila.grupo }}</span></small>
             <small *ngIf="colorTejido && ancho > 0 && !tejidoFila && anchoMaximo" class="enx-error">Supera el ancho máximo ({{ anchoMaximo }} cm)</small>
             <app-cfg-tejido-perfil [fila]="filaPerfil"></app-cfg-tejido-perfil>
+            <app-tejido-imagen *ngIf="fotoTejido" [cliente]="Cliente" [tejido]="fotoTejido.tejido" [color]="fotoTejido.color"></app-tejido-imagen>
          </div>
          <div class="col-md-3 col-6 form-group">
             <label>{{ "SALIDA" | translate }}</label>
@@ -179,7 +196,7 @@
                      <input type="checkbox" [(ngModel)]="impresion" [ngModelOptions]="{ standalone: true }" (change)="cambiarImpresion()" />
                   </span>
                </div>
-               <input type="text" class="form-control" maxlength="250" placeholder="Texto de la impresión"
+               <input type="text" class="form-control" maxlength="250" [placeholder]="conRejilla ? 'Referencia de la imagen' : 'Texto de la impresión'"
                   [(ngModel)]="impresionTexto" [ngModelOptions]="{ standalone: true }" [disabled]="!impresion" />
             </div>
             <small *ngIf="impresion" class="enx-nota">Solo se muestran los tejidos aptos para impresión digital.</small>
@@ -229,6 +246,7 @@
                <option value="">{{ contrapesos.length === 0 ? 'Sin contrapesos dados de alta' : 'Seleccionar' }}</option>
                <option *ngFor="let c of contrapesos" [value]="c.id">{{ c.nombre }}</option>
             </select>
+            <app-contrapeso-imagen *ngIf="fotoContrapeso" [cliente]="Cliente" [contrapeso]="fotoContrapeso" [contrapesos]="fotosContrapeso"></app-contrapeso-imagen>
          </div>
          <div class="col-md-3 col-6 form-group" *ngIf="sel.contrapeso && coloresContrapeso.length > 0">
             <label>Color del contrapeso</label>
@@ -261,7 +279,7 @@
    <div class="enx-seccion">
       <div class="enx-titulo">Precio</div>
       <div class="row align-items-end">
-         <div class="col-md-3 col-6 form-group">
+         <div class="col-md-3 col-6 form-group" *ngIf="!conRejilla">
             <label>Tarifa</label>
             <div class="btn-group btn-group-sm d-flex" role="group">
                <button type="button" class="btn w-100" [class.btn-primary]="tipoTarifa === 'T1'" [class.btn-outline-primary]="tipoTarifa !== 'T1'"
@@ -271,14 +289,15 @@
             </div>
          </div>
          <div class="col-md-3 col-6 form-group">
-            <button type="button" class="btn btn-sm btn-primary btn-block" (click)="CalcularPrecio()" [disabled]="calculando || !tipoTarifa">
+            <button type="button" class="btn btn-sm btn-primary btn-block" (click)="CalcularPrecio()" [disabled]="calculando || (!conRejilla && !tipoTarifa)">
                <i class="fa" [class.fa-calculator]="!calculando" [class.fa-spinner]="calculando" [class.fa-spin]="calculando"></i> Calcular precio
             </button>
          </div>
          <div class="col-md-3 col-6 form-group text-right enx-total">
             <ng-container *ngIf="precioVigente">
                <div class="enx-total-importe">{{ precio.total | number:'1.2-2' }} €</div>
-               <div class="enx-nota">{{ precio.unitario | number:'1.2-2' }} € por cortina · {{ precio.tipo_tarifa }}</div>
+               <div class="enx-nota" *ngIf="precio.c1">{{ precio.c1 }}</div>
+               <div class="enx-nota">{{ precio.unitario | number:'1.2-2' }} € por cortina<span *ngIf="precio.tipo_tarifa"> · {{ precio.tipo_tarifa }}</span></div>
             </ng-container>
             <span *ngIf="precio && !precioVigente" class="enx-nota">Ha cambiado la configuración: vuelva a calcular el precio</span>
          </div>
@@ -300,10 +319,12 @@
                <td>{{ d.elemento }}</td>
                <td class="enx-nota">{{ d.detalle }}</td>
                <td class="text-right">{{ d.importe | number:'1.2-2' }} €</td>
+               <td *ngIf="precio.c1" class="text-right enx-nota">{{ c1Texto(d.c1) }}</td>
             </tr>
             <tr *ngIf="cantidad > 1" class="enx-desglose-total">
                <td colspan="3">Por cortina x {{ cantidad }}</td>
                <td class="text-right">{{ precio.total | number:'1.2-2' }} €</td>
+               <td *ngIf="precio.c1" class="text-right enx-nota">{{ precio.c1 }}</td>
             </tr>
          </tbody>
       </table>

@@ -82,8 +82,22 @@ const ERRORES_LINEA = {
   '-21': 'Precio de la línea incoherente',
   '-22': 'Desglose del precio no válido',
   '-23': 'Falta la tarifa (T1 o T2) con la que se calculó el precio',
-  '-24': 'El tejido no está disponible en el configurador'
+  '-24': 'El tejido no está disponible en el configurador',
+  /* sqlLeroy/16 */
+  '-25': 'El Smart Home solo se puede pedir con un motor de batería 25 o 35'
 };
+
+/* sqlLeroy/15-16: parámetros nuevos de los SPs del enrollable. Si el backend llega antes que el SQL, no se mandan (el SP
+   de siempre no los conoce). Se mira una vez por SP y, cuando ya los tiene, se recuerda */
+const spConParametro = {};
+async function spTiene(pool, sp, parametro) {
+  const k = sp + '|' + parametro;
+  if (spConParametro[k]) return true;
+  const r = await pool.request().input('sp', sql.VarChar(200), 'dbo.' + sp).input('p', sql.VarChar(200), '@' + parametro)
+    .query('select count(*) as n from sys.parameters where object_id = object_id(@sp) and name = @p');
+  spConParametro[k] = r.recordset[0].n > 0;
+  return spConParametro[k];
+}
 
 /* Mensajes de los códigos de sp_acc_mini_pedido_tipo_4_add / sp_acc_mini_presupuesto_tipo_4_add (sqlSolarMini/05) */
 const ERRORES_MINI = {
@@ -257,6 +271,43 @@ async function opciones(req, res) {
       tejidoPorId[t.id].sistemas.push(sistema_id);
     });
 
+    /* sqlLeroy/09-14: Smart Home (con los tipos de motor que lo admiten), rejilla del cliente y códigos 48 del cliente.
+       Sin los scripts, listas vacías: la pantalla sigue como siempre */
+    const smartHome = await lista('SOL_ACC_SMART_HOME').then(conPerfil(s, 'smart_home')).catch(() => []);
+    const tmSmart = await q('select tipo_motor_id, smart_home_id from dbo.SOL_ACC_TIPO_MOTOR_SMART_HOME').catch(() => []);
+    const rejillaFilas = await q(`select tejido, impresion, sistema_id from dbo.SOL_ACC_TARIFA_REJILLA where cliente = ${cliente} and producto = 1`)
+      .catch(() => []);
+    const codigosFilas = await q(`select catalogo, clave, codigo from dbo.CFG_CLIENTE_CODIGO where cliente = ${cliente} and ambito = 'OPCION'`)
+      .catch(() => []);
+    const codigos = {};
+    codigosFilas.forEach(c => { (codigos[c.catalogo] = codigos[c.catalogo] || {})[c.clave] = c.codigo; });
+    if (rejillaFilas.length) {
+      /* con rejilla (Leroy) solo se imprime lo que es apto en el maestro y además tiene tarifa «con impresión» en su sistema */
+      const conImpresion = new Set(rejillaFilas.filter(f => f.impresion === true || f.impresion === 1).map(f => f.tejido + '|' + f.sistema_id));
+      tejidos.forEach(t => {
+        t.sistemas_impresion = t.impresion_digital ? t.sistemas.filter(si => conImpresion.has(t.id + '|' + si)) : [];
+        t.impresion_digital = t.sistemas_impresion.length > 0 ? 1 : 0;
+      });
+      /* sqlLeroy/10: de cada tejido, su color antiguo (la foto y el ancho máximo informativo de su pantalla de siempre) y de
+         cada contrapeso, su id antiguo (la foto) */
+      const antiguos = await q(`
+        select e.tejido_maestro, e.tejido_antiguo, e.color_antiguo, a.anchomax
+        from dbo.CFG_TEJIDO_EQUIVALENCIA e
+        left join dbo.SOL_ARTICULOS_TEJIDOS_ATRIBUTOS a on a.cliente = e.cliente and a.tejido = e.tejido_antiguo and a.color = e.color_antiguo
+        where e.cliente = ${cliente} and e.producto = 1 and e.tejido_maestro is not null and e.origen <> 'EXCLUIDO'
+        order by e.tejido_maestro, e.color_antiguo`).catch(() => []);
+      const porMaestro = {};
+      antiguos.forEach(a => {
+        if (!porMaestro[a.tejido_maestro]) {
+          porMaestro[a.tejido_maestro] = { tejido: a.tejido_antiguo, color: a.color_antiguo, ancho_max: a.anchomax > 0 ? Number(a.anchomax) : null };
+        }
+      });
+      tejidos.forEach(t => { t.antiguo = porMaestro[t.id] || null; });
+      const fotos = await q(`select clave_antigua, id_nuevo from dbo.CFG_ACC_EQUIVALENCIA
+        where cliente = ${cliente} and producto = 1 and ambito = 'CONTRAPESO' and id_nuevo is not null`).catch(() => []);
+      contrapesos.forEach(c => { const f = fotos.find(x => x.id_nuevo === c.id); c.imagen = f ? Number(f.clave_antigua) : null; });
+    }
+
     /* Solo se enlazan ids de opciones activas: una opción oculta desaparece de todas las listas */
     const activos = (filas) => new Set(filas.map(f => f.id));
     const sisActivos = activos(sistemas), colActivos = activos(colores), manActivos = activos(mandos),
@@ -277,6 +328,8 @@ async function opciones(req, res) {
     const colPorSoporte = agrupar(sopCol, 'soporte_id', 'color_soporte_id');
     const colPorTapa = agrupar(tapCol, 'tapa_id', 'color_tapa_id');
     const colPorContrapeso = agrupar(conCol, 'contrapeso_id', 'color_contrapeso_id');
+    const shActivos = activos(smartHome);
+    const shPorTipo = agrupar(tmSmart, 'tipo_motor_id', 'smart_home_id');
 
     res.status(200).send({
       accionamientos: accionamientos.map(a => Object.assign(a, { sistemas: filtrar(sisPorAcc[a.id], sisActivos) })),
@@ -297,7 +350,8 @@ async function opciones(req, res) {
           cargadores: filtrar(carPorModelo[m.id], carActivos),
           baterias: filtrar(batPorModelo[m.id], batActivos)
         }));
-        return Object.assign(t, { sistemas: [...new Set([].concat(...mods.map(m => m.sistemas)))], modelos: mods });
+        return Object.assign(t, { sistemas: [...new Set([].concat(...mods.map(m => m.sistemas)))], modelos: mods,
+                                  /* sqlLeroy/09 */ smart_home: filtrar(shPorTipo[t.id], shActivos) });
       }),
       mandos,
       cargadores,
@@ -309,7 +363,12 @@ async function opciones(req, res) {
       coloresSoporte,
       coloresTapa,
       coloresContrapeso,
-      tejidos
+      tejidos,
+      /* sqlLeroy/09-13: Smart Home; rejilla = el cliente valora con su rejilla (no se elige T1/T2); códigos 48 del cliente por
+         lista (modelos_motor, cargadores y mandos, estos con clave «motor|mando» o «mando») */
+      smartHome,
+      rejilla: rejillaFilas.length > 0,
+      codigos
     });
   } catch (err) {
     console.error(err);
@@ -330,6 +389,23 @@ async function precioLinea(pool, cliente, l) {
   const d = (nombre) => [nombre, sql.Decimal(12, 2)];
   const salidas = [d('base'), d('importe_impresion'), d('suplementos'), d('unitario'), d('total'),
     d('col_tejido'), d('col_mando'), d('col_cargador'), d('col_contrapeso'), d('col_cadena')];
+  /* sqlLeroy/15: Smart Home, tienda (promoción) y C1 por cortina de cada columna */
+  const nuevo = await spTiene(pool, 'sp_acc_precio_linea', 'smart_home');
+  /* sqlLeroy/16: el Smart Home solo con motor y un tipo de motor que lo admita (como el alta, -25): se avisa ya en el precio */
+  if (entero(n.smart_home)) {
+    const sh = await pool.request().input('tm', sql.Int, entero(n.tipo_motor)).input('sh', sql.Int, entero(n.smart_home))
+      .input('acc', sql.Int, entero(n.accionamiento))
+      .query(`select count(*) as n from dbo.SOL_ACC_TIPO_MOTOR_SMART_HOME r
+              join dbo.SOL_ACC_TIPO_MOTOR t on t.id = r.tipo_motor_id and t.accionamiento_id = @acc
+              join dbo.SOL_ACC_ACCIONAMIENTO a on a.id = @acc and a.codigo = 'MOTOR'
+              where r.tipo_motor_id = @tm and r.smart_home_id = @sh`)
+      .catch(() => ({ recordset: [{ n: 0 }] }));
+    if (!sh.recordset[0].n) return { codigo: -25, mensaje: ERRORES_LINEA['-25'], aviso: null };
+  }
+  if (nuevo) {
+    salidas.push(d('col_smart_home'), d('c1_unitario'), d('c1_total'), d('c1_tejido'), d('c1_mando'), d('c1_cargador'),
+      d('c1_contrapeso'), d('c1_cadena'), d('c1_smart_home'), ['c1', sql.VarChar(25)]);
+  }
   const request = pool.request()
     .input('cliente', sql.Int, cliente)
     .input('ancho', sql.Decimal(12, 2), medida(l.ancho))
@@ -361,22 +437,92 @@ async function precioLinea(pool, cliente, l) {
     .output('tarifa', sql.Int)
     .output('mensaje', sql.VarChar(250))
     .output('aviso', sql.VarChar(250));
+  if (nuevo) {
+    request.input('smart_home', sql.Int, entero(n.smart_home))
+      .input('centro', sql.Int, entero(l.codeCentro) > 0 ? entero(l.codeCentro) : null);
+  }
   salidas.forEach(([nombre, tipo]) => request.output(nombre, tipo));
   const r = await request.execute('sp_acc_precio_linea');
   const o = r.output;
   if (r.returnValue !== 0) {
-    return { codigo: r.returnValue, mensaje: o.mensaje || 'No se puede calcular el precio', aviso: o.aviso || null };
+    return { codigo: r.returnValue, mensaje: await mensajePrecioEnr(pool, cliente, n, r.returnValue, o.mensaje), aviso: o.aviso || null };
   }
+  /* sqlLeroy/15: con rejilla del cliente la tarifa es la suya (sin T1/T2) */
+  const conRejilla = nuevo && !TIPOS_TARIFA.includes(l.tipo_tarifa) && o.tarifa !== null;
   return {
     codigo: 0,
     aviso: o.aviso || null,
-    tipo_tarifa: l.tipo_tarifa,
+    tipo_tarifa: conRejilla ? null : l.tipo_tarifa,
     tarifa: o.tarifa,
     base: o.base, impresion: o.importe_impresion, suplementos: o.suplementos,
     unitario: o.unitario, total: o.total,
-    columnas: { tejido: o.col_tejido, mando: o.col_mando, cargador: o.col_cargador, contrapeso: o.col_contrapeso, cadena: o.col_cadena },
-    desglose: (r.recordset || []).map(f => ({ concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe }))
+    columnas: { tejido: o.col_tejido, mando: o.col_mando, cargador: o.col_cargador, contrapeso: o.col_contrapeso, cadena: o.col_cadena,
+                smart_home: nuevo ? o.col_smart_home : 0 },
+    /* sqlLeroy/15: C1 (solo perfiles con coeficiente_c1; si no, null) */
+    c1: nuevo ? o.c1 || null : null, c1_unitario: nuevo ? o.c1_unitario : null, c1_total: nuevo ? o.c1_total : null,
+    c1_columnas: nuevo && o.c1_unitario !== null
+      ? { tejido: o.c1_tejido, mando: o.c1_mando, cargador: o.c1_cargador, contrapeso: o.c1_contrapeso, cadena: o.c1_cadena, smart_home: o.c1_smart_home }
+      : null,
+    desglose: await nombresPerfilDesgloseEnr(pool, cliente, n, (r.recordset || []).map(f => ({
+      concepto: f.concepto, elemento: f.elemento, detalle: f.detalle, importe: f.importe, c1: f.c1 === undefined ? null : f.c1
+    })))
   };
+}
+
+/* sqlLeroy/15: el desglose sale del SP con los nombres del maestro (RHIN, A-OK AM25 PLUS L 1/25 USB C): se pasan a los del
+   perfil del cliente (Leroy: DEVA, M25 B A-OK AM25 PLUS L 1/25), en pantalla y en lo que se graba. Sin nombre propio, el
+   del maestro (cliente 4 igual que antes) */
+async function nombresPerfilDesgloseEnr(pool, cliente, n, desglose) {
+  try {
+    const s = await surtido.surtidoDeCliente(pool, cliente);
+    const opcion = (catalogo, id, nombre) => {
+      if (!id || !nombre) return nombre;
+      const r = s.filtrarOpciones(catalogo, [{ id, nombre }]);
+      return r.length ? r[0].nombre : nombre;
+    };
+    const porConcepto = {
+      'Base': ['sistemas', 'sistema'], 'Sistema': ['sistemas', 'sistema'], 'Accionamiento': ['accionamientos', 'accionamiento'],
+      'Tipo de cadena': ['tipos_cadena', 'tipo_cadena'], 'Altura de cadena': ['alturas', 'altura'],
+      'Color de cadena': ['colores_cadena', 'color_cadena'], 'Tipo de motor': ['tipos_motor', 'tipo_motor'],
+      'Motor': ['modelos_motor', 'modelo_motor'], 'Mando': ['mandos', 'mando'], 'Cargador': ['cargadores', 'cargador'],
+      'Batería': ['baterias', 'bateria'], 'Soporte': ['soportes', 'soporte'], 'Color de soporte': ['colores_soporte', 'soporte_color'],
+      'Tapa': ['tapas', 'tapa'], 'Color de tapa': ['colores_tapa', 'tapa_color'], 'Contrapeso': ['contrapesos', 'contrapeso'],
+      'Color de contrapeso': ['colores_contrapeso', 'contrapeso_color'], 'Smart Home': ['smart_home', 'smart_home']
+    };
+    return desglose.map(f => {
+      const c = porConcepto[f.concepto];
+      return c ? Object.assign({}, f, { elemento: opcion(c[0], entero(n[c[1]]), f.elemento) }) : f;
+    });
+  } catch (err) {
+    console.error('desglose del enrollable: no se pudieron aplicar los nombres del perfil', err.message);
+    return desglose;
+  }
+}
+
+/* sqlLeroy/15: medida fuera de los tramos de un suplemento (-5): se dice hasta dónde llega (cadena por longitud, contrapeso
+   por ancho), en vez del mensaje genérico del SP */
+async function mensajePrecioEnr(pool, cliente, n, codigo, mensaje) {
+  const generico = mensaje || 'No se puede calcular el precio';
+  if (codigo !== -5 || !mensaje) return generico;
+  const casos = [
+    { texto: 'color de cadena', catalogo: 'SOL_ACC_COLOR_CADENA', id: entero(n.color_cadena), medida: 'LONGITUD',
+      frase: (h) => `Con este color de cadena, la cadena llega hasta ${h} cm` },
+    { texto: 'contrapeso', catalogo: 'SOL_ACC_CONTRAPESO', id: entero(n.contrapeso), medida: 'ANCHO',
+      frase: (h) => `Con este contrapeso, el ancho máximo es ${h} cm` }
+  ];
+  const caso = casos.find(c => mensaje.includes('de ' + c.texto + ' para') && c.id);
+  if (!caso) return generico;
+  try {
+    const r = await pool.request().input('catalogo', sql.VarChar(50), caso.catalogo).input('id', sql.Int, caso.id)
+      .input('cliente', sql.Int, cliente).input('medida', sql.VarChar(10), caso.medida).input('sistema', sql.Int, entero(n.sistema))
+      .query(`select max(hasta) as hasta from dbo.SOL_ACC_SUPLEMENTO
+              where catalogo = @catalogo and elemento_id = @id and activo = 1 and medida = @medida
+                and (cliente is null or cliente = @cliente) and (sistema_id is null or sistema_id = @sistema)`);
+    const h = r.recordset[0] && r.recordset[0].hasta;
+    return h ? caso.frase(Number(h)) : generico;
+  } catch (err) {
+    return generico;
+  }
 }
 
 /* Tarifas que puede elegir el configurador: T1 (por grupo de tejido) y T2 (por tejido) */
@@ -394,6 +540,17 @@ function desgloseXml(desglose) {
   ).join('') + '</d>';
 }
 
+/* sqlLeroy/16: en la línea guardada el Smart Home es un SÍ/NO (columna smart_home); al recargar un presupuesto en la cesta
+   llega `true` en vez del id de la opción. Si no hay opción activa se deja -1, que el precio y el alta rechazan (mejor que
+   perder el Smart Home en silencio) */
+async function resolverSmartHome(pool, l) {
+  const n = l && l.nacc;
+  if (!n || n.smart_home !== true) return;
+  const r = await pool.request().query('select top 1 id from dbo.SOL_ACC_SMART_HOME where activo = 1 order by orden, id')
+    .catch(() => ({ recordset: [] }));
+  n.smart_home = r.recordset[0] ? r.recordset[0].id : -1;
+}
+
 /* POST /acc_cfg/precio/:cliente   body: una línea (la misma forma que en el alta). No graba nada */
 async function precio(req, res) {
   const cliente = entero(req.params.cliente);
@@ -407,6 +564,7 @@ async function precio(req, res) {
     if (!await clienteActivo(pool, cliente)) {
       return res.status(403).send({ message: 'El cliente no tiene activado el configurador nuevo' });
     }
+    await resolverSmartHome(pool, l);
     /* Fase 2: lo que el perfil del cliente no ve, o medidas fuera de los límites del tejido */
     const errorPerfil = (await surtido.surtidoDeCliente(pool, cliente)).validarLinea('ENR', l);
     if (errorPerfil) return res.status(400).send({ message: errorPerfil });
@@ -1628,6 +1786,7 @@ async function alta(doc, req, res) {
 
     /* Fase 2: cada línea contra el perfil del cliente (lo que no ve y los límites de medida de cada tejido).
        La HoneyComb solo con su motor nuevo: con el de siempre el cliente la ve entera, como hoy */
+    for (const l of lineas.filter(esEnrollableNuevo)) await resolverSmartHome(pool, l);
     const s = await surtido.surtidoDeCliente(pool, cliente);
     const hcNuevo = lineas.some(esHoneyComb) && await hcActivo(pool, cliente);
     for (let i = 0; i < lineas.length; i++) {
@@ -1763,11 +1922,24 @@ async function alta(doc, req, res) {
         .input('pvp_contrapeso', sql.Decimal(12, 2), precios[i].columnas.contrapeso)
         .input('pvp_cadena', sql.Decimal(12, 2), precios[i].columnas.cadena)
         .input('desglose', sql.Xml, desgloseXml(precios[i].desglose))
-        .input('tipo_tarifa', sql.VarChar(2), precios[i].tipo_tarifa)
-        .execute(doc.linea);
-      if (!(r.returnValue > 0)) {
+        .input('tipo_tarifa', sql.VarChar(2), precios[i].tipo_tarifa);
+      /* sqlLeroy/16: Smart Home y C1 por cortina de cada columna (si el SP ya los admite) */
+      if (await spTiene(pool, doc.linea, 'smart_home')) {
+        const c1 = precios[i].c1_columnas || {};
+        const sh = entero(n.smart_home);
+        r.input('smart_home', sql.Int, sh)
+          .input('pvp_smart_home', sql.Decimal(12, 2), sh ? precios[i].columnas.smart_home : null)
+          .input('c1_tejido', sql.Decimal(12, 2), precios[i].c1_columnas ? c1.tejido : null)
+          .input('c1_mando', sql.Decimal(12, 2), precios[i].c1_columnas ? c1.mando : null)
+          .input('c1_cargador', sql.Decimal(12, 2), precios[i].c1_columnas ? c1.cargador : null)
+          .input('c1_contrapeso', sql.Decimal(12, 2), precios[i].c1_columnas ? c1.contrapeso : null)
+          .input('c1_cadena', sql.Decimal(12, 2), precios[i].c1_columnas ? c1.cadena : null)
+          .input('c1_smart_home', sql.Decimal(12, 2), precios[i].c1_columnas && sh ? c1.smart_home : null);
+      }
+      const rl = await r.execute(doc.linea);
+      if (!(rl.returnValue > 0)) {
         await transaction.rollback();
-        const motivo = ERRORES_LINEA[String(r.returnValue)] || 'Línea no válida';
+        const motivo = ERRORES_LINEA[String(rl.returnValue)] || 'Línea no válida';
         return res.status(400).send({ message: `Línea ${i + 1}: ${motivo}` });
       }
     }

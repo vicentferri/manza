@@ -170,6 +170,9 @@
                                 <app-acc-tabla catalogo="tipos_motor" titulo="Tipos de motor" singular="tipo de motor"
                                     padreCampo="accionamiento_id" [padreId]="accMotor.id"
                                     [recarga]="recargaTipoMotor" (seleccion)="seleccionTipoMotor($event)"></app-acc-tabla>
+                                <!-- sqlLeroy/09: qué tipos de motor admiten Smart Home -->
+                                <app-acc-relacion *ngIf="tipoMotorSel" relacion="tipo_motor_smart_home" [id]="tipoMotorSel.id" titulo="Smart Home"
+                                    vacio="No hay opciones. Añádalas en Listas de opciones → Smart Home."></app-acc-relacion>
                             </div>
                             <div class="col-xl-4 col-lg-6">
                                 <div class="acc-columna-titulo"><span class="acc-paso">b</span> Modelo<span *ngIf="tipoMotorSel"> de {{ tipoMotorSel.nombre }}</span></div>

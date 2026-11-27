@@ -23,7 +23,9 @@ const LINEAS = {
       accionamiento: 'accionamientos', sistema: 'sistemas', tipo_cadena: 'tipos_cadena', altura: 'alturas',
       color_cadena: 'colores_cadena', tipo_motor: 'tipos_motor', modelo_motor: 'modelos_motor', mando: 'mandos',
       cargador: 'cargadores', bateria: 'baterias', soporte: 'soportes', soporte_color: 'colores_soporte',
-      tapa: 'tapas', tapa_color: 'colores_tapa', contrapeso: 'contrapesos', contrapeso_color: 'colores_contrapeso'
+      tapa: 'tapas', tapa_color: 'colores_tapa', contrapeso: 'contrapesos', contrapeso_color: 'colores_contrapeso',
+      /* sqlLeroy/09 */
+      smart_home: 'smart_home'
     },
     tejidos: ['tejido']
   },

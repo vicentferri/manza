@@ -13,6 +13,7 @@
                     <strong>Todos</strong> para el precio general; si hay uno para {{ sinSistema ? 'el cliente concreto' : 'el cliente o el sistema concreto' }}, gana ese.
                     Para precios por tramos elija la medida y escriba hasta cuántos cm vale cada importe: se aplica el primer
                     tramo que cubre la medida, y si la medida supera el último, la línea no se puede pedir.
+                    El <strong>C1</strong> solo se usa en los clientes con coeficiente de C1 en su perfil (Leroy): vacío = importe ÷ coeficiente.
                 </div>
 
                 <table class="table table-sm acc-sup-tabla mb-2">
@@ -23,6 +24,7 @@
                             <th>Medida</th>
                             <th class="acc-sup-num">Hasta (cm)</th>
                             <th class="acc-sup-num">Importe (€)</th>
+                            <th class="acc-sup-num" title="Coste del cliente (C1) en euros; vacío = importe ÷ coeficiente del perfil">C1 (€)</th>
                             <th class="text-center" title="Si no está activo, no se cobra">Activo</th>
                             <th></th>
                         </tr>
@@ -57,6 +59,10 @@
                                 <input type="text" class="form-control form-control-sm text-right" placeholder="0,00"
                                     [(ngModel)]="l.importe" [ngModelOptions]="{ standalone: true }" (keyup.enter)="guardar()" />
                             </td>
+                            <td class="acc-sup-num">
+                                <input type="text" class="form-control form-control-sm text-right" placeholder="auto"
+                                    [(ngModel)]="l.c1" [ngModelOptions]="{ standalone: true }" (keyup.enter)="guardar()" />
+                            </td>
                             <td class="text-center align-middle">
                                 <input type="checkbox" [(ngModel)]="l.activo" [ngModelOptions]="{ standalone: true }" />
                             </td>
@@ -67,7 +73,7 @@
                             </td>
                         </tr>
                         <tr *ngIf="lineas.length === 0">
-                            <td colspan="7" class="acc-vacio">Sin suplementos: este elemento no suma nada al precio.</td>
+                            <td colspan="8" class="acc-vacio">Sin suplementos: este elemento no suma nada al precio.</td>
                         </tr>
                     </tbody>
                 </table>
